@@ -5,7 +5,7 @@ services:
     container_name: manga-dashboard-db
     image: postgres:16-alpine
     volumes:
-      - ./data/manga-dashboard-db-vol:/var/lib/postgresql/data:ro
+      - ./data/manga-dashboard-db-vol:/var/lib/postgresql/data:rwx
     environment:
       - PGID=1000
     env_file:
