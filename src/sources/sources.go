@@ -88,12 +88,35 @@ func GetChapterMetadata(mangaURL string, chapterNumber manga.Number) (*manga.Cha
 	if err != nil {
 		return nil, util.AddErrorContext(err, contextError)
 	}
+
 	chapter, err := getChapter(mangaURL, chapterNumber, source)
 	if err != nil {
 		return nil, util.AddErrorContext(err, contextError)
 	}
 
 	return chapter, nil
+}
+
+// GetMangaChapters gets the chapters of a manga using a source
+func GetMangaChapters(mangaURL string) ([]*manga.Chapter, error) {
+	contextError := "error while getting manga chapters metadata from source"
+
+	domain, err := getDomain(mangaURL)
+	if err != nil {
+		return nil, util.AddErrorContext(err, contextError)
+	}
+
+	source, err := GetSource(domain)
+	if err != nil {
+		return nil, util.AddErrorContext(err, contextError)
+	}
+
+	chapters, err := getChapters(mangaURL, source)
+	if err != nil {
+		return nil, util.AddErrorContext(err, contextError)
+	}
+
+	return chapters, nil
 }
 
 func getDomain(urlString string) (string, error) {
@@ -111,4 +134,8 @@ func getManga(mangaURL string, source Source) (*manga.Manga, error) {
 
 func getChapter(mangaURL string, number manga.Number, source Source) (*manga.Chapter, error) {
 	return source.GetChapterMetadata(mangaURL, number)
+}
+
+func getChapters(mangaURL string, source Source) ([]*manga.Chapter, error) {
+	return source.GetChaptersMetadata(mangaURL)
 }

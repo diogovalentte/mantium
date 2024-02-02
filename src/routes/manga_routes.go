@@ -21,6 +21,7 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.POST("/manga", AddManga)
 		group.GET("/manga", GetManga)
 		group.GET("/mangas", GetMangas)
+		group.GET("/manga/chapters", GetMangaChapters)
 		group.DELETE("/manga", DeleteManga)
 		group.PATCH("/manga/status", UpdateMangaStatus)
 		group.PATCH("/manga/last_read_chapter", UpdateMangaLastReadChapter)
@@ -101,6 +102,39 @@ func GetMangas(c *gin.Context) {
 	}
 
 	resMap := map[string][]*manga.Manga{"mangas": mangas}
+	c.JSON(http.StatusOK, resMap)
+}
+
+// GetMangaChapters gets the manga chapters from the source
+func GetMangaChapters(c *gin.Context) {
+	mangaIDStr := c.Query("id")
+	mangaURL := c.Query("url")
+	mangaID, mangaURL, err := getMangaIDAndURL(mangaIDStr, mangaURL)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	if mangaURL == "" {
+		mangaGet, err := manga.GetMangaDB(mangaID, mangaURL)
+		if err != nil {
+			if strings.Contains(err.Error(), "manga not found in DB") {
+				c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		mangaURL = mangaGet.URL
+	}
+
+	chapters, err := sources.GetMangaChapters(mangaURL)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	resMap := map[string][]*manga.Chapter{"chapters": chapters}
 	c.JSON(http.StatusOK, resMap)
 }
 

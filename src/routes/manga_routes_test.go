@@ -104,7 +104,7 @@ func TestGetMangas(t *testing.T) {
 	t.Run("Don't get one manga with invalid URL", func(t *testing.T) {
 		err := testGetMangaRouteHelper("invalid manga URL", router)
 		if err != nil {
-			if err.Error() == "manga not found in DB" {
+			if err.Error() == "error getting manga from DB: manga not found in DB" {
 				return
 			}
 			t.Error(err)
@@ -113,7 +113,7 @@ func TestGetMangas(t *testing.T) {
 	t.Run("Don't get one manga with invalid last read chapter", func(t *testing.T) {
 		err := testGetMangaRouteHelper("invalid chapter number", router)
 		if err != nil {
-			if err.Error() == "manga not found in DB" {
+			if err.Error() == "error getting manga from DB: manga not found in DB" {
 				return
 			}
 			t.Error(err)
@@ -122,6 +122,32 @@ func TestGetMangas(t *testing.T) {
 	t.Run("Get mangas from DB", func(t *testing.T) {
 		err := testGetMangasRouteHelper(router)
 		if err != nil {
+			t.Error(err)
+		}
+	})
+}
+
+func TestGetMangaChapters(t *testing.T) {
+	router := api.SetupRouter()
+
+	t.Run("Get manga chapters", func(t *testing.T) {
+		err := testGetMangaChaptersRouteHelper("valid manga without read chapter", router)
+		if err != nil {
+			t.Error(err)
+		}
+	})
+	t.Run("Get manga chapters", func(t *testing.T) {
+		err := testGetMangaChaptersRouteHelper("valid manga with read chapter", router)
+		if err != nil {
+			t.Error(err)
+		}
+	})
+	t.Run("Don't get one manga with invalid URL", func(t *testing.T) {
+		err := testGetMangaRouteHelper("invalid manga URL", router)
+		if err != nil {
+			if err.Error() == "error getting manga from DB: manga not found in DB" {
+				return
+			}
 			t.Error(err)
 		}
 	})
@@ -143,7 +169,7 @@ func TestUpdateManga(t *testing.T) {
 		}
 	})
 	t.Run("Update the last read chapter of an non existing manga", func(t *testing.T) {
-		err := testUpdateMangaRouteHelper("invalid manga URL", "last_read_chapter", routes.UpdateMangaChapterRequest{ChapterNumber: 14}, router, "manga not found in DB")
+		err := testUpdateMangaRouteHelper("invalid manga URL", "last_read_chapter", routes.UpdateMangaChapterRequest{ChapterNumber: 14}, router, "error getting manga from DB: manga not found in DB")
 		if err != nil {
 			t.Error(err)
 		}
@@ -166,13 +192,13 @@ func TestDeleteManga(t *testing.T) {
 		}
 	})
 	t.Run("Don't delete manga with invalid URL", func(t *testing.T) {
-		err := testDeleteMangaRouteHelper("invalid manga URL", router, "manga not found in DB")
+		err := testDeleteMangaRouteHelper("invalid manga URL", router, "error getting manga from DB: manga not found in DB")
 		if err != nil {
 			t.Error(err)
 		}
 	})
 	t.Run("Don't delete manga with invalid last read chapter", func(t *testing.T) {
-		err := testDeleteMangaRouteHelper("invalid chapter number", router, "manga not found in DB")
+		err := testDeleteMangaRouteHelper("invalid chapter number", router, "error getting manga from DB: manga not found in DB")
 		if err != nil {
 			t.Error(err)
 		}
@@ -247,6 +273,47 @@ func testGetMangaRouteHelper(testKey string, router *gin.Engine) error {
 	actual := resMap["manga"]
 	if actual.URL != test.URL || actual.Status != manga.Status(test.Status) {
 		return fmt.Errorf(`expected manga with URL "%s" and status "%d", got manga with URL "%s" and status "%d"`, test.URL, test.Status, actual.URL, actual.Status)
+	}
+
+	return nil
+}
+
+func testGetMangaChaptersRouteHelper(testKey string, router *gin.Engine) error {
+	test, ok := mangasRequestsTestTable[testKey]
+	if !ok {
+		return fmt.Errorf("test key not found in tests map")
+	}
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("/v1/manga/chapters?url=%s", test.URL), nil)
+	if err != nil {
+		return err
+	}
+	router.ServeHTTP(w, req)
+
+	var resMap map[string][]manga.Chapter
+	jsonBytes := w.Body.Bytes()
+	if err := json.Unmarshal(jsonBytes, &resMap); err != nil {
+		// response is an error message
+		ms := err.Error()
+		if ms == "json: cannot unmarshal string into Go value of type manga.Manga" {
+			var errMap map[string]string
+			jsonBytes := w.Body.Bytes()
+			if err := json.Unmarshal(jsonBytes, &errMap); err != nil {
+				return err
+			}
+			msg, ok := errMap["message"]
+			if !ok {
+				return fmt.Errorf(`response is a string and does not have the "message" field`)
+			}
+			return fmt.Errorf(msg)
+		}
+		return err
+	}
+
+	actual := resMap["chapters"]
+	if len(actual) == 0 {
+		return fmt.Errorf(`expected manga with URL "%s" to have chapters, got none`, test.URL)
 	}
 
 	return nil
