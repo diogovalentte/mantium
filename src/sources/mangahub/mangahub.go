@@ -315,9 +315,13 @@ func getMangaUploadedTime(timeString string) (time.Time, error) {
 	parsedTime, err := time.Parse(layout, timeString)
 	if err != nil {
 		patternsToCheck := map[string]func(string) (time.Time, error){
-			"Yesterday": func(timeString string) (time.Time, error) {
-				yesterday := time.Now().Add(time.Hour * -24)
-				return time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 0, 0, 0, 0, time.UTC), nil
+			"just now": func(timeString string) (time.Time, error) {
+				return time.Now(), nil
+			},
+			"1 hour ago": func(timeString string) (time.Time, error) {
+				subOneHour := time.Duration(1) * time.Hour
+				releaseDate := time.Now().Add(subOneHour * -1)
+				return releaseDate, nil
 			},
 			"hours ago": func(timeString string) (time.Time, error) {
 				hours, err := strconv.Atoi(strings.TrimSpace(strings.Replace(timeString, "hours ago", "", -1)))
@@ -328,6 +332,10 @@ func getMangaUploadedTime(timeString string) (time.Time, error) {
 				releaseDate := time.Now().Add(subHours * -1)
 				return time.Date(releaseDate.Year(), releaseDate.Month(), releaseDate.Day(), 0, 0, 0, 0, time.UTC), nil
 			},
+			"Yesterday": func(timeString string) (time.Time, error) {
+				yesterday := time.Now().Add(time.Hour * -24)
+				return time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 0, 0, 0, 0, time.UTC), nil
+			},
 			"days ago": func(timeString string) (time.Time, error) {
 				days, err := strconv.Atoi(strings.TrimSpace(strings.Replace(timeString, "days ago", "", -1)))
 				if err != nil {
@@ -335,6 +343,11 @@ func getMangaUploadedTime(timeString string) (time.Time, error) {
 				}
 				subDays := time.Duration(days) * time.Hour * 24
 				releaseDate := time.Now().Add(subDays * -1)
+				return time.Date(releaseDate.Year(), releaseDate.Month(), releaseDate.Day(), 0, 0, 0, 0, time.UTC), nil
+			},
+			"1 week ago": func(timeString string) (time.Time, error) {
+				subOneWeek := time.Duration(1) * time.Hour * 24 * 7
+				releaseDate := time.Now().Add(subOneWeek * -1)
 				return time.Date(releaseDate.Year(), releaseDate.Month(), releaseDate.Day(), 0, 0, 0, 0, time.UTC), nil
 			},
 			"weeks ago": func(timeString string) (time.Time, error) {
