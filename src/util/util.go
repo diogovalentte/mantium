@@ -2,12 +2,17 @@
 package util
 
 import (
+	"bytes"
 	"fmt"
+	"image"
+	"image/jpeg"
+	"image/png"
 	"io"
 	"net/http"
 	"os"
 	"strings"
 
+	"github.com/nfnt/resize"
 	"github.com/rs/zerolog"
 )
 
@@ -53,6 +58,13 @@ func RemoveLastOccurrence(s, old string) string {
 	return modifiedString
 }
 
+var (
+	// DefaultImageHeight is the default height of an image
+	DefaultImageHeight = 355
+	// DefaultImageWidth is the default width of an image
+	DefaultImageWidth = 250
+)
+
 // GetImageFromURL downloads an image from a URL and returns the image bytes
 func GetImageFromURL(url string) ([]byte, error) {
 	resp, err := http.Get(url)
@@ -73,5 +85,48 @@ func GetImageFromURL(url string) ([]byte, error) {
 		return nil, err
 	}
 
-	return imageBytes, nil
+	img, err := ResizeImage(imageBytes, uint(DefaultImageWidth), uint(DefaultImageHeight))
+	if err != nil {
+		// JPEG format that has an unsupported subsampling ratio
+		// It's a valid image but the standard library doesn't support it
+		// And other libraries use the standard library under the hood
+		if err.Error() == "unsupported JPEG feature: luma/chroma subsampling ratio" {
+			img = imageBytes
+		} else {
+			err = fmt.Errorf("error resizing image: %s", err)
+			return nil, err
+		}
+	}
+
+	return img, nil
+}
+
+// ResizeImage resizes an image to the specified width and height
+func ResizeImage(imgBytes []byte, width, height uint) ([]byte, error) {
+	_, format, err := image.DecodeConfig(bytes.NewReader(imgBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	img, _, err := image.Decode(bytes.NewReader(imgBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	resizedImg := resize.Resize(width, height, img, resize.Lanczos3)
+
+	var resizedBuf bytes.Buffer
+	switch format {
+	case "jpeg":
+		err = jpeg.Encode(&resizedBuf, resizedImg, nil)
+	case "png":
+		err = png.Encode(&resizedBuf, resizedImg)
+	default:
+		return nil, fmt.Errorf("unsupported image format to resize: %s", format)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return resizedBuf.Bytes(), nil
 }

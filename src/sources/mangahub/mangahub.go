@@ -102,8 +102,25 @@ func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 
 	// get cover image
 	coverImg, err := s.getCoverImg(mangaReturn.CoverImgURL)
-	mangaReturn.CoverImg = coverImg
+	if err != nil {
+		return nil, err
+	}
+	resizedCoverImg, err := util.ResizeImage(coverImg, uint(util.DefaultImageWidth), uint(util.DefaultImageHeight))
+	if err != nil {
+		// JPEG format that has an unsupported subsampling ratio
+		// It's a valid image but the standard library doesn't support it
+		// And other libraries use the standard library under the hood
+		if err.Error() == "unsupported JPEG feature: luma/chroma subsampling ratio" {
+			resizedCoverImg = coverImg
+		} else {
+			err = fmt.Errorf("error resizing image: %s", err)
+			return nil, err
+		}
+	} else {
+		mangaReturn.CoverImgResized = true
+	}
 
+	mangaReturn.CoverImg = resizedCoverImg
 	return mangaReturn, nil
 }
 

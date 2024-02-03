@@ -26,6 +26,7 @@ func createTables(db *sql.DB, log *zerolog.Logger) error {
           "name" varchar(255) NOT NULL,
           "status" smallint NOT NULL,
           "cover_img" bytea,
+          "cover_img_resized" bool,
           "cover_img_url" varchar(255),
           "preferred_group" varchar(30),
           "last_upload_chapter" smallint,

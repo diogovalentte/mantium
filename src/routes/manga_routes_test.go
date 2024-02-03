@@ -51,7 +51,7 @@ var mangasRequestsTestTable = map[string]routes.AddMangaRequest{
 		Status: 4,
 	},
 	"invalid chapter number": {
-		URL:             "https://mangahub.io/manga/the-horizon",
+		URL:             "https://mangahub.io/manga/the-twin-swords-of-the-sima",
 		Status:          4,
 		LastReadChapter: 1000,
 	},
