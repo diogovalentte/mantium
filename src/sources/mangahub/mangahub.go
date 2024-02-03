@@ -121,6 +121,7 @@ func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 	}
 
 	mangaReturn.CoverImg = resizedCoverImg
+
 	return mangaReturn, nil
 }
 
@@ -334,6 +335,11 @@ func getMangaUploadedTime(timeString string) (time.Time, error) {
 		patternsToCheck := map[string]func(string) (time.Time, error){
 			"just now": func(timeString string) (time.Time, error) {
 				return time.Now(), nil
+			},
+			"less than an hour": func(timeString string) (time.Time, error) {
+				subHalfHour := time.Duration(30) * time.Minute
+				releaseDate := time.Now().Add(subHalfHour * -1)
+				return releaseDate, nil
 			},
 			"1 hour ago": func(timeString string) (time.Time, error) {
 				subOneHour := time.Duration(1) * time.Hour
