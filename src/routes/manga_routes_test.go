@@ -439,3 +439,28 @@ func testDeleteMangaRouteHelper(testKey string, router *gin.Engine, expectedMess
 
 	return nil
 }
+
+func TestNotifyMangaLastUploadChapterUpdate(t *testing.T) {
+	t.Run("Notify manga last upload chapter update", func(t *testing.T) {
+		oldManga := &manga.Manga{
+			Name: "One Piece",
+			LastUploadChapter: &manga.Chapter{
+				Number: 1000,
+				URL:    "https://mangahub.io/chapter/one-piece_142/chapter-1000",
+			},
+		}
+		newManga := &manga.Manga{
+			Name: "One Piece",
+			LastUploadChapter: &manga.Chapter{
+				Number: 1001,
+				URL:    "https://mangahub.io/chapter/one-piece_142/chapter-1001",
+			},
+		}
+
+		err := routes.NotifyMangaLastUploadChapterUpdate(oldManga, newManga)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+	})
+}

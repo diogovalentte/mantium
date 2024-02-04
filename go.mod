@@ -1,8 +1,11 @@
 module github.com/diogovalentte/manga-dashboard-api
 
-go 1.19
+go 1.21
+
+toolchain go1.21.6
 
 require (
+	github.com/AnthonyHewins/gotfy v0.0.9
 	github.com/gin-gonic/gin v1.9.1
 	github.com/gocolly/colly/v2 v2.1.0
 	github.com/joho/godotenv v1.5.1

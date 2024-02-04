@@ -3,15 +3,18 @@ package util
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"image"
 	"image/jpeg"
 	"image/png"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
+	"github.com/AnthonyHewins/gotfy"
 	"github.com/nfnt/resize"
 	"github.com/rs/zerolog"
 )
@@ -129,4 +132,56 @@ func ResizeImage(imgBytes []byte, width, height uint) ([]byte, error) {
 	}
 
 	return resizedBuf.Bytes(), nil
+}
+
+// GetNtfyPublisher returns a new NtfyPublisher
+func GetNtfyPublisher() (*NtfyPublisher, error) {
+	address := os.Getenv("NTFY_ADDRESS")
+	topic := os.Getenv("NTFY_TOPIC")
+	token := os.Getenv("NTFY_TOKEN")
+
+	server, err := url.Parse(address)
+	if err != nil {
+		return nil, err
+	}
+
+	customClient := &http.Client{
+		Transport: &customNtfyTransport{
+			ntfyToken: token,
+		},
+	}
+	publisher, err := gotfy.NewPublisher(server, customClient)
+	if err != nil {
+		return nil, err
+	}
+
+	return &NtfyPublisher{
+		Publisher: publisher,
+		Topic:     topic,
+		Token:     token,
+	}, nil
+}
+
+type customNtfyTransport struct {
+	ntfyToken string
+}
+
+func (t *customNtfyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", t.ntfyToken))
+
+	return http.DefaultTransport.RoundTrip(req)
+}
+
+// NtfyPublisher is a wrapper around gotfy.Publisher
+type NtfyPublisher struct {
+	Publisher *gotfy.Publisher
+	Topic     string
+	Token     string
+}
+
+// SendMessage sends a message to the Ntfy server
+func (t *NtfyPublisher) SendMessage(ctx context.Context, message *gotfy.Message) error {
+	_, err := t.Publisher.SendMessage(ctx, message)
+
+	return err
 }

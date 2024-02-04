@@ -2,6 +2,8 @@
 package routes
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -9,10 +11,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AnthonyHewins/gotfy"
 	"github.com/gin-gonic/gin"
 
 	"github.com/diogovalentte/manga-dashboard-api/src/manga"
 	"github.com/diogovalentte/manga-dashboard-api/src/sources"
+	"github.com/diogovalentte/manga-dashboard-api/src/util"
 )
 
 // MangaRoutes sets the manga routes
@@ -276,23 +280,32 @@ func UpdateMangasMetadata(c *gin.Context) {
 		return
 	}
 
-	for _, mangaUpdate := range mangas {
-		mangaUpdate, err := sources.GetMangaMetadata(mangaUpdate.URL)
+	for _, mangaToUpdate := range mangas {
+		updatedManga, err := sources.GetMangaMetadata(mangaToUpdate.URL)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
-		mangaUpdate.Status = 1
+		updatedManga.Status = 1
 
-		err = manga.UpdateMangaMetadataDB(mangaUpdate)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
+		if mangaToUpdate.LastUploadChapter.Number != updatedManga.LastUploadChapter.Number || mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg) || mangaToUpdate.Name != updatedManga.Name {
+			err = manga.UpdateMangaMetadataDB(updatedManga)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+				return
+			}
+
+			if notify {
+				if mangaToUpdate.LastUploadChapter.Number != updatedManga.LastUploadChapter.Number {
+					err = NotifyMangaLastUploadChapterUpdate(mangaToUpdate, updatedManga)
+					if err != nil {
+						c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf(`manga "%s" metadata updated, error while notifying: %s`, mangaToUpdate.URL, err.Error())})
+						return
+					}
+				}
+			}
 		}
 
-		if notify {
-			// Send notification
-		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Mangas metadata updated successfully"})
@@ -320,4 +333,39 @@ func getMangaIDAndURL(mangaIDStr string, mangaURL string) (manga.ID, string, err
 	}
 
 	return mangaID, mangaURL, nil
+}
+
+// NotifyMangaLastUploadChapterUpdate notifies a manga last upload chapter update
+func NotifyMangaLastUploadChapterUpdate(oldManga *manga.Manga, newManga *manga.Manga) error {
+	publisher, err := util.GetNtfyPublisher()
+	if err != nil {
+		return err
+	}
+
+	chapterLink, err := url.Parse(newManga.LastUploadChapter.URL)
+	if err != nil {
+		return err
+	}
+
+	msg := &gotfy.Message{
+		Topic:   publisher.Topic,
+		Title:   fmt.Sprintf("New chapter of manga: %s", newManga.Name),
+		Message: fmt.Sprintf("Last chapter: %.2f\nNew chapter: %.2f", oldManga.LastUploadChapter.Number, newManga.LastUploadChapter.Number),
+		Actions: []gotfy.ActionButton{
+			&gotfy.ViewAction{
+				Label: "Open Chapter",
+				Link:  chapterLink,
+				Clear: false,
+			},
+		},
+		ClickURL: chapterLink,
+	}
+
+	ctx := context.Background()
+	err = publisher.SendMessage(ctx, msg)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
