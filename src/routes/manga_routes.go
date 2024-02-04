@@ -20,16 +20,19 @@ func MangaRoutes(group *gin.RouterGroup) {
 	{
 		group.POST("/manga", AddManga)
 		group.GET("/manga", GetManga)
-		group.GET("/mangas", GetMangas)
-		group.GET("/manga/chapters", GetMangaChapters)
 		group.DELETE("/manga", DeleteManga)
+		group.GET("/manga/chapters", GetMangaChapters)
 		group.PATCH("/manga/status", UpdateMangaStatus)
 		group.PATCH("/manga/last_read_chapter", UpdateMangaLastReadChapter)
+		group.GET("/mangas", GetMangas)
+		group.PATCH("/mangas/metadata", UpdateMangasMetadata)
 	}
 }
 
 // AddManga scrapes the manga page and inserts the manga data into the database
 func AddManga(c *gin.Context) {
+	currentTime := time.Now()
+
 	var requestData AddMangaRequest
 	if err := c.ShouldBindJSON(&requestData); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid JSON fields, refer to the API documentation"})
@@ -51,6 +54,7 @@ func AddManga(c *gin.Context) {
 			return
 		}
 		mangaAdd.LastReadChapter.Type = 2
+		mangaAdd.LastReadChapter.UpdatedAt = currentTime
 	}
 
 	_, err = mangaAdd.InsertDB()
@@ -255,6 +259,43 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 // UpdateMangaChapterRequest is the request body for updating a manga chapter
 type UpdateMangaChapterRequest struct {
 	ChapterNumber manga.Number `json:"chapter_number" binding:"required"`
+}
+
+// UpdateMangasMetadata updates the mangas metadata in the database
+// It updates: the last upload chapter (and its metadata), the manga name and cover image
+func UpdateMangasMetadata(c *gin.Context) {
+	notifyStr := c.Query("notify")
+	var notify bool
+	if notifyStr == "true" {
+		notify = true
+	}
+
+	mangas, err := manga.GetMangasDB()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	for _, mangaUpdate := range mangas {
+		mangaUpdate, err := sources.GetMangaMetadata(mangaUpdate.URL)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		mangaUpdate.Status = 1
+
+		err = manga.UpdateMangaMetadataDB(mangaUpdate)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+
+		if notify {
+			// Send notification
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Mangas metadata updated successfully"})
 }
 
 func getMangaIDAndURL(mangaIDStr string, mangaURL string) (manga.ID, string, error) {

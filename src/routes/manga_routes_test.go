@@ -176,6 +176,31 @@ func TestUpdateManga(t *testing.T) {
 	})
 }
 
+func TestUpdateMangasMetadata(t *testing.T) {
+	router := api.SetupRouter()
+
+	t.Run("Update all mangas metadata", func(t *testing.T) {
+		w := httptest.NewRecorder()
+		req, err := http.NewRequest(http.MethodPatch, "/v1/mangas/metadata", nil)
+		if err != nil {
+			t.Error(err)
+		}
+		router.ServeHTTP(w, req)
+
+		var resMap map[string]string
+		jsonBytes := w.Body.Bytes()
+		if err := json.Unmarshal(jsonBytes, &resMap); err != nil {
+			t.Error(err)
+		}
+
+		actual := resMap["message"]
+		expected := "Mangas metadata updated successfully"
+		if actual != expected {
+			t.Errorf(`expected message "%s", got "%s"`, expected, actual)
+		}
+	})
+}
+
 func TestDeleteManga(t *testing.T) {
 	router := api.SetupRouter()
 

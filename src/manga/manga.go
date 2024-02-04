@@ -277,9 +277,8 @@ func updateMangaStatusDB(m *Manga, status Status, tx *sql.Tx) error {
 	return nil
 }
 
-// UpdateChapter updates the last read/upload chapter of the manga in the database
+// UpdateChapter updates the last read/upload chapter in the database
 // The chapter.Type field must be set
-// This method will not change the chapter.UpdatedAt field value
 func (m *Manga) UpdateChapter(chapter *Chapter) error {
 	contextError := "error updating manga chapter in DB"
 
@@ -305,6 +304,202 @@ func (m *Manga) UpdateChapter(chapter *Chapter) error {
 		return util.AddErrorContext(err, contextError)
 	}
 	m.LastUploadChapter = chapter
+
+	return nil
+}
+
+func (m *Manga) UpdateName(name string) error {
+	contextError := "error updating manga name in DB"
+
+	db, err := db.OpenConn()
+	if err != nil {
+		return util.AddErrorContext(err, contextError)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return util.AddErrorContext(err, contextError)
+	}
+
+	err = updateMangaName(m, name, tx)
+	if err != nil {
+		tx.Rollback()
+		return util.AddErrorContext(err, contextError)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return util.AddErrorContext(err, contextError)
+	}
+	m.Name = name
+
+	return nil
+}
+
+func updateMangaName(m *Manga, name string, tx *sql.Tx) error {
+	err := validateManga(m)
+	if err != nil {
+		return err
+	}
+
+	var result sql.Result
+	if m.ID > 0 {
+		result, err = tx.Exec(`
+            UPDATE mangas
+            SET name = $1
+            WHERE id = $2;
+        `, name, m.ID)
+		if err != nil {
+			return err
+		}
+	} else if m.URL != "" {
+		result, err = tx.Exec(`
+            UPDATE mangas
+            SET name = $1
+            WHERE url = $2;
+        `, name, m.URL)
+		if err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("manga doesn't have an ID or URL")
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("manga not found in DB")
+	}
+
+	return nil
+}
+
+func (m *Manga) UpdateCoverImg(coverImg []byte, coverImgResized bool, coverImgURL string) error {
+	contextError := "error updating manga cover image in DB"
+
+	db, err := db.OpenConn()
+	if err != nil {
+		return util.AddErrorContext(err, contextError)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return util.AddErrorContext(err, contextError)
+	}
+
+	err = updateMangaCoverImg(m, coverImg, coverImgResized, coverImgURL, tx)
+	if err != nil {
+		tx.Rollback()
+		return util.AddErrorContext(err, contextError)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return util.AddErrorContext(err, contextError)
+	}
+	m.CoverImg = coverImg
+	m.CoverImgResized = coverImgResized
+	m.CoverImgURL = coverImgURL
+
+	return nil
+}
+
+func updateMangaCoverImg(m *Manga, coverImg []byte, coverImgResized bool, coverImgURL string, tx *sql.Tx) error {
+	err := validateManga(m)
+	if err != nil {
+		return err
+	}
+
+	var result sql.Result
+	if m.ID > 0 {
+		result, err = tx.Exec(`
+            UPDATE mangas
+            SET cover_img = $1, cover_img_resized = $2, cover_img_url = $3
+            WHERE id = $4;
+        `, coverImg, coverImgResized, coverImgURL, m.ID)
+		if err != nil {
+			return err
+		}
+	} else if m.URL != "" {
+		result, err = tx.Exec(`
+            UPDATE mangas
+            SET cover_img = $1, cover_img_resized = $2, cover_img_url = $3
+            WHERE url = $4;
+        `, coverImg, coverImgResized, coverImgURL, m.URL)
+		if err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("manga doesn't have an ID or URL")
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("manga not found in DB")
+	}
+
+	return nil
+}
+
+// UpdateMangaMetadataDB updates the manga metadata in the database
+// It updates: the last upload chapter (and its metadata), the manga name and cover image
+// The manga argument should have the ID or URL set to identify which manga to update
+// The other fields of the manga argument will be the new values for the manga in the database
+func UpdateMangaMetadataDB(m *Manga) error {
+	contextError := "error updating manga metadata in DB"
+
+	db, err := db.OpenConn()
+	if err != nil {
+		return util.AddErrorContext(err, contextError)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return util.AddErrorContext(err, contextError)
+	}
+
+	err = updateMangaMetadata(m, tx)
+	if err != nil {
+		tx.Rollback()
+		return util.AddErrorContext(err, contextError)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return util.AddErrorContext(err, contextError)
+	}
+
+	return nil
+}
+
+func updateMangaMetadata(m *Manga, tx *sql.Tx) error {
+	err := validateManga(m)
+	if err != nil {
+		return err
+	}
+
+	err = updateMangaChapter(m, m.LastUploadChapter, tx)
+	if err != nil {
+		return err
+	}
+
+	err = updateMangaName(m, m.Name, tx)
+	if err != nil {
+		return err
+	}
+
+	err = updateMangaCoverImg(m, m.CoverImg, m.CoverImgResized, m.CoverImgURL, tx)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
