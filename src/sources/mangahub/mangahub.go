@@ -353,7 +353,7 @@ func getMangaUploadedTime(timeString string) (time.Time, error) {
 				}
 				subHours := time.Duration(hours) * time.Hour
 				releaseDate := time.Now().Add(subHours * -1)
-				return time.Date(releaseDate.Year(), releaseDate.Month(), releaseDate.Day(), 0, 0, 0, 0, time.UTC), nil
+				return releaseDate, nil
 			},
 			"Yesterday": func(timeString string) (time.Time, error) {
 				yesterday := time.Now().Add(time.Hour * -24)
