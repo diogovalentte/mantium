@@ -51,15 +51,14 @@ func AddManga(c *gin.Context) {
 
 	mangaAdd.Status = manga.Status(requestData.Status)
 
-	if requestData.LastReadChapterNumber != 0 || requestData.LastReadChapterURL != "" {
-		mangaAdd.LastReadChapter, err = sources.GetChapterMetadata(requestData.URL, requestData.LastReadChapterNumber, requestData.LastReadChapterURL)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-		mangaAdd.LastReadChapter.Type = 2
-		mangaAdd.LastReadChapter.UpdatedAt = currentTime
+	// Last read chapter is not optional
+	mangaAdd.LastReadChapter, err = sources.GetChapterMetadata(requestData.URL, requestData.LastReadChapterNumber, requestData.LastReadChapterURL)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
 	}
+	mangaAdd.LastReadChapter.Type = 2
+	mangaAdd.LastReadChapter.UpdatedAt = currentTime
 
 	_, err = mangaAdd.InsertDB()
 	if err != nil {
