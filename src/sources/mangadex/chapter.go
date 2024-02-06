@@ -11,14 +11,8 @@ import (
 )
 
 // GetChapterMetadata returns a chapter by its number or URL
-// If the chapterURL is not empty, it will use it to get the chapter
-// If the chapterURL is empty, it will use the mangaURL and chapterNumber to get the chapter
-func (s *Source) GetChapterMetadata(mangaURL string, chapterNumber manga.Number, chapterURL string) (*manga.Chapter, error) {
-	if chapterURL != "" {
-		return s.GetChapterMetadataByURL(chapterURL)
-	}
-
-	return s.GetChapterMetadataByNumber(mangaURL, chapterNumber)
+func (s *Source) GetChapterMetadata(_ string, _ manga.Number, chapterURL string) (*manga.Chapter, error) {
+	return s.GetChapterMetadataByURL(chapterURL)
 }
 
 // GetChapterMetadataByURL scrapes the manga page and return the chapter by its URL
