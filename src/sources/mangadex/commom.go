@@ -12,9 +12,7 @@ type genericRelationship struct {
 	Attributes map[string]interface{} `json:"attributes"`
 }
 
-type localisedStrings struct {
-	Values map[string]string
-}
+type localisedStrings map[string]string
 
 type tag struct {
 	ID            string                `json:"id"`
