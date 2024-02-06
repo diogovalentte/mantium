@@ -41,13 +41,16 @@ func (s *Source) GetChapterMetadataByURL(chapterURL string) (*manga.Chapter, err
 
 	attributes := &chapterAPIResp.Data.Attributes
 
-	chapterReturn.Name = attributes.Title
-
 	chapterNumber, err := strconv.ParseFloat(attributes.Chapter, 32)
 	if err != nil {
 		return nil, err
 	}
 	chapterReturn.Number = manga.Number(chapterNumber)
+
+	chapterReturn.Name = attributes.Title
+	if chapterReturn.Name == "" {
+		chapterReturn.Name = fmt.Sprintf("Ch. %v", chapterReturn.Number)
+	}
 
 	chapterCreatedAt, err := getDatetime(attributes.PublishAt)
 	chapterReturn.UpdatedAt = chapterCreatedAt
@@ -80,7 +83,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 	}
 
 	// URL gets the last chapter of the manga
-	mangaAPIURL := fmt.Sprintf("%s/manga/%s/feed?translatedLanguage[]=en&order[publishAt]=desc&limit=1&offset=0", baseAPIURL, mangaID)
+	mangaAPIURL := fmt.Sprintf("%s/manga/%s/feed?translatedLanguage[]=en&order[chapter]=desc&limit=1&offset=0", baseAPIURL, mangaID)
 	resp, err := s.client.Request(context.Background(), "GET", mangaAPIURL, nil)
 	if err != nil {
 		return nil, err
@@ -97,13 +100,16 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 
 	attributes := &feedAPIResp.Data[0].Attributes
 
-	chapterReturn.Name = attributes.Title
-
 	chapterNumber, err := strconv.ParseFloat(attributes.Chapter, 32)
 	if err != nil {
 		return nil, err
 	}
 	chapterReturn.Number = manga.Number(chapterNumber)
+
+	chapterReturn.Name = attributes.Title
+	if chapterReturn.Name == "" {
+		chapterReturn.Name = fmt.Sprintf("Ch. %v", chapterReturn.Number)
+	}
 
 	chapterCreatedAt, err := getDatetime(attributes.PublishAt)
 	if err != nil {
@@ -185,14 +191,17 @@ func generateMangaFeed(s *Source, mangaURL string, chaptersChan chan<- *manga.Ch
 
 			attributes := &chapterReq.Attributes
 
-			chapterReturn.Name = attributes.Title
-
 			chapterNumber, err := strconv.ParseFloat(attributes.Chapter, 32)
 			if err != nil {
 				errChan <- err
 				return
 			}
 			chapterReturn.Number = manga.Number(chapterNumber)
+
+			chapterReturn.Name = attributes.Title
+			if chapterReturn.Name == "" {
+				chapterReturn.Name = fmt.Sprintf("Ch. %v", chapterReturn.Number)
+			}
 
 			chapterCreatedAt, err := getDatetime(attributes.PublishAt)
 			if err != nil {

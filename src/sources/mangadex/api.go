@@ -8,18 +8,20 @@ import (
 	"net/http"
 )
 
-type MangadexClient struct {
+// Client is a client for the Mangadex API
+type Client struct {
 	client *http.Client
 	header http.Header
 }
 
-func NewMangadexClient() *MangadexClient {
+// NewMangadexClient creates a new Mangadex API client
+func NewMangadexClient() *Client {
 	client := http.Client{}
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")
 
-	dex := &MangadexClient{
+	dex := &Client{
 		client: &client,
 		header: header,
 	}
@@ -27,7 +29,8 @@ func NewMangadexClient() *MangadexClient {
 	return dex
 }
 
-func (c *MangadexClient) Request(ctx context.Context, method, url string, body io.Reader) (*http.Response, error) {
+// Request is a helper function to make a request to the Mangadex API
+func (c *Client) Request(ctx context.Context, method, url string, body io.Reader) (*http.Response, error) {
 	req, err := http.NewRequestWithContext(ctx, method, url, body)
 	if err != nil {
 		return nil, err

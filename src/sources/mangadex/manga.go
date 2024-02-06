@@ -39,8 +39,7 @@ func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 
 	mangaReturn.Name = attributes.Title["en"]
 
-	lastUploadedChapterURL := fmt.Sprintf("%s/chapter/%s", baseSiteURL, attributes.LatestUploadedChapter)
-	lastUploadChapter, err := s.GetChapterMetadata("", 0, lastUploadedChapterURL)
+	lastUploadChapter, err := s.GetLastChapterMetadata(mangaURL)
 	if err != nil {
 		return nil, err
 	}

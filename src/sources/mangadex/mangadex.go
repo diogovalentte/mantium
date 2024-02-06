@@ -11,7 +11,7 @@ var (
 
 // Source is the implementation of the manga.Source interface for the MangaDex source
 type Source struct {
-	client *MangadexClient
+	client *Client
 }
 
 func (s *Source) checkClient() {
