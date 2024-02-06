@@ -308,6 +308,7 @@ func (m *Manga) UpdateChapter(chapter *Chapter) error {
 	return nil
 }
 
+// UpdateName updates the manga name in the database
 func (m *Manga) UpdateName(name string) error {
 	contextError := "error updating manga name in DB"
 
@@ -377,6 +378,7 @@ func updateMangaName(m *Manga, name string, tx *sql.Tx) error {
 	return nil
 }
 
+// UpdateCoverImg updates the manga cover image in the database
 func (m *Manga) UpdateCoverImg(coverImg []byte, coverImgResized bool, coverImgURL string) error {
 	contextError := "error updating manga cover image in DB"
 
