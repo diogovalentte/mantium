@@ -37,7 +37,7 @@ func createTables(db *sql.DB, log *zerolog.Logger) error {
           "id" serial UNIQUE,
           "manga_id" integer NOT NULL,
           "url" varchar(255),
-          "number" float8,
+          "chapter" varchar(255),
           "name" varchar(255),
           "updated_at" timestamp,
           "type" smallint,

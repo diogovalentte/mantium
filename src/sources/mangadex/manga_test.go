@@ -22,7 +22,7 @@ var mangasTestTable = []mangaTestType{
 			CoverImgURL:     "https://uploads.mangadex.org/covers/75ee72ab-c6bf-4b87-badd-de839156934c/d6555598-8202-477d-acde-303202cb3475.jpg",
 			CoverImgResized: true,
 			LastUploadChapter: &manga.Chapter{
-				Number:    108,
+				Chapter:   "108",
 				Name:      "End",
 				URL:       "https://mangadex.org/chapter/5fff451c-cbe1-4456-9ef5-4e3c3e41dc26",
 				UpdatedAt: time.Date(2018, 4, 7, 7, 35, 8, 0, time.UTC),
@@ -39,7 +39,7 @@ var mangasTestTable = []mangaTestType{
 			CoverImgURL:     "https://uploads.mangadex.org/covers/d1a9fdeb-f713-407f-960c-8326b586e6fd/05f8dcb4-8ea1-48db-a0b1-3a8fbf695e5a.jpg",
 			CoverImgResized: true,
 			LastUploadChapter: &manga.Chapter{
-				Number:    327,
+				Chapter:   "327",
 				Name:      "The Man Named Tadoki",
 				URL:       "https://mangadex.org/chapter/0754c218-0240-4752-a688-5e7d9bc74b55",
 				UpdatedAt: time.Date(2018, 3, 19, 2, 20, 43, 0, time.UTC), // in the site it's 01-19-2016 (maybe it uses JS or it have to wait a bit to update)
@@ -56,7 +56,7 @@ var mangasTestTable = []mangaTestType{
 			CoverImgURL:     "https://uploads.mangadex.org/covers/736a2bf0-f875-4b52-a7b4-e8c40505b68a/7f07f02e-39ba-4e38-a01d-6f74652013fa.jpg",
 			CoverImgResized: true,
 			LastUploadChapter: &manga.Chapter{
-				Number:    101,
+				Chapter:   "101",
 				Name:      "101",
 				URL:       "https://mangadex.org/chapter/c8ba4080-2cb0-466e-9a17-02fe12782f70",
 				UpdatedAt: time.Date(2018, 2, 12, 1, 49, 12, 0, time.UTC),

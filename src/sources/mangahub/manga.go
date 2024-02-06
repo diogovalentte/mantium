@@ -2,7 +2,6 @@ package mangahub
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/gocolly/colly/v2"
@@ -57,12 +56,8 @@ func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 		lastChapter.URL = e.Attr("href")
 
 		chapterStr := e.DOM.Find("span._3D1SJ").Text()
-		chapterNumber, err := strconv.ParseFloat(strings.TrimSpace(strings.Replace(chapterStr, "#", "", -1)), 32)
-		if err != nil {
-			sharedErr = err
-			return
-		}
-		lastChapter.Number = manga.Number(chapterNumber)
+		chapter := strings.TrimSpace(strings.Replace(chapterStr, "#", "", -1))
+		lastChapter.Chapter = chapter
 
 		chapterName := e.DOM.Find("span._2IG5P").Text()
 		lastChapter.Name = strings.TrimSpace(strings.Replace(chapterName, "- ", "", -1))

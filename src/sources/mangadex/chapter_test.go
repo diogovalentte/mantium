@@ -17,7 +17,7 @@ type chapterTestType struct {
 var chapterTestTable = []chapterTestType{
 	{
 		expected: &manga.Chapter{
-			Number:    155,
+			Chapter:   "155",
 			Name:      "Proof of Life",
 			URL:       "https://mangadex.org/chapter/87b7b182-e930-4f97-86b5-e243f1645514",
 			UpdatedAt: time.Date(2020, 6, 30, 4, 51, 45, 0, time.UTC), // in the site it's 01-19-2016 (maybe it uses JS or it have to wait a bit to update)
@@ -27,7 +27,7 @@ var chapterTestTable = []chapterTestType{
 	},
 	{
 		expected: &manga.Chapter{
-			Number:    249,
+			Chapter:   "249",
 			Name:      "Resolution",
 			URL:       "https://mangadex.org/chapter/885f6206-7713-4c3d-be91-2e53ac17e2a0",
 			UpdatedAt: time.Date(2018, 2, 5, 12, 14, 22, 0, time.UTC), // in the site it's 01-19-2016 (maybe it uses JS or it have to wait a bit to update)
@@ -37,7 +37,7 @@ var chapterTestTable = []chapterTestType{
 	},
 	{
 		expected: &manga.Chapter{
-			Number:    21,
+			Chapter:   "21",
 			Name:      "Ch. 21",
 			URL:       "https://mangadex.org/chapter/8ed06f7c-f921-44b4-853c-a4cd6d1e840a",
 			UpdatedAt: time.Date(2023, 2, 21, 2, 1, 27, 0, time.UTC),
@@ -54,7 +54,7 @@ func TestGetChapterMetadata(t *testing.T) {
 			expected := test.expected
 			chapterURL := test.chapter_url
 
-			actualChapter, err := source.GetChapterMetadata("", 0, chapterURL)
+			actualChapter, err := source.GetChapterMetadata("", "", chapterURL)
 			if err != nil {
 				t.Errorf("error while getting chapter: %v", err)
 				return
@@ -104,12 +104,10 @@ var chaptersTestTable = []chaptersTestType{
 		url:      "https://mangadex.org/title/239d6260-d71f-43b0-afff-074e3619e3de/bleach",
 		quantity: 704,
 	},
-	// Nisekoi has a oneshot chapter, the chapter number is "", so I can't parse it
-	// TODO: Fix this
-	// {
-	// 	url:      "https://mangadex.org/title/ce16b1c3-d6bb-41e0-8671-d8b065248ba2/nisekoi",
-	// 	quantity: 300,
-	// },
+	{
+		url:      "https://mangadex.org/title/ce16b1c3-d6bb-41e0-8671-d8b065248ba2/nisekoi",
+		quantity: 237,
+	},
 }
 
 func TestGetChaptersMetadata(t *testing.T) {
@@ -131,8 +129,8 @@ func TestGetChaptersMetadata(t *testing.T) {
 			}
 
 			for _, chapter := range chapters {
-				if chapter.Number == 0 {
-					t.Errorf("expected chapter.Chapter to be different than 0")
+				if chapter.Chapter == "" {
+					t.Errorf("expected chapter.Chapter to be different than ''")
 					return
 				}
 				if chapter.Name == "" {

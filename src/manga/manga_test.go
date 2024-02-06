@@ -38,14 +38,14 @@ var mangaTest = &Manga{
 	LastUploadChapter: &Chapter{
 		URL:       "https://testingsite/manga/best-manga/chapter-15",
 		Name:      "Chapter 15",
-		Number:    1,
+		Chapter:   "1",
 		UpdatedAt: time.Now(),
 		Type:      1,
 	},
 	LastReadChapter: &Chapter{
 		URL:       "https://testingsite/manga/best-manga/chapter-11",
 		Name:      "Chapter 11",
-		Number:    1,
+		Chapter:   "1",
 		UpdatedAt: time.Now(),
 		Type:      2,
 	},
@@ -53,16 +53,16 @@ var mangaTest = &Manga{
 
 var chaptersTest = map[string]*Chapter{
 	"last_upload_chapter": {
-		URL:    "https://testingsite/manga/best-manga/chapter-158",
-		Name:   "Chapter 158",
-		Number: 158,
-		Type:   1,
+		URL:     "https://testingsite/manga/best-manga/chapter-158",
+		Name:    "Chapter 158",
+		Chapter: "158",
+		Type:    1,
 	},
 	"last_read_chapter": {
-		URL:    "https://testingsite/manga/best-manga/chapter-1000",
-		Name:   "Chapter 1000",
-		Number: 1000,
-		Type:   2,
+		URL:     "https://testingsite/manga/best-manga/chapter-1000",
+		Name:    "Chapter 1000",
+		Chapter: "1000",
+		Type:    2,
 	},
 }
 

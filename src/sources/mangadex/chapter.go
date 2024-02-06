@@ -5,13 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
-	"strconv"
 
 	"github.com/diogovalentte/manga-dashboard-api/src/manga"
 )
 
-// GetChapterMetadata returns a chapter by its number or URL
-func (s *Source) GetChapterMetadata(_ string, _ manga.Number, chapterURL string) (*manga.Chapter, error) {
+// GetChapterMetadata returns a chapter by its chapter or URL
+func (s *Source) GetChapterMetadata(_ string, chapter string, chapterURL string) (*manga.Chapter, error) {
+	if chapter == "" && chapterURL == "" {
+		return nil, fmt.Errorf("chapter or chapter URL is required")
+	}
 	return s.GetChapterMetadataByURL(chapterURL)
 }
 
@@ -41,15 +43,21 @@ func (s *Source) GetChapterMetadataByURL(chapterURL string) (*manga.Chapter, err
 
 	attributes := &chapterAPIResp.Data.Attributes
 
-	chapterNumber, err := strconv.ParseFloat(attributes.Chapter, 32)
-	if err != nil {
-		return nil, err
-	}
-	chapterReturn.Number = manga.Number(chapterNumber)
+	if attributes.Chapter == "" && attributes.Title == "" {
+		chapterReturn.Chapter = attributes.Chapter
+		chapterReturn.Name = attributes.Title
+	} else {
+		if attributes.Chapter == "" {
+			chapterReturn.Chapter = attributes.Title
+		} else {
+			chapterReturn.Chapter = attributes.Chapter
+		}
 
-	chapterReturn.Name = attributes.Title
-	if chapterReturn.Name == "" {
-		chapterReturn.Name = fmt.Sprintf("Ch. %v", chapterReturn.Number)
+		if attributes.Title == "" {
+			chapterReturn.Name = fmt.Sprintf("Ch. %s", chapterReturn.Chapter)
+		} else {
+			chapterReturn.Name = attributes.Title
+		}
 	}
 
 	chapterCreatedAt, err := getDatetime(attributes.PublishAt)
@@ -58,8 +66,8 @@ func (s *Source) GetChapterMetadataByURL(chapterURL string) (*manga.Chapter, err
 	return chapterReturn, nil
 }
 
-// GetChapterMetadataByNumber scrapes the manga page and return the chapter by its number
-func (s *Source) GetChapterMetadataByNumber(_ string, _ manga.Number) (*manga.Chapter, error) {
+// GetChapterMetadataByChapter scrapes the manga page and return the chapter by its chapter
+func (s *Source) GetChapterMetadataByChapter(_ string, _ string) (*manga.Chapter, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
@@ -74,6 +82,7 @@ type getChapterAPIResponse struct {
 	}
 }
 
+// GetLastChapterMetadata returns the last chapter of a manga by its URL
 func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error) {
 	s.checkClient()
 
@@ -100,15 +109,21 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 
 	attributes := &feedAPIResp.Data[0].Attributes
 
-	chapterNumber, err := strconv.ParseFloat(attributes.Chapter, 32)
-	if err != nil {
-		return nil, err
-	}
-	chapterReturn.Number = manga.Number(chapterNumber)
+	if attributes.Chapter == "" && attributes.Title == "" {
+		chapterReturn.Chapter = attributes.Chapter
+		chapterReturn.Name = attributes.Title
+	} else {
+		if attributes.Chapter == "" {
+			chapterReturn.Chapter = attributes.Title
+		} else {
+			chapterReturn.Chapter = attributes.Chapter
+		}
 
-	chapterReturn.Name = attributes.Title
-	if chapterReturn.Name == "" {
-		chapterReturn.Name = fmt.Sprintf("Ch. %v", chapterReturn.Number)
+		if attributes.Title == "" {
+			chapterReturn.Name = fmt.Sprintf("Ch. %s", chapterReturn.Chapter)
+		} else {
+			chapterReturn.Name = attributes.Title
+		}
 	}
 
 	chapterCreatedAt, err := getDatetime(attributes.PublishAt)
@@ -131,12 +146,12 @@ func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) 
 
 	var chapters []*manga.Chapter
 	go func() {
-		occurrence := make(map[manga.Number]bool)
+		occurrence := make(map[string]bool)
 		for chapter := range chaptersChan {
-			if occurrence[chapter.Number] {
+			if occurrence[chapter.Chapter] {
 				continue
 			} else {
-				occurrence[chapter.Number] = true
+				occurrence[chapter.Chapter] = true
 				chapters = append(chapters, chapter)
 			}
 		}
@@ -154,7 +169,7 @@ func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) 
 // generateMangaFeed generates the chapters of a manga and sends them to the channel
 // It sends an error to the error channel if something goes wrong
 // It closes the chapters channel when there is no more chapters to send
-// It requests the mangas from the API using the chapter number for ordering
+// It requests the mangas from the API using the chapter for ordering
 func generateMangaFeed(s *Source, mangaURL string, chaptersChan chan<- *manga.Chapter, errChan chan<- error) {
 	defer close(chaptersChan)
 
@@ -191,16 +206,21 @@ func generateMangaFeed(s *Source, mangaURL string, chaptersChan chan<- *manga.Ch
 
 			attributes := &chapterReq.Attributes
 
-			chapterNumber, err := strconv.ParseFloat(attributes.Chapter, 32)
-			if err != nil {
-				errChan <- err
-				return
-			}
-			chapterReturn.Number = manga.Number(chapterNumber)
+			if attributes.Chapter == "" && attributes.Title == "" {
+				chapterReturn.Chapter = attributes.Chapter
+				chapterReturn.Name = attributes.Title
+			} else {
+				if attributes.Chapter == "" {
+					chapterReturn.Chapter = attributes.Title
+				} else {
+					chapterReturn.Chapter = attributes.Chapter
+				}
 
-			chapterReturn.Name = attributes.Title
-			if chapterReturn.Name == "" {
-				chapterReturn.Name = fmt.Sprintf("Ch. %v", chapterReturn.Number)
+				if attributes.Title == "" {
+					chapterReturn.Name = fmt.Sprintf("Ch. %s", chapterReturn.Chapter)
+				} else {
+					chapterReturn.Name = attributes.Title
+				}
 			}
 
 			chapterCreatedAt, err := getDatetime(attributes.PublishAt)

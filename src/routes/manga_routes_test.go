@@ -37,35 +37,25 @@ func TestMain(m *testing.M) {
 }
 
 var mangasRequestsTestTable = map[string]routes.AddMangaRequest{
-	"valid manga without read chapter": {
-		URL:    "https://mangahub.io/manga/one-piece_142",
-		Status: 3,
-	},
 	"valid manga with read chapter": {
-		URL:                   "https://mangahub.io/manga/berserk",
-		Status:                5,
-		LastReadChapterNumber: 370,
+		URL:             "https://mangahub.io/manga/berserk",
+		Status:          5,
+		LastReadChapter: "370",
 	},
 	"invalid manga URL": {
 		URL:    "https://mangahub.io/manga/beeerserkk",
 		Status: 4,
 	},
-	"invalid chapter number": {
-		URL:                   "https://mangahub.io/manga/the-twin-swords-of-the-sima",
-		Status:                4,
-		LastReadChapterNumber: 1000,
+	"invalid chapter": {
+		URL:             "https://mangahub.io/manga/the-twin-swords-of-the-sima",
+		Status:          4,
+		LastReadChapter: "1000",
 	},
 }
 
 func TestAddManga(t *testing.T) {
 	router := api.SetupRouter()
 
-	t.Run("Add valid manga without read chapter", func(t *testing.T) {
-		err := testAddMangaRouteHelper("valid manga without read chapter", router, "Manga added successfully")
-		if err != nil {
-			t.Error(err)
-		}
-	})
 	t.Run("Add valid manga with read chapter", func(t *testing.T) {
 		err := testAddMangaRouteHelper("valid manga with read chapter", router, "Manga added successfully")
 		if err != nil {
@@ -79,7 +69,7 @@ func TestAddManga(t *testing.T) {
 		}
 	})
 	t.Run("Don't add manga with invalid last read chapter", func(t *testing.T) {
-		err := testAddMangaRouteHelper("invalid chapter number", router, "error while getting chapter metadata from source: chapter not found, is the URL or chapter number correct?")
+		err := testAddMangaRouteHelper("invalid chapter", router, "error while getting chapter metadata from source: chapter not found, is the URL or chapter number correct?")
 		if err != nil {
 			t.Error(err)
 		}
@@ -89,12 +79,6 @@ func TestAddManga(t *testing.T) {
 func TestGetMangas(t *testing.T) {
 	router := api.SetupRouter()
 
-	t.Run("Get one manga without read chapter", func(t *testing.T) {
-		err := testGetMangaRouteHelper("valid manga without read chapter", router)
-		if err != nil {
-			t.Error(err)
-		}
-	})
 	t.Run("Get one manga with read chapter", func(t *testing.T) {
 		err := testGetMangaRouteHelper("valid manga with read chapter", router)
 		if err != nil {
@@ -111,7 +95,7 @@ func TestGetMangas(t *testing.T) {
 		}
 	})
 	t.Run("Don't get one manga with invalid last read chapter", func(t *testing.T) {
-		err := testGetMangaRouteHelper("invalid chapter number", router)
+		err := testGetMangaRouteHelper("invalid chapter", router)
 		if err != nil {
 			if err.Error() == "error getting manga from DB: manga not found in DB" {
 				return
@@ -130,12 +114,6 @@ func TestGetMangas(t *testing.T) {
 func TestGetMangaChapters(t *testing.T) {
 	router := api.SetupRouter()
 
-	t.Run("Get manga chapters", func(t *testing.T) {
-		err := testGetMangaChaptersRouteHelper("valid manga without read chapter", router)
-		if err != nil {
-			t.Error(err)
-		}
-	})
 	t.Run("Get manga chapters", func(t *testing.T) {
 		err := testGetMangaChaptersRouteHelper("valid manga with read chapter", router)
 		if err != nil {
@@ -157,19 +135,19 @@ func TestUpdateManga(t *testing.T) {
 	router := api.SetupRouter()
 
 	t.Run("Update a manga status", func(t *testing.T) {
-		err := testUpdateMangaRouteHelper("valid manga without read chapter", "status", routes.UpdateMangaStatusRequest{Status: 4}, router, "Manga status updated successfully")
+		err := testUpdateMangaRouteHelper("valid manga with read chapter", "status", routes.UpdateMangaStatusRequest{Status: 4}, router, "Manga status updated successfully")
 		if err != nil {
 			t.Error(err)
 		}
 	})
 	t.Run("Update the last read chapter of an existing manga", func(t *testing.T) {
-		err := testUpdateMangaRouteHelper("valid manga without read chapter", "last_read_chapter", routes.UpdateMangaChapterRequest{ChapterNumber: 14}, router, "Manga last read chapter updated successfully")
+		err := testUpdateMangaRouteHelper("valid manga with read chapter", "last_read_chapter", routes.UpdateMangaChapterRequest{Chapter: "14"}, router, "Manga last read chapter updated successfully")
 		if err != nil {
 			t.Error(err)
 		}
 	})
 	t.Run("Update the last read chapter of an non existing manga", func(t *testing.T) {
-		err := testUpdateMangaRouteHelper("invalid manga URL", "last_read_chapter", routes.UpdateMangaChapterRequest{ChapterNumber: 14}, router, "error getting manga from DB: manga not found in DB")
+		err := testUpdateMangaRouteHelper("invalid manga URL", "last_read_chapter", routes.UpdateMangaChapterRequest{Chapter: "14"}, router, "error getting manga from DB: manga not found in DB")
 		if err != nil {
 			t.Error(err)
 		}
@@ -204,12 +182,6 @@ func TestUpdateMangasMetadata(t *testing.T) {
 func TestDeleteManga(t *testing.T) {
 	router := api.SetupRouter()
 
-	t.Run("Delete valid manga without read chapter", func(t *testing.T) {
-		err := testDeleteMangaRouteHelper("valid manga without read chapter", router, "Manga deleted successfully")
-		if err != nil {
-			t.Error(err)
-		}
-	})
 	t.Run("Delete valid manga with read chapter", func(t *testing.T) {
 		err := testDeleteMangaRouteHelper("valid manga with read chapter", router, "Manga deleted successfully")
 		if err != nil {
@@ -223,7 +195,7 @@ func TestDeleteManga(t *testing.T) {
 		}
 	})
 	t.Run("Don't delete manga with invalid last read chapter", func(t *testing.T) {
-		err := testDeleteMangaRouteHelper("invalid chapter number", router, "error getting manga from DB: manga not found in DB")
+		err := testDeleteMangaRouteHelper("invalid chapter", router, "error getting manga from DB: manga not found in DB")
 		if err != nil {
 			t.Error(err)
 		}
@@ -374,8 +346,8 @@ func testGetMangasRouteHelper(router *gin.Engine) error {
 
 	mangas := resMap["mangas"]
 	// hardcoded mangas length
-	if len(mangas) != 2 {
-		return fmt.Errorf(`expected 2 mangas, got %d`, len(mangas))
+	if len(mangas) != 1 {
+		return fmt.Errorf(`expected 1 mangas, got %d`, len(mangas))
 	}
 
 	return nil
@@ -445,15 +417,15 @@ func TestNotifyMangaLastUploadChapterUpdate(t *testing.T) {
 		oldManga := &manga.Manga{
 			Name: "One Piece",
 			LastUploadChapter: &manga.Chapter{
-				Number: 1000,
-				URL:    "https://mangahub.io/chapter/one-piece_142/chapter-1000",
+				Chapter: "1000",
+				URL:     "https://mangahub.io/chapter/one-piece_142/chapter-1000",
 			},
 		}
 		newManga := &manga.Manga{
 			Name: "One Piece",
 			LastUploadChapter: &manga.Chapter{
-				Number: 1001,
-				URL:    "https://mangahub.io/chapter/one-piece_142/chapter-1001",
+				Chapter: "1001",
+				URL:     "https://mangahub.io/chapter/one-piece_142/chapter-1001",
 			},
 		}
 

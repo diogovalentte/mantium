@@ -2,7 +2,6 @@ package mangahub
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/gocolly/colly/v2"
@@ -10,9 +9,12 @@ import (
 	"github.com/diogovalentte/manga-dashboard-api/src/manga"
 )
 
-// GetChapterMetadata returns a chapter by its number or URL
-func (s *Source) GetChapterMetadata(mangaURL string, chapterNumber manga.Number, _ string) (*manga.Chapter, error) {
-	return s.GetChapterMetadataByNumber(mangaURL, chapterNumber)
+// GetChapterMetadata returns a chapter by its chapter or URL
+func (s *Source) GetChapterMetadata(mangaURL string, chapter string, chapterURL string) (*manga.Chapter, error) {
+	if chapter == "" && chapterURL == "" {
+		return nil, fmt.Errorf("chapter or chapter URL is required")
+	}
+	return s.GetChapterMetadataByChapter(mangaURL, chapter)
 }
 
 // GetChapterMetadataByURL scrapes the manga page and return the chapter by its URL
@@ -21,31 +23,27 @@ func (s *Source) GetChapterMetadataByURL(_ string) (*manga.Chapter, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-// GetChapterMetadataByNumber scrapes the manga page and return the chapter by its number
-func (s *Source) GetChapterMetadataByNumber(mangaURL string, chapterNumber manga.Number) (*manga.Chapter, error) {
+// GetChapterMetadataByChapter scrapes the manga page and return the chapter by its chapter
+func (s *Source) GetChapterMetadataByChapter(mangaURL string, chapter string) (*manga.Chapter, error) {
 	s.resetCollector()
-	chapter := &manga.Chapter{
-		Number: chapterNumber,
+	chapterReturn := &manga.Chapter{
+		Chapter: chapter,
 	}
 	var sharedErr error
 
 	chapterFound := false
 	s.c.OnHTML("ul.MWqeC:first-of-type > li a._3pfyN", func(e *colly.HTMLElement) {
 		chapterStr := e.DOM.Find("span._3D1SJ").Text()
-		scrapedChapterNumber, err := strconv.ParseFloat(strings.TrimSpace(strings.Replace(chapterStr, "#", "", -1)), 32)
-		if err != nil {
-			sharedErr = err
-			return
-		}
-		if manga.Number(scrapedChapterNumber) != chapterNumber {
+		scrapedChapter := strings.TrimSpace(strings.Replace(chapterStr, "#", "", -1))
+		if scrapedChapter != chapter {
 			return
 		}
 		chapterFound = true
 
-		chapter.URL = e.Attr("href")
+		chapterReturn.URL = e.Attr("href")
 
 		chapterName := e.DOM.Find("span._2IG5P").Text()
-		chapter.Name = strings.TrimSpace(strings.Replace(chapterName, "- ", "", -1))
+		chapterReturn.Name = strings.TrimSpace(strings.Replace(chapterName, "- ", "", -1))
 
 		uploadedAt := e.DOM.Find("small.UovLc").Text()
 		uploadedTime, err := getMangaUploadedTime(uploadedAt)
@@ -53,7 +51,7 @@ func (s *Source) GetChapterMetadataByNumber(mangaURL string, chapterNumber manga
 			sharedErr = err
 			return
 		}
-		chapter.UpdatedAt = uploadedTime
+		chapterReturn.UpdatedAt = uploadedTime
 	})
 
 	err := s.c.Visit(mangaURL)
@@ -64,16 +62,16 @@ func (s *Source) GetChapterMetadataByNumber(mangaURL string, chapterNumber manga
 		return nil, sharedErr
 	}
 	if !chapterFound {
-		return nil, fmt.Errorf("chapter not found, is the URL or chapter number correct?")
+		return nil, fmt.Errorf("chapter not found, is the URL or chapter correct?")
 	}
 
-	return chapter, nil
+	return chapterReturn, nil
 }
 
 // GetLastChapterMetadata scrapes the manga page and return the latest chapter
 func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error) {
 	s.resetCollector()
-	chapter := &manga.Chapter{}
+	chapterReturn := &manga.Chapter{}
 	var sharedErr error
 
 	isFirstUL := true
@@ -82,18 +80,14 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 			return
 		}
 		isFirstUL = false
-		chapter.URL = e.Attr("href")
+		chapterReturn.URL = e.Attr("href")
 
 		chapterStr := e.DOM.Find("span._3D1SJ").Text()
-		chapterNumber, err := strconv.ParseFloat(strings.TrimSpace(strings.Replace(chapterStr, "#", "", -1)), 32)
-		if err != nil {
-			sharedErr = err
-			return
-		}
-		chapter.Number = manga.Number(chapterNumber)
+		chapter := strings.TrimSpace(strings.Replace(chapterStr, "#", "", -1))
+		chapterReturn.Chapter = chapter
 
 		chapterName := e.DOM.Find("span._2IG5P").Text()
-		chapter.Name = strings.TrimSpace(strings.Replace(chapterName, "- ", "", -1))
+		chapterReturn.Name = strings.TrimSpace(strings.Replace(chapterName, "- ", "", -1))
 
 		uploadedAt := e.DOM.Find("small.UovLc").Text()
 		uploadedTime, err := getMangaUploadedTime(uploadedAt)
@@ -101,7 +95,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 			sharedErr = err
 			return
 		}
-		chapter.UpdatedAt = uploadedTime
+		chapterReturn.UpdatedAt = uploadedTime
 	})
 
 	err := s.c.Visit(mangaURL)
@@ -112,7 +106,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 		return nil, sharedErr
 	}
 
-	return chapter, nil
+	return chapterReturn, nil
 }
 
 // GetChaptersMetadata scrapes the manga page and return the chapters
@@ -122,20 +116,16 @@ func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) 
 
 	var sharedErr error
 	s.c.OnHTML("li._287KE a._3pfyN", func(e *colly.HTMLElement) {
-		chapter := &manga.Chapter{}
+		chapterReturn := &manga.Chapter{}
 
-		chapter.URL = e.Attr("href")
+		chapterReturn.URL = e.Attr("href")
 
 		chapterStr := e.DOM.Find("span._3D1SJ").Text()
-		chapterNumber, err := strconv.ParseFloat(strings.TrimSpace(strings.Replace(chapterStr, "#", "", -1)), 32)
-		if err != nil {
-			sharedErr = err
-			return
-		}
-		chapter.Number = manga.Number(chapterNumber)
+		chapter := strings.TrimSpace(strings.Replace(chapterStr, "#", "", -1))
+		chapterReturn.Chapter = chapter
 
 		chapterName := e.DOM.Find("span._2IG5P").Text()
-		chapter.Name = strings.TrimSpace(strings.Replace(chapterName, "- ", "", -1))
+		chapterReturn.Name = strings.TrimSpace(strings.Replace(chapterName, "- ", "", -1))
 
 		uploadedAt := e.DOM.Find("small.UovLc").Text()
 		uploadedTime, err := getMangaUploadedTime(uploadedAt)
@@ -143,9 +133,9 @@ func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) 
 			sharedErr = err
 			return
 		}
-		chapter.UpdatedAt = uploadedTime
+		chapterReturn.UpdatedAt = uploadedTime
 
-		chapters = append(chapters, chapter)
+		chapters = append(chapters, chapterReturn)
 	})
 
 	err := s.c.Visit(mangaURL)

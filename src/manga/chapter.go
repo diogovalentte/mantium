@@ -7,8 +7,6 @@ import (
 )
 
 type (
-	// Number is the number of the chapter
-	Number float32
 	// Type is the type of the chapter, it can be:
 	// 0: "upload" - the chapter was uploaded, it's representing a chapter that was uploaded to (scraped from) a source
 	// 1: "read" - the chapter was read, it's representing a chapter that was read by the user
@@ -20,8 +18,9 @@ type (
 // a chapter should be used only by a manga
 type Chapter struct {
 	// URL is the URL of the chapter
-	URL    string
-	Number Number
+	URL string
+	// Chapter usually is the chapter number, but in some cases it can be a one-shot or a special chapter
+	Chapter string
 	// Name is the name of the chapter
 	Name string
 	// UpdatedAt is the time when the chapter was uploaded or updated (read)
@@ -37,12 +36,12 @@ func insertChapterDB(c *Chapter, mangaID ID, tx *sql.Tx) (int, error) {
 	var chapterID int
 	err = tx.QueryRow(`
         INSERT INTO chapters
-            (manga_id, url, number, name, updated_at, type)
+            (manga_id, url, chapter, name, updated_at, type)
         VALUES
             ($1, $2, $3, $4, $5, $6)
         RETURNING
             id;
-    `, mangaID, c.URL, c.Number, c.Name, c.UpdatedAt, c.Type).Scan(&chapterID)
+    `, mangaID, c.URL, c.Chapter, c.Name, c.UpdatedAt, c.Type).Scan(&chapterID)
 	if err != nil {
 		return -1, err
 	}
@@ -54,12 +53,12 @@ func getChapterDB(id int, db *sql.DB) (*Chapter, error) {
 	var chapter Chapter
 	err := db.QueryRow(`
         SELECT
-            url, number, name, updated_at, type
+            url, chapter, name, updated_at, type
         FROM
             chapters
         WHERE
             id = $1;
-    `, id).Scan(&chapter.URL, &chapter.Number, &chapter.Name, &chapter.UpdatedAt, &chapter.Type)
+    `, id).Scan(&chapter.URL, &chapter.Chapter, &chapter.Name, &chapter.UpdatedAt, &chapter.Type)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("chapter not found, is the ID correct?")
@@ -94,13 +93,13 @@ func updateMangaChapter(m *Manga, chapter *Chapter, tx *sql.Tx) error {
 
 	var chapterID int
 	err = tx.QueryRow(`
-        INSERT INTO chapters (manga_id, url, number, name, updated_at, type)
+        INSERT INTO chapters (manga_id, url, chapter, name, updated_at, type)
         VALUES ($1, $2, $3, $4, $5, $6)
         ON CONFLICT ON CONSTRAINT chapters_manga_id_type_unique
         DO UPDATE
-            SET url = EXCLUDED.url, number = EXCLUDED.number, name = EXCLUDED.name, updated_at = EXCLUDED.updated_at
+            SET url = EXCLUDED.url, chapter = EXCLUDED.chapter, name = EXCLUDED.name, updated_at = EXCLUDED.updated_at
         RETURNING id;
-    `, m.ID, chapter.URL, chapter.Number, chapter.Name, chapter.UpdatedAt, chapter.Type).Scan(&chapterID)
+    `, m.ID, chapter.URL, chapter.Chapter, chapter.Name, chapter.UpdatedAt, chapter.Type).Scan(&chapterID)
 	if err != nil {
 		return err
 	}
@@ -143,8 +142,8 @@ func validateChapter(c *Chapter) error {
 	if c.URL == "" {
 		return fmt.Errorf("chapter URL is empty")
 	}
-	if c.Number <= 0 {
-		return fmt.Errorf("chapter number should be greater than 0")
+	if c.Chapter == "" {
+		return fmt.Errorf("chapter chapter is empty")
 	}
 	if c.Name == "" {
 		return fmt.Errorf("chapter name is empty")

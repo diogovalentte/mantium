@@ -52,7 +52,7 @@ func AddManga(c *gin.Context) {
 	mangaAdd.Status = manga.Status(requestData.Status)
 
 	// Last read chapter is not optional
-	mangaAdd.LastReadChapter, err = sources.GetChapterMetadata(requestData.URL, requestData.LastReadChapterNumber, requestData.LastReadChapterURL)
+	mangaAdd.LastReadChapter, err = sources.GetChapterMetadata(requestData.URL, requestData.LastReadChapter, requestData.LastReadChapterURL)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -71,10 +71,10 @@ func AddManga(c *gin.Context) {
 
 // AddMangaRequest is the request body for the AddManga route
 type AddMangaRequest struct {
-	URL                   string       `json:"url" binding:"required,http_url"`
-	Status                int          `json:"status" binding:"required,gte=0,lte=5"`
-	LastReadChapterNumber manga.Number `json:"last_read_chapter_number"`
-	LastReadChapterURL    string       `json:"last_read_chapter_url"`
+	URL                string `json:"url" binding:"required,http_url"`
+	Status             int    `json:"status" binding:"required,gte=0,lte=5"`
+	LastReadChapter    string `json:"last_read_chapter"`
+	LastReadChapterURL string `json:"last_read_chapter_url"`
 }
 
 // GetManga gets the manga from the database
@@ -243,7 +243,7 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 		return
 	}
 
-	chapter, err := sources.GetChapterMetadata(mangaUpdate.URL, requestData.ChapterNumber, requestData.ChapterURL)
+	chapter, err := sources.GetChapterMetadata(mangaUpdate.URL, requestData.Chapter, requestData.ChapterURL)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -262,8 +262,8 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 
 // UpdateMangaChapterRequest is the request body for updating a manga chapter
 type UpdateMangaChapterRequest struct {
-	ChapterNumber manga.Number `json:"chapter_number" binding:"required"`
-	ChapterURL    string       `json:"chapter_url"`
+	Chapter    string `json:"chapter" binding:"required"`
+	ChapterURL string `json:"chapter_url"`
 }
 
 // UpdateMangasMetadata updates the mangas metadata in the database
@@ -289,7 +289,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 		}
 		updatedManga.Status = 1
 
-		if mangaToUpdate.LastUploadChapter.Number != updatedManga.LastUploadChapter.Number || mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg) || mangaToUpdate.Name != updatedManga.Name {
+		if mangaToUpdate.LastUploadChapter.Chapter != updatedManga.LastUploadChapter.Chapter || mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg) || mangaToUpdate.Name != updatedManga.Name {
 			err = manga.UpdateMangaMetadataDB(updatedManga)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -297,7 +297,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 			}
 
 			if notify {
-				if mangaToUpdate.LastUploadChapter.Number != updatedManga.LastUploadChapter.Number {
+				if mangaToUpdate.LastUploadChapter.Chapter != updatedManga.LastUploadChapter.Chapter {
 					err = NotifyMangaLastUploadChapterUpdate(mangaToUpdate, updatedManga)
 					if err != nil {
 						c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf(`manga "%s" metadata updated, error while notifying: %s`, mangaToUpdate.URL, err.Error())})
@@ -351,7 +351,7 @@ func NotifyMangaLastUploadChapterUpdate(oldManga *manga.Manga, newManga *manga.M
 	msg := &gotfy.Message{
 		Topic:   publisher.Topic,
 		Title:   fmt.Sprintf("New chapter of manga: %s", newManga.Name),
-		Message: fmt.Sprintf("Last chapter: %.2f\nNew chapter: %.2f", oldManga.LastUploadChapter.Number, newManga.LastUploadChapter.Number),
+		Message: fmt.Sprintf("Last chapter: %s\nNew chapter: %s", oldManga.LastUploadChapter.Chapter, newManga.LastUploadChapter.Chapter),
 		Actions: []gotfy.ActionButton{
 			&gotfy.ViewAction{
 				Label: "Open Chapter",

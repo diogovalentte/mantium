@@ -26,10 +26,10 @@ type Source interface {
 	GetMangaMetadata(mangaURL string) (*manga.Manga, error)
 	// GetChapterMetadataByURL returns a chapter by its URL
 	GetChapterMetadataByURL(chapterURL string) (*manga.Chapter, error)
-	// GetChapterMetadataByNumber returns a chapter by its number
-	GetChapterMetadataByNumber(mangaURL string, chapterNumber manga.Number) (*manga.Chapter, error)
-	// GetChapterMetadata returns a chapter by its number or URL
-	GetChapterMetadata(mangaURL string, chapterNumber manga.Number, chapterURL string) (*manga.Chapter, error)
+	// GetChapterMetadataByChapter returns a chapter by its chapter
+	GetChapterMetadataByChapter(mangaURL string, chapter string) (*manga.Chapter, error)
+	// GetChapterMetadata returns a chapter by its chapter or URL
+	GetChapterMetadata(mangaURL string, chapter string, chapterURL string) (*manga.Chapter, error)
 	// GetLastChapterMetadata returns the last uploaded chapter in the source
 	GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 	// GetChaptersMetadata returns all chapters of a manga
@@ -83,8 +83,8 @@ func GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 
 // GetChapterMetadata gets the metadata of a chapter using a source
 // If the chapterURL is not empty, it will use it to get the chapter
-// If the chapterURL is empty, it will use the mangaURL and chapterNumber to get the chapter
-func GetChapterMetadata(mangaURL string, chapterNumber manga.Number, chapterURL string) (*manga.Chapter, error) {
+// If the chapterURL is empty, it will use the mangaURL and chapter to get the chapter
+func GetChapterMetadata(mangaURL string, chapter string, chapterURL string) (*manga.Chapter, error) {
 	contextError := "error while getting chapter metadata from source"
 
 	domain, err := getDomain(mangaURL)
@@ -97,12 +97,12 @@ func GetChapterMetadata(mangaURL string, chapterNumber manga.Number, chapterURL 
 		return nil, util.AddErrorContext(err, contextError)
 	}
 
-	chapter, err := getChapter(mangaURL, chapterNumber, chapterURL, source)
+	chapterReturn, err := getChapter(mangaURL, chapter, chapterURL, source)
 	if err != nil {
 		return nil, util.AddErrorContext(err, contextError)
 	}
 
-	return chapter, nil
+	return chapterReturn, nil
 }
 
 // GetMangaChapters gets the chapters of a manga using a source
@@ -140,8 +140,8 @@ func getManga(mangaURL string, source Source) (*manga.Manga, error) {
 	return source.GetMangaMetadata(mangaURL)
 }
 
-func getChapter(mangaURL string, number manga.Number, chapterURL string, source Source) (*manga.Chapter, error) {
-	return source.GetChapterMetadata(mangaURL, number, chapterURL)
+func getChapter(mangaURL string, chapter string, chapterURL string, source Source) (*manga.Chapter, error) {
+	return source.GetChapterMetadata(mangaURL, chapter, chapterURL)
 }
 
 func getChapters(mangaURL string, source Source) ([]*manga.Chapter, error) {
