@@ -61,6 +61,7 @@ func getDatetime(date string) (time.Time, error) {
 	if err != nil {
 		return time.Time{}, err
 	}
+	parsedDate = parsedDate.In(time.UTC)
 
 	return parsedDate, err
 }
