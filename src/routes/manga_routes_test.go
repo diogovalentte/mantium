@@ -42,18 +42,18 @@ var mangasRequestsTestTable = map[string]routes.AddMangaRequest{
 		Status: 3,
 	},
 	"valid manga with read chapter": {
-		URL:             "https://mangahub.io/manga/berserk",
-		Status:          5,
-		LastReadChapter: 370,
+		URL:                   "https://mangahub.io/manga/berserk",
+		Status:                5,
+		LastReadChapterNumber: 370,
 	},
 	"invalid manga URL": {
 		URL:    "https://mangahub.io/manga/beeerserkk",
 		Status: 4,
 	},
 	"invalid chapter number": {
-		URL:             "https://mangahub.io/manga/the-twin-swords-of-the-sima",
-		Status:          4,
-		LastReadChapter: 1000,
+		URL:                   "https://mangahub.io/manga/the-twin-swords-of-the-sima",
+		Status:                4,
+		LastReadChapterNumber: 1000,
 	},
 }
 

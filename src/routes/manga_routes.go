@@ -51,8 +51,8 @@ func AddManga(c *gin.Context) {
 
 	mangaAdd.Status = manga.Status(requestData.Status)
 
-	if requestData.LastReadChapter != 0 {
-		mangaAdd.LastReadChapter, err = sources.GetChapterMetadata(requestData.URL, requestData.LastReadChapter)
+	if requestData.LastReadChapterNumber != 0 || requestData.LastReadChapterURL != "" {
+		mangaAdd.LastReadChapter, err = sources.GetChapterMetadata(requestData.URL, requestData.LastReadChapterNumber, requestData.LastReadChapterURL)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
@@ -72,9 +72,10 @@ func AddManga(c *gin.Context) {
 
 // AddMangaRequest is the request body for the AddManga route
 type AddMangaRequest struct {
-	URL             string       `json:"url" binding:"required,http_url"`
-	Status          int          `json:"status" binding:"required,gte=0,lte=5"`
-	LastReadChapter manga.Number `json:"last_read_chapter"`
+	URL                   string       `json:"url" binding:"required,http_url"`
+	Status                int          `json:"status" binding:"required,gte=0,lte=5"`
+	LastReadChapterNumber manga.Number `json:"last_read_chapter_number"`
+	LastReadChapterURL    string       `json:"last_read_chapter_url"`
 }
 
 // GetManga gets the manga from the database
@@ -243,7 +244,7 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 		return
 	}
 
-	chapter, err := sources.GetChapterMetadata(mangaUpdate.URL, requestData.ChapterNumber)
+	chapter, err := sources.GetChapterMetadata(mangaUpdate.URL, requestData.ChapterNumber, requestData.ChapterURL)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -263,6 +264,7 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 // UpdateMangaChapterRequest is the request body for updating a manga chapter
 type UpdateMangaChapterRequest struct {
 	ChapterNumber manga.Number `json:"chapter_number" binding:"required"`
+	ChapterURL    string       `json:"chapter_url"`
 }
 
 // UpdateMangasMetadata updates the mangas metadata in the database

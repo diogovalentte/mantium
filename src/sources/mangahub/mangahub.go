@@ -169,8 +169,25 @@ func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) 
 	return chapters, nil
 }
 
-// GetChapterMetadata scrapes the manga page and return the chapter
-func (s *Source) GetChapterMetadata(mangaURL string, chapterNumber manga.Number) (*manga.Chapter, error) {
+// GetChapterMetadata returns a chapter by its number or URL
+// If the chapterURL is not empty, it will use it to get the chapter
+// If the chapterURL is empty, it will use the mangaURL and chapterNumber to get the chapter
+func (s *Source) GetChapterMetadata(mangaURL string, chapterNumber manga.Number, chapterURL string) (*manga.Chapter, error) {
+	if chapterURL != "" {
+		return s.GetChapterMetadataByURL(chapterURL)
+	}
+
+	return s.GetChapterMetadataByNumber(mangaURL, chapterNumber)
+}
+
+// GetChapterMetadataByURL scrapes the manga page and return the chapter by its URL
+// Not implemented
+func (s *Source) GetChapterMetadataByURL(_ string) (*manga.Chapter, error) {
+	return nil, fmt.Errorf("not implemented")
+}
+
+// GetChapterMetadataByNumber scrapes the manga page and return the chapter by its number
+func (s *Source) GetChapterMetadataByNumber(mangaURL string, chapterNumber manga.Number) (*manga.Chapter, error) {
 	s.resetCollector()
 	chapter := &manga.Chapter{
 		Number: chapterNumber,

@@ -196,7 +196,7 @@ func TestGetChapterMetadata(t *testing.T) {
 			expected := test.expected
 			mangaURL := test.url
 
-			actualChapter, err := source.GetChapterMetadata(mangaURL, expected.Number)
+			actualChapter, err := source.GetChapterMetadata(mangaURL, expected.Number, "")
 			if err != nil {
 				t.Errorf("error while getting chapter: %v", err)
 				return
