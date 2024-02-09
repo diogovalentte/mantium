@@ -4,7 +4,8 @@ package main
 import (
 	"time"
 
-	"github.com/joho/godotenv"
+    // For testing purposes
+	// "github.com/joho/godotenv"
 
 	"github.com/diogovalentte/manga-dashboard-api/api/src"
 	"github.com/diogovalentte/manga-dashboard-api/api/src/db"
@@ -12,10 +13,11 @@ import (
 )
 
 func init() {
-	err := godotenv.Load("../.env")
-	if err != nil {
-		panic(err)
-	}
+	// For testing purposes
+	// err := godotenv.Load("../.env.test")
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	log := util.GetLogger()
 

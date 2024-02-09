@@ -1,9 +1,38 @@
 # Mangas Dashboard
 The dashboard manages mangas for the user. The user can add mangas from multiple **sources** (sites), like [Mangadex](mangadex.org) and [MangaHub](mangahub.io), and keep tracking it but setting status (like Reading, Completed, Dropped) and the last readed chapter.
-- It's made to run on my homelab.
 
 # Mangas Dashboard API
 The API is used by the Dashboard.
+
+# Running
+1. Create a .env.prod file, it should be like the .env.example file.
+2. Build and start the services:
+```sh
+docker compose up -d --build
+```
+3. Access the dashboard on http://localhost:8501
+
+# Testing
+1. Create a .env.test file for testing, it should be like the .env.example file.
+2. Start a PostgreSQL container like in the docker-compose.yml file.
+3. Inside the **api/** folder, download the API Golang dependencies:
+```sh
+go mod download
+```
+4. Unncomment the lines on the **api/main.go** file and start the API:
+```sh
+go run main.go
+```
+5. Inside the **dashboard/** folder, install the dashboard Python requirements:
+```sh
+pip install -r requirements.txt
+```
+6. Start the dashboard:
+```sh
+streamlit run 01_📖_Dashboard.py
+```
+7. Access the dashboard on http://localhost:8501
+
 
 # API Simple doc
 This project's objective is to manage mangas from multiple **sources** (sites), like [Mangadex](https://mangadex.org) and [MangaHub](mangahub.io), and keep track of the user defined status and last readed chapter of the mangas.

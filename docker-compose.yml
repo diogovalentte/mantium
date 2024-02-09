@@ -5,30 +5,30 @@ services:
     container_name: mangas-dashboard-db
     image: postgres:16-alpine
     volumes:
-      - /Apps/mangas-dashboard/postgres:/var/lib/postgresql/data:rwx
+      - ./data/postgres-vol:/var/lib/postgresql/data:rwx
     environment:
       - PGID=1000
     env_file:
-      - .env
+      - .env.prod
     restart: unless-stopped
-    networks:
-      - homelab
 
   mangas-dashboard-api:
     container_name: mangas-dashboard-api
     build: 
       context: .
       dockerfile: Dockerfile_API
+    env_file:
+      - .env.prod
     depends_on:
       - mangas-dashboard-db
-    networks:
-      - homelab
 
   mangas-dashboard:
     container_name: mangas-dashboard
     build:
       context: .
       dockerfile: Dockerfile_dashboard
+    env_file:
+      - .env.prod
     ports:
       - 8501:8501
     depends_on:

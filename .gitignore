@@ -1,4 +1,5 @@
-.env
+.env.prod
+.env.test
 data/
 .venv
 __pycache__/
