@@ -1,0 +1,11 @@
+FROM python:3.10.12
+
+WORKDIR /app
+
+COPY . .
+
+WORKDIR /app/dashboard
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+CMD ["streamlit", "run", "01_📖_Dashboard.py"]

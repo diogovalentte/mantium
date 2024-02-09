@@ -1,21 +1,11 @@
+# Mangas Dashboard
+The dashboard manages mangas for the user. The user can add mangas from multiple **sources** (sites), like [Mangadex](mangadex.org) and [MangaHub](mangahub.io), and keep tracking it but setting status (like Reading, Completed, Dropped) and the last readed chapter.
+- It's made to run on my homelab.
+
 # Mangas Dashboard API
-This is the API used by the [Manga Dashboard](https://github.com/diogovalentte/manga-dashboard) project.
+The API is used by the Dashboard.
 
-# Steps to run:
-1. Create the Docker services, this will start the PostgreSQL database of the API:
-```sh
-docker compose up -d
-```
-2. Run the migrations to create the database tables:
-```sh
-go run migrate/init_db.go
-```
-3. Run the API:
-```sh
-go run main.go
-```
-
-# Simple doc
+# API Simple doc
 This project's objective is to manage mangas from multiple **sources** (sites), like [Mangadex](https://mangadex.org) and [MangaHub](mangahub.io), and keep track of the user defined status and last readed chapter of the mangas.
 With the API routes you can:
 - **Add a manga to the DB**: by supplying the manga URL, the API will identify if it's from one the sources, if yes, the source will get the manga metadata, like name, cover, and last released chapter (and the chapter metadata as well), and insert it on the DB.
