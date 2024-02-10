@@ -7,6 +7,7 @@ import (
 	"regexp"
 
 	"github.com/diogovalentte/manga-dashboard-api/api/src/manga"
+	"github.com/diogovalentte/manga-dashboard-api/api/src/util"
 )
 
 // GetChapterMetadata returns a chapter by its chapter or URL
@@ -60,7 +61,10 @@ func (s *Source) GetChapterMetadataByURL(chapterURL string) (*manga.Chapter, err
 		}
 	}
 
-	chapterCreatedAt, err := getDatetime(attributes.PublishAt)
+	chapterCreatedAt, err := util.GetRFC3339Datetime(attributes.PublishAt)
+	if err != nil {
+		return nil, err
+	}
 	chapterReturn.UpdatedAt = chapterCreatedAt
 
 	return chapterReturn, nil
@@ -126,7 +130,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 		}
 	}
 
-	chapterCreatedAt, err := getDatetime(attributes.PublishAt)
+	chapterCreatedAt, err := util.GetRFC3339Datetime(attributes.PublishAt)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +227,7 @@ func generateMangaFeed(s *Source, mangaURL string, chaptersChan chan<- *manga.Ch
 				}
 			}
 
-			chapterCreatedAt, err := getDatetime(attributes.PublishAt)
+			chapterCreatedAt, err := util.GetRFC3339Datetime(attributes.PublishAt)
 			if err != nil {
 				errChan <- err
 				return

@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/AnthonyHewins/gotfy"
 	"github.com/nfnt/resize"
@@ -184,4 +185,14 @@ func (t *NtfyPublisher) SendMessage(ctx context.Context, message *gotfy.Message)
 	_, err := t.Publisher.SendMessage(ctx, message)
 
 	return err
+}
+
+func GetRFC3339Datetime(date string) (time.Time, error) {
+	parsedDate, err := time.Parse(time.RFC3339, date)
+	if err != nil {
+		return time.Time{}, err
+	}
+	parsedDate = parsedDate.In(time.UTC)
+
+	return parsedDate, err
 }

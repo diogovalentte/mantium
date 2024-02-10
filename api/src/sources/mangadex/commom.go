@@ -3,7 +3,6 @@ package mangadex
 import (
 	"fmt"
 	"strings"
-	"time"
 )
 
 type genericRelationship struct {
@@ -55,14 +54,4 @@ type Error struct {
 	Status int    `json:"status"`
 	Title  string `json:"title"`
 	Detail string `json:"detail"`
-}
-
-func getDatetime(date string) (time.Time, error) {
-	parsedDate, err := time.Parse(time.RFC3339, date)
-	if err != nil {
-		return time.Time{}, err
-	}
-	parsedDate = parsedDate.In(time.UTC)
-
-	return parsedDate, err
 }
