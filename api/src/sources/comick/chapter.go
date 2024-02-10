@@ -56,6 +56,7 @@ func (s *Source) GetChapterMetadataByChapter(mangaURL string, chapter string) (*
 	return chapterReturn, nil
 }
 
+// GetLastChapterMetadata returns the last chapter of a manga by its URL
 func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error) {
 	s.checkClient()
 

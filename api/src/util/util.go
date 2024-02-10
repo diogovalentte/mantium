@@ -187,6 +187,7 @@ func (t *NtfyPublisher) SendMessage(ctx context.Context, message *gotfy.Message)
 	return err
 }
 
+// GetRFC3339Datetime returns a time.Time from a RFC3339 formatted string
 func GetRFC3339Datetime(date string) (time.Time, error) {
 	parsedDate, err := time.Parse(time.RFC3339, date)
 	if err != nil {
