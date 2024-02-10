@@ -14,13 +14,14 @@ services:
 
   mangas-dashboard-api:
     container_name: mangas-dashboard-api
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile_API
     env_file:
       - .env.prod
     depends_on:
       - mangas-dashboard-db
+    restart: unless-stopped
 
   mangas-dashboard:
     container_name: mangas-dashboard
@@ -34,3 +35,4 @@ services:
     depends_on:
       - mangas-dashboard-api
       - mangas-dashboard-db
+    restart: unless-stopped

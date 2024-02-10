@@ -2,11 +2,6 @@
 package main
 
 import (
-	"time"
-
-    // For testing purposes
-	// "github.com/joho/godotenv"
-
 	"github.com/diogovalentte/manga-dashboard-api/api/src"
 	"github.com/diogovalentte/manga-dashboard-api/api/src/db"
 	"github.com/diogovalentte/manga-dashboard-api/api/src/util"
@@ -21,8 +16,7 @@ func init() {
 
 	log := util.GetLogger()
 
-	log.Info().Msg("Waiting 10 seconds for database finish set up...")
-	time.Sleep(10 * time.Second)
+	log.Info().Msg("Trying to connect to DB...")
 
 	_db, err := db.OpenConn()
 	if err != nil {
