@@ -430,11 +430,7 @@ class MainDashboard:
     def show_add_manga_form(self):
         def get_chapters_btn_callback():
             ss["add_manga_form_default_url"] = ss.add_manga_form_url
-            ss["add_manga_form_default_status_index"] = list(
-                self.manga_status_options.values()
-            ).index(ss.add_manga_form_status)
             ss["add_manga_url"] = ss.add_manga_form_url
-            ss["add_manga_status"] = ss.add_manga_form_status
 
         def add_manga_btn_callback():
             ss["add_manga_chapter"] = ss.add_manga_form_chapter_chapter
@@ -452,15 +448,6 @@ class MainDashboard:
                 value=ss["add_manga_form_default_url"],
                 placeholder="https://mangahub.io/manga/one-piece",
                 key="add_manga_form_url",
-            )
-
-            if "add_manga_form_default_status_index" not in ss:
-                ss["add_manga_form_default_status_index"] = 0
-            st.selectbox(
-                "Status",
-                index=ss["add_manga_form_default_status_index"],
-                options=self.manga_status_options.values(),
-                key="add_manga_form_status",
             )
 
             get_chapters_btn = st.form_submit_button(
@@ -484,6 +471,21 @@ class MainDashboard:
                 else:
                     st.error(e)
 
+        def status_select_callback():
+            ss["add_manga_form_default_status_index"] = list(
+                self.manga_status_options.values()
+            ).index(ss.add_manga_form_status)
+
+        if "add_manga_form_default_status_index" not in ss:
+            ss["add_manga_form_default_status_index"] = 0
+        st.selectbox(
+            "Status",
+            index=ss["add_manga_form_default_status_index"],
+            options=self.manga_status_options.values(),
+            key="add_manga_form_status",
+            on_change=status_select_callback,
+        )
+
         with st.form(key="add_manga_form_chapter", border=False, clear_on_submit=True):
             if ss.get("add_manga_form_chapters_options", None) is None:
                 ss["add_manga_form_chapters_options"] = []
@@ -499,7 +501,7 @@ class MainDashboard:
                 if add_manga_chapter is not None:
                     manga_last_read_chapter = add_manga_chapter["Chapter"]
                     manga_last_read_chapter_url = add_manga_chapter["URL"]
-                    manga_status = int(self.get_manga_status(ss["add_manga_status"]))
+                    manga_status = int(self.get_manga_status(ss.add_manga_form_status))
                     manga_url = ss["add_manga_url"]
 
                     self.api_client.add_manga(
