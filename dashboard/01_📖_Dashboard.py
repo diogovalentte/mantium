@@ -5,18 +5,19 @@ from typing import Any
 
 import streamlit as st
 from PIL import Image
-from streamlit import session_state as ss
-from streamlit_extras.stylable_container import stylable_container
-
 from src.api.api_client import get_api_client
 from src.exceptions import APIException
 from src.util import centered_container, get_relative_time, tagger
+from streamlit import session_state as ss
+from streamlit_extras.stylable_container import stylable_container
 
 st.set_page_config(
     page_title="Manga Dashboard",
     page_icon="📖",
     layout="wide",
 )
+
+st.write("#")  # Without this, the app loads in the middle of the page
 
 
 class MainDashboard:
