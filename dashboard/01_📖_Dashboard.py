@@ -335,12 +335,6 @@ class MainDashboard:
                     )
                 ).index(manga["LastReadChapter"]["Chapter"])
 
-            ss["update_manga_form_success_msg"] = None
-            ss["update_manga_form_error"] = None
-
-            ss["delete_manga_success_msg"] = None
-            ss["delete_manga_error"] = None
-
         with st.form(key="update_manga_form", border=False):
             st.selectbox(
                 "Status",
@@ -362,8 +356,6 @@ class MainDashboard:
                 use_container_width=True,
                 type="primary",
             ):
-                ss["update_manga_form_success_msg"] = None
-                ss["update_manga_form_error"] = None
                 try:
                     status = ss.update_manga_form_status
                     status = int(self.get_manga_status(status))
@@ -386,9 +378,10 @@ class MainDashboard:
                         self.manga_status_options.values()
                     ).index(ss.update_manga_form_status)
                 except Exception as e:
-                    ss["update_manga_form_error"] = e
+                    st.error(e)
+                    st.stop()
                 else:
-                    ss["update_manga_form_success_msg"] = "Manga updated successfully"
+                    st.success("Manga updated successfully")
 
         def delete_manga_btn_callback():
             ss["delete_manga_error"] = None
@@ -411,17 +404,10 @@ class MainDashboard:
         ):
             st.button(
                 "Delete Manga",
-                on_click=delete_manga_btn_callback,
+                on_click=delete_manga_btn_callback,  # need to have a callback to delete the ss["manga_to_highlight"]
                 use_container_width=True,
                 key="delete_manga_btn",
             )
-
-        if ss.get("delete_manga_error", None) is not None:
-            st.error(ss["delete_manga_error"])
-        if ss.get("update_manga_form_error", None) is not None:
-            st.error(ss["update_manga_form_error"])
-        if ss.get("update_manga_form_success_msg", None) is not None:
-            st.success(ss["update_manga_form_success_msg"])
 
     def get_manga_status(self, status: int | str) -> str | int:
         if isinstance(status, int):
