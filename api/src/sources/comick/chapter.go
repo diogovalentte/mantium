@@ -143,7 +143,6 @@ func generateMangaChapters(s *Source, mangaURL string, chaptersChan chan *manga.
 
 	currentPage := 1
 	for {
-		chapterReturn := &manga.Chapter{}
 
 		mangaAPIURL := fmt.Sprintf("%s/comic/%s/chapters?lang=en&page=%d", baseAPIURL, mangaHID, currentPage)
 		resp, err := s.client.Request("GET", mangaAPIURL, nil)
@@ -164,6 +163,7 @@ func generateMangaChapters(s *Source, mangaURL string, chaptersChan chan *manga.
 		}
 
 		for _, chapter := range chaptersAPIResp.Chapters {
+			chapterReturn := &manga.Chapter{}
 			err = getChapterFromResp(chapter, chapterReturn, chapter.Chap, mangaURL)
 			if err != nil {
 				errChan <- err
