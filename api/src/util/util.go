@@ -197,3 +197,28 @@ func GetRFC3339Datetime(date string) (time.Time, error) {
 
 	return parsedDate, err
 }
+
+// RequestUpdateMangasMetadata sends a request to the server to update all mangas metadata
+func RequestUpdateMangasMetadata(notify bool) (*http.Response, error) {
+	client := &http.Client{}
+
+	url := "http://localhost:8080/v1/mangas/metadata"
+	if notify {
+		url += "?notify=true"
+	}
+	req, err := http.NewRequest("PATCH", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return resp, fmt.Errorf("failed to update mangas metadata. Status code: %d", resp.StatusCode)
+	}
+
+	return resp, nil
+}
