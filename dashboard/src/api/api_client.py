@@ -1,6 +1,7 @@
 import logging
 
 import streamlit as st
+from pandas import os
 from src.api.manga_api import MangaAPIClient
 from src.api.system_api import SystemAPIClient
 
@@ -12,8 +13,15 @@ def get_api_client():
         logger = logging.getLogger("api_client")
         logger.info("Defining the API client...")
 
+        api_address = os.environ.get("API_ADDRESS", "")
+        api_port = os.environ.get("API_PORT", "")
+        if api_address == "" or api_port == "":
+            raise ValueError(
+                "API_ADDRESS and API_PORT environment variables are not set"
+            )
+
         api_client = APIClient(
-            "http://mangas-dashboard-api", 8080
+            api_address, int(api_port)
         )  # The golang API docker service name
         st.session_state["api_client"] = api_client
 
