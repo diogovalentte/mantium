@@ -97,18 +97,25 @@ func TestGetMangaMetadata(t *testing.T) {
 	})
 }
 
+var getMangaIDTestTable = []string{
+	"https://mangadex.org/title/87ebd557-8394-4f16-8afe-a8644e555ddc/hirayasumi/",
+	"https://mangadex.org/title/87ebd557-8394-4f16-8afe-a8644e555ddc/hirayasumi",
+	"https://mangadex.org/title/87ebd557-8394-4f16-8afe-a8644e555ddc",
+}
+
 func TestGetMangaID(t *testing.T) {
 	t.Run("should return the ID of a manga URL", func(t *testing.T) {
-		mangaURL := "https://mangadex.org/title/87ebd557-8394-4f16-8afe-a8644e555ddc/hirayasumi"
-		expected := "87ebd557-8394-4f16-8afe-a8644e555ddc"
-		result, err := getMangaID(mangaURL)
-		if err != nil {
-			t.Errorf("Error: %s", err)
-			return
-		}
-		if result != expected {
-			t.Errorf("Expected %s, got %s", expected, result)
-			return
+		for _, mangaURL := range getMangaIDTestTable {
+			expected := "87ebd557-8394-4f16-8afe-a8644e555ddc"
+			result, err := getMangaID(mangaURL)
+			if err != nil {
+				t.Errorf("Error: %s", err)
+				return
+			}
+			if result != expected {
+				t.Errorf("Expected %s, got %s", expected, result)
+				return
+			}
 		}
 	})
 }

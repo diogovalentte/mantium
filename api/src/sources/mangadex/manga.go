@@ -131,7 +131,7 @@ type coverAttributes map[string]interface{}
 // getMangaID returns the ID of a manga given its URL
 // URL should be like: https://mangadex.org/title/87ebd557-8394-4f16-8afe-a8644e555ddc/hirayasumi
 func getMangaID(mangaURL string) (string, error) {
-	pattern := `https://mangadex\.org/title/([0-9a-fA-F-]+)/`
+	pattern := `/title/([0-9a-fA-F-]+)(?:/.*)?$`
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		return "", err
