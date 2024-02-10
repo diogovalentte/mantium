@@ -1,7 +1,7 @@
-# Mangas Dashboard
-The dashboard manages mangas for the user. The user can add mangas from multiple **sources** (sites), like [Mangadex](mangadex.org) and [MangaHub](mangahub.io), and keep tracking it but setting status (like Reading, Completed, Dropped) and the last readed chapter.
+# Mantium
+Mantium is a dashboard for keep tracking of mangas from many sources. The user can track mangas from multiple **sources** (sites), like [Mangadex](mangadex.org) and [MangaHub](mangahub.io), and keep tracking it but setting status (like Reading, Completed, Dropped) and the last readed chapter.
 
-# Mangas Dashboard API
+# Mantium API
 The API is used by the Dashboard.
 
 # Running
@@ -38,7 +38,7 @@ streamlit run 01_📖_Dashboard.py
 This project's objective is to manage mangas from multiple **sources** (sites), like [Mangadex](https://mangadex.org) and [MangaHub](mangahub.io), and keep track of the user defined status and last readed chapter of the mangas.
 With the API routes you can:
 - **Add a manga to the DB**: by supplying the manga URL, the API will identify if it's from one the sources, if yes, the source will get the manga metadata, like name, cover, and last released chapter (and the chapter metadata as well), and insert it on the DB.
-  - Depending on the source, a manga can also have a **preferred group**, which can be the group that uploades chapters of the manga. This is useful when you want the links of chapters from a specific group in a source that enables multiple groups to upload the same chapters (_like Mangadex_).
+  - (_not implemented yet_) Depending on the source, a manga can also have a **preferred group**, which can be the group that uploades chapters of the manga. This is useful when you want the links of chapters from a specific group in a source that enables multiple groups to upload the same chapters (_like Mangadex_).
 - **Update the manga last readed chapter**: by supplying the manga URL and a chapter, a source will get the chapter metadata, like name and URL, and update the last readed chapter of the manga.
 - **Delete a manga from DB**.
 - **Get a manga from DB using the manga ID (in the DB) or URL**.

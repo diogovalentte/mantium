@@ -12,7 +12,7 @@ from streamlit import session_state as ss
 from streamlit_extras.stylable_container import stylable_container
 
 st.set_page_config(
-    page_title="Manga Dashboard",
+    page_title="Mantium",
     page_icon="📖",
     layout="wide",
 )
