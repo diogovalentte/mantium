@@ -328,6 +328,12 @@ class MainDashboard:
                 ss["update_manga_form_default_status_index"] = list(
                     self.manga_status_options.values()
                 ).index(str(self.get_manga_status(manga["Status"])))
+                ss["update_Manga_form_default_chapter_index"] = list(
+                    map(
+                        lambda chapter: chapter["Chapter"],
+                        ss["update_manga_form_chapters"],
+                    )
+                ).index(manga["LastReadChapter"]["Chapter"])
 
             ss["update_manga_form_success_msg"] = None
             ss["update_manga_form_error"] = None
@@ -345,6 +351,7 @@ class MainDashboard:
 
             st.selectbox(
                 "Last Read Chapter",
+                index=ss["update_Manga_form_default_chapter_index"],
                 options=ss["update_manga_form_chapters"],
                 key="update_manga_form_chapter",
                 format_func=lambda chapter: f"Ch. {chapter['Chapter']}",
