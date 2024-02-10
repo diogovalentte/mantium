@@ -8,6 +8,7 @@ import (
 	"net/url"
 
 	"github.com/diogovalentte/manga-dashboard-api/api/src/manga"
+	"github.com/diogovalentte/manga-dashboard-api/api/src/sources/comick"
 	"github.com/diogovalentte/manga-dashboard-api/api/src/sources/mangadex"
 	"github.com/diogovalentte/manga-dashboard-api/api/src/sources/mangahub"
 	"github.com/diogovalentte/manga-dashboard-api/api/src/util"
@@ -18,6 +19,7 @@ var sources = map[string]Source{
 	// default sources
 	"mangahub.io":  &mangahub.Source{},
 	"mangadex.org": &mangadex.Source{},
+	"comick.cc":    &comick.Source{},
 }
 
 // Source is the interface for a manga source
