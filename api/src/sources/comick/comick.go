@@ -1,4 +1,5 @@
 // Package comick provides the implementation of the manga.Source interface for the Comick source
+// API doc: https://api.comick.cc/docs/static/index.html
 package comick
 
 import (
