@@ -1,7 +1,7 @@
 import logging
+import os
 
 import streamlit as st
-from pandas import os
 from src.api.manga_api import MangaAPIClient
 from src.api.system_api import SystemAPIClient
 
