@@ -40,6 +40,7 @@ func init() {
 
 func main() {
 	router := api.SetupRouter()
+	router.SetTrustedProxies(nil)
 
 	router.Run()
 }
