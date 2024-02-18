@@ -40,6 +40,15 @@ func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 	mangaReturn.Name = attributes.Title["en"]
 	if mangaReturn.Name == "" {
 		mangaReturn.Name = attributes.Title["ja"]
+		if mangaReturn.Name == "" {
+			mangaReturn.Name = attributes.Title["ja-ro"]
+			if mangaReturn.Name == "" {
+				for _, title := range attributes.Title {
+					mangaReturn.Name = title
+					break
+				}
+			}
+		}
 	}
 
 	lastUploadChapter, err := s.GetLastChapterMetadata(mangaURL)
