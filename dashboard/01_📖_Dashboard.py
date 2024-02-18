@@ -1,5 +1,6 @@
 import base64
 import logging
+from datetime import datetime
 from io import BytesIO
 from typing import Any
 
@@ -348,7 +349,7 @@ class MainDashboard:
                 index=ss["update_Manga_form_default_chapter_index"],
                 options=ss["update_manga_form_chapters"],
                 key="update_manga_form_chapter",
-                format_func=lambda chapter: f"Ch. {chapter['Chapter']}",
+                format_func=lambda chapter: f"Ch. {chapter['Chapter']} --- {get_relative_time(datetime.strptime(chapter['UpdatedAt'], '%Y-%m-%dT%H:%M:%SZ'))}",
             )
 
             if st.form_submit_button(
@@ -486,7 +487,7 @@ class MainDashboard:
                 "Last Read Chapter",
                 options=ss["add_manga_form_chapters_options"],
                 key="add_manga_form_chapter_chapter",
-                format_func=lambda chapter: f"Ch. {chapter['Chapter']}",
+                format_func=lambda chapter: f"Ch. {chapter['Chapter']} --- {get_relative_time(datetime.strptime(chapter['UpdatedAt'], '%Y-%m-%dT%H:%M:%SZ'))}",
             )
 
             if st.form_submit_button("Add Manga", on_click=add_manga_btn_callback):
