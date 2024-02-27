@@ -10,7 +10,7 @@ import (
 )
 
 func setup() error {
-	err := godotenv.Load("../../../../.env.test")
+	err := godotenv.Load("../../../.env.test")
 	if err != nil {
 		return err
 	}
