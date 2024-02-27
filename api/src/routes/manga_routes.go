@@ -296,8 +296,8 @@ func UpdateMangasMetadata(c *gin.Context) {
 				return
 			}
 
-			// Notify only if the manga's status is 1 (reading)
-			if notify && mangaToUpdate.Status == 1 {
+			// Notify only if the manga's status is 1 (reading) or 2 (completed)
+			if notify && (mangaToUpdate.Status == 1 || mangaToUpdate.Status == 2) {
 				if mangaToUpdate.LastUploadChapter.Chapter != updatedManga.LastUploadChapter.Chapter {
 					err = NotifyMangaLastUploadChapterUpdate(mangaToUpdate, updatedManga)
 					if err != nil {
