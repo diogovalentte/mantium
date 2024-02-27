@@ -19,7 +19,7 @@ var sources = map[string]Source{
 	// default sources
 	"mangahub.io":  &mangahub.Source{},
 	"mangadex.org": &mangadex.Source{},
-	"comick.cc":    &comick.Source{},
+	"comick.xyz":   &comick.Source{},
 }
 
 // Source is the interface for a manga source

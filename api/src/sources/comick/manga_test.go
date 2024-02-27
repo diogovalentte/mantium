@@ -17,53 +17,53 @@ var mangasTestTable = []mangaTestType{
 	{
 		expected: &manga.Manga{
 			Name:            "Death Note",
-			Source:          "comick.cc",
-			URL:             "https://comick.cc/comic/death-note",
+			Source:          "comick.xyz",
+			URL:             "https://comick.io/comic/death-note",
 			CoverImgURL:     "https://meo.comick.pictures/a0yXD.jpg",
 			CoverImgResized: true,
 			LastUploadChapter: &manga.Chapter{
 				Chapter:   "110",
 				Name:      "Ch. 110",
-				URL:       "https://comick.cc/comic/death-note/0MvzG",
+				URL:       "https://comick.io/comic/death-note/0MvzG",
 				UpdatedAt: time.Date(2021, 4, 11, 5, 45, 16, 0, time.UTC),
 				Type:      1,
 			},
 		},
-		url: "https://comick.cc/comic/death-note",
+		url: "https://comick.io/comic/death-note",
 	},
 	{
 		expected: &manga.Manga{
 			Name:            "Vagabond",
-			Source:          "comick.cc",
-			URL:             "https://comick.cc/comic/00-vagabond",
+			Source:          "comick.xyz",
+			URL:             "https://comick.io/comic/00-vagabond",
 			CoverImgURL:     "https://meo.comick.pictures/marne.jpg",
 			CoverImgResized: true,
 			LastUploadChapter: &manga.Chapter{
 				Chapter:   "327",
 				Name:      "The Man Named Tadoki",
-				URL:       "https://comick.cc/comic/00-vagabond/ADgKl",
+				URL:       "https://comick.io/comic/00-vagabond/ADgKl",
 				UpdatedAt: time.Date(2019, 2, 15, 1, 49, 59, 0, time.UTC), // in the site it's 01-19-2016 (maybe it uses JS or it have to wait a bit to update)
 				Type:      1,
 			},
 		},
-		url: "https://comick.cc/comic/00-vagabond",
+		url: "https://comick.io/comic/00-vagabond",
 	},
 	{
 		expected: &manga.Manga{
 			Name:            "Mob Psycho 100",
-			Source:          "comick.cc",
-			URL:             "https://comick.cc/comic/mob-psycho-100",
+			Source:          "comick.xyz",
+			URL:             "https://comick.io/comic/mob-psycho-100",
 			CoverImgURL:     "https://meo.comick.pictures/NR1xz.jpg",
 			CoverImgResized: true,
 			LastUploadChapter: &manga.Chapter{
 				Chapter:   "101",
 				Name:      "101",
-				URL:       "https://comick.cc/comic/mob-psycho-100/Ro7Lw",
+				URL:       "https://comick.io/comic/mob-psycho-100/Ro7Lw",
 				UpdatedAt: time.Date(2019, 2, 15, 8, 9, 33, 0, time.UTC),
 				Type:      1,
 			},
 		},
-		url: "https://comick.cc/comic/mob-psycho-100",
+		url: "https://comick.io/comic/mob-psycho-100",
 	},
 }
 
@@ -98,8 +98,8 @@ func TestGetMangaMetadata(t *testing.T) {
 }
 
 var getMangaIDTestTable = []string{
-	"https://comick.cc/comic/00-jujutsu-kaisen/",
-	"https://comick.cc/comic/00-jujutsu-kaisen",
+	"https://comick.io/comic/00-jujutsu-kaisen/",
+	"https://comick.io/comic/00-jujutsu-kaisen",
 }
 
 func TestGetMangaID(t *testing.T) {

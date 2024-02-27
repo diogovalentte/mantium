@@ -14,7 +14,7 @@ func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 	s.checkClient()
 
 	mangaReturn := &manga.Manga{}
-	mangaReturn.Source = "comick.cc"
+	mangaReturn.Source = "comick.xyz"
 	mangaReturn.URL = mangaURL
 
 	mangadexMangaID, err := getMangaSlug(mangaURL)
@@ -99,12 +99,12 @@ type mdCover struct {
 }
 
 // getMangaHID returns the HID of a manga given its URL
-// URL should be like: https://comick.cc/comic/00-jujutsu-kaisen
+// URL should be like: https://comick.xyz/comic/00-jujutsu-kaisen
 func (s *Source) getMangaHID(mangaURL string) (string, error) {
 	s.checkClient()
 
 	mangaReturn := &manga.Manga{}
-	mangaReturn.Source = "comick.cc"
+	mangaReturn.Source = "comick.xyz"
 	mangaReturn.URL = mangaURL
 
 	mangadexMangaID, err := getMangaSlug(mangaURL)
@@ -128,9 +128,9 @@ func (s *Source) getMangaHID(mangaURL string) (string, error) {
 }
 
 // getMangaSlug returns the slug of a manga given its URL
-// URL should be like: https://comick.cc/comic/00-jujutsu-kaisen
+// URL should be like: https://comick.xyz/comic/00-jujutsu-kaisen
 func getMangaSlug(mangaURL string) (string, error) {
-	pattern := `^https?://comick\.cc/comic/([^/]+)(?:/.*)?$`
+	pattern := `^https?://comick\.[^/]+/comic/([^/]+)(?:/.*)?$`
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		return "", err

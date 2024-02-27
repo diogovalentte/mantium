@@ -18,28 +18,28 @@ var chapterTestTable = []chapterTestType{
 		expected: &manga.Chapter{
 			Chapter:   "155",
 			Name:      "Proof of Life",
-			URL:       "https://comick.cc/comic/claymore/LAqvA",
+			URL:       "https://comick.io/comic/claymore/LAqvA",
 			UpdatedAt: time.Date(2020, 10, 2, 23, 28, 13, 0, time.UTC), // in the site it's 01-19-2016 (maybe it uses JS or it have to wait a bit to update)
 		},
-		url: "https://comick.cc/comic/claymore",
+		url: "https://comick.io/comic/claymore",
 	},
 	{
 		expected: &manga.Chapter{
 			Chapter:   "249",
 			Name:      "Resolution",
-			URL:       "https://comick.cc/comic/20th-century-boys/mZGW3",
+			URL:       "https://comick.io/comic/20th-century-boys/mZGW3",
 			UpdatedAt: time.Date(2019, 2, 15, 1, 39, 14, 0, time.UTC), // in the site it's 01-19-2016 (maybe it uses JS or it have to wait a bit to update)
 		},
-		url: "https://comick.cc/comic/20th-century-boys",
+		url: "https://comick.io/comic/20th-century-boys",
 	},
 	{
 		expected: &manga.Chapter{
 			Chapter:   "21",
 			Name:      "Ch. 21",
-			URL:       "https://comick.cc/comic/00-the-horizon/gxAok",
+			URL:       "https://comick.io/comic/00-the-horizon/gxAok",
 			UpdatedAt: time.Date(2020, 5, 23, 4, 33, 14, 0, time.UTC),
 		},
-		url: "https://comick.cc/comic/00-the-horizon",
+		url: "https://comick.io/comic/00-the-horizon",
 	},
 }
 
@@ -94,16 +94,16 @@ type chaptersTestType struct {
 
 var chaptersTestTable = []chaptersTestType{
 	{
-		url:      "https://comick.cc/comic/00-the-horizon",
+		url:      "https://comick.io/comic/00-the-horizon",
 		quantity: 21,
 	},
 	{
-		url:      "https://comick.cc/comic/bleach",
-		quantity: 700,
+		url:      "https://comick.io/comic/bleach",
+		quantity: 714,
 	},
 	{
-		url:      "https://comick.cc/comic/00-nisekoi",
-		quantity: 233,
+		url:      "https://comick.io/comic/00-nisekoi",
+		quantity: 237,
 	},
 }
 
