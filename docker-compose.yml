@@ -1,19 +1,21 @@
 version: '3'
 
 services:
-  mangas-dashboard-db:
-    container_name: mangas-dashboard-db
+  mantium-db:
+    container_name: mantium-db
     image: postgres:16-alpine
     volumes:
       - ./data/postgres-vol:/var/lib/postgresql/data:rwx
     environment:
       - PGID=1000
     env_file:
-      - .env.prod
+      - .env.test
+    ports:
+      - 5432:5432
     restart: unless-stopped
 
-  mangas-dashboard-api:
-    container_name: mangas-dashboard-api
+  mantium-api:
+    container_name: mantium-api
     build:
       context: .
       dockerfile: Dockerfile_API
@@ -23,8 +25,8 @@ services:
       - mangas-dashboard-db
     restart: unless-stopped
 
-  mangas-dashboard:
-    container_name: mangas-dashboard
+  mantium-dashboard:
+    container_name: mantium-dashboard
     build:
       context: .
       dockerfile: Dockerfile_dashboard
