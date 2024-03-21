@@ -523,6 +523,8 @@ if __name__ == "__main__":
 
     # Have to be outside the main function
     if st.sidebar.button("Refresh"):
+        if "manga_to_highlight" in ss:
+            del ss["manga_to_highlight"]
         st.rerun()
     try:
         main()
