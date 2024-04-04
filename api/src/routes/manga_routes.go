@@ -172,6 +172,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer"> <!-- If not set, can't load Mangedex images when behind a domain or reverse proxy -->
     <title>Movie Display Template</title>
     <style>
       body {
