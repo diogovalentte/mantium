@@ -1,0 +1,16 @@
+name: Docker Images CI for GHCR
+
+on: push
+
+jobs:
+  build_and_publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build and push images
+        run: |
+          docker login --username diogovalentte --password ${{ secrets.GH_TOKEN }} ghcr.io
+          docker build . --tag ghcr.io/diogovalentte/mantium-api:latest -f Dockerfile_API
+          docker push ghcr.io/diogovalentte/mantium-api:latest
+          docker build . --tag ghcr.io/diogovalentte/mantium-dashboard:latest -f Dockerfile_dashboard
+          docker push ghcr.io/diogovalentte/mantium-dashboard:latest
