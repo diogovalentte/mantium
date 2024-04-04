@@ -138,12 +138,18 @@ func GetMangasHTML(c *gin.Context) {
 		return
 	}
 
-	mangas, err := manga.GetMangasDB()
+	allMangas, err := manga.GetMangasDB()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	mangas = manga.FilterUnreadChapterMangas(mangas)
+	allUnreadMangas := manga.FilterUnreadChapterMangas(allMangas)
+	mangas := []*manga.Manga{}
+	for _, manga := range allUnreadMangas {
+		if manga.Status == 1 || manga.Status == 2 {
+			mangas = append(mangas, manga)
+		}
+	}
 	manga.SortMangasByLastUploadChapterUpdatedAt(mangas)
 
 	if limit >= 0 && limit < len(mangas) {
