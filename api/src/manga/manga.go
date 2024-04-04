@@ -4,6 +4,7 @@ package manga
 import (
 	"database/sql"
 	"fmt"
+	"sort"
 
 	"github.com/diogovalentte/manga-dashboard-api/api/src/db"
 	"github.com/diogovalentte/manga-dashboard-api/api/src/util"
@@ -705,4 +706,27 @@ func validateManga(m *Manga) error {
 	}
 
 	return nil
+}
+
+// FilterUnreadChapterMangas filters a list of mangas to return
+// mangas where the last upload chapter is different from the
+// last read chapter
+func FilterUnreadChapterMangas(mangas []*Manga) []*Manga {
+	unreadChapterMangas := []*Manga{}
+
+	for _, manga := range mangas {
+		if manga.LastUploadChapter.Chapter != manga.LastReadChapter.Chapter {
+			unreadChapterMangas = append(unreadChapterMangas, manga)
+		}
+	}
+
+	return unreadChapterMangas
+}
+
+// SortMangasByLastUploadChapterUpdatedAt sorts a list of mangas
+// by their last upload chapter updated at property, desc
+func SortMangasByLastUploadChapterUpdatedAt(mangas []*Manga) {
+	sort.Slice(mangas, func(i, j int) bool {
+		return mangas[i].LastUploadChapter.UpdatedAt.After(mangas[j].LastUploadChapter.UpdatedAt)
+	})
 }
