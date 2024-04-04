@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 services:
   mantium-db:
@@ -16,9 +16,7 @@ services:
 
   mantium-api:
     container_name: mantium-api
-    build:
-      context: .
-      dockerfile: Dockerfile_API
+    image: ghcr.io/diogovalentte/mantium-api:latest
     env_file:
       - .env.prod
     depends_on:
@@ -27,9 +25,7 @@ services:
 
   mantium-dashboard:
     container_name: mantium-dashboard
-    build:
-      context: .
-      dockerfile: Dockerfile_dashboard
+    image: ghcr.io/diogovalentte/mantium-dashboard:latest
     env_file:
       - .env.prod
     ports:
