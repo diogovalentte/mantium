@@ -243,6 +243,8 @@ func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
         margin: 20px;
         background-color: rgb(109, 139, 150, 0.5);
         border-radius: 5px;
+        width: 140px;
+        text-align: center;
       }
 
       .chapter-label {
