@@ -237,22 +237,35 @@ func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
         text-decoration: underline;
       }
 
-      .new-chapter-label {
+      .new-chapter-container {
         display: inline-block;
         padding: 8px 10px;
         margin: 20px;
         background-color: rgb(109, 139, 150, 0.5);
-        color: rgb(101, 206, 230);
-
-        text-decoration: none; /* Remove underline */
         border-radius: 5px;
+      }
+
+      .chapter-label {
+        text-decoration: none;
         font-size: 20px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
       }
 
-      .new-chapter-label:hover {
+      a.chapter-label:hover {
         text-decoration: underline;
+      }
+
+      .last-upload-chapter-label {
+        color: rgb(210, 101, 230);
+      }
+
+      .last-read-chapter-label {
+        color: rgb(101, 206, 230);
+      }
+
+      .chapter-gt-label {
+        color: rgb(101, 206, 230);
       }
 
       ::-webkit-scrollbar {
@@ -289,7 +302,11 @@ func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
             <a href="{{ .URL }}" target="_blank" class="manga-name">{{ .Name }}</a>
           </div>
 
-          <a href="{{ .LastUploadChapter.URL }}" target="_blank" class="new-chapter-label">Unread Chapter: {{ .LastUploadChapter.Chapter }}</a>
+          <div class="new-chapter-container">
+            <a href="{{ .LastUploadChapter.URL }}" class="chapter-label last-upload-chapter-label" target="_blank">{{ .LastUploadChapter.Chapter }}</a>
+            <span class="chapter-label chapter-gt-label"> &gt; </span>
+            <a href="{{ .LastReadChapter.URL }}" class="chapter-label last-read-chapter-label" target="_blank">{{ .LastReadChapter.Chapter }}</a>
+          </div>
 
         </div>
     {{end}}
