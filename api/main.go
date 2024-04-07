@@ -2,6 +2,7 @@
 package main
 
 import (
+	"io"
 	"os"
 	"strconv"
 	"time"
@@ -79,6 +80,11 @@ func setUpdateMangasMetadataPeriodicallyJob(log *zerolog.Logger) {
 				if err != nil {
 					log.Error().Msgf("Error updating mangas metadata: %s", err)
 					log.Error().Msgf("Request response: %s", res)
+					body, err := io.ReadAll(res.Body)
+					if err != nil {
+						log.Error().Msgf("Error while getting the response body: %s", err)
+					}
+					log.Error().Msgf("Request response text: %s", string(body))
 				} else {
 					log.Info().Msg("Mangas metadata updated")
 				}
