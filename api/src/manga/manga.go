@@ -278,9 +278,9 @@ func updateMangaStatusDB(m *Manga, status Status, tx *sql.Tx) error {
 	return nil
 }
 
-// UpdateChapter updates the last read/upload chapter in the database
+// UpsertChapter updates the last read/upload chapter in the database
 // The chapter.Type field must be set
-func (m *Manga) UpdateChapter(chapter *Chapter) error {
+func (m *Manga) UpsertChapter(chapter *Chapter) error {
 	contextError := "error updating manga chapter in DB"
 
 	db, err := db.OpenConn()
@@ -294,7 +294,7 @@ func (m *Manga) UpdateChapter(chapter *Chapter) error {
 		return util.AddErrorContext(err, contextError)
 	}
 
-	err = updateMangaChapter(m, chapter, tx)
+	err = upsertMangaChapter(m, chapter, tx)
 	if err != nil {
 		tx.Rollback()
 		return util.AddErrorContext(err, contextError)
@@ -489,7 +489,7 @@ func updateMangaMetadata(m *Manga, tx *sql.Tx) error {
 		return err
 	}
 
-	err = updateMangaChapter(m, m.LastUploadChapter, tx)
+	err = upsertMangaChapter(m, m.LastUploadChapter, tx)
 	if err != nil {
 		return err
 	}

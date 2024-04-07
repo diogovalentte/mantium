@@ -111,14 +111,14 @@ func TestMangaDBLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("should update a manga's last upload chapter in DB", func(t *testing.T) {
-		err := mangaTest.UpdateChapter(chaptersTest["last_upload_chapter"])
+		err := mangaTest.UpsertChapter(chaptersTest["last_upload_chapter"])
 		if err != nil {
 			t.Error(err)
 			return
 		}
 	})
 	t.Run("should update a manga's last read chapter in DB", func(t *testing.T) {
-		err := mangaTest.UpdateChapter(chaptersTest["last_read_chapter"])
+		err := mangaTest.UpsertChapter(chaptersTest["last_read_chapter"])
 		if err != nil {
 			t.Error(err)
 			return

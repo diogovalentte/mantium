@@ -74,9 +74,9 @@ func getChapterDB(id int, db *sql.DB) (*Chapter, error) {
 	return &chapter, nil
 }
 
-// updateMangaChapter updates the last upload or last read chapter of a manga
+// upsertMangaChapter updates the last upload or last read chapter of a manga
 // if the manga doesn't exist in the database, it will be inserted
-func updateMangaChapter(m *Manga, chapter *Chapter, tx *sql.Tx) error {
+func upsertMangaChapter(m *Manga, chapter *Chapter, tx *sql.Tx) error {
 	err := validateManga(m)
 	if err != nil {
 		return err

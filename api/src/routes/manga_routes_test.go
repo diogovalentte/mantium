@@ -69,7 +69,7 @@ func TestAddManga(t *testing.T) {
 		}
 	})
 	t.Run("Don't add manga with invalid last read chapter", func(t *testing.T) {
-		err := testAddMangaRouteHelper("invalid chapter", router, "error while getting chapter metadata from source: chapter not found, is the URL or chapter number correct?")
+		err := testAddMangaRouteHelper("invalid chapter", router, "error while getting chapter metadata from source: chapter not found, is the URL or chapter correct?")
 		if err != nil {
 			t.Error(err)
 		}
