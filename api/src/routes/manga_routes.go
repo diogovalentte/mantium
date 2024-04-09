@@ -259,11 +259,11 @@ func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
       }
 
       .last-upload-chapter-label {
-        color: rgb(210, 101, 230);
+        color: rgb(101, 206, 230);
       }
 
       .last-read-chapter-label {
-        color: rgb(101, 206, 230);
+        color: rgb(210, 101, 230);
       }
 
       .chapter-gt-label {
@@ -305,9 +305,9 @@ func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
           </div>
 
           <div class="new-chapter-container">
-            <a href="{{ .LastUploadChapter.URL }}" class="chapter-label last-upload-chapter-label" target="_blank">{{ .LastUploadChapter.Chapter }}</a>
-            <span class="chapter-label chapter-gt-label"> &gt; </span>
             <a href="{{ .LastReadChapter.URL }}" class="chapter-label last-read-chapter-label" target="_blank">{{ .LastReadChapter.Chapter }}</a>
+            <span class="chapter-label chapter-gt-label"> &lt; </span>
+            <a href="{{ .LastUploadChapter.URL }}" class="chapter-label last-upload-chapter-label" target="_blank">{{ .LastUploadChapter.Chapter }}</a>
           </div>
 
         </div>
