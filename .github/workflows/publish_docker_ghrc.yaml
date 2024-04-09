@@ -9,7 +9,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: Build and push images
         run: |
-          docker login --username diogovalentte --password ${{ secrets.GH_TOKEN }} ghcr.io
+          docker login --username ${{ secrets.GH_USERNAME }} --password ${{ secrets.GH_TOKEN }} ghcr.io
           docker build . --tag ghcr.io/diogovalentte/mantium-api:latest -f Dockerfile_API
           docker push ghcr.io/diogovalentte/mantium-api:latest
           docker build . --tag ghcr.io/diogovalentte/mantium-dashboard:latest -f Dockerfile_dashboard
