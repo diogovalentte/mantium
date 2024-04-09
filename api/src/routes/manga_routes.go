@@ -30,7 +30,7 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.PATCH("/manga/status", UpdateMangaStatus)
 		group.PATCH("/manga/last_read_chapter", UpdateMangaLastReadChapter)
 		group.GET("/mangas", GetMangas)
-		group.GET("/mangas/html", GetMangasHTML)
+		group.GET("/mangas/iframe", GetMangasiFrame)
 		group.PATCH("/mangas/metadata", UpdateMangasMetadata)
 	}
 }
@@ -115,9 +115,9 @@ func GetMangas(c *gin.Context) {
 	c.JSON(http.StatusOK, resMap)
 }
 
-// GetMangasHTML gets mangas from the database and returns a HTML code designed
-// be used in a iFrame in Homarr
-func GetMangasHTML(c *gin.Context) {
+// GetMangasiFrame gets mangas from the database and returns a HTML code designed
+// be used in an iFrame in Homarr
+func GetMangasiFrame(c *gin.Context) {
 	queryLimit := c.Query("limit")
 	var limit int
 	var err error
@@ -270,6 +270,20 @@ func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
         color: rgb(101, 206, 230);
       }
 
+      .set-last-read-button {
+        color: white;
+        background-color: #04c9b7;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid rgb(4, 201, 183);
+        margin-top: 10px;
+        font-weight: bold;
+      }
+
+      button.set-last-read-button:hover {
+        filter: brightness(0.9)
+      }
+
       ::-webkit-scrollbar {
         width: 7px;
       }
@@ -287,6 +301,35 @@ func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
         background-color: SCROLLBAR-TRACK-BACKGROUND-COLOR;
       }
     </style>
+
+    <script>
+      function setLastReadChapter(ID, chapter) {
+        var xhr = new XMLHttpRequest();
+        var url = 'http://localhost:8080/v1/manga/last_read_chapter?id=' + encodeURIComponent(ID);
+        xhr.open('PATCH', url, true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+
+        xhr.onload = function () {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            console.log('Request to update manga', ID, ' last read chapter finished with success:', xhr.responseText);
+            location.reload();
+          } else {
+            console.log('Request to update manga', ID, ' last read chapter failed:', xhr.responseText);
+          }
+        };
+
+        xhr.onerror = function () {
+          console.log('Request to update manga', ID, ' last read chapter failed:', xhr.responseText);
+        };
+
+        var body = {
+            chapter: chapter
+        };
+
+        xhr.send(JSON.stringify(body));
+      }
+    </script>
+
   </head>
   <body>
     {{range .}}
@@ -308,6 +351,8 @@ func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
             <a href="{{ .LastReadChapter.URL }}" class="chapter-label last-read-chapter-label" target="_blank">{{ .LastReadChapter.Chapter }}</a>
             <span class="chapter-label chapter-gt-label"> &lt; </span>
             <a href="{{ .LastUploadChapter.URL }}" class="chapter-label last-upload-chapter-label" target="_blank">{{ .LastUploadChapter.Chapter }}</a>
+
+            <button onclick="setLastReadChapter('{{ .ID }}', {{ .LastUploadChapter.Chapter }})" class="set-last-read-button" onmouseenter="this.style.cursor='pointer';">Set last read</button>
           </div>
 
         </div>
