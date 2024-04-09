@@ -449,7 +449,9 @@ type UpdateMangaStatusRequest struct {
 	Status manga.Status `json:"status" binding:"required,gte=0,lte=5"`
 }
 
-// UpdateMangaLastReadChapter updates the manga last read chapter to the last upload chapter
+// UpdateMangaLastReadChapter updates the manga last read chapter.
+// If not chapter number or URL is set on the body, set the last read
+// chapter to the last upload chapter
 func UpdateMangaLastReadChapter(c *gin.Context) {
 	currentTime := time.Now()
 
@@ -477,7 +479,16 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 		return
 	}
 
-	chapter := mangaUpdate.LastUploadChapter
+	var chapter *manga.Chapter
+	if requestData.Chapter == "" || requestData.ChapterURL == "" {
+		chapter = mangaUpdate.LastUploadChapter
+	} else {
+		chapter, err = sources.GetChapterMetadata(mangaUpdate.URL, requestData.Chapter, requestData.ChapterURL)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	}
 	chapter.Type = 2
 	chapter.UpdatedAt = currentTime
 
@@ -492,7 +503,7 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 
 // UpdateMangaChapterRequest is the request body for updating a manga chapter
 type UpdateMangaChapterRequest struct {
-	Chapter    string `json:"chapter" binding:"required"`
+	Chapter    string `json:"chapter"`
 	ChapterURL string `json:"chapter_url"`
 }
 

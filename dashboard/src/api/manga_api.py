@@ -3,7 +3,6 @@ from typing import Any
 from urllib.parse import urljoin
 
 import requests
-
 from src.exceptions import APIException
 
 
@@ -136,10 +135,10 @@ class MangaAPIClient:
 
     def update_manga_last_read_chapter(
         self,
-        chapter: str,
-        chapter_url: str,
         manga_id: int,
         manga_url: str,
+        chapter: str = "",
+        chapter_url: str = "",
     ) -> dict[str, str]:
         path = "/last_read_chapter"
         url = f"{self.base_url}{path}"

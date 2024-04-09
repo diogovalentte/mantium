@@ -279,8 +279,6 @@ class MainDashboard:
                     != manga["LastUploadChapter"]["Chapter"]
                 ):
                     self.api_client.update_manga_last_read_chapter(
-                        manga["LastUploadChapter"]["Chapter"],
-                        manga["LastUploadChapter"]["URL"],
                         manga["ID"],
                         manga["URL"],
                     )
@@ -369,10 +367,10 @@ class MainDashboard:
                         or chapter != manga["LastReadChapter"]["Chapter"]
                     ):
                         self.api_client.update_manga_last_read_chapter(
-                            chapter["Chapter"],
-                            chapter["URL"],
                             manga["ID"],
                             manga["URL"],
+                            chapter["Chapter"],
+                            chapter["URL"],
                         )
 
                     ss["update_manga_form_default_status_index"] = list(
