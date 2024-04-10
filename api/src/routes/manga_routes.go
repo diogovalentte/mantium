@@ -223,9 +223,9 @@ func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
             white-space: nowrap;
             text-overflow: ellipsis;
             width: 1px !important;
-            margin-right: 10px;
+            margin-right: 10px 0px 10px 10px;
 
-            /* this set the ellipsis (...) properties only if the attributes below are overwritten*/
+            /* if the attributes below are overwritten in the inner elements, this set the ellipsis properties only */
             color: white; 
             font-weight: bold;
         }
@@ -244,11 +244,11 @@ func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
 
         .new-chapter-container {
             display: inline-block;
-            padding: 8px 10px;
-            margin: 20px;
-            background-color: rgb(109, 139, 150, 0.5);
+            padding: 8px 0px;
+            margin: 20px 10px;
+            background-color: transparent;
             border-radius: 5px;
-            width: 140px;
+            width: 162px;
             text-align: center;
         }
 
