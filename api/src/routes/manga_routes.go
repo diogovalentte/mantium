@@ -181,7 +181,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
         padding: 0;
       }
 
-      .manga-container {
+      .mangas-container {
         width: calc(100% - MANGAS-CONTAINER-WIDTHpx);
         height: 84px;
 
@@ -211,31 +211,36 @@ func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
       .manga-cover {
         border-radius: 2px;
         margin-left: 20px;
+        margin-right: 20px;
         object-fit: cover;
         width: 30px;
         height: 50px;
       }
 
-      .manga-details {
-        flex: 1;
-        padding: 0 20px;
-      }
+        .text-wrap {
+            flex-grow: 1;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            width: 1px !important;
+            margin-right: 10px;
 
-      .manga-name {
-        font-size: 15px;
-        font-weight: bold;
-        color: white;
+            /* this set the ellipsis (...) properties only if the attributes below are overwritten*/
+            color: white; 
+            font-weight: bold;
+        }
 
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+        .manga-name {
+            font-size: 15px;
+            color: white;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+            text-decoration: none;
+            font-weight: bold;
+        }
 
-        text-decoration: none;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .manga-name:hover {
-        text-decoration: underline;
-      }
+        .manga-name:hover {
+            text-decoration: underline;
+        }
 
       .new-chapter-container {
         display: inline-block;
@@ -331,33 +336,35 @@ func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
     </script>
 
   </head>
-  <body>
-    {{range .}}
-        <div class="manga-container">
+<body>
+{{range .}}
+    <div class="mangas-container">
 
-          <div style="background-image: url('{{ .CoverImgURL }}');" class="background-image"></div>
+        <div style="background-image: url('{{ .CoverImgURL }}');" class="background-image"></div>
 
-          <img
+        <img
             class="manga-cover"
             src="{{ .CoverImgURL }}"
             alt="Manga Cover"
-          />
+        />
 
-          <div class="manga-details">
+        <div class="text-wrap">
             <a href="{{ .URL }}" target="_blank" class="manga-name">{{ .Name }}</a>
-          </div>
+        </div>
 
-          <div class="new-chapter-container">
+        <div class="new-chapter-container">
             <a href="{{ .LastReadChapter.URL }}" class="chapter-label last-read-chapter-label" target="_blank">{{ .LastReadChapter.Chapter }}</a>
-            <span class="chapter-label chapter-gt-label"> &lt; </span>
+                <span class="chapter-label chapter-gt-label"> &lt; </span>
             <a href="{{ .LastUploadChapter.URL }}" class="chapter-label last-upload-chapter-label" target="_blank">{{ .LastUploadChapter.Chapter }}</a>
 
-            <button onclick="setLastReadChapter('{{ .ID }}', {{ .LastUploadChapter.Chapter }})" class="set-last-read-button" onmouseenter="this.style.cursor='pointer';">Set last read</button>
-          </div>
-
+            <div>
+                <button onclick="setLastReadChapter('{{ .ID }}', {{ .LastUploadChapter.Chapter }})" class="set-last-read-button" onmouseenter="this.style.cursor='pointer';">Set last read</button>
+            </div>
         </div>
-    {{end}}
-  </body>
+
+    </div>
+{{end}}
+</body>
 </html>
 	`
 	// Set the container width based on the number of mangas for better fitting with Homarr
