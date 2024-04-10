@@ -175,47 +175,47 @@ func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
     <meta name="referrer" content="no-referrer"> <!-- If not set, can't load Mangedex images when behind a domain or reverse proxy -->
     <title>Movie Display Template</title>
     <style>
-      body {
-        background-color: MANGAS-CONTAINER-BACKGROUND-COLOR;
-        margin: 0;
-        padding: 0;
-      }
+        body {
+            background-color: MANGAS-CONTAINER-BACKGROUND-COLOR;
+            margin: 0;
+            padding: 0;
+        }
 
-      .mangas-container {
-        width: calc(100% - MANGAS-CONTAINER-WIDTHpx);
-        height: 84px;
+        .mangas-container {
+            width: calc(100% - MANGAS-CONTAINER-WIDTHpx);
+            height: 84px;
 
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 14px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
 
-        border-radius: 10px;
-        border: 1px solid rgba(56, 58, 64, 1);
-      }
+            border-radius: 10px;
+            border: 1px solid rgba(56, 58, 64, 1);
+        }
 
-      .background-image {
-        background-position: center;
-        background-size: cover;
-        position: absolute;
-        filter: brightness(0.3);
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: -1;
-        border-radius: 10px;
-      }
+        .background-image {
+            background-position: center;
+            background-size: cover;
+            position: absolute;
+            filter: brightness(0.3);
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -1;
+            border-radius: 10px;
+        }
 
-      .manga-cover {
-        border-radius: 2px;
-        margin-left: 20px;
-        margin-right: 20px;
-        object-fit: cover;
-        width: 30px;
-        height: 50px;
-      }
+        .manga-cover {
+            border-radius: 2px;
+            margin-left: 20px;
+            margin-right: 20px;
+            object-fit: cover;
+            width: 30px;
+            height: 50px;
+        }
 
         .text-wrap {
             flex-grow: 1;
@@ -242,89 +242,91 @@ func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
             text-decoration: underline;
         }
 
-      .new-chapter-container {
-        display: inline-block;
-        padding: 8px 10px;
-        margin: 20px;
-        background-color: rgb(109, 139, 150, 0.5);
-        border-radius: 5px;
-        width: 140px;
-        text-align: center;
-      }
+        .new-chapter-container {
+            display: inline-block;
+            padding: 8px 10px;
+            margin: 20px;
+            background-color: rgb(109, 139, 150, 0.5);
+            border-radius: 5px;
+            width: 140px;
+            text-align: center;
+        }
 
-      .chapter-label {
-        text-decoration: none;
-        font-size: 20px;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-      }
+        .chapter-label {
+            text-decoration: none;
+            font-size: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+              Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+        }
 
-      a.chapter-label:hover {
-        text-decoration: underline;
-      }
+        a.chapter-label:hover {
+            text-decoration: underline;
+        }
 
-      .last-upload-chapter-label {
-        color: rgb(101, 206, 230);
-      }
+        .last-upload-chapter-label {
+            color: rgb(101, 206, 230);
+        }
 
-      .last-read-chapter-label {
-        color: rgb(210, 101, 230);
-      }
+        .last-read-chapter-label {
+            color: rgb(210, 101, 230);
+        }
 
-      .chapter-gt-label {
-        color: rgb(101, 206, 230);
-      }
+        .chapter-gt-label {
+            color: rgb(101, 206, 230);
+        }
 
-      .set-last-read-button {
-        color: white;
-        background-color: #04c9b7;
-        padding: 0.25rem 0.75rem;
-        border-radius: 0.5rem;
-        border: 1px solid rgb(4, 201, 183);
-        margin-top: 10px;
-        font-weight: bold;
-      }
+        .set-last-read-button {
+            color: white;
+            background-color: #04c9b7;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgb(4, 201, 183);
+            margin-top: 10px;
+            font-weight: bold;
+        }
 
-      button.set-last-read-button:hover {
-        filter: brightness(0.9)
-      }
+        button.set-last-read-button:hover {
+            filter: brightness(0.9)
+        }
 
-      ::-webkit-scrollbar {
-        width: 7px;
-      }
+        ::-webkit-scrollbar {
+            width: 7px;
+        }
 
-      ::-webkit-scrollbar-thumb {
-        background-color: SCROLLBAR-THUMB-BACKGROUND-COLOR;
-        border-radius: 2.3px;
-      }
+        ::-webkit-scrollbar-thumb {
+            background-color: SCROLLBAR-THUMB-BACKGROUND-COLOR;
+            border-radius: 2.3px;
+        }
 
-      ::-webkit-scrollbar-track {
-        background-color: transparent;
-      }
+        ::-webkit-scrollbar-track {
+            background-color: transparent;
+        }
 
-      ::-webkit-scrollbar-track:hover {
-        background-color: SCROLLBAR-TRACK-BACKGROUND-COLOR;
-      }
+        ::-webkit-scrollbar-track:hover {
+            background-color: SCROLLBAR-TRACK-BACKGROUND-COLOR;
+        }
     </style>
 
     <script>
-      function setLastReadChapter(ID, chapter) {
+      function setLastReadChapter(mangaId, chapter) {
         var xhr = new XMLHttpRequest();
-        var url = 'http://localhost:8080/v1/manga/last_read_chapter?id=' + encodeURIComponent(ID);
+        var url = 'http://localhost:8080/v1/manga/last_read_chapter?id=' + encodeURIComponent(mangaId);
         xhr.open('PATCH', url, true);
         xhr.setRequestHeader('Content-Type', 'application/json');
 
         xhr.onload = function () {
           if (xhr.status >= 200 && xhr.status < 300) {
-            console.log('Request to update manga', ID, ' last read chapter finished with success:', xhr.responseText);
+            console.log('Request to update manga', mangaId, ' last read chapter finished with success:', xhr.responseText);
             location.reload();
           } else {
-            console.log('Request to update manga', ID, ' last read chapter failed:', xhr.responseText);
+            console.log('Request to update manga', mangaId, ' last read chapter failed:', xhr.responseText);
+            handleSetLastReadChapterError("manga-" + mangaId)
           }
         };
 
         xhr.onerror = function () {
-          console.log('Request to update manga', ID, ' last read chapter failed:', xhr.responseText);
+          console.log('Request to update manga', mangaId, ' last read chapter failed:', xhr.responseText);
+          handleSetLastReadChapterError(mangaId)
         };
 
         var body = {
@@ -333,6 +335,13 @@ func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
 
         xhr.send(JSON.stringify(body));
       }
+
+        function handleSetLastReadChapterError(buttonId) {
+            var button = document.getElementById(buttonId);
+            button.textContent = "! ERROR !";
+            button.style.backgroundColor = "red";
+            button.style.borderColor = "red";
+        }
     </script>
 
   </head>
@@ -358,7 +367,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
             <a href="{{ .LastUploadChapter.URL }}" class="chapter-label last-upload-chapter-label" target="_blank">{{ .LastUploadChapter.Chapter }}</a>
 
             <div>
-                <button onclick="setLastReadChapter('{{ .ID }}', {{ .LastUploadChapter.Chapter }})" class="set-last-read-button" onmouseenter="this.style.cursor='pointer';">Set last read</button>
+                <button id="manga-{{ .ID }}" onclick="setLastReadChapter('{{ .ID }}', {{ .LastUploadChapter.Chapter }})" class="set-last-read-button" onmouseenter="this.style.cursor='pointer';">Set last read</button>
             </div>
         </div>
 
