@@ -18,8 +18,6 @@ st.set_page_config(
     layout="wide",
 )
 
-st.write("#")  # Without this, the app loads in the middle of the page
-
 
 class MainDashboard:
     def __init__(self):
