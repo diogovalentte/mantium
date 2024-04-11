@@ -3,6 +3,7 @@ package main
 
 import (
 	"io"
+	"os"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -42,7 +43,7 @@ func main() {
 	router := api.SetupRouter()
 	router.SetTrustedProxies(nil)
 
-	router.Run()
+	router.Run(":" + os.Getenv("API_PORT"))
 }
 
 func setUpdateMangasMetadataPeriodicallyJob(log *zerolog.Logger) {

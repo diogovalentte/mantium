@@ -9,5 +9,6 @@ RUN go mod download
 RUN go build -o main .
 
 ENV GIN_MODE=release
+ENV API_PORT=8080
 
 CMD ["./main"]

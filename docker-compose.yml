@@ -7,7 +7,10 @@ services:
     volumes:
       - ./data/postgres-vol:/var/lib/postgresql/data
     environment:
-      - PGID=1000
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_DB=${POSTGRES_DB:-postgres}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
     ports:
       - 5432:5432
     restart: unless-stopped
@@ -17,6 +20,26 @@ services:
     image: ghcr.io/diogovalentte/mantium-api:latest
     volumes:
       - ./configs:/app/api/configs
+    environment:
+      - POSTGRES_HOST=mantium-db
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_DB=${POSTGRES_DB:-postgres}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
+
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - API_PORT=${API_PORT:-8080}
+
+      - NTFY_ADDRESS=${NTFY_ADDRESS}
+      - NTFY_TOPIC=${NTFY_TOPIC}
+      - NTFY_TOKEN=${NTFY_TOKEN}
+
+      - UPDATE_MANGAS_PERIODICALLY=${UPDATE_MANGAS_PERIODICALLY:-false}
+      - UPDATE_MANGAS_PERIODICALLY_NOTIFY=${UPDATE_MANGAS_PERIODICALLY_NOTIFY:-false}
+      - UPDATE_MANGAS_PERIODICALLY_MINUTES=${UPDATE_MANGAS_PERIODICALLY_MINUTES:-30}
+    # Port mapping if you want to use the dashboard iFrame
+    # ports:
+    #   - 8080:8080
     depends_on:
       - mangas-dashboard-db
     restart: unless-stopped
@@ -24,6 +47,8 @@ services:
   mantium-dashboard:
     container_name: mantium-dashboard
     image: ghcr.io/diogovalentte/mantium-dashboard:latest
+    environment:
+      - DASHBOARD_PORT=${DASHBOARD_PORT:-8501}
     ports:
       - 8501:8501
     depends_on:

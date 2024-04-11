@@ -4,6 +4,8 @@ WORKDIR /app/dashboard
 
 COPY ./dashboard .
 
+ENV DASHBOARD_PORT=8501
+
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["streamlit", "run", "01_📖_Dashboard.py"]
+CMD ["streamlit", "run", "--server.port=$DASHBOARD_PORT", "01_📖_Dashboard.py"]
