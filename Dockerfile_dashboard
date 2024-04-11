@@ -1,10 +1,8 @@
 FROM python:3.10.12
 
-WORKDIR /app
-
-COPY . .
-
 WORKDIR /app/dashboard
+
+COPY ./dashboard .
 
 RUN pip install --no-cache-dir -r requirements.txt
 

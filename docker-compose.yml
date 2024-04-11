@@ -5,11 +5,9 @@ services:
     container_name: mantium-db
     image: postgres:16-alpine
     volumes:
-      - ./data/postgres-vol:/var/lib/postgresql/data:rwx
+      - ./data/postgres-vol:/var/lib/postgresql/data
     environment:
       - PGID=1000
-    env_file:
-      - .env.test
     ports:
       - 5432:5432
     restart: unless-stopped
@@ -17,8 +15,8 @@ services:
   mantium-api:
     container_name: mantium-api
     image: ghcr.io/diogovalentte/mantium-api:latest
-    env_file:
-      - .env.prod
+    volumes:
+      - ./configs:/app/api/configs
     depends_on:
       - mangas-dashboard-db
     restart: unless-stopped
@@ -26,8 +24,6 @@ services:
   mantium-dashboard:
     container_name: mantium-dashboard
     image: ghcr.io/diogovalentte/mantium-dashboard:latest
-    env_file:
-      - .env.prod
     ports:
       - 8501:8501
     depends_on:
