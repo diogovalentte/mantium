@@ -6,8 +6,8 @@ import (
 
 	"github.com/gocolly/colly/v2"
 
-	"github.com/diogovalentte/manga-dashboard-api/api/src/manga"
-	"github.com/diogovalentte/manga-dashboard-api/api/src/util"
+	"github.com/diogovalentte/mantium/api/src/manga"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // GetMangaMetadata scrapes the manga page and return the manga data

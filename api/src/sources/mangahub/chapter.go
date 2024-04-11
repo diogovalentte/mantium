@@ -6,7 +6,7 @@ import (
 
 	"github.com/gocolly/colly/v2"
 
-	"github.com/diogovalentte/manga-dashboard-api/api/src/manga"
+	"github.com/diogovalentte/mantium/api/src/manga"
 )
 
 // GetChapterMetadata returns a chapter by its chapter or URL

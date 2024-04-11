@@ -12,9 +12,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 
-	"github.com/diogovalentte/manga-dashboard-api/api/src"
-	"github.com/diogovalentte/manga-dashboard-api/api/src/manga"
-	"github.com/diogovalentte/manga-dashboard-api/api/src/routes"
+	"github.com/diogovalentte/mantium/api/src"
+	"github.com/diogovalentte/mantium/api/src/manga"
+	"github.com/diogovalentte/mantium/api/src/routes"
 )
 
 func setup() error {

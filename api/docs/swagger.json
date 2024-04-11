@@ -1,0 +1,512 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/dashboard/configs": {
+            "get": {
+                "description": "Returns the dashboard configs read from the configs.json file.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get the dashboard configs",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.Configs"
+                        }
+                    }
+                }
+            }
+        },
+        "/dashboard/configs/columns": {
+            "patch": {
+                "description": "Update the dashboard columns in the configs.json file.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Update dashboard columns",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 5,
+                        "description": "New number of columns.",
+                        "name": "columns",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/health": {
+            "get": {
+                "description": "Returns status OK",
+                "produces": [
+                    "text/plain"
+                ],
+                "summary": "Health check route",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/manga": {
+            "get": {
+                "description": "Gets a manga from the database. You must provide either the manga ID or the manga URL.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get manga",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Manga ID",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"https://mangadex.org/title/1/one-piece\"",
+                        "description": "Manga URL",
+                        "name": "url",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"manga\": mangaObj}",
+                        "schema": {
+                            "$ref": "#/definitions/manga.Manga"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Gets a manga metadata from source and inserts in the database.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Add manga",
+                "parameters": [
+                    {
+                        "description": "Manga data",
+                        "name": "manga",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.AddMangaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes a manga from the database. You must provide either the manga ID or the manga URL.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Delete manga",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Manga ID",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"https://mangadex.org/title/1/one-piece\"",
+                        "description": "Manga URL",
+                        "name": "url",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/manga/chapters": {
+            "get": {
+                "description": "Get a manga chapters from the source. You must provide either the manga ID or the manga URL.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get manga chapters",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Manga ID",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"https://mangadex.org/title/1/one-piece\"",
+                        "description": "Manga URL",
+                        "name": "url",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"chapters\": [chapterObj]}",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/manga.Chapter"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/manga/last_read_chapter": {
+            "patch": {
+                "description": "Updates a manga last read chapter in the database. If both `chapter` and `chapter_url` are empty strings in the body, set the last read chapter to the last upload chapter in the database. You must provide either the manga ID or the manga URL.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Update manga last read chapter",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Manga ID",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"https://mangadex.org/title/1/one-piece\"",
+                        "description": "Manga URL",
+                        "name": "url",
+                        "in": "query"
+                    },
+                    {
+                        "description": "Manga status",
+                        "name": "status",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.UpdateMangaChapterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/manga/status": {
+            "patch": {
+                "description": "Updates a manga status in the database. You must provide either the manga ID or the manga URL.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Update manga status",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Manga ID",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"https://mangadex.org/title/1/one-piece\"",
+                        "description": "Manga URL",
+                        "name": "url",
+                        "in": "query"
+                    },
+                    {
+                        "description": "Manga status",
+                        "name": "status",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.UpdateMangaStatusRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/mangas": {
+            "get": {
+                "description": "Gets all mangas from the database.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get mangas",
+                "responses": {
+                    "200": {
+                        "description": "{\"mangas\": [mangaObj]}",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/manga.Manga"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/mangas/iframe": {
+            "get": {
+                "description": "Returns an iFrame with mangas. Only mangas with unread chapters, and status reading or completed. Sort by last upload chapter date. Designed to be used with [Homarr](https://github.com/ajnart/homarr).",
+                "produces": [
+                    "text/html"
+                ],
+                "summary": "Mangas iFrame",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "light",
+                        "description": "Homarr theme, defaults to light.",
+                        "name": "theme",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "example": 5,
+                        "description": "Limits the number of items in the iFrame.",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "HTML content",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/mangas/metadata": {
+            "patch": {
+                "description": "Get the mangas metadata from the sources and update them in the database.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Update mangas metadata",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Notify if a new chapter was upload for the manga (only of mangas with status reading or completed)",
+                        "name": "notify",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "manga.Chapter": {
+            "type": "object",
+            "properties": {
+                "chapter": {
+                    "description": "Chapter usually is the chapter number, but in some cases it can be a one-shot or a special chapter",
+                    "type": "string"
+                },
+                "name": {
+                    "description": "Name is the name of the chapter",
+                    "type": "string"
+                },
+                "type": {
+                    "type": "integer"
+                },
+                "updatedAt": {
+                    "description": "UpdatedAt is the time when the chapter was uploaded or updated (read)",
+                    "type": "string"
+                },
+                "url": {
+                    "description": "URL is the URL of the chapter",
+                    "type": "string"
+                }
+            }
+        },
+        "manga.Manga": {
+            "type": "object",
+            "properties": {
+                "coverImg": {
+                    "description": "CoverImg is the cover image of the manga",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "coverImgResized": {
+                    "description": "CoverImgResized is true if the cover image was resized",
+                    "type": "boolean"
+                },
+                "coverImgURL": {
+                    "description": "CoverImgURL is the URL of the cover image",
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "lastReadChapter": {
+                    "description": "LastReadChapter is the last chapter read by the user",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/manga.Chapter"
+                        }
+                    ]
+                },
+                "lastUploadChapter": {
+                    "description": "LastUploadChapter is the last chapter uploaded to the source",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/manga.Chapter"
+                        }
+                    ]
+                },
+                "name": {
+                    "description": "Name is the name of the manga",
+                    "type": "string"
+                },
+                "preferredGroup": {
+                    "description": "PreferredGroup is the preferred group that translates (and more) the manga\nNot all sources have multiple groups",
+                    "type": "string"
+                },
+                "source": {
+                    "description": "Source is the source of the manga, usually the domain of the website",
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer"
+                },
+                "url": {
+                    "description": "URL is the URL of the manga",
+                    "type": "string"
+                }
+            }
+        },
+        "routes.AddMangaRequest": {
+            "type": "object",
+            "required": [
+                "status",
+                "url"
+            ],
+            "properties": {
+                "last_read_chapter": {
+                    "type": "string"
+                },
+                "last_read_chapter_url": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "integer",
+                    "maximum": 5,
+                    "minimum": 0
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "routes.Configs": {
+            "type": "object",
+            "properties": {
+                "dashboard": {
+                    "type": "object",
+                    "properties": {
+                        "columns": {
+                            "type": "integer"
+                        }
+                    }
+                }
+            }
+        },
+        "routes.UpdateMangaChapterRequest": {
+            "type": "object",
+            "properties": {
+                "chapter": {
+                    "type": "string"
+                },
+                "chapter_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "routes.UpdateMangaStatusRequest": {
+            "type": "object",
+            "required": [
+                "status"
+            ],
+            "properties": {
+                "status": {
+                    "type": "integer",
+                    "maximum": 5,
+                    "minimum": 0
+                }
+            }
+        },
+        "routes.responseMessage": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

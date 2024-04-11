@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/diogovalentte/manga-dashboard-api/api/src/manga"
-	"github.com/diogovalentte/manga-dashboard-api/api/src/sources/comick"
-	"github.com/diogovalentte/manga-dashboard-api/api/src/sources/mangadex"
-	"github.com/diogovalentte/manga-dashboard-api/api/src/sources/mangahub"
-	"github.com/diogovalentte/manga-dashboard-api/api/src/util"
+	"github.com/diogovalentte/mantium/api/src/manga"
+	"github.com/diogovalentte/mantium/api/src/sources/comick"
+	"github.com/diogovalentte/mantium/api/src/sources/mangadex"
+	"github.com/diogovalentte/mantium/api/src/sources/mangahub"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // sources is a map of all sources

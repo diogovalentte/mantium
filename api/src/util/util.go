@@ -19,7 +19,7 @@ import (
 	"github.com/nfnt/resize"
 	"github.com/rs/zerolog"
 
-	"github.com/diogovalentte/manga-dashboard-api/api/src/config"
+	"github.com/diogovalentte/mantium/api/src/config"
 )
 
 var logger *zerolog.Logger

@@ -7,10 +7,10 @@ import (
 
 	"github.com/rs/zerolog"
 
-	"github.com/diogovalentte/manga-dashboard-api/api/src"
-	"github.com/diogovalentte/manga-dashboard-api/api/src/config"
-	"github.com/diogovalentte/manga-dashboard-api/api/src/db"
-	"github.com/diogovalentte/manga-dashboard-api/api/src/util"
+	"github.com/diogovalentte/mantium/api/src"
+	"github.com/diogovalentte/mantium/api/src/config"
+	"github.com/diogovalentte/mantium/api/src/db"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 func init() {

@@ -8,7 +8,7 @@ import (
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/rs/zerolog"
 
-	"github.com/diogovalentte/manga-dashboard-api/api/src/config"
+	"github.com/diogovalentte/mantium/api/src/config"
 )
 
 func getConnString() string {

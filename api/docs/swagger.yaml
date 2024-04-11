@@ -1,0 +1,354 @@
+definitions:
+  manga.Chapter:
+    properties:
+      chapter:
+        description: Chapter usually is the chapter number, but in some cases it can
+          be a one-shot or a special chapter
+        type: string
+      name:
+        description: Name is the name of the chapter
+        type: string
+      type:
+        type: integer
+      updatedAt:
+        description: UpdatedAt is the time when the chapter was uploaded or updated
+          (read)
+        type: string
+      url:
+        description: URL is the URL of the chapter
+        type: string
+    type: object
+  manga.Manga:
+    properties:
+      coverImg:
+        description: CoverImg is the cover image of the manga
+        items:
+          type: integer
+        type: array
+      coverImgResized:
+        description: CoverImgResized is true if the cover image was resized
+        type: boolean
+      coverImgURL:
+        description: CoverImgURL is the URL of the cover image
+        type: string
+      id:
+        type: integer
+      lastReadChapter:
+        allOf:
+        - $ref: '#/definitions/manga.Chapter'
+        description: LastReadChapter is the last chapter read by the user
+      lastUploadChapter:
+        allOf:
+        - $ref: '#/definitions/manga.Chapter'
+        description: LastUploadChapter is the last chapter uploaded to the source
+      name:
+        description: Name is the name of the manga
+        type: string
+      preferredGroup:
+        description: |-
+          PreferredGroup is the preferred group that translates (and more) the manga
+          Not all sources have multiple groups
+        type: string
+      source:
+        description: Source is the source of the manga, usually the domain of the
+          website
+        type: string
+      status:
+        type: integer
+      url:
+        description: URL is the URL of the manga
+        type: string
+    type: object
+  routes.AddMangaRequest:
+    properties:
+      last_read_chapter:
+        type: string
+      last_read_chapter_url:
+        type: string
+      status:
+        maximum: 5
+        minimum: 0
+        type: integer
+      url:
+        type: string
+    required:
+    - status
+    - url
+    type: object
+  routes.Configs:
+    properties:
+      dashboard:
+        properties:
+          columns:
+            type: integer
+        type: object
+    type: object
+  routes.UpdateMangaChapterRequest:
+    properties:
+      chapter:
+        type: string
+      chapter_url:
+        type: string
+    type: object
+  routes.UpdateMangaStatusRequest:
+    properties:
+      status:
+        maximum: 5
+        minimum: 0
+        type: integer
+    required:
+    - status
+    type: object
+  routes.responseMessage:
+    properties:
+      message:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /dashboard/configs:
+    get:
+      description: Returns the dashboard configs read from the configs.json file.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.Configs'
+      summary: Get the dashboard configs
+  /dashboard/configs/columns:
+    patch:
+      description: Update the dashboard columns in the configs.json file.
+      parameters:
+      - description: New number of columns.
+        example: 5
+        in: query
+        name: columns
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Update dashboard columns
+  /health:
+    get:
+      description: Returns status OK
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      summary: Health check route
+  /manga:
+    delete:
+      description: Deletes a manga from the database. You must provide either the
+        manga ID or the manga URL.
+      parameters:
+      - description: Manga ID
+        example: 1
+        in: query
+        name: id
+        type: integer
+      - description: Manga URL
+        example: '"https://mangadex.org/title/1/one-piece"'
+        in: query
+        name: url
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Delete manga
+    get:
+      description: Gets a manga from the database. You must provide either the manga
+        ID or the manga URL.
+      parameters:
+      - description: Manga ID
+        example: 1
+        in: query
+        name: id
+        type: integer
+      - description: Manga URL
+        example: '"https://mangadex.org/title/1/one-piece"'
+        in: query
+        name: url
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"manga": mangaObj}'
+          schema:
+            $ref: '#/definitions/manga.Manga'
+      summary: Get manga
+    post:
+      consumes:
+      - application/json
+      description: Gets a manga metadata from source and inserts in the database.
+      parameters:
+      - description: Manga data
+        in: body
+        name: manga
+        required: true
+        schema:
+          $ref: '#/definitions/routes.AddMangaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Add manga
+  /manga/chapters:
+    get:
+      description: Get a manga chapters from the source. You must provide either the
+        manga ID or the manga URL.
+      parameters:
+      - description: Manga ID
+        example: 1
+        in: query
+        name: id
+        type: integer
+      - description: Manga URL
+        example: '"https://mangadex.org/title/1/one-piece"'
+        in: query
+        name: url
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"chapters": [chapterObj]}'
+          schema:
+            items:
+              $ref: '#/definitions/manga.Chapter'
+            type: array
+      summary: Get manga chapters
+  /manga/last_read_chapter:
+    patch:
+      description: Updates a manga last read chapter in the database. If both `chapter`
+        and `chapter_url` are empty strings in the body, set the last read chapter
+        to the last upload chapter in the database. You must provide either the manga
+        ID or the manga URL.
+      parameters:
+      - description: Manga ID
+        example: 1
+        in: query
+        name: id
+        type: integer
+      - description: Manga URL
+        example: '"https://mangadex.org/title/1/one-piece"'
+        in: query
+        name: url
+        type: string
+      - description: Manga status
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: '#/definitions/routes.UpdateMangaChapterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Update manga last read chapter
+  /manga/status:
+    patch:
+      description: Updates a manga status in the database. You must provide either
+        the manga ID or the manga URL.
+      parameters:
+      - description: Manga ID
+        example: 1
+        in: query
+        name: id
+        type: integer
+      - description: Manga URL
+        example: '"https://mangadex.org/title/1/one-piece"'
+        in: query
+        name: url
+        type: string
+      - description: Manga status
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: '#/definitions/routes.UpdateMangaStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Update manga status
+  /mangas:
+    get:
+      description: Gets all mangas from the database.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"mangas": [mangaObj]}'
+          schema:
+            items:
+              $ref: '#/definitions/manga.Manga'
+            type: array
+      summary: Get mangas
+  /mangas/iframe:
+    get:
+      description: Returns an iFrame with mangas. Only mangas with unread chapters,
+        and status reading or completed. Sort by last upload chapter date. Designed
+        to be used with [Homarr](https://github.com/ajnart/homarr).
+      parameters:
+      - description: Homarr theme, defaults to light.
+        example: light
+        in: query
+        name: theme
+        type: string
+      - description: Limits the number of items in the iFrame.
+        example: 5
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - text/html
+      responses:
+        "200":
+          description: HTML content
+          schema:
+            type: string
+      summary: Mangas iFrame
+  /mangas/metadata:
+    patch:
+      description: Get the mangas metadata from the sources and update them in the
+        database.
+      parameters:
+      - description: Notify if a new chapter was upload for the manga (only of mangas
+          with status reading or completed)
+        in: query
+        name: notify
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Update mangas metadata
+swagger: "2.0"

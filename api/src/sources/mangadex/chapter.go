@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/diogovalentte/manga-dashboard-api/api/src/manga"
-	"github.com/diogovalentte/manga-dashboard-api/api/src/util"
+	"github.com/diogovalentte/mantium/api/src/manga"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // GetChapterMetadata returns a chapter by its chapter or URL

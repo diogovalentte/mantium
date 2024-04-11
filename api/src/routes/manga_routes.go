@@ -15,9 +15,9 @@ import (
 	"github.com/AnthonyHewins/gotfy"
 	"github.com/gin-gonic/gin"
 
-	"github.com/diogovalentte/manga-dashboard-api/api/src/manga"
-	"github.com/diogovalentte/manga-dashboard-api/api/src/sources"
-	"github.com/diogovalentte/manga-dashboard-api/api/src/util"
+	"github.com/diogovalentte/mantium/api/src/manga"
+	"github.com/diogovalentte/mantium/api/src/sources"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // MangaRoutes sets the manga routes
@@ -35,7 +35,13 @@ func MangaRoutes(group *gin.RouterGroup) {
 	}
 }
 
-// AddManga scrapes the manga page and inserts the manga data into the database
+// @Summary Add manga
+// @Description Gets a manga metadata from source and inserts in the database.
+// @Accept json
+// @Produce json
+// @Param manga body AddMangaRequest true "Manga data"
+// @Success 200 {object} responseMessage
+// @Router /manga [post]
 func AddManga(c *gin.Context) {
 	currentTime := time.Now()
 
@@ -79,7 +85,13 @@ type AddMangaRequest struct {
 	LastReadChapterURL string `json:"last_read_chapter_url"`
 }
 
-// GetManga gets the manga from the database
+// @Summary Get manga
+// @Description Gets a manga from the database. You must provide either the manga ID or the manga URL.
+// @Produce json
+// @Param id query int false "Manga ID" Example(1)
+// @Param url query string false "Manga URL" Example("https://mangadex.org/title/1/one-piece")
+// @Success 200 {object} manga.Manga "{"manga": mangaObj}"
+// @Router /manga [get]
 func GetManga(c *gin.Context) {
 	mangaIDStr := c.Query("id")
 	mangaURL := c.Query("url")
@@ -103,7 +115,11 @@ func GetManga(c *gin.Context) {
 	c.JSON(http.StatusOK, resMap)
 }
 
-// GetMangas gets mangas from the database
+// @Summary Get mangas
+// @Description Gets all mangas from the database.
+// @Produce json
+// @Success 200 {array} manga.Manga "{"mangas": [mangaObj]}"
+// @Router /mangas [get]
 func GetMangas(c *gin.Context) {
 	mangas, err := manga.GetMangasDB()
 	if err != nil {
@@ -115,8 +131,13 @@ func GetMangas(c *gin.Context) {
 	c.JSON(http.StatusOK, resMap)
 }
 
-// GetMangasiFrame gets mangas from the database and returns a HTML code designed
-// be used in an iFrame in Homarr
+// @Summary Mangas iFrame
+// @Description Returns an iFrame with mangas. Only mangas with unread chapters, and status reading or completed. Sort by last upload chapter date. Designed to be used with [Homarr](https://github.com/ajnart/homarr).
+// @Success 200 {string} string "HTML content"
+// @Produce html
+// @Param theme query string false "Homarr theme, defaults to light." Example(light)
+// @Param limit query int false "Limits the number of items in the iFrame." Example(5)
+// @Router /mangas/iframe [get]
 func GetMangasiFrame(c *gin.Context) {
 	queryLimit := c.Query("limit")
 	var limit int
@@ -126,7 +147,7 @@ func GetMangasiFrame(c *gin.Context) {
 	} else {
 		limit, err = strconv.Atoi(queryLimit)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "limit must be a number"})
+			c.JSON(http.StatusBadRequest, gin.H{"message": "limit must be a number"})
 		}
 	}
 
@@ -134,7 +155,7 @@ func GetMangasiFrame(c *gin.Context) {
 	if theme == "" {
 		theme = "light"
 	} else if theme != "dark" && theme != "light" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "theme must be 'dark' or 'light'"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "theme must be 'dark' or 'light'"})
 		return
 	}
 
@@ -408,7 +429,13 @@ func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// GetMangaChapters gets the manga chapters from the source
+// @Summary Get manga chapters
+// @Description Get a manga chapters from the source. You must provide either the manga ID or the manga URL.
+// @Produce json
+// @Param id query int false "Manga ID" Example(1)
+// @Param url query string false "Manga URL" Example("https://mangadex.org/title/1/one-piece")
+// @Success 200 {array} manga.Chapter "{"chapters": [chapterObj]}"
+// @Router /manga/chapters [get]
 func GetMangaChapters(c *gin.Context) {
 	mangaIDStr := c.Query("id")
 	mangaURL := c.Query("url")
@@ -441,7 +468,13 @@ func GetMangaChapters(c *gin.Context) {
 	c.JSON(http.StatusOK, resMap)
 }
 
-// DeleteManga delestes the from the database
+// @Summary Delete manga
+// @Description Deletes a manga from the database. You must provide either the manga ID or the manga URL.
+// @Produce json
+// @Param id query int false "Manga ID" Example(1)
+// @Param url query string false "Manga URL" Example("https://mangadex.org/title/1/one-piece")
+// @Success 200 {object} responseMessage
+// @Router /manga [delete]
 func DeleteManga(c *gin.Context) {
 	mangaIDStr := c.Query("id")
 	mangaURL := c.Query("url")
@@ -470,7 +503,14 @@ func DeleteManga(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Manga deleted successfully"})
 }
 
-// UpdateMangaStatus updates the manga status in the database
+// @Summary Update manga status
+// @Description Updates a manga status in the database. You must provide either the manga ID or the manga URL.
+// @Produce json
+// @Param id query int false "Manga ID" Example(1)
+// @Param url query string false "Manga URL" Example("https://mangadex.org/title/1/one-piece")
+// @Param status body UpdateMangaStatusRequest true "Manga status"
+// @Success 200 {object} responseMessage
+// @Router /manga/status [patch]
 func UpdateMangaStatus(c *gin.Context) {
 	mangaIDStr := c.Query("id")
 	mangaURL := c.Query("url")
@@ -510,9 +550,14 @@ type UpdateMangaStatusRequest struct {
 	Status manga.Status `json:"status" binding:"required,gte=0,lte=5"`
 }
 
-// UpdateMangaLastReadChapter updates the manga last read chapter.
-// If not chapter number or URL is set on the body, set the last read
-// chapter to the last upload chapter
+// @Summary Update manga last read chapter
+// @Description Updates a manga last read chapter in the database. If both `chapter` and `chapter_url` are empty strings in the body, set the last read chapter to the last upload chapter in the database. You must provide either the manga ID or the manga URL.
+// @Produce json
+// @Param id query int false "Manga ID" Example(1)
+// @Param url query string false "Manga URL" Example("https://mangadex.org/title/1/one-piece")
+// @Param status body UpdateMangaChapterRequest true "Manga status"
+// @Success 200 {object} responseMessage
+// @Router /manga/last_read_chapter [patch]
 func UpdateMangaLastReadChapter(c *gin.Context) {
 	currentTime := time.Now()
 
@@ -570,6 +615,13 @@ type UpdateMangaChapterRequest struct {
 
 // UpdateMangasMetadata updates the mangas metadata in the database
 // It updates: the last upload chapter (and its metadata), the manga name and cover image
+
+// @Summary Update mangas metadata
+// @Description Get the mangas metadata from the sources and update them in the database.
+// @Produce json
+// @Param notify query string false "Notify if a new chapter was upload for the manga (only of mangas with status reading or completed)."
+// @Success 200 {object} responseMessage
+// @Router /mangas/metadata [patch]
 func UpdateMangasMetadata(c *gin.Context) {
 	notifyStr := c.Query("notify")
 	var notify bool

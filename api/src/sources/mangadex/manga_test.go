@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/diogovalentte/manga-dashboard-api/api/src/manga"
+	"github.com/diogovalentte/mantium/api/src/manga"
 )
 
 type mangaTestType struct {

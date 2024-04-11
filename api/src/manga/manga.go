@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/diogovalentte/manga-dashboard-api/api/src/db"
-	"github.com/diogovalentte/manga-dashboard-api/api/src/util"
+	"github.com/diogovalentte/mantium/api/src/db"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 type (
