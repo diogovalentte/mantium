@@ -115,6 +115,9 @@ class MainDashboard:
             with st.expander("Add Manga"):
                 self.show_add_manga_form()
 
+            st.divider()
+            self.show_configs()
+
             manga_to_highlight = ss.get("manga_to_highlight", None)
             if manga_to_highlight is not None:
                 with highlight_manga_container:
@@ -128,12 +131,15 @@ class MainDashboard:
             cols_list (list): A list of streamlit.columns.
             mangas (dict): A list of mangas.
         """
+        manga_container_height = 723
+        if ss.status_filter == 0:
+            manga_container_height = 763
         col_index = 0
         for manga in mangas:
             if col_index == len(cols_list):
                 col_index = 0
             with cols_list[col_index]:
-                with st.container(border=True, height=763):
+                with st.container(border=True, height=manga_container_height):
                     with centered_container("center_container"):
                         self.show_manga(manga)
             col_index += 1
@@ -216,10 +222,11 @@ class MainDashboard:
         """
         st.markdown(hide_img_fs, unsafe_allow_html=True)
 
-        st.write(
-            f'**Status**: <span style="float: right;">{self.get_manga_status(manga["Status"])}</span>',
-            unsafe_allow_html=True,
-        )
+        if ss.status_filter == 0:
+            st.write(
+                f'**Status**: <span style="float: right;">{self.get_manga_status(manga["Status"])}</span>',
+                unsafe_allow_html=True,
+            )
 
         chapter_tag_content = f"""
             <a href="{{}}" target="_blank" style="text-decoration: none; color: {self.chapter_link_tag_text_color}">
@@ -405,6 +412,13 @@ class MainDashboard:
                 key="delete_manga_btn",
             )
 
+        st.button(
+            "Close",
+            key="close_highlighted_manga",
+            on_click=lambda: ss.pop("manga_to_highlight"),
+            use_container_width=True,
+        )
+
     def get_manga_status(self, status: int | str) -> str | int:
         if isinstance(status, int):
             return self.manga_status_options[status]
@@ -497,49 +511,40 @@ class MainDashboard:
         if ss.get("manga_add_success", False):
             st.success("Manga added successfully")
 
+    def show_configs(self):
+        def update_configs_callback():
+            self.api_client.update_dashboard_configs_columns(
+                ss.configs_select_columns_number
+            )
+            ss["configs_columns_number"] = ss.configs_select_columns_number
+
+        with st.popover(
+            "Configs",
+            help="Dashboard configs",
+            use_container_width=True,
+        ):
+            with st.form(key="configs_update_configs", border=False):
+                st.slider(
+                    "Columns:",
+                    min_value=1,
+                    max_value=10,
+                    value=ss["configs_columns_number"],
+                    key="configs_select_columns_number",
+                )
+
+                st.form_submit_button(
+                    "Update",
+                    type="primary",
+                    on_click=update_configs_callback,
+                    use_container_width=True,
+                )
+
 
 def main():
     api_client = get_api_client()
 
     if "configs_columns_number" not in ss:
         ss["configs_columns_number"] = api_client.get_dashboard_configs()["columns"]
-
-    # Have to be outside the main function
-    with st.sidebar:
-        c1, c2 = st.columns(2)
-        with c1:
-
-            def update_configs_callback():
-                api_client.update_dashboard_configs_columns(
-                    ss.configs_select_columns_number
-                )
-                ss["configs_columns_number"] = ss.configs_select_columns_number
-
-            with st.popover(
-                "Configs",
-                help="Dashboard configs",
-                use_container_width=True,
-            ):
-                with st.form(key="configs_update_configs", border=False):
-                    st.slider(
-                        "Columns",
-                        min_value=1,
-                        max_value=10,
-                        value=ss["configs_columns_number"],
-                        key="configs_select_columns_number",
-                    )
-
-                    st.form_submit_button(
-                        "Update",
-                        on_click=update_configs_callback,
-                    )
-        with c2:
-            if st.button("Refresh", use_container_width=True):
-                if "manga_to_highlight" in ss:
-                    del ss["manga_to_highlight"]
-                ss["manga_updated_success"] = False
-                ss["manga_add_success"] = False
-                st.rerun()
 
     dashboard = MainDashboard(api_client)
     dashboard.show()
