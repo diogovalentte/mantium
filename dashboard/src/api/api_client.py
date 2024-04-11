@@ -14,15 +14,10 @@ def get_api_client():
         logger.info("Defining the API client...")
 
         api_address = os.environ.get("API_ADDRESS", "")
-        api_port = os.environ.get("API_PORT", "")
-        if api_address == "" or api_port == "":
-            raise ValueError(
-                "API_ADDRESS and API_PORT environment variables are not set"
-            )
+        if api_address == "":
+            raise ValueError("API_ADDRESS environment variable is not set")
 
-        api_client = APIClient(
-            api_address, int(api_port)
-        )  # The golang API docker service name
+        api_client = APIClient(api_address)  # The golang API docker service name
         st.session_state["api_client"] = api_client
 
         logger.info("API client defined")
@@ -31,6 +26,6 @@ def get_api_client():
 
 
 class APIClient(MangaAPIClient, SystemAPIClient):
-    def __init__(self, base_URL: str, port: int) -> None:
-        self.base_url = f"{base_URL}:{port}"
+    def __init__(self, base_url: str) -> None:
+        self.base_url = base_url
         super().__init__(self.base_url)
