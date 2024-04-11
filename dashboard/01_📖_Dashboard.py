@@ -29,7 +29,7 @@ class MainDashboard:
             4: "❌ Dropped",
             5: "📅 Plan to Read",
         }
-        self.default_status_filter = 1
+        self.default_status_filter_key = 1
         self.sort_options = [
             "Name",
             "Unread",
@@ -48,13 +48,13 @@ class MainDashboard:
             for manga in mangas
             if ss.get(
                 "status_filter",
-                self.manga_status_options[self.default_status_filter],
+                self.manga_status_options[self.default_status_filter_key],
             )
             == "📚 All"
             or self.manga_status_options[manga["Status"]]
             == ss.get(
                 "status_filter",
-                self.manga_status_options[self.default_status_filter],
+                self.manga_status_options[self.default_status_filter_key],
             )
         ]
         mangas = [
@@ -68,7 +68,7 @@ class MainDashboard:
             ss.get("mangas_sort", self.sort_options[self.default_sort_option_index]),
             ss.get("mangas_sort_reverse", False),
         )
-        self.show_mangas(st.columns(6), mangas)
+        self.show_mangas(st.columns(5), mangas)
 
         self.sidebar()
 
@@ -82,7 +82,7 @@ class MainDashboard:
             filter_options.insert(0, "📚 All")
 
             def status_filter_callback():
-                self.default_status_filter = ss.status_filter
+                self.default_status_filter_key = ss.status_filter
 
             return_dict["status_filter"] = st.selectbox(
                 "Filter Status",
@@ -98,7 +98,7 @@ class MainDashboard:
             return_dict["sort_option"] = st.selectbox(
                 "Sort By",
                 self.sort_options,
-                index=self.default_status_filter,
+                index=self.default_status_filter_key,
                 on_change=sort_callback,
                 key="mangas_sort",
             )
