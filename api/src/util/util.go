@@ -18,19 +18,16 @@ import (
 	"github.com/AnthonyHewins/gotfy"
 	"github.com/nfnt/resize"
 	"github.com/rs/zerolog"
+
+	"github.com/diogovalentte/manga-dashboard-api/api/src/config"
 )
 
 var logger *zerolog.Logger
 
 // GetLogger returns the zerolog logger instance
 func GetLogger() *zerolog.Logger {
+	logLevel := config.GlobalConfigs.LogLevel
 	if logger == nil {
-		logLevelStr := os.Getenv("LOG_LEVEL")
-		logLevel, err := zerolog.ParseLevel(logLevelStr)
-		if err != nil {
-			logLevel = zerolog.InfoLevel
-		}
-
 		l := zerolog.New(os.Stdout).Level(logLevel).With().Timestamp().Logger()
 		logger = &l
 	}
@@ -137,18 +134,16 @@ func ResizeImage(imgBytes []byte, width, height uint) ([]byte, error) {
 
 // GetNtfyPublisher returns a new NtfyPublisher
 func GetNtfyPublisher() (*NtfyPublisher, error) {
-	address := os.Getenv("NTFY_ADDRESS")
-	topic := os.Getenv("NTFY_TOPIC")
-	token := os.Getenv("NTFY_TOKEN")
+	configs := config.GlobalConfigs.Ntfy
 
-	server, err := url.Parse(address)
+	server, err := url.Parse(configs.Address)
 	if err != nil {
 		return nil, err
 	}
 
 	customClient := &http.Client{
 		Transport: &customNtfyTransport{
-			ntfyToken: token,
+			ntfyToken: configs.Token,
 		},
 	}
 	publisher, err := gotfy.NewPublisher(server, customClient)
@@ -158,8 +153,8 @@ func GetNtfyPublisher() (*NtfyPublisher, error) {
 
 	return &NtfyPublisher{
 		Publisher: publisher,
-		Topic:     topic,
-		Token:     token,
+		Topic:     configs.Topic,
+		Token:     configs.Token,
 	}, nil
 }
 
