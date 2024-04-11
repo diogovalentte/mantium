@@ -319,6 +319,14 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "example": "https://sub.domain.com",
+                        "description": "API URL used by your browser. Used for the button that updates the last read chater, as your browser needs to send a request to the API to update the chapter.",
+                        "name": "api_url",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "example": "light",
                         "description": "Homarr theme, defaults to light.",
                         "name": "theme",
@@ -352,7 +360,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Notify if a new chapter was upload for the manga (only of mangas with status reading or completed)",
+                        "description": "Notify if a new chapter was upload for the manga (only of mangas with status reading or completed).",
                         "name": "notify",
                         "in": "query"
                     }

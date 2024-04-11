@@ -315,6 +315,14 @@ paths:
         and status reading or completed. Sort by last upload chapter date. Designed
         to be used with [Homarr](https://github.com/ajnart/homarr).
       parameters:
+      - description: API URL used by your browser. Used for the button that updates
+          the last read chater, as your browser needs to send a request to the API
+          to update the chapter.
+        example: https://sub.domain.com
+        in: query
+        name: api_url
+        required: true
+        type: string
       - description: Homarr theme, defaults to light.
         example: light
         in: query
@@ -339,7 +347,7 @@ paths:
         database.
       parameters:
       - description: Notify if a new chapter was upload for the manga (only of mangas
-          with status reading or completed)
+          with status reading or completed).
         in: query
         name: notify
         type: string

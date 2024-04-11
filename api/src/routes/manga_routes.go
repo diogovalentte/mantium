@@ -135,6 +135,7 @@ func GetMangas(c *gin.Context) {
 // @Description Returns an iFrame with mangas. Only mangas with unread chapters, and status reading or completed. Sort by last upload chapter date. Designed to be used with [Homarr](https://github.com/ajnart/homarr).
 // @Success 200 {string} string "HTML content"
 // @Produce html
+// @Param api_url query string true "API URL used by your browser. Used for the button that updates the last read chater, as your browser needs to send a request to the API to update the chapter." Example(https://sub.domain.com)
 // @Param theme query string false "Homarr theme, defaults to light." Example(light)
 // @Param limit query int false "Limits the number of items in the iFrame." Example(5)
 // @Router /mangas/iframe [get]
@@ -159,6 +160,13 @@ func GetMangasiFrame(c *gin.Context) {
 		return
 	}
 
+	apiURL := c.Query("api_url")
+	_, err = url.ParseRequestURI(apiURL)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "api_url must be a valid URL like 'http://192.168.1.46:8080' or 'https://sub.domain.com'"})
+		return
+	}
+
 	allMangas, err := manga.GetMangasDB()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -177,7 +185,7 @@ func GetMangasiFrame(c *gin.Context) {
 		mangas = mangas[:limit]
 	}
 
-	html, err := getMangasiFrame(mangas, theme)
+	html, err := getMangasiFrame(mangas, theme, apiURL)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -186,7 +194,7 @@ func GetMangasiFrame(c *gin.Context) {
 	c.Data(http.StatusOK, "text/html", []byte(html))
 }
 
-func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
+func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error) {
 	html := `
 <!doctype html>
 <html lang="en">
@@ -330,39 +338,44 @@ func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
 
     <script>
       function setLastReadChapter(mangaId, chapter) {
-        var xhr = new XMLHttpRequest();
-        var url = 'http://localhost:8080/v1/manga/last_read_chapter?id=' + encodeURIComponent(mangaId);
-        xhr.open('PATCH', url, true);
-        xhr.setRequestHeader('Content-Type', 'application/json');
+        try {
+            var xhr = new XMLHttpRequest();
+            var url = 'API-URL/v1/manga/last_read_chapter?id=' + encodeURIComponent(mangaId);
+            xhr.open('PATCH', url, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
 
-        xhr.onload = function () {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            console.log('Request to update manga', mangaId, ' last read chapter finished with success:', xhr.responseText);
-            location.reload();
-          } else {
-            console.log('Request to update manga', mangaId, ' last read chapter failed:', xhr.responseText);
+            xhr.onload = function () {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                console.log('Request to update manga', mangaId, ' last read chapter finished with success:', xhr.responseText);
+                location.reload();
+              } else {
+                console.log('Request to update manga', mangaId, ' last read chapter failed:', xhr.responseText);
+                handleSetLastReadChapterError("manga-" + mangaId)
+              }
+            };
+
+            xhr.onerror = function () {
+              console.log('Request to update manga', mangaId, ' last read chapter failed:', xhr.responseText);
+              handleSetLastReadChapterError(mangaId)
+            };
+
+            var body = {
+                chapter: chapter
+            };
+
+            xhr.send(JSON.stringify(body));
+        } catch (error) {
+            console.log('Request to update manga', mangaId, ' last read chapter failed:', error);
             handleSetLastReadChapterError("manga-" + mangaId)
-          }
-        };
-
-        xhr.onerror = function () {
-          console.log('Request to update manga', mangaId, ' last read chapter failed:', xhr.responseText);
-          handleSetLastReadChapterError(mangaId)
-        };
-
-        var body = {
-            chapter: chapter
-        };
-
-        xhr.send(JSON.stringify(body));
+        }
       }
 
-        function handleSetLastReadChapterError(buttonId) {
-            var button = document.getElementById(buttonId);
-            button.textContent = "! ERROR !";
-            button.style.backgroundColor = "red";
-            button.style.borderColor = "red";
-        }
+      function handleSetLastReadChapterError(buttonId) {
+        var button = document.getElementById(buttonId);
+        button.textContent = "! ERROR !";
+        button.style.backgroundColor = "red";
+        button.style.borderColor = "red";
+      }
     </script>
 
   </head>
@@ -413,6 +426,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme string) ([]byte, error) {
 		scrollbarTrackBackgroundColor = "rgba(37, 40, 53, 1)"
 	}
 
+	html = strings.Replace(html, "API-URL", apiURL, -1)
 	html = strings.Replace(html, "MANGAS-CONTAINER-WIDTH", containerWidth, -1)
 	html = strings.Replace(html, "MANGAS-CONTAINER-BACKGROUND-COLOR", containerBackgroundColor, -1)
 	html = strings.Replace(html, "SCROLLBAR-THUMB-BACKGROUND-COLOR", scrollbarThumbBackgroundColor, -1)
