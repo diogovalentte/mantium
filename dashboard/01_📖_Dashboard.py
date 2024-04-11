@@ -18,18 +18,26 @@ st.set_page_config(
     layout="wide",
 )
 
+logging.basicConfig(
+    encoding="utf-8",
+    level=logging.INFO,
+    format="%(asctime)s :: %(levelname)-8s :: %(name)s :: %(message)s",
+)
+logger = logging.getLogger()
+
 
 class MainDashboard:
     def __init__(self, api_client):
         self.api_client = api_client
         self.manga_status_options = {
+            0: "📚 All",
             1: "📖 Reading",
             2: "✅ Completed",
             3: "🚧 On Hold",
             4: "❌ Dropped",
             5: "📅 Plan to Read",
         }
-        self.default_status_filter_key = 1
+        self.status_filter_key = 1
         self.sort_options = [
             "Name",
             "Unread",
@@ -37,9 +45,9 @@ class MainDashboard:
             "Chapters Released",
             "Released Chapter Date",
         ]
-        self.default_sort_option_index = 1
-        self.default_chapter_link_background_color = "rgb(219 233 254)"
-        self.default_chapter_link_text_color = "rgb(59 130 246)"
+        self.sort_option_index = 1
+        self.chapter_link_tag_background_color = "rgb(219 233 254)"
+        self.chapter_link_tag_text_color = "rgb(59 130 246)"
 
     def show(self):
         mangas = self.api_client.get_mangas()
@@ -48,13 +56,13 @@ class MainDashboard:
             for manga in mangas
             if ss.get(
                 "status_filter",
-                self.manga_status_options[self.default_status_filter_key],
+                self.status_filter_key,
             )
-            == "📚 All"
-            or self.manga_status_options[manga["Status"]]
+            == 0
+            or manga["Status"]
             == ss.get(
                 "status_filter",
-                self.manga_status_options[self.default_status_filter_key],
+                self.status_filter_key,
             )
         ]
         mangas = [
@@ -65,47 +73,41 @@ class MainDashboard:
 
         mangas = self.api_client.sort_mangas(
             mangas,
-            ss.get("mangas_sort", self.sort_options[self.default_sort_option_index]),
+            ss.get("mangas_sort", self.sort_options[self.sort_option_index]),
             ss.get("mangas_sort_reverse", False),
         )
         self.show_mangas(st.columns(ss["configs_columns_number"]), mangas)
 
         self.sidebar()
 
-    def sidebar(self) -> dict[str, Any]:
+    def sidebar(self) -> None:
         with st.sidebar:
             st.text_input("Search", key="search_manga")
 
-            return_dict = dict()
-            # filters and sort options
-            filter_options = list(self.manga_status_options.values())
-            filter_options.insert(0, "📚 All")
-
             def status_filter_callback():
-                self.default_status_filter_key = ss.status_filter
+                self.status_filter_key = ss.status_filter
 
-            return_dict["status_filter"] = st.selectbox(
+            st.selectbox(
                 "Filter Status",
-                filter_options,
-                index=self.default_sort_option_index,
+                self.manga_status_options,
+                index=self.sort_option_index,
                 on_change=status_filter_callback,
+                format_func=lambda index: self.manga_status_options[index],
                 key="status_filter",
             )
 
             def sort_callback():
-                self.default_sort_option_index = ss.mangas_sort
+                self.sort_option_index = ss.mangas_sort
 
-            return_dict["sort_option"] = st.selectbox(
+            st.selectbox(
                 "Sort By",
                 self.sort_options,
-                index=self.default_status_filter_key,
+                index=self.status_filter_key,
                 on_change=sort_callback,
                 key="mangas_sort",
             )
 
-            return_dict["reverse_sort"] = st.toggle(
-                "Reverse Sort", key="mangas_sort_reverse"
-            )
+            st.toggle("Reverse Sort", key="mangas_sort_reverse")
             st.divider()
 
             highlight_manga_container = st.empty()
@@ -118,8 +120,6 @@ class MainDashboard:
                 with highlight_manga_container:
                     with st.container(border=True):
                         self.show_highlighted_manga(manga_to_highlight)
-
-        return return_dict
 
     def show_mangas(self, cols_list: list, mangas: list[dict[str, Any]]):
         """Show mangas in the cols_list columns.
@@ -145,17 +145,17 @@ class MainDashboard:
 
         # Try to make the title fit in the container the best way
         # Also try to make the containers the same size
-        default_size = 36
-        characters = len(manga["Name"])
-        if characters < 15:
-            font_size = default_size
+        default_title_font_size = 36
+        title_len = len(manga["Name"])
+        if title_len < 15:
+            font_size = default_title_font_size
             margin = 0
-        elif characters < 30:
+        elif title_len < 30:
             font_size = 20
-            margin = (default_size - font_size) / 2 + 1.6
+            margin = (default_title_font_size - font_size) / 2 + 1.6
         else:
             font_size = 15
-            margin = (default_size - font_size) / 2 + 1.6
+            margin = (default_title_font_size - font_size) / 2 + 1.6
         improve_headers = """
             <style>
                 /* Hide the header link button */
@@ -222,51 +222,47 @@ class MainDashboard:
         )
 
         chapter_tag_content = f"""
-            <a href="{{}}" target="_blank" style="text-decoration: none; color: {self.default_chapter_link_text_color}">
+            <a href="{{}}" target="_blank" style="text-decoration: none; color: {self.chapter_link_tag_text_color}">
                 <span>{{}}</span>
             </a>
         """
-        tagger(
-            "<strong>Last Released Chapter:</strong>",
-            chapter_tag_content.format(
-                manga["LastUploadChapter"]["URL"],
-                f'Ch. {manga["LastUploadChapter"]["Chapter"]}',
-            ),
-            self.default_chapter_link_background_color,
-            "float: right;",
+
+        chapter = chapter_tag_content.format(
+            manga["LastUploadChapter"]["URL"],
+            f'Ch. {manga["LastUploadChapter"]["Chapter"]}',
         )
         upload_date = get_relative_time(manga["LastUploadChapter"]["UpdatedAt"])
+
+        tagger(
+            "<strong>Last Released Chapter:</strong>",
+            chapter,
+            self.chapter_link_tag_background_color,
+            "float: right;",
+        )
         st.caption(
             f'**Release Date**: <span style="float: right;">{upload_date}</span>',
             unsafe_allow_html=True,
         )
 
+        chapter = f"""<snap style="text-decoration: none; color: {self.chapter_link_tag_text_color}">N/A</span>"""
+        read_date = "N/A"
         if manga["LastReadChapter"] is not None:
-            tagger(
-                "<strong>Last Read Chapter:</strong>",
-                chapter_tag_content.format(
-                    manga["LastReadChapter"]["URL"],
-                    f'Ch. {manga["LastReadChapter"]["Chapter"]}',
-                ),
-                self.default_chapter_link_background_color,
-                "float: right;",
+            chapter = chapter_tag_content.format(
+                manga["LastReadChapter"]["URL"],
+                f'Ch. {manga["LastReadChapter"]["Chapter"]}',
             )
             read_date = get_relative_time(manga["LastReadChapter"]["UpdatedAt"])
-            st.caption(
-                f'**Read Date**: <span style="float: right;">{read_date}</span>',
-                unsafe_allow_html=True,
-            )
-        else:
-            tagger(
-                "<strong>Last Read Chapter:</strong>",
-                f"""<snap style="text-decoration: none; color: {self.default_chapter_link_text_color}">N/A</span>""",
-                self.default_chapter_link_background_color,
-                "float: right;",
-            )
-            st.caption(
-                '**Read Date**: <span style="float: right;">N/A</span>',
-                unsafe_allow_html=True,
-            )
+
+        tagger(
+            "<strong>Last Read Chapter:</strong>",
+            chapter,
+            self.chapter_link_tag_background_color,
+            "float: right;",
+        )
+        st.caption(
+            f'**Read Date**: <span style="float: right;">{read_date}</span>',
+            unsafe_allow_html=True,
+        )
 
         c1, c2 = st.columns(2)
         with c1:
@@ -302,11 +298,12 @@ class MainDashboard:
             )
 
     def show_highlighted_manga(self, manga: dict[str, Any]):
-        default_size = 36
-        characters = len(manga["Name"])
-        if characters < 15:
-            font_size = default_size
-        elif characters < 30:
+        # Try to make the title fit in the container the best way
+        default_title_font_size = 36
+        title_len = len(manga["Name"])
+        if title_len < 15:
+            font_size = default_title_font_size
+        elif title_len < 30:
             font_size = 20
         else:
             font_size = 15
@@ -315,37 +312,39 @@ class MainDashboard:
             unsafe_allow_html=True,
         )
 
-        # Clean up the last highlighted manga if there is any and set the new manga to highlight
-        if ss.get("update_manga_form_manga_name", "") != manga["Name"]:
-            with st.spinner("Getting manga metadata..."):
-                ss["update_manga_form_manga_name"] = manga["Name"]
-                ss["update_manga_form_chapters"] = self.api_client.get_manga_chapters(
-                    manga["ID"]
-                )
-                ss["update_manga_form_default_status_index"] = list(
-                    self.manga_status_options.values()
-                ).index(str(self.get_manga_status(manga["Status"])))
-                ss["update_Manga_form_default_chapter_index"] = list(
-                    map(
-                        lambda chapter: chapter["Chapter"],
-                        ss["update_manga_form_chapters"],
-                    )
-                ).index(manga["LastReadChapter"]["Chapter"])
+        @st.cache_data(show_spinner=False, max_entries=1, ttl=600)
+        def get_manga_chapters(id, url: str):
+            return self.api_client.get_manga_chapters(id, url)
+
+        with st.spinner("Getting manga chapters..."):
+            ss["update_manga_chapter_options"] = get_manga_chapters(
+                manga["ID"], manga["URL"]
+            )
 
         with st.form(key="update_manga_form", border=False):
             st.selectbox(
                 "Status",
-                index=ss["update_manga_form_default_status_index"],
-                options=self.manga_status_options.values(),
+                index=manga["Status"] - 1,
+                options=list(self.manga_status_options.keys())[
+                    1:
+                ],  # Exclude the "All" option
+                format_func=lambda index: self.manga_status_options[index],
                 key="update_manga_form_status",
             )
 
             st.selectbox(
                 "Last Read Chapter",
-                index=ss["update_Manga_form_default_chapter_index"],
-                options=ss["update_manga_form_chapters"],
-                key="update_manga_form_chapter",
+                index=list(
+                    map(
+                        lambda chapter: chapter["Chapter"],
+                        ss["update_manga_chapter_options"],
+                    )
+                ).index(manga["LastReadChapter"]["Chapter"])
+                if manga["LastReadChapter"] is not None
+                else 0,
+                options=ss["update_manga_chapter_options"],
                 format_func=lambda chapter: f"Ch. {chapter['Chapter']} --- {get_relative_time(datetime.strptime(chapter['UpdatedAt'], '%Y-%m-%dT%H:%M:%SZ'))}",
+                key="update_manga_form_chapter",
             )
 
             if st.form_submit_button(
@@ -355,9 +354,8 @@ class MainDashboard:
             ):
                 try:
                     status = ss.update_manga_form_status
-                    status = int(self.get_manga_status(status))
                     if status != manga["Status"]:
-                        self.api_client.update_manga_status(int(status), manga["ID"])
+                        self.api_client.update_manga_status(status, manga["ID"])
 
                     chapter = ss.update_manga_form_chapter
                     if (
@@ -370,12 +368,9 @@ class MainDashboard:
                             chapter["Chapter"],
                             chapter["URL"],
                         )
-
-                    ss["update_manga_form_default_status_index"] = list(
-                        self.manga_status_options.values()
-                    ).index(ss.update_manga_form_status)
                 except Exception as e:
-                    st.error(e)
+                    logger.exception(e)
+                    st.error("An error occurred")
                     st.stop()
                 else:
                     ss["manga_updated_success"] = True
@@ -383,14 +378,14 @@ class MainDashboard:
 
             if ss.get("manga_updated_success", False):
                 st.success("Manga updated successfully")
+            ss["manga_updated_success"] = False
 
         def delete_manga_btn_callback():
-            ss["delete_manga_error"] = None
-
             try:
                 self.api_client.delete_manga(manga["ID"])
             except Exception as e:
-                ss["delete_manga_error"] = e
+                logger.exception(e)
+                st.error("An error occurred")
             else:
                 ss["manga_to_highlight"] = None
 
@@ -422,38 +417,23 @@ class MainDashboard:
         st.stop()
 
     def show_add_manga_form(self):
-        def get_chapters_btn_callback():
-            ss["add_manga_form_default_url"] = ss.add_manga_form_url
-            ss["add_manga_url"] = ss.add_manga_form_url
+        st.text_input(
+            "Manga URL",
+            placeholder="https://mangahub.io/manga/one-piece",
+            key="add_manga_form_url",
+        )
 
-        def add_manga_btn_callback():
-            ss["add_manga_chapter"] = ss.add_manga_form_chapter_chapter
-            ss["add_manga_status"] = ss.add_manga_form_status
-            ss["add_manga_form_default_url"] = ""
-            ss["add_manga_form_default_status_index"] = 0
-            ss["add_manga_form_chapters_options"] = []
+        @st.cache_data(show_spinner=False, max_entries=1, ttl=600)
+        def get_manga_chapters(url: str):
+            return self.api_client.get_manga_chapters(-1, url)
 
-        with st.form(
-            key="add_manga_form_url_status", border=False, clear_on_submit=True
-        ):
-            st.text_input(
-                "Manga URL",
-                value=ss.get("add_manga_form_default_url", ""),
-                placeholder="https://mangahub.io/manga/one-piece",
-                key="add_manga_form_url",
-            )
-
-            get_chapters_btn = st.form_submit_button(
-                "Get Chapters", on_click=get_chapters_btn_callback
-            )
-
-        if get_chapters_btn:
-            # cannnot be in a button callback because it will run before reloading the page
+        if st.button("Get Chapters"):
+            ss["manga_add_success"] = False
             try:
                 with st.spinner("Getting manga chapters..."):
-                    ss[
-                        "add_manga_form_chapters_options"
-                    ] = self.api_client.get_manga_chapters(-1, ss.add_manga_form_url)
+                    ss["add_manga_chapter_options"] = get_manga_chapters(
+                        ss.add_manga_form_url
+                    )
             except APIException as e:
                 if (
                     "invalid URI for request" in str(e.response_text)
@@ -462,61 +442,60 @@ class MainDashboard:
                 ):
                     st.warning("Invalid URL")
                 else:
-                    st.error(e)
+                    st.error("An error occurred")
+                    logger.exception(e)
 
-        def status_select_callback():
-            ss["add_manga_form_default_status_index"] = list(
-                self.manga_status_options.values()
-            ).index(ss.add_manga_form_status)
+        with st.form(key="add_manga_form", border=False, clear_on_submit=True):
+            st.selectbox(
+                "Status",
+                index=0,
+                options=list(self.manga_status_options.keys())[
+                    1:
+                ],  # Exclude the "All" option
+                format_func=lambda index: self.manga_status_options[index],
+                key="add_manga_form_status",
+            )
 
-        st.selectbox(
-            "Status",
-            index=ss.get("add_manga_form_default_status_index", 0),
-            options=self.manga_status_options.values(),
-            key="add_manga_form_status",
-            on_change=status_select_callback,
-        )
-
-        with st.form(key="add_manga_form_chapter", border=False, clear_on_submit=True):
-            if ss.get("add_manga_form_chapters_options", None) is None:
-                ss["add_manga_form_chapters_options"] = []
             st.selectbox(
                 "Last Read Chapter",
-                options=ss["add_manga_form_chapters_options"],
-                key="add_manga_form_chapter_chapter",
+                options=ss.get("add_manga_chapter_options", []),
+                key="add_manga_form_chapter",
                 format_func=lambda chapter: f"Ch. {chapter['Chapter']} --- {get_relative_time(datetime.strptime(chapter['UpdatedAt'], '%Y-%m-%dT%H:%M:%SZ'))}",
             )
 
-            if st.form_submit_button("Add Manga", on_click=add_manga_btn_callback):
-                add_manga_chapter = ss.get("add_manga_chapter")
-                if add_manga_chapter is not None:
-                    try:
-                        manga_last_read_chapter = add_manga_chapter["Chapter"]
-                        manga_last_read_chapter_url = add_manga_chapter["URL"]
-                        manga_status = int(
-                            self.get_manga_status(ss["add_manga_status"])
-                        )
-                        manga_url = ss["add_manga_url"]
+            def add_manga_callback():
+                ss["add_manga_manga_to_add"] = {
+                    "manga_url": ss.add_manga_form_url,
+                    "status": ss.add_manga_form_status,
+                    "chapter": ss.add_manga_form_chapter["Chapter"],
+                    "chapter_url": ss.add_manga_form_chapter["URL"],
+                }
+                ss.add_manga_form_url = ""
+                del ss["add_manga_chapter_options"]
 
+            if st.form_submit_button("Add Manga", on_click=add_manga_callback):
+                if ss.get("add_manga_manga_to_add", None) is None:
+                    st.warning(
+                        "Provide a manga URL and select the last read chapter first"
+                    )
+                else:
+                    try:
                         self.api_client.add_manga(
-                            manga_url,
-                            manga_status,
-                            manga_last_read_chapter,
-                            manga_last_read_chapter_url,
+                            ss["add_manga_manga_to_add"]["manga_url"],
+                            ss["add_manga_manga_to_add"]["status"],
+                            ss["add_manga_manga_to_add"]["chapter"],
+                            ss["add_manga_manga_to_add"]["chapter_url"],
                         )
                     except Exception as e:
-                        st.error(e)
+                        logger.exception(e)
+                        st.error("An error occurred")
                         st.stop()
                     else:
                         ss["manga_add_success"] = True
                         st.rerun()
-                else:
-                    st.error(
-                        "Provide a manga URL and select the last read chapter first"
-                    )
 
-            if ss.get("manga_add_success", False):
-                st.success("Manga added successfully")
+        if ss.get("manga_add_success", False):
+            st.success("Manga added successfully")
 
 
 def main():
@@ -567,15 +546,8 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        encoding="utf-8",
-        level=logging.INFO,
-        format="%(asctime)s :: %(levelname)-8s :: %(name)s :: %(message)s",
-    )
-    logger = logging.getLogger()
-
     try:
         main()
-    except Exception:
-        logger.exception("An exception happened!")
+    except Exception as e:
+        logger.exception(e)
         st.error("An error occurred.")
