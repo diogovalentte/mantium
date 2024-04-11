@@ -378,7 +378,11 @@ class MainDashboard:
                     st.error(e)
                     st.stop()
                 else:
-                    st.success("Manga updated successfully")
+                    ss["manga_updated_success"] = True
+                    st.rerun()
+
+            if ss.get("manga_updated_success", False):
+                st.success("Manga updated successfully")
 
         def delete_manga_btn_callback():
             ss["delete_manga_error"] = None
@@ -486,22 +490,33 @@ class MainDashboard:
             if st.form_submit_button("Add Manga", on_click=add_manga_btn_callback):
                 add_manga_chapter = ss.get("add_manga_chapter")
                 if add_manga_chapter is not None:
-                    manga_last_read_chapter = add_manga_chapter["Chapter"]
-                    manga_last_read_chapter_url = add_manga_chapter["URL"]
-                    manga_status = int(self.get_manga_status(ss["add_manga_status"]))
-                    manga_url = ss["add_manga_url"]
+                    try:
+                        manga_last_read_chapter = add_manga_chapter["Chapter"]
+                        manga_last_read_chapter_url = add_manga_chapter["URL"]
+                        manga_status = int(
+                            self.get_manga_status(ss["add_manga_status"])
+                        )
+                        manga_url = ss["add_manga_url"]
 
-                    self.api_client.add_manga(
-                        manga_url,
-                        manga_status,
-                        manga_last_read_chapter,
-                        manga_last_read_chapter_url,
-                    )
-                    st.success("Manga added successfully")
+                        self.api_client.add_manga(
+                            manga_url,
+                            manga_status,
+                            manga_last_read_chapter,
+                            manga_last_read_chapter_url,
+                        )
+                    except Exception as e:
+                        st.error(e)
+                        st.stop()
+                    else:
+                        ss["manga_add_success"] = True
+                        st.rerun()
                 else:
                     st.error(
                         "Provide a manga URL and select the last read chapter first"
                     )
+
+            if ss.get("manga_add_success", False):
+                st.success("Manga added successfully")
 
 
 def main():
@@ -521,6 +536,8 @@ if __name__ == "__main__":
     if st.sidebar.button("Refresh"):
         if "manga_to_highlight" in ss:
             del ss["manga_to_highlight"]
+        ss["manga_updated_success"] = False
+        ss["manga_add_success"] = False
         st.rerun()
     try:
         main()
