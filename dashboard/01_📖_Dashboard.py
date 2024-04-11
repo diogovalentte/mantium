@@ -20,8 +20,8 @@ st.set_page_config(
 
 
 class MainDashboard:
-    def __init__(self):
-        self.api_client = get_api_client()
+    def __init__(self, api_client):
+        self.api_client = api_client
         self.manga_status_options = {
             1: "📖 Reading",
             2: "✅ Completed",
@@ -68,7 +68,7 @@ class MainDashboard:
             ss.get("mangas_sort", self.sort_options[self.default_sort_option_index]),
             ss.get("mangas_sort_reverse", False),
         )
-        self.show_mangas(st.columns(5), mangas)
+        self.show_mangas(st.columns(ss["configs_columns_number"]), mangas)
 
         self.sidebar()
 
@@ -520,7 +520,49 @@ class MainDashboard:
 
 
 def main():
-    dashboard = MainDashboard()
+    api_client = get_api_client()
+
+    if "configs_columns_number" not in ss:
+        ss["configs_columns_number"] = api_client.get_dashboard_configs()["columns"]
+
+    # Have to be outside the main function
+    with st.sidebar:
+        c1, c2 = st.columns(2)
+        with c1:
+
+            def update_configs_callback():
+                api_client.update_dashboard_configs_columns(
+                    ss.configs_select_columns_number
+                )
+                ss["configs_columns_number"] = ss.configs_select_columns_number
+
+            with st.popover(
+                "Configs",
+                help="Dashboard configs",
+                use_container_width=True,
+            ):
+                with st.form(key="configs_update_configs", border=False):
+                    st.slider(
+                        "Columns",
+                        min_value=1,
+                        max_value=10,
+                        value=ss["configs_columns_number"],
+                        key="configs_select_columns_number",
+                    )
+
+                    st.form_submit_button(
+                        "Update",
+                        on_click=update_configs_callback,
+                    )
+        with c2:
+            if st.button("Refresh", use_container_width=True):
+                if "manga_to_highlight" in ss:
+                    del ss["manga_to_highlight"]
+                ss["manga_updated_success"] = False
+                ss["manga_add_success"] = False
+                st.rerun()
+
+    dashboard = MainDashboard(api_client)
     dashboard.show()
 
 
@@ -532,13 +574,6 @@ if __name__ == "__main__":
     )
     logger = logging.getLogger()
 
-    # Have to be outside the main function
-    if st.sidebar.button("Refresh"):
-        if "manga_to_highlight" in ss:
-            del ss["manga_to_highlight"]
-        ss["manga_updated_success"] = False
-        ss["manga_add_success"] = False
-        st.rerun()
     try:
         main()
     except Exception:

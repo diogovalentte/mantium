@@ -12,12 +12,14 @@ func SetupRouter() *gin.Engine {
 	router := gin.Default()
 
 	v1 := router.Group("/v1")
-	// Health check route
 	{
 		routes.HealthCheckRoute(v1)
 	}
 	{
 		routes.MangaRoutes(v1)
+	}
+	{
+		routes.DashboardRoutes(v1)
 	}
 
 	return router
