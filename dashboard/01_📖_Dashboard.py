@@ -132,7 +132,7 @@ class MainDashboard:
             mangas (dict): A list of mangas.
         """
         manga_container_height = 723
-        if ss.status_filter == 0:
+        if ss.get("status_filter", 1) == 0:
             manga_container_height = 763
         col_index = 0
         for manga in mangas:
@@ -222,7 +222,7 @@ class MainDashboard:
         """
         st.markdown(hide_img_fs, unsafe_allow_html=True)
 
-        if ss.status_filter == 0:
+        if ss.get("status_filter", 1) == 0:
             st.write(
                 f'**Status**: <span style="float: right;">{self.get_manga_status(manga["Status"])}</span>',
                 unsafe_allow_html=True,
