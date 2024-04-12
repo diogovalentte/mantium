@@ -8,4 +8,4 @@ ENV DASHBOARD_PORT=8501
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-CMD ["streamlit", "run", "--server.port=$DASHBOARD_PORT", "01_📖_Dashboard.py"]
+CMD ["sh", "-c", "streamlit run --server.port=$DASHBOARD_PORT 01_📖_Dashboard.py"]
