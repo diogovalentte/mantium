@@ -10,7 +10,7 @@ import (
 
 var (
 	baseSiteURL    = "https://comick.io"
-	baseAPIURL     = "https://api.comick.io"
+	baseAPIURL     = "https://api.comick.fun"
 	baseUploadsURL = "https://meo.comick.pictures"
 	mangadexClient = NewComickClient()
 )

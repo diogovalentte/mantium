@@ -107,12 +107,12 @@ func (s *Source) getMangaHID(mangaURL string) (string, error) {
 	mangaReturn.Source = "comick.xyz"
 	mangaReturn.URL = mangaURL
 
-	mangadexMangaID, err := getMangaSlug(mangaURL)
+	mangaSlug, err := getMangaSlug(mangaURL)
 	if err != nil {
 		return "", err
 	}
 
-	mangaAPIURL := fmt.Sprintf("%s/comic/%s", baseAPIURL, mangadexMangaID)
+	mangaAPIURL := fmt.Sprintf("%s/comic/%s", baseAPIURL, mangaSlug)
 	resp, err := s.client.Request("GET", mangaAPIURL, nil)
 	if err != nil {
 		return "", err
