@@ -208,10 +208,10 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
             background-color: MANGAS-CONTAINER-BACKGROUND-COLOR;
             margin: 0;
             padding: 0;
+            width: calc(100% - 3px);
         }
 
         .mangas-container {
-            width: calc(100% - MANGAS-CONTAINER-WIDTHpx);
             height: 84px;
 
             position: relative;
@@ -410,12 +410,6 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
 </body>
 </html>
 	`
-	// Set the container width based on the number of mangas for better fitting with Homarr
-	containerWidth := "1.6"
-	if len(mangas) > 3 {
-		containerWidth = "8"
-	}
-
 	// Homarr theme
 	containerBackgroundColor := "#ffffff"
 	scrollbarThumbBackgroundColor := "rgba(209, 219, 227, 1)"
@@ -427,7 +421,6 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
 	}
 
 	html = strings.Replace(html, "API-URL", apiURL, -1)
-	html = strings.Replace(html, "MANGAS-CONTAINER-WIDTH", containerWidth, -1)
 	html = strings.Replace(html, "MANGAS-CONTAINER-BACKGROUND-COLOR", containerBackgroundColor, -1)
 	html = strings.Replace(html, "SCROLLBAR-THUMB-BACKGROUND-COLOR", scrollbarThumbBackgroundColor, -1)
 	html = strings.Replace(html, "SCROLLBAR-TRACK-BACKGROUND-COLOR", scrollbarTrackBackgroundColor, -1)
