@@ -323,7 +323,8 @@ paths:
         name: api_url
         required: true
         type: string
-      - description: Homarr theme, defaults to light.
+      - description: Homarr theme, defaults to light. If it's different from your
+          Homarr theme, the background turns white
         example: light
         in: query
         name: theme

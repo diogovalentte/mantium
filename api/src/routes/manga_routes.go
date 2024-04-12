@@ -136,7 +136,7 @@ func GetMangas(c *gin.Context) {
 // @Success 200 {string} string "HTML content"
 // @Produce html
 // @Param api_url query string true "API URL used by your browser. Used for the button that updates the last read chater, as your browser needs to send a request to the API to update the chapter." Example(https://sub.domain.com)
-// @Param theme query string false "Homarr theme, defaults to light." Example(light)
+// @Param theme query string false "Homarr theme, defaults to light. If it's different from your Homarr theme, the background turns white" Example(light)
 // @Param limit query int false "Limits the number of items in the iFrame." Example(5)
 // @Router /mangas/iframe [get]
 func GetMangasiFrame(c *gin.Context) {
@@ -202,10 +202,11 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="referrer" content="no-referrer"> <!-- If not set, can't load Mangedex images when behind a domain or reverse proxy -->
+    <meta name="color-scheme" content="MANGAS-CONTAINER-BACKGROUND-COLOR">
     <title>Movie Display Template</title>
     <style>
         body {
-            background-color: MANGAS-CONTAINER-BACKGROUND-COLOR;
+            background: transparent !important;
             margin: 0;
             padding: 0;
             width: calc(100% - 3px);
@@ -411,17 +412,15 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
 </html>
 	`
 	// Homarr theme
-	containerBackgroundColor := "#ffffff"
 	scrollbarThumbBackgroundColor := "rgba(209, 219, 227, 1)"
 	scrollbarTrackBackgroundColor := "#ffffff"
 	if theme == "dark" {
-		containerBackgroundColor = "#25262b"
 		scrollbarThumbBackgroundColor = "#484d64"
 		scrollbarTrackBackgroundColor = "rgba(37, 40, 53, 1)"
 	}
 
 	html = strings.Replace(html, "API-URL", apiURL, -1)
-	html = strings.Replace(html, "MANGAS-CONTAINER-BACKGROUND-COLOR", containerBackgroundColor, -1)
+	html = strings.Replace(html, "MANGAS-CONTAINER-BACKGROUND-COLOR", theme, -1)
 	html = strings.Replace(html, "SCROLLBAR-THUMB-BACKGROUND-COLOR", scrollbarThumbBackgroundColor, -1)
 	html = strings.Replace(html, "SCROLLBAR-TRACK-BACKGROUND-COLOR", scrollbarTrackBackgroundColor, -1)
 
