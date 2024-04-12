@@ -38,7 +38,7 @@ func TestMain(m *testing.M) {
 
 var mangasRequestsTestTable = map[string]routes.AddMangaRequest{
 	"valid manga with read chapter": {
-		URL:             "https://mangahub.io/manga/berserk",
+		URL:             "https://comick.io/comic/dandadan",
 		Status:          5,
 		LastReadChapter: "370",
 	},
@@ -293,7 +293,7 @@ func testGetMangaChaptersRouteHelper(testKey string, router *gin.Engine) error {
 	if err := json.Unmarshal(jsonBytes, &resMap); err != nil {
 		// response is an error message
 		ms := err.Error()
-		if ms == "json: cannot unmarshal string into Go value of type manga.Manga" {
+		if ms == "json: cannot unmarshal string into Go value of type []manga.Chapter" {
 			var errMap map[string]string
 			jsonBytes := w.Body.Bytes()
 			if err := json.Unmarshal(jsonBytes, &errMap); err != nil {
