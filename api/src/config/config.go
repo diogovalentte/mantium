@@ -13,6 +13,8 @@ var GlobalConfigs *Configs = &Configs{
 	DB:                       &DBConfigs{},
 	Ntfy:                     &NtfyConfigs{},
 	PeriodicallyUpdateMangas: &PeriodicallyUpdateMangasConfigs{},
+	ConfigsFilePath:          "./configs/configs.json",
+	DefaultConfigsFilePath:   "./defaults/configs.json",
 }
 
 type Configs struct {
@@ -20,6 +22,10 @@ type Configs struct {
 	DB                       *DBConfigs
 	Ntfy                     *NtfyConfigs
 	PeriodicallyUpdateMangas *PeriodicallyUpdateMangasConfigs
+	// A file with configs that should be persisted
+	// Relative to main.go
+	ConfigsFilePath        string
+	DefaultConfigsFilePath string
 }
 
 type DBConfigs struct {

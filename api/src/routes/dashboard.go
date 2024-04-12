@@ -8,9 +8,9 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-)
 
-var configsFilePath = "./configs/configs.json" // relative to main.go
+	"github.com/diogovalentte/mantium/api/src/config"
+)
 
 func DashboardRoutes(group *gin.RouterGroup) {
 	{
@@ -25,7 +25,7 @@ func DashboardRoutes(group *gin.RouterGroup) {
 // @Produce json
 // @Router /dashboard/configs [get]
 func GetDashboardConfigs(c *gin.Context) {
-	configs, err := getConfigsFromFile(configsFilePath)
+	configs, err := getConfigsFromFile(config.GlobalConfigs.ConfigsFilePath)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("error while loading configs file: %s", err.Error())})
 		return
@@ -51,6 +51,8 @@ func UpdateDashboardColumns(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "failed to convert 'columns' parameter into number"})
 		return
 	}
+
+	configsFilePath := config.GlobalConfigs.ConfigsFilePath
 
 	configs, err := getConfigsFromFile(configsFilePath)
 	if err != nil {

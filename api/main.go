@@ -24,6 +24,8 @@ func init() {
 
 	log := util.GetLogger()
 
+	setDefaultConfigsFile(log)
+
 	log.Info().Msg("Trying to connect to DB...")
 	_db, err := db.OpenConn()
 	if err != nil {
@@ -82,4 +84,32 @@ func setUpdateMangasMetadataPeriodicallyJob(log *zerolog.Logger) {
 	} else {
 		log.Info().Msg("Not updating mangas metadata periodically")
 	}
+}
+
+func setDefaultConfigsFile(log *zerolog.Logger) {
+	configsFilePath := config.GlobalConfigs.ConfigsFilePath
+	if _, err := os.Stat(configsFilePath); os.IsNotExist(err) {
+		log.Info().Msg("Creating default configs file...")
+
+		err := copyDefaultConfigsFile(config.GlobalConfigs.DefaultConfigsFilePath, configsFilePath)
+		if err != nil {
+			log.Error().Msgf("Error creating default configs file: %s", err)
+		}
+	} else {
+		log.Info().Msg("Found configs file")
+	}
+}
+
+func copyDefaultConfigsFile(srcPath, dstPath string) error {
+	srcFile, err := os.ReadFile(srcPath)
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(dstPath, srcFile, 0o644)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
