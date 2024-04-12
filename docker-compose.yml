@@ -11,8 +11,6 @@ services:
       - POSTGRES_DB=${POSTGRES_DB:-postgres}
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
-    ports:
-      - 5432:5432
     restart: unless-stopped
 
   mantium-api:
