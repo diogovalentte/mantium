@@ -41,7 +41,7 @@ services:
     # ports:
     #   - 8080:8080
     depends_on:
-      - mangas-dashboard-db
+      - mantium-db
     restart: unless-stopped
 
   mantium-dashboard:
@@ -52,6 +52,5 @@ services:
     ports:
       - 8501:8501
     depends_on:
-      - mangas-dashboard-api
-      - mangas-dashboard-db
+      - mantium-api
     restart: unless-stopped
