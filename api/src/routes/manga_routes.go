@@ -390,8 +390,6 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
                 const response = await fetch(url);
                 const data = await response.json();
 
-                console.log("Last update from the API:", data.message);
-
                 if (lastUpdate === null) {
                     lastUpdate = data.message;
                 } else {
@@ -418,11 +416,11 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
 {{range .}}
     <div class="mangas-container">
 
-        <div style="background-image: url('{{ .CoverImgURL }}');" class="background-image"></div>
+    <div style="background-image: url('data:image/jpeg;base64,{{ encodeImage .CoverImg }}');" class="background-image"></div>
 
         <img
             class="manga-cover"
-            src="{{ .CoverImgURL }}"
+            src="data:image/jpeg;base64,{{ encodeImage .CoverImg }}"
             alt="Manga Cover"
         />
 
@@ -458,7 +456,11 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
 	html = strings.Replace(html, "SCROLLBAR-THUMB-BACKGROUND-COLOR", scrollbarThumbBackgroundColor, -1)
 	html = strings.Replace(html, "SCROLLBAR-TRACK-BACKGROUND-COLOR", scrollbarTrackBackgroundColor, -1)
 
-	tmpl := template.Must(template.New("mangas").Parse(html))
+	encodeImageF := template.FuncMap{"encodeImage": func(bytes []byte) string {
+		return base64.StdEncoding.EncodeToString(bytes)
+	}}
+
+	tmpl := template.Must(template.New("mangas").Funcs(encodeImageF).Parse(html))
 
 	var buf bytes.Buffer
 	err := tmpl.Execute(&buf, mangas)
