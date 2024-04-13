@@ -10,6 +10,7 @@ import (
 
 	"github.com/diogovalentte/mantium/api/src"
 	"github.com/diogovalentte/mantium/api/src/config"
+	"github.com/diogovalentte/mantium/api/src/dashboard"
 	"github.com/diogovalentte/mantium/api/src/db"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
@@ -39,6 +40,7 @@ func init() {
 	}
 
 	setUpdateMangasMetadataPeriodicallyJob(log)
+	dashboard.UpdateDashboard()
 }
 
 func main() {

@@ -136,6 +136,19 @@ paths:
           schema:
             $ref: '#/definitions/routes.responseMessage'
       summary: Update dashboard columns
+  /dashboard/last_update:
+    get:
+      description: Returns the last time a resource that should trigger an update
+        in the iframe/dashboard was updated. Usually used to update the dashboard
+        when an event not triggered by the user occurs.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Get the last update date
   /health:
     get:
       description: Returns status OK

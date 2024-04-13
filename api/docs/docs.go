@@ -59,6 +59,23 @@ const docTemplate = `{
                 }
             }
         },
+        "/dashboard/last_update": {
+            "get": {
+                "description": "Returns the last time a resource that should trigger an update in the iframe/dashboard was updated. Usually used to update the dashboard when an event not triggered by the user occurs.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get the last update date",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Returns status OK",

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/diogovalentte/mantium/api/src/dashboard"
 	"github.com/diogovalentte/mantium/api/src/db"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
@@ -336,6 +337,8 @@ func (m *Manga) UpdateName(name string) error {
 	}
 	m.Name = name
 
+	dashboard.UpdateDashboard()
+
 	return nil
 }
 
@@ -407,6 +410,8 @@ func (m *Manga) UpdateCoverImg(coverImg []byte, coverImgResized bool, coverImgUR
 	m.CoverImg = coverImg
 	m.CoverImgResized = coverImgResized
 	m.CoverImgURL = coverImgURL
+
+	dashboard.UpdateDashboard()
 
 	return nil
 }

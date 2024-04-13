@@ -80,6 +80,18 @@ class MainDashboard:
 
         self.sidebar()
 
+        if "system_last_update_time" not in ss:
+            ss["system_last_update_time"] = self.api_client.check_for_updates()
+
+        @st.experimental_fragment(run_every=5)
+        def check_for_updates():
+            last_update = self.api_client.check_for_updates()
+            if last_update != ss["system_last_update_time"]:
+                ss["system_last_update_time"] = last_update
+                st.rerun()
+
+        check_for_updates()
+
     def sidebar(self) -> None:
         with st.sidebar:
             st.text_input("Search", key="search_manga")
@@ -545,6 +557,23 @@ def main():
 
     if "configs_columns_number" not in ss:
         ss["configs_columns_number"] = api_client.get_dashboard_configs()["columns"]
+
+    streamlit_general_changes = """
+        <style>
+            div[data-testid="stStatusWidget"] {
+                display: none;
+            }
+
+            div[data-testid="stAppViewBlockContainer"] {
+                padding-top: 50px !important;
+            }
+
+            div[data-testid="stSidebarUserContent"] {
+                padding-top: 58px !important;
+            }
+        </style>
+    """
+    st.markdown(streamlit_general_changes, unsafe_allow_html=True)
 
     dashboard = MainDashboard(api_client)
     dashboard.show()

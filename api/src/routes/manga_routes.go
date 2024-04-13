@@ -4,6 +4,7 @@ package routes
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 	"github.com/AnthonyHewins/gotfy"
 	"github.com/gin-gonic/gin"
 
+	"github.com/diogovalentte/mantium/api/src/dashboard"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/sources"
 	"github.com/diogovalentte/mantium/api/src/util"
@@ -379,6 +381,38 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
       }
     </script>
 
+    <script>
+        let lastUpdate = null;
+
+        async function fetchData() {
+            try {
+                var url = 'API-URL/v1/dashboard/last_update';
+                const response = await fetch(url);
+                const data = await response.json();
+
+                console.log("Last update from the API:", data.message);
+
+                if (lastUpdate === null) {
+                    lastUpdate = data.message;
+                } else {
+                    if (data.message !== lastUpdate) {
+                        lastUpdate = data.message;
+                        location.reload();
+                    }
+                }
+            } catch (error) {
+                console.error('Error getting last update from the API:', error);
+            }
+        }
+
+        function fetchAndUpdate() {
+            fetchData();
+            setTimeout(fetchAndUpdate, 5000); // 5 seconds
+        }
+
+        fetchAndUpdate();
+    </script>
+
   </head>
 <body>
 {{range .}}
@@ -610,6 +644,8 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 		return
 	}
 
+	dashboard.UpdateDashboard()
+
 	c.JSON(http.StatusOK, gin.H{"message": "Manga last read chapter updated successfully"})
 }
 
@@ -669,6 +705,8 @@ func UpdateMangasMetadata(c *gin.Context) {
 		}
 
 	}
+
+	dashboard.UpdateDashboard()
 
 	c.JSON(http.StatusOK, gin.H{"message": "Mangas metadata updated successfully"})
 }

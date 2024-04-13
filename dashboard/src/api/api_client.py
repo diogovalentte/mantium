@@ -3,7 +3,7 @@ import os
 
 import streamlit as st
 from src.api.manga_api import MangaAPIClient
-from src.api.system_api import SystemAPIClient
+from src.api.system_api import DashboardAPIClient
 
 
 @st.cache_data()
@@ -25,7 +25,7 @@ def get_api_client():
     return api_client
 
 
-class APIClient(MangaAPIClient, SystemAPIClient):
+class APIClient(MangaAPIClient, DashboardAPIClient):
     def __init__(self, base_url: str) -> None:
         self.base_url = base_url
         super().__init__(self.base_url)
