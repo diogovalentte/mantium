@@ -76,6 +76,8 @@ func AddManga(c *gin.Context) {
 		return
 	}
 
+	dashboard.UpdateDashboard()
+
 	c.JSON(http.StatusOK, gin.H{"message": "Manga added successfully"})
 }
 
@@ -542,6 +544,8 @@ func DeleteManga(c *gin.Context) {
 		return
 	}
 
+	dashboard.UpdateDashboard()
+
 	c.JSON(http.StatusOK, gin.H{"message": "Manga deleted successfully"})
 }
 
@@ -583,6 +587,8 @@ func UpdateMangaStatus(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
+
+	dashboard.UpdateDashboard()
 
 	c.JSON(http.StatusOK, gin.H{"message": "Manga status updated successfully"})
 }

@@ -27,7 +27,7 @@ func DashboardRoutes(group *gin.RouterGroup) {
 // @Produce json
 // @Router /dashboard/configs [get]
 func GetDashboardConfigs(c *gin.Context) {
-	configs, err := getConfigsFromFile(config.GlobalConfigs.ConfigsFilePath)
+	configs, err := dashboard.GetConfigsFromFile(config.GlobalConfigs.ConfigsFilePath)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("error while loading configs file: %s", err.Error())})
 		return
@@ -56,7 +56,7 @@ func UpdateDashboardColumns(c *gin.Context) {
 
 	configsFilePath := config.GlobalConfigs.ConfigsFilePath
 
-	configs, err := getConfigsFromFile(configsFilePath)
+	configs, err := dashboard.GetConfigsFromFile(configsFilePath)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("error while loading configs file: %s", err.Error())})
 		return
@@ -88,25 +88,4 @@ func GetLastUpdate(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": dashboard.GetLastUpdateDashboard(),
 	})
-}
-
-func getConfigsFromFile(filePath string) (*Configs, error) {
-	jsonFile, err := os.ReadFile(filePath)
-	if err != nil {
-		return nil, err
-	}
-
-	var configs Configs
-	err = json.Unmarshal(jsonFile, &configs)
-	if err != nil {
-		return nil, err
-	}
-
-	return &configs, nil
-}
-
-type Configs struct {
-	Dashboard struct {
-		Columns int `json:"columns"`
-	} `json:"dashboard"`
 }
