@@ -35,6 +35,11 @@ services:
       - UPDATE_MANGAS_PERIODICALLY=${UPDATE_MANGAS_PERIODICALLY:-false}
       - UPDATE_MANGAS_PERIODICALLY_NOTIFY=${UPDATE_MANGAS_PERIODICALLY_NOTIFY:-false}
       - UPDATE_MANGAS_PERIODICALLY_MINUTES=${UPDATE_MANGAS_PERIODICALLY_MINUTES:-30}
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "5"
+        max-size: "10m"
     # Port mapping if you want to use the dashboard iFrame
     # ports:
     #   - 8080:8080
@@ -48,6 +53,11 @@ services:
     environment:
       - DASHBOARD_PORT=${DASHBOARD_PORT:-8501}
       - API_ADDRESS=${API_ADDRESS:-http://mantium-api:8080}
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "5"
+        max-size: "10m"
     ports:
       - 8501:8501
     depends_on:
