@@ -26,10 +26,6 @@ var sources = map[string]Source{
 type Source interface {
 	// GetMangaMetadata returns a manga
 	GetMangaMetadata(mangaURL string) (*manga.Manga, error)
-	// GetChapterMetadataByURL returns a chapter by its URL
-	GetChapterMetadataByURL(chapterURL string) (*manga.Chapter, error)
-	// GetChapterMetadataByChapter returns a chapter by its chapter
-	GetChapterMetadataByChapter(mangaURL string, chapter string) (*manga.Chapter, error)
 	// GetChapterMetadata returns a chapter by its chapter or URL
 	GetChapterMetadata(mangaURL string, chapter string, chapterURL string) (*manga.Chapter, error)
 	// GetLastChapterMetadata returns the last uploaded chapter in the source
