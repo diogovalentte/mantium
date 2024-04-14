@@ -49,18 +49,30 @@ func TestGetChapterMetadata(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
 			mangaURL := test.url
+			chapterURL := expected.URL
 
-			actualChapter, err := source.GetChapterMetadata(mangaURL, expected.Chapter, "")
+			actualChapter, err := source.GetChapterMetadata(mangaURL, "", chapterURL)
 			if err != nil {
 				t.Errorf("error while getting chapter: %v", err)
 				return
 			}
 
-			// Compare chapter
+			if !reflect.DeepEqual(actualChapter, expected) {
+				t.Errorf("expected chapter %v, got %v", expected, actualChapter)
+			}
+
+			actualChapter, err = source.GetChapterMetadata(mangaURL, expected.Chapter, "")
+			if err != nil {
+				t.Errorf("error while getting chapter: %v", err)
+				return
+			}
+
 			if !reflect.DeepEqual(actualChapter, expected) {
 				t.Errorf("expected chapter %v, got %v", expected, actualChapter)
 				return
 			}
+
+			return
 		}
 	})
 }
