@@ -3,6 +3,7 @@ package comick
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/util"
@@ -199,6 +200,7 @@ func getChapterFromResp(chapterResp getChapterAPIResponse, chapterReturn *manga.
 	if err != nil {
 		return nil
 	}
+	chapterCreatedAt = chapterCreatedAt.Truncate(time.Second)
 	chapterReturn.UpdatedAt = chapterCreatedAt
 
 	return nil
