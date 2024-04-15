@@ -18,7 +18,6 @@ func (s *Source) GetChapterMetadata(mangaURL string, chapter string, chapterURL 
 }
 
 // GetChapterMetadataByURL scrapes the manga page and return the chapter by its URL
-// Not implemented
 func (s *Source) GetChapterMetadataByURL(_ string) (*manga.Chapter, error) {
 	return nil, fmt.Errorf("not implemented")
 }

@@ -105,41 +105,6 @@ type getMangaAPIResponse struct {
 	}
 }
 
-type mangaAttributes struct {
-	Title                          localisedStrings   `json:"title"`
-	AltTitles                      []localisedStrings `json:"altTitles"`
-	Description                    localisedStrings   `json:"description"`
-	IsLocked                       bool               `json:"isLocked"`
-	Links                          localisedStrings   `json:"links"`
-	OriginalLanguage               string             `json:"originalLanguage"`
-	LastVolume                     string             `json:"lastVolume"`
-	LastChapter                    string             `json:"lastChapter"`
-	PublicationDemographic         string             `json:"publicationDemographic"`
-	Status                         string             `json:"status"`
-	Year                           int                `json:"year"`
-	ContentRating                  string             `json:"contentRating"`
-	Tags                           []tag              `json:"tags"`
-	State                          string             `json:"state"`
-	ChapterNumbersResetOnNewVolume bool               `json:"chapterNumbersResetOnNewVolume"`
-	CreatedAt                      string             `json:"createdAt"`
-	UpdatedAt                      string             `json:"updatedAt"`
-	Version                        int                `json:"version"`
-	AvailableTranslatedLanguages   []string           `json:"availableTranslatedLanguages"`
-	LatestUploadedChapter          string             `json:"latestUploadedChapter"`
-}
-
-type coverAttributes map[string]interface{}
-
-// type coverAttributes struct {
-// 	Description string  `json:"description"`
-// 	Volume      string  `json:"volume"`
-// 	FileName    string  `json:"fileName"`
-// 	Locale      string  `json:"locale"`
-// 	CreatedAt   string  `json:"createdAt"`
-// 	UpdatedAt   string  `json:"updatedAt"`
-// 	Version     float64 `json:"version"`
-// }
-
 // getMangaID returns the ID of a manga given its URL
 // URL should be like: https://mangadex.org/title/87ebd557-8394-4f16-8afe-a8644e555ddc/hirayasumi
 func getMangaID(mangaURL string) (string, error) {

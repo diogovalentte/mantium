@@ -48,8 +48,8 @@ type Manga struct {
 	LastReadChapter *Chapter
 }
 
-// InsertDB saves the manga into the database
-func (m *Manga) InsertDB() (ID, error) {
+// InsertIntoDB saves the manga into the database
+func (m *Manga) InsertIntoDB() (ID, error) {
 	contextError := "error inserting manga into DB"
 
 	db, err := db.OpenConn()
@@ -63,7 +63,7 @@ func (m *Manga) InsertDB() (ID, error) {
 		return -1, util.AddErrorContext(err, contextError)
 	}
 
-	mangaID, err := insertMangaDB(m, tx)
+	mangaID, err := insertMangaIntoDB(m, tx)
 	if err != nil {
 		tx.Rollback()
 		return -1, util.AddErrorContext(err, contextError)
@@ -77,7 +77,7 @@ func (m *Manga) InsertDB() (ID, error) {
 	return mangaID, nil
 }
 
-func insertMangaDB(m *Manga, tx *sql.Tx) (ID, error) {
+func insertMangaIntoDB(m *Manga, tx *sql.Tx) (ID, error) {
 	err := validateManga(m)
 	if err != nil {
 		return -1, err
@@ -140,8 +140,9 @@ func insertMangaDB(m *Manga, tx *sql.Tx) (ID, error) {
 	return mangaID, nil
 }
 
-// DeleteDB deletes the manga and its chapters from the database
-func (m *Manga) DeleteDB() error {
+// DeleteFromDB deletes the manga and its chapters from the database
+// if they exists.
+func (m *Manga) DeleteFromDB() error {
 	contextError := "error deleting manga from DB"
 
 	db, err := db.OpenConn()
@@ -209,8 +210,8 @@ func deleteMangaDB(m *Manga, tx *sql.Tx) error {
 	return nil
 }
 
-// UpdateStatus updates the manga status in the database
-func (m *Manga) UpdateStatus(status Status) error {
+// UpdateStatusInDB updates the manga status in the database
+func (m *Manga) UpdateStatusInDB(status Status) error {
 	contextError := "error updating manga status in DB"
 
 	db, err := db.OpenConn()
@@ -279,9 +280,9 @@ func updateMangaStatusDB(m *Manga, status Status, tx *sql.Tx) error {
 	return nil
 }
 
-// UpsertChapter updates the last read/upload chapter in the database
+// UpsertChapterInDB updates the last read/upload chapter in the database
 // The chapter.Type field must be set
-func (m *Manga) UpsertChapter(chapter *Chapter) error {
+func (m *Manga) UpsertChapterInDB(chapter *Chapter) error {
 	contextError := "error updating manga chapter in DB"
 
 	db, err := db.OpenConn()
@@ -310,8 +311,8 @@ func (m *Manga) UpsertChapter(chapter *Chapter) error {
 	return nil
 }
 
-// UpdateName updates the manga name in the database
-func (m *Manga) UpdateName(name string) error {
+// UpdateNameInDB updates the manga name in the database
+func (m *Manga) UpdateNameInDB(name string) error {
 	contextError := "error updating manga name in DB"
 
 	db, err := db.OpenConn()
@@ -382,8 +383,8 @@ func updateMangaName(m *Manga, name string, tx *sql.Tx) error {
 	return nil
 }
 
-// UpdateCoverImg updates the manga cover image in the database
-func (m *Manga) UpdateCoverImg(coverImg []byte, coverImgResized bool, coverImgURL string) error {
+// UpdateCoverImgInDB updates the manga cover image in the database
+func (m *Manga) UpdateCoverImgInDB(coverImg []byte, coverImgResized bool, coverImgURL string) error {
 	contextError := "error updating manga cover image in DB"
 
 	db, err := db.OpenConn()
@@ -456,10 +457,10 @@ func updateMangaCoverImg(m *Manga, coverImg []byte, coverImgResized bool, coverI
 	return nil
 }
 
-// UpdateMangaMetadataDB updates the manga metadata in the database
-// It updates: the last upload chapter (and its metadata), the manga name and cover image
-// The manga argument should have the ID or URL set to identify which manga to update
-// The other fields of the manga argument will be the new values for the manga in the database
+// UpdateMangaMetadataDB updates the manga metadata in the database.
+// It updates: the last upload chapter (and its metadata), the manga name and cover image.
+// The manga argument should have the ID or URL set to identify which manga to update.
+// The other fields of the manga will be the new values for the manga in the database.
 func UpdateMangaMetadataDB(m *Manga) error {
 	contextError := "error updating manga metadata in DB"
 
@@ -510,16 +511,6 @@ func updateMangaMetadata(m *Manga, tx *sql.Tx) error {
 	}
 
 	return nil
-}
-
-// GetMangaDBByID gets a manga from the database by its ID
-func GetMangaDBByID(mangaID ID) (*Manga, error) {
-	return GetMangaDB(mangaID, "")
-}
-
-// GetMangaDBByURL gets a manga from the database by its URL
-func GetMangaDBByURL(url string) (*Manga, error) {
-	return GetMangaDB(0, url)
 }
 
 // GetMangaDB gets a manga from the database by its ID or URL
@@ -621,6 +612,16 @@ func getMangaIDByURL(url string) (ID, error) {
 	}
 
 	return mangaID, nil
+}
+
+// GetMangaDBByID gets a manga from the database by its ID
+func GetMangaDBByID(mangaID ID) (*Manga, error) {
+	return GetMangaDB(mangaID, "")
+}
+
+// GetMangaDBByURL gets a manga from the database by its URL
+func GetMangaDBByURL(url string) (*Manga, error) {
+	return GetMangaDB(0, url)
 }
 
 // GetMangasDB gets all mangas from the database

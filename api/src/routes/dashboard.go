@@ -13,11 +13,12 @@ import (
 	"github.com/diogovalentte/mantium/api/src/dashboard"
 )
 
+// DashboardRoutes sets the routes for the dashboard.
 func DashboardRoutes(group *gin.RouterGroup) {
 	{
 		group.GET("/dashboard/configs", GetDashboardConfigs)
-		group.PATCH("/dashboard/configs/columns", UpdateDashboardColumns)
 		group.GET("/dashboard/last_update", GetLastUpdate)
+		group.PATCH("/dashboard/configs/columns", UpdateDashboardColumns)
 	}
 }
 
@@ -34,6 +35,17 @@ func GetDashboardConfigs(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"configs": configs.Dashboard})
+}
+
+// @Summary Get the last update date
+// @Description Returns the last time a resource that should trigger an update in the iframe/dashboard was updated. Usually used to update the dashboard when an event not triggered by the user occurs.
+// @Success 200 {object} responseMessage
+// @Produce json
+// @Router /dashboard/last_update [get]
+func GetLastUpdate(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"message": dashboard.GetLastUpdateDashboard(),
+	})
 }
 
 // @Summary Update dashboard columns
@@ -77,15 +89,4 @@ func UpdateDashboardColumns(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Configs updated successfully"})
-}
-
-// @Summary Get the last update date
-// @Description Returns the last time a resource that should trigger an update in the iframe/dashboard was updated. Usually used to update the dashboard when an event not triggered by the user occurs.
-// @Success 200 {object} responseMessage
-// @Produce json
-// @Router /dashboard/last_update [get]
-func GetLastUpdate(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"message": dashboard.GetLastUpdateDashboard(),
-	})
 }

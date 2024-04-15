@@ -170,6 +170,10 @@ type chapterAPIResponse struct {
 	HID       string `json:"hid"`
 }
 
+// generateMangaChapters generates the chapters of a manga and sends them to the channel.
+// It sends an error to the error channel if something goes wrong.
+// It closes the chapters channel when there is no more chapters to send.
+// It requests the mangas from the API using the chapter for ordering.
 func generateMangaChapters(s *Source, mangaURL string, chaptersChan chan *manga.Chapter, errChan chan error) {
 	defer close(chaptersChan)
 
@@ -213,6 +217,19 @@ func generateMangaChapters(s *Source, mangaURL string, chaptersChan chan *manga.
 	}
 }
 
+// getChapterHID returns the HID of a chapter given its URL.
+// URL should be like: https://comick.xyz/comic/jitsu-wa-watashi-wa/PZKrW
+// or https://comick.xyz/comic/jitsu-wa-watashi-wa/PZKrW-chapter-121-en
+func getChapterHID(chapterURL string) (string, error) {
+	parts := strings.Split(chapterURL, "/")
+	hid := parts[len(parts)-1]
+
+	parts = strings.Split(hid, "-")
+	hid = parts[0]
+
+	return hid, nil
+}
+
 func getChapterFromResp(chapterResp chapterAPIResponse, chapter string, mangaURL string) (*manga.Chapter, error) {
 	chapterReturn := &manga.Chapter{}
 
@@ -241,14 +258,4 @@ func getChapterFromResp(chapterResp chapterAPIResponse, chapter string, mangaURL
 	chapterReturn.UpdatedAt = chapterCreatedAt
 
 	return chapterReturn, nil
-}
-
-func getChapterHID(chapterURL string) (string, error) {
-	parts := strings.Split(chapterURL, "/")
-	hid := parts[len(parts)-1]
-
-	parts = strings.Split(hid, "-")
-	hid = parts[0]
-
-	return hid, nil
 }

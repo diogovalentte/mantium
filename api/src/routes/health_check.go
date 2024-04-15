@@ -1,4 +1,3 @@
-// Package routes implements the health check route
 package routes
 
 import (

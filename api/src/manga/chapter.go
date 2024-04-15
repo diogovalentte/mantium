@@ -13,9 +13,8 @@ type (
 	Type int
 )
 
-// Chapter is the struct for a chapter
-// Chapter don't has exported methods because
-// a chapter should be used only by a manga
+// Chapter is the struct for a chapter.
+// Chapter don't has exported methods because a chapter should be used only by a manga.
 type Chapter struct {
 	// URL is the URL of the chapter
 	URL string

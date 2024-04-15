@@ -50,6 +50,8 @@ func main() {
 	router.Run(":" + os.Getenv("API_PORT"))
 }
 
+// setUpdateMangasMetadataPeriodicallyJob sets a job to update mangas metadata periodically
+// based on the configs set in the .env file in another goroutine.
 func setUpdateMangasMetadataPeriodicallyJob(log *zerolog.Logger) {
 	configs := config.GlobalConfigs.PeriodicallyUpdateMangas
 	if configs.Update {
@@ -88,6 +90,8 @@ func setUpdateMangasMetadataPeriodicallyJob(log *zerolog.Logger) {
 	}
 }
 
+// setDefaultConfigsFile copies the default configs file
+// to the default configs path if it doesn't exist.
 func setDefaultConfigsFile(log *zerolog.Logger) {
 	configsFilePath := config.GlobalConfigs.ConfigsFilePath
 	if _, err := os.Stat(configsFilePath); os.IsNotExist(err) {
@@ -102,6 +106,8 @@ func setDefaultConfigsFile(log *zerolog.Logger) {
 	}
 }
 
+// copyDefaultConfigsFile copies a file and set the copy with
+// permissions 0664.
 func copyDefaultConfigsFile(srcPath, dstPath string) error {
 	srcFile, err := os.ReadFile(srcPath)
 	if err != nil {

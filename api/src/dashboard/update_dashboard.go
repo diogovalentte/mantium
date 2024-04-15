@@ -1,3 +1,4 @@
+// Package dashboard contains the structs and functions that are used by routes that interact with the dashboard.
 package dashboard
 
 import (
@@ -50,6 +51,7 @@ type Configs struct {
 }
 
 // GetConfigsFromFile reads a file and unmarshal it into a Configs struct.
+// Used to get the configurations from a JSON file.
 func GetConfigsFromFile(filePath string) (*Configs, error) {
 	jsonFile, err := os.ReadFile(filePath)
 	if err != nil {

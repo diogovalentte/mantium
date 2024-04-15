@@ -26,13 +26,13 @@ import (
 func MangaRoutes(group *gin.RouterGroup) {
 	{
 		group.POST("/manga", AddManga)
-		group.GET("/manga", GetManga)
 		group.DELETE("/manga", DeleteManga)
+		group.GET("/manga", GetManga)
+		group.GET("/mangas", GetMangas)
+		group.GET("/mangas/iframe", GetMangasiFrame)
 		group.GET("/manga/chapters", GetMangaChapters)
 		group.PATCH("/manga/status", UpdateMangaStatus)
 		group.PATCH("/manga/last_read_chapter", UpdateMangaLastReadChapter)
-		group.GET("/mangas", GetMangas)
-		group.GET("/mangas/iframe", GetMangasiFrame)
 		group.PATCH("/mangas/metadata", UpdateMangasMetadata)
 	}
 }
@@ -70,7 +70,7 @@ func AddManga(c *gin.Context) {
 	mangaAdd.LastReadChapter.Type = 2
 	mangaAdd.LastReadChapter.UpdatedAt = currentTime
 
-	_, err = mangaAdd.InsertDB()
+	_, err = mangaAdd.InsertIntoDB()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -87,6 +87,43 @@ type AddMangaRequest struct {
 	Status             int    `json:"status" binding:"required,gte=0,lte=5"`
 	LastReadChapter    string `json:"last_read_chapter"`
 	LastReadChapterURL string `json:"last_read_chapter_url"`
+}
+
+// @Summary Delete manga
+// @Description Deletes a manga from the database. You must provide either the manga ID or the manga URL.
+// @Produce json
+// @Param id query int false "Manga ID" Example(1)
+// @Param url query string false "Manga URL" Example("https://mangadex.org/title/1/one-piece")
+// @Success 200 {object} responseMessage
+// @Router /manga [delete]
+func DeleteManga(c *gin.Context) {
+	mangaIDStr := c.Query("id")
+	mangaURL := c.Query("url")
+	mangaID, mangaURL, err := getMangaIDAndURL(mangaIDStr, mangaURL)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	mangaDelete, err := manga.GetMangaDB(mangaID, mangaURL)
+	if err != nil {
+		if strings.Contains(err.Error(), "manga not found in DB") {
+			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = mangaDelete.DeleteFromDB()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	dashboard.UpdateDashboard()
+
+	c.JSON(http.StatusOK, gin.H{"message": "Manga deleted successfully"})
 }
 
 // @Summary Get manga
@@ -512,43 +549,6 @@ func GetMangaChapters(c *gin.Context) {
 	c.JSON(http.StatusOK, resMap)
 }
 
-// @Summary Delete manga
-// @Description Deletes a manga from the database. You must provide either the manga ID or the manga URL.
-// @Produce json
-// @Param id query int false "Manga ID" Example(1)
-// @Param url query string false "Manga URL" Example("https://mangadex.org/title/1/one-piece")
-// @Success 200 {object} responseMessage
-// @Router /manga [delete]
-func DeleteManga(c *gin.Context) {
-	mangaIDStr := c.Query("id")
-	mangaURL := c.Query("url")
-	mangaID, mangaURL, err := getMangaIDAndURL(mangaIDStr, mangaURL)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
-
-	mangaDelete, err := manga.GetMangaDB(mangaID, mangaURL)
-	if err != nil {
-		if strings.Contains(err.Error(), "manga not found in DB") {
-			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-
-	err = mangaDelete.DeleteDB()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-
-	dashboard.UpdateDashboard()
-
-	c.JSON(http.StatusOK, gin.H{"message": "Manga deleted successfully"})
-}
-
 // @Summary Update manga status
 // @Description Updates a manga status in the database. You must provide either the manga ID or the manga URL.
 // @Produce json
@@ -582,7 +582,7 @@ func UpdateMangaStatus(c *gin.Context) {
 		return
 	}
 
-	err = mangaUpdate.UpdateStatus(requestData.Status)
+	err = mangaUpdate.UpdateStatusInDB(requestData.Status)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -646,7 +646,7 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 	chapter.Type = 2
 	chapter.UpdatedAt = currentTime
 
-	err = mangaUpdate.UpsertChapter(chapter)
+	err = mangaUpdate.UpsertChapterInDB(chapter)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return

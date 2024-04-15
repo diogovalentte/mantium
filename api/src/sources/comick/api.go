@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-// Client is a client for the Mangadex API
+// Client is a client for the Comick API
 type Client struct {
 	client *http.Client
 	header http.Header
@@ -15,7 +15,7 @@ type Client struct {
 
 var userAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0"
 
-// NewComickClient creates a new Mangadex API client
+// NewComickClient creates a new Comick API client
 func NewComickClient() *Client {
 	client := http.Client{
 		Transport: &http.Transport{
@@ -37,7 +37,7 @@ func NewComickClient() *Client {
 	return dex
 }
 
-// Request is a helper function to make a request to the Mangadex API
+// Request is a helper function to make a request to the Comick API
 func (c *Client) Request(method, url string, body io.Reader) (*http.Response, error) {
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {

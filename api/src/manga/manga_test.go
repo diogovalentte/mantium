@@ -70,7 +70,7 @@ func TestMangaDBLifeCycle(t *testing.T) {
 	var err error
 	var mangaID ID
 	t.Run("should insert a manga into DB", func(t *testing.T) {
-		mangaID, err = mangaTest.InsertDB()
+		mangaID, err = mangaTest.InsertIntoDB()
 		if err != nil {
 			t.Error(err)
 			return
@@ -104,28 +104,28 @@ func TestMangaDBLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("should update a manga's status in DB", func(t *testing.T) {
-		err := mangaTest.UpdateStatus(5)
+		err := mangaTest.UpdateStatusInDB(5)
 		if err != nil {
 			t.Error(err)
 			return
 		}
 	})
 	t.Run("should update a manga's last upload chapter in DB", func(t *testing.T) {
-		err := mangaTest.UpsertChapter(chaptersTest["last_upload_chapter"])
+		err := mangaTest.UpsertChapterInDB(chaptersTest["last_upload_chapter"])
 		if err != nil {
 			t.Error(err)
 			return
 		}
 	})
 	t.Run("should update a manga's last read chapter in DB", func(t *testing.T) {
-		err := mangaTest.UpsertChapter(chaptersTest["last_read_chapter"])
+		err := mangaTest.UpsertChapterInDB(chaptersTest["last_read_chapter"])
 		if err != nil {
 			t.Error(err)
 			return
 		}
 	})
 	t.Run("should delete a manga into DB", func(t *testing.T) {
-		err = mangaTest.DeleteDB()
+		err = mangaTest.DeleteFromDB()
 		if err != nil {
 			t.Error(err)
 			return

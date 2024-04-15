@@ -1,7 +1,7 @@
-// Package mangahub implements the mangahub.io source
-// I hate scraping the mangahub site.
-// Many problems, I just like the fact
-// that it uses Disqus for comments instead of Facebook
+// Package mangahub implements the mangahub.io source.
+// I hate scraping the mangahub site. It has Many problems.
+// I just like the fact that it uses Disqus for comments instead of Facebook
+// and has some mangas that are not available in other sources.
 package mangahub
 
 import (

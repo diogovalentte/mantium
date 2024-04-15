@@ -1,3 +1,4 @@
+// Package config implements the configurations for the application.
 package config
 
 import (
@@ -9,7 +10,10 @@ import (
 	"github.com/rs/zerolog"
 )
 
-var GlobalConfigs *Configs = &Configs{
+// GlobalConfigs is a pointer to the Configs struct that holds all the configurations.
+// It is used to access the configurations throughout the application.
+// Should be initialized by the SetConfigs function.
+var GlobalConfigs = &Configs{
 	DB:                       &DBConfigs{},
 	Ntfy:                     &NtfyConfigs{},
 	PeriodicallyUpdateMangas: &PeriodicallyUpdateMangasConfigs{},
@@ -17,6 +21,7 @@ var GlobalConfigs *Configs = &Configs{
 	DefaultConfigsFilePath:   "./defaults/configs.json",
 }
 
+// Configs is a struct that holds all the configurations.
 type Configs struct {
 	LogLevel                 zerolog.Level
 	DB                       *DBConfigs
@@ -28,6 +33,7 @@ type Configs struct {
 	DefaultConfigsFilePath string
 }
 
+// DBConfigs is a struct that holds the database configurations.
 type DBConfigs struct {
 	Host     string
 	Port     string
@@ -36,18 +42,21 @@ type DBConfigs struct {
 	Password string
 }
 
+// NtfyConfigs is a struct that holds the ntfy configurations.
 type NtfyConfigs struct {
 	Address string
 	Topic   string
 	Token   string
 }
 
+// PeriodicallyUpdateMangasConfigs is a struct that holds the configurations for updating mangas metadata periodically.
 type PeriodicallyUpdateMangasConfigs struct {
 	Update  bool
 	Notify  bool
 	Minutes int
 }
 
+// SetConfigs sets the configurations based on a .env file if provided or using environment variables.
 func SetConfigs(filePath string) error {
 	if filePath != "" {
 		err := godotenv.Load(filePath)

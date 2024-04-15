@@ -9,7 +9,7 @@ import (
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
-// GetMangaMetadata returns the metadata of a manga given its URL
+// GetMangaMetadata returns the metadata of a manga given its URL.
 func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 	s.checkClient()
 
@@ -17,12 +17,12 @@ func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 	mangaReturn.Source = "comick.xyz"
 	mangaReturn.URL = mangaURL
 
-	mangadexMangaID, err := getMangaSlug(mangaURL)
+	mangaID, err := getMangaSlug(mangaURL)
 	if err != nil {
 		return nil, err
 	}
 
-	mangaAPIURL := fmt.Sprintf("%s/comic/%s", baseAPIURL, mangadexMangaID)
+	mangaAPIURL := fmt.Sprintf("%s/comic/%s", baseAPIURL, mangaID)
 	resp, err := s.client.Request("GET", mangaAPIURL, nil)
 	if err != nil {
 		return nil, err
@@ -98,7 +98,7 @@ type mdCover struct {
 	B2Key string `json:"b2key"`
 }
 
-// getMangaHID returns the HID of a manga given its URL
+// getMangaHID returns the HID of a manga given its URL.
 // URL should be like: https://comick.xyz/comic/00-jujutsu-kaisen
 func (s *Source) getMangaHID(mangaURL string) (string, error) {
 	s.checkClient()
@@ -127,7 +127,7 @@ func (s *Source) getMangaHID(mangaURL string) (string, error) {
 	return mangaAPIResp.Comic.HID, nil
 }
 
-// getMangaSlug returns the slug of a manga given its URL
+// getMangaSlug returns the slug of a manga given its URL.
 // URL should be like: https://comick.xyz/comic/00-jujutsu-kaisen
 func getMangaSlug(mangaURL string) (string, error) {
 	pattern := `^https?://comick\.[^/]+/comic/([^/]+)(?:/.*)?$`

@@ -170,10 +170,10 @@ func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) 
 	}
 }
 
-// generateMangaFeed generates the chapters of a manga and sends them to the channel
-// It sends an error to the error channel if something goes wrong
-// It closes the chapters channel when there is no more chapters to send
-// It requests the mangas from the API using the chapter for ordering
+// generateMangaFeed generates the chapters of a manga and sends them to the channel.
+// It sends an error to the error channel if something goes wrong.
+// It closes the chapters channel when there is no more chapters to send.
+// It requests the mangas from the API using the chapter for ordering.
 func generateMangaFeed(s *Source, mangaURL string, chaptersChan chan<- *manga.Chapter, errChan chan<- error) {
 	defer close(chaptersChan)
 
@@ -239,20 +239,6 @@ func generateMangaFeed(s *Source, mangaURL string, chaptersChan chan<- *manga.Ch
 	}
 }
 
-type chapterAttributes struct {
-	Title              string `json:"title"`
-	Volume             string `json:"volume"`
-	Chapter            string `json:"chapter"`
-	Pages              int    `json:"pages"`
-	TranslatedLanguage string `json:"translatedLanguage"`
-	Uploader           string `json:"uploader"`
-	ExternalURL        string `json:"externalURL"`
-	Version            int    `json:"version"`
-	CreatedAt          string `json:"createdAt"`
-	UpdatedAt          string `json:"updatedAt"`
-	PublishAt          string `json:"publishAt"`
-	ReadableAt         string `json:"readableAt"`
-}
 type getMangaFeedAPIResponse struct {
 	Result   string `json:"result"`
 	Response string `json:"response"`
@@ -267,7 +253,7 @@ type getMangaFeedAPIResponse struct {
 	}
 }
 
-// getChapterID returns the ID of a chapter given its URL
+// getChapterID returns the ID of a chapter given its URL.
 // URL should be like: https://mangadex.org/chapter/87ebd557-8394-4f16-8afe-a8644e555ddc
 func getChapterID(chapterURL string) (string, error) {
 	pattern := `https://mangadex\.org/chapter/([0-9a-fA-F-]+)`
