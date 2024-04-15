@@ -18,8 +18,8 @@ import (
 
 	"github.com/diogovalentte/mantium/api/src/dashboard"
 	"github.com/diogovalentte/mantium/api/src/manga"
+	"github.com/diogovalentte/mantium/api/src/notifications"
 	"github.com/diogovalentte/mantium/api/src/sources"
-	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // MangaRoutes sets the manga routes
@@ -745,7 +745,7 @@ func getMangaIDAndURL(mangaIDStr string, mangaURL string) (manga.ID, string, err
 
 // NotifyMangaLastUploadChapterUpdate notifies a manga last upload chapter update
 func NotifyMangaLastUploadChapterUpdate(oldManga *manga.Manga, newManga *manga.Manga) error {
-	publisher, err := util.GetNtfyPublisher()
+	publisher, err := notifications.GetNtfyPublisher()
 	if err != nil {
 		return err
 	}
