@@ -161,13 +161,13 @@ func getMangaUploadedTime(timeString string) (time.Time, error) {
 			if strings.Contains(timeString, pattern) {
 				parsedTime, err = action(timeString)
 				if err == nil {
-					return parsedTime, nil
+					return parsedTime.In(time.UTC).Round(time.Second), nil
 				}
 			}
 		}
 
-		return time.Time{}, util.AddErrorContext(fmt.Errorf("No configured parser"), fmt.Sprintf(errorContext, timeString))
+		return time.Time{}, util.AddErrorContext(fmt.Errorf("No configured datetime parser"), fmt.Sprintf(errorContext, timeString))
 	}
 
-	return parsedTime, nil
+	return parsedTime.In(time.UTC).Round(time.Second), nil
 }

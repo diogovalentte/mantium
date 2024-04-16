@@ -141,7 +141,7 @@ func GetRFC3339Datetime(date string) (time.Time, error) {
 	if err != nil {
 		return time.Time{}, AddErrorContext(err, fmt.Sprintf(contextError, date))
 	}
-	parsedDate = parsedDate.In(time.UTC)
+	parsedDate = parsedDate.In(time.UTC).Round(time.Second)
 
 	return parsedDate, nil
 }

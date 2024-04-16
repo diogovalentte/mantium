@@ -56,7 +56,10 @@ func (s *Source) getChapterMetadataByURL(chapterURL, mangaURL string) (*manga.Ch
 		return nil, util.AddErrorContext(err, "Error decoding JSON body response")
 	}
 
-	chapterReturn := getChapterFromResp(chapterAPIResp.Chapter, chapterAPIResp.Chapter.Chap, mangaURL)
+	chapterReturn, err := getChapterFromResp(chapterAPIResp.Chapter, chapterAPIResp.Chapter.Chap, mangaURL)
+	if err != nil {
+		return nil, err
+	}
 
 	return chapterReturn, nil
 }
@@ -90,7 +93,10 @@ func (s *Source) getChapterMetadataByChapter(mangaURL string, chapter string) (*
 		return nil, fmt.Errorf("Chapter not found")
 	}
 
-	chapterReturn := getChapterFromResp(chaptersAPIResp.Chapters[0], chapter, mangaURL)
+	chapterReturn, err := getChapterFromResp(chaptersAPIResp.Chapters[0], chapter, mangaURL)
+	if err != nil {
+		return nil, err
+	}
 
 	return chapterReturn, nil
 }
@@ -122,7 +128,10 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 		return nil, util.AddErrorContext(fmt.Errorf("Chapter not found"), errorContext)
 	}
 
-	chapterReturn := getChapterFromResp(chaptersAPIResp.Chapters[0], chaptersAPIResp.Chapters[0].Chap, mangaURL)
+	chapterReturn, err := getChapterFromResp(chaptersAPIResp.Chapters[0], chaptersAPIResp.Chapters[0].Chap, mangaURL)
+	if err != nil {
+		return nil, util.AddErrorContext(err, errorContext)
+	}
 
 	return chapterReturn, nil
 }
@@ -206,7 +215,11 @@ func generateMangaChapters(s *Source, mangaURL string, chaptersChan chan *manga.
 		}
 
 		for _, chapter := range chaptersAPIResp.Chapters {
-			chapterReturn := getChapterFromResp(chapter, chapter.Chap, mangaURL)
+			chapterReturn, err := getChapterFromResp(chapter, chapter.Chap, mangaURL)
+			if err != nil {
+				errChan <- err
+				return
+			}
 			chaptersChan <- chapterReturn
 		}
 
@@ -233,7 +246,7 @@ func getChapterHID(chapterURL string) (string, error) {
 	return hid, nil
 }
 
-func getChapterFromResp(chapterResp chapterAPIResponse, chapter string, mangaURL string) *manga.Chapter {
+func getChapterFromResp(chapterResp chapterAPIResponse, chapter string, mangaURL string) (*manga.Chapter, error) {
 	chapterReturn := &manga.Chapter{}
 
 	if chapterResp.Chap == "" && chapterResp.Title == "" {
@@ -255,10 +268,10 @@ func getChapterFromResp(chapterResp chapterAPIResponse, chapter string, mangaURL
 	chapterReturn.URL = fmt.Sprintf("%s/%s", mangaURL, chapterResp.HID)
 	chapterCreatedAt, err := util.GetRFC3339Datetime(chapterResp.CreatedAt)
 	if err != nil {
-		return chapterReturn
+		return chapterReturn, err
 	}
 	chapterCreatedAt = chapterCreatedAt.Truncate(time.Second)
 	chapterReturn.UpdatedAt = chapterCreatedAt
 
-	return chapterReturn
+	return chapterReturn, nil
 }

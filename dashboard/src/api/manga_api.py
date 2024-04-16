@@ -198,10 +198,14 @@ class MangaAPIClient:
         return res.json().get("chapters")
 
     def get_updated_at_datetime(self, updated_at: str) -> datetime:
-        try:
-            return datetime.strptime(updated_at, "%Y-%m-%dT%H:%M:%SZ")
-        except ValueError:
-            return datetime.strptime(updated_at, "%Y-%m-%dT%H:%M:%S.%fZ")
+        updated_at = self.remove_nano_from_datetime(updated_at)
+        return datetime.strptime(updated_at, "%Y-%m-%dT%H:%M:%SZ")
+
+    def remove_nano_from_datetime(self, datetime_string: str):
+        if len(datetime_string) > 19:
+            return datetime_string[:19] + "Z"
+        else:
+            return datetime_string
 
     def sort_mangas(
         self, mangas: list[dict[str, Any]], sort_option: str, reverse: bool = False

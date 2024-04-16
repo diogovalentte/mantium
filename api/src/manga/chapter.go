@@ -25,6 +25,7 @@ type Chapter struct {
 	// Name is the name of the chapter
 	Name string
 	// UpdatedAt is the time when the chapter was uploaded or updated (read)
+	// Should round/trucate at the second and be at UTC.
 	UpdatedAt time.Time
 	Type      Type
 }

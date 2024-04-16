@@ -395,7 +395,7 @@ class MainDashboard:
                 "Last Read Chapter",
                 index=last_read_chapter_idx,
                 options=ss["update_manga_chapter_options"],
-                format_func=lambda chapter: f"Ch. {chapter['Chapter']} --- {get_relative_time(datetime.strptime(chapter['UpdatedAt'], '%Y-%m-%dT%H:%M:%SZ'))}",
+                format_func=lambda chapter: f"Ch. {chapter['Chapter']} --- {get_relative_time(self.api_client.get_updated_at_datetime(chapter['UpdatedAt']))}",
                 key="update_manga_form_chapter",
             )
 
