@@ -327,6 +327,7 @@ class MainDashboard:
 
             def highlight_manga():
                 ss["manga_to_highlight"] = manga
+                ss["manga_updated_success"] = False
 
             st.button(
                 "Highlight",
@@ -423,7 +424,6 @@ class MainDashboard:
 
             if ss.get("manga_updated_success", False):
                 st.success("Manga updated successfully")
-                ss["manga_updated_success"] = False
 
         def delete_manga_btn_callback():
             self.api_client.delete_manga(manga["ID"])
@@ -464,6 +464,7 @@ class MainDashboard:
             return self.api_client.get_manga_chapters(-1, url)
 
         if st.button("Get Chapters"):
+            ss["manga_add_success"] = False
             try:
                 with st.spinner("Getting manga chapters..."):
                     ss["add_manga_chapter_options"] = get_manga_chapters(
@@ -529,7 +530,6 @@ class MainDashboard:
 
         if ss.get("manga_add_success", False):
             st.success("Manga added successfully")
-            ss["manga_add_success"] = False
 
     def show_configs(self):
         def update_configs_callback():
