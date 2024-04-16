@@ -243,6 +243,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="referrer" content="no-referrer"> <!-- If not set, can't load Mangedex images when behind a domain or reverse proxy -->
+    <script src="https://kit.fontawesome.com/3f763b063a.js" crossorigin="anonymous"></script>
     <meta name="color-scheme" content="MANGAS-CONTAINER-BACKGROUND-COLOR">
     <title>Movie Display Template</title>
     <style>
@@ -360,6 +361,19 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
             filter: brightness(0.9)
         }
 
+        .info-label {
+            text-decoration: none;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+              Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans, sans-serif, Apple Color Emoji,
+              Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
+            font-feature-settings: normal;
+            font-variation-settings: normal;
+            font-weight: 600;
+            color: #4f6164;
+            font-size: 1rem;
+            line-height: 1.5rem;
+        }
+
         ::-webkit-scrollbar {
             width: 7px;
         }
@@ -452,6 +466,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
 
   </head>
 <body>
+BACKGROUND-ERROR-HTML
 {{range .}}
     <div class="mangas-container">
 
@@ -494,6 +509,25 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
 	html = strings.Replace(html, "MANGAS-CONTAINER-BACKGROUND-COLOR", theme, -1)
 	html = strings.Replace(html, "SCROLLBAR-THUMB-BACKGROUND-COLOR", scrollbarThumbBackgroundColor, -1)
 	html = strings.Replace(html, "SCROLLBAR-TRACK-BACKGROUND-COLOR", scrollbarTrackBackgroundColor, -1)
+
+	lastBackgroundError := dashboard.GetLastBackgroundError()
+	if lastBackgroundError.Message != "" {
+		backgroundErrorHTML := `
+<div class="mangas-container" style="background-color: red;">
+    <div class="text-wrap" style="margin-left: 20px;">
+        <span class="manga-name">An error occured in the background. Check the dashboard and your logs.</span>
+
+        <div>
+            <span style="margin-right: 7px;" class="info-label"><i class="fa-solid fa-calendar-days"></i> ERROR-TIME</span>
+        </div>
+    </div>
+</div>
+        `
+		backgroundErrorHTML = strings.Replace(backgroundErrorHTML, "ERROR-TIME", lastBackgroundError.Time.Format("2006-01-02 15:04:05"), -1)
+		html = strings.Replace(html, "BACKGROUND-ERROR-HTML", backgroundErrorHTML, -1)
+	} else {
+		html = strings.Replace(html, "BACKGROUND-ERROR-HTML", "", -1)
+	}
 
 	encodeImageF := template.FuncMap{"encodeImage": func(bytes []byte) string {
 		return base64.StdEncoding.EncodeToString(bytes)
