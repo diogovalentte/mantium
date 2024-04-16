@@ -3,6 +3,7 @@
 .env.test
 
 data/
+configs.json
 
 .venv
 __pycache__/
