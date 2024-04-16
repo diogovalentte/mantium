@@ -1,4 +1,53 @@
 definitions:
+  config.Configs:
+    properties:
+      configsFilePath:
+        description: |-
+          A file with configs that should be persisted
+          Relative to main.go
+        type: string
+      db:
+        $ref: '#/definitions/config.DBConfigs'
+      defaultConfigsFilePath:
+        type: string
+      logLevelInt:
+        type: integer
+      ntfy:
+        $ref: '#/definitions/config.NtfyConfigs'
+      periodicallyUpdateMangas:
+        $ref: '#/definitions/config.PeriodicallyUpdateMangasConfigs'
+    type: object
+  config.DBConfigs:
+    properties:
+      db:
+        type: string
+      host:
+        type: string
+      password:
+        type: string
+      port:
+        type: string
+      user:
+        type: string
+    type: object
+  config.NtfyConfigs:
+    properties:
+      address:
+        type: string
+      token:
+        type: string
+      topic:
+        type: string
+    type: object
+  config.PeriodicallyUpdateMangasConfigs:
+    properties:
+      minutes:
+        type: integer
+      notify:
+        type: boolean
+      update:
+        type: boolean
+    type: object
   manga.Chapter:
     properties:
       chapter:
@@ -75,14 +124,6 @@ definitions:
     - status
     - url
     type: object
-  routes.Configs:
-    properties:
-      dashboard:
-        properties:
-          columns:
-            type: integer
-        type: object
-    type: object
   routes.UpdateMangaChapterRequest:
     properties:
       chapter:
@@ -116,7 +157,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/routes.Configs'
+            $ref: '#/definitions/config.Configs'
       summary: Get the dashboard configs
   /dashboard/configs/columns:
     patch:

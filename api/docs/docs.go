@@ -26,7 +26,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/routes.Configs"
+                            "$ref": "#/definitions/config.Configs"
                         }
                     }
                 }
@@ -394,6 +394,78 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "config.Configs": {
+            "type": "object",
+            "properties": {
+                "configsFilePath": {
+                    "description": "A file with configs that should be persisted\nRelative to main.go",
+                    "type": "string"
+                },
+                "db": {
+                    "$ref": "#/definitions/config.DBConfigs"
+                },
+                "defaultConfigsFilePath": {
+                    "type": "string"
+                },
+                "logLevelInt": {
+                    "type": "integer"
+                },
+                "ntfy": {
+                    "$ref": "#/definitions/config.NtfyConfigs"
+                },
+                "periodicallyUpdateMangas": {
+                    "$ref": "#/definitions/config.PeriodicallyUpdateMangasConfigs"
+                }
+            }
+        },
+        "config.DBConfigs": {
+            "type": "object",
+            "properties": {
+                "db": {
+                    "type": "string"
+                },
+                "host": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "port": {
+                    "type": "string"
+                },
+                "user": {
+                    "type": "string"
+                }
+            }
+        },
+        "config.NtfyConfigs": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                },
+                "topic": {
+                    "type": "string"
+                }
+            }
+        },
+        "config.PeriodicallyUpdateMangasConfigs": {
+            "type": "object",
+            "properties": {
+                "minutes": {
+                    "type": "integer"
+                },
+                "notify": {
+                    "type": "boolean"
+                },
+                "update": {
+                    "type": "boolean"
+                }
+            }
+        },
         "manga.Chapter": {
             "type": "object",
             "properties": {
@@ -496,19 +568,6 @@ const docTemplate = `{
                 },
                 "url": {
                     "type": "string"
-                }
-            }
-        },
-        "routes.Configs": {
-            "type": "object",
-            "properties": {
-                "dashboard": {
-                    "type": "object",
-                    "properties": {
-                        "columns": {
-                            "type": "integer"
-                        }
-                    }
                 }
             }
         },

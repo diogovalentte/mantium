@@ -11,26 +11,32 @@ import (
 )
 
 // GetChapterMetadata returns a chapter by its chapter or URL
-func (s *Source) GetChapterMetadata(mangaURL string, chapter string, chapterURL string) (*manga.Chapter, error) {
+func (s *Source) GetChapterMetadata(mangaURL, chapter, chapterURL string) (*manga.Chapter, error) {
+	errorContext := "Error while getting metadata of chapter with chapter '%s' and URL '%s', and manga URL '%s'"
+
 	if chapter == "" && chapterURL == "" {
-		return nil, fmt.Errorf("chapter or chapter URL is required")
+		return nil, util.AddErrorContext(fmt.Errorf("Chapter or chapter URL is required"), fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL))
 	}
 
 	returnChapter := &manga.Chapter{}
 	var err error
 	if chapterURL != "" {
-		returnChapter, err = s.GetChapterMetadataByURL(chapterURL, mangaURL)
+		returnChapter, err = s.getChapterMetadataByURL(chapterURL, mangaURL)
 	}
 	if chapter != "" && (err != nil || chapterURL == "") {
 		// not so reliable, can return the wrong chapter
-		returnChapter, err = s.GetChapterMetadataByChapter(mangaURL, chapter)
+		returnChapter, err = s.getChapterMetadataByChapter(mangaURL, chapter)
 	}
 
-	return returnChapter, err
+	if err != nil {
+		return nil, util.AddErrorContext(err, fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL))
+	}
+
+	return returnChapter, nil
 }
 
-// GetChapterMetadataByURL scrapes the manga page and return the chapter by its URL
-func (s *Source) GetChapterMetadataByURL(chapterURL, mangaURL string) (*manga.Chapter, error) {
+// getChapterMetadataByURL scrapes the manga page and return the chapter by its URL
+func (s *Source) getChapterMetadataByURL(chapterURL, mangaURL string) (*manga.Chapter, error) {
 	s.checkClient()
 
 	chapterHID, err := getChapterHID(chapterURL)
@@ -47,13 +53,10 @@ func (s *Source) GetChapterMetadataByURL(chapterURL, mangaURL string) (*manga.Ch
 
 	var chapterAPIResp getChapterAPIResponse
 	if err = json.NewDecoder(resp.Body).Decode(&chapterAPIResp); err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, "Error decoding JSON body response")
 	}
 
-	chapterReturn, err := getChapterFromResp(chapterAPIResp.Chapter, chapterAPIResp.Chapter.Chap, mangaURL)
-	if err != nil {
-		return nil, err
-	}
+	chapterReturn := getChapterFromResp(chapterAPIResp.Chapter, chapterAPIResp.Chapter.Chap, mangaURL)
 
 	return chapterReturn, nil
 }
@@ -62,8 +65,8 @@ type getChapterAPIResponse struct {
 	Chapter chapterAPIResponse `json:"chapter"`
 }
 
-// GetChapterMetadataByChapter scrapes the manga page and return the chapter by its chapter
-func (s *Source) GetChapterMetadataByChapter(mangaURL string, chapter string) (*manga.Chapter, error) {
+// getChapterMetadataByChapter scrapes the manga page and return the chapter by its chapter
+func (s *Source) getChapterMetadataByChapter(mangaURL string, chapter string) (*manga.Chapter, error) {
 	s.checkClient()
 
 	mangaHID, err := s.getMangaHID(mangaURL)
@@ -80,17 +83,14 @@ func (s *Source) GetChapterMetadataByChapter(mangaURL string, chapter string) (*
 
 	var chaptersAPIResp getChaptersAPIResponse
 	if err = json.NewDecoder(resp.Body).Decode(&chaptersAPIResp); err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, "Error decoding JSON body response")
 	}
 
 	if len(chaptersAPIResp.Chapters) == 0 {
-		return nil, fmt.Errorf("chapter not found")
+		return nil, fmt.Errorf("Chapter not found")
 	}
 
-	chapterReturn, err := getChapterFromResp(chaptersAPIResp.Chapters[0], chapter, mangaURL)
-	if err != nil {
-		return nil, err
-	}
+	chapterReturn := getChapterFromResp(chaptersAPIResp.Chapters[0], chapter, mangaURL)
 
 	return chapterReturn, nil
 }
@@ -99,31 +99,30 @@ func (s *Source) GetChapterMetadataByChapter(mangaURL string, chapter string) (*
 func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error) {
 	s.checkClient()
 
+	errorContext := "Error while getting last chapter metadata"
+
 	mangaHID, err := s.getMangaHID(mangaURL)
 	if err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, errorContext)
 	}
 
 	mangaAPIURL := fmt.Sprintf("%s/comic/%s/chapters?lang=en&limit=1", baseAPIURL, mangaHID) // default order is by chapter desc
 	resp, err := s.client.Request("GET", mangaAPIURL, nil)
 	if err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, errorContext)
 	}
 	defer resp.Body.Close()
 
 	var chaptersAPIResp getChaptersAPIResponse
 	if err = json.NewDecoder(resp.Body).Decode(&chaptersAPIResp); err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, util.AddErrorContext(fmt.Errorf("Error decoding JSON body response"), errorContext).Error())
 	}
 
 	if len(chaptersAPIResp.Chapters) == 0 {
-		return nil, fmt.Errorf("chapter not found")
+		return nil, util.AddErrorContext(fmt.Errorf("Chapter not found"), errorContext)
 	}
 
-	chapterReturn, err := getChapterFromResp(chaptersAPIResp.Chapters[0], chaptersAPIResp.Chapters[0].Chap, mangaURL)
-	if err != nil {
-		return nil, err
-	}
+	chapterReturn := getChapterFromResp(chaptersAPIResp.Chapters[0], chaptersAPIResp.Chapters[0].Chap, mangaURL)
 
 	return chapterReturn, nil
 }
@@ -131,6 +130,8 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 // GetChaptersMetadata returns the chapters of a manga by its URL
 func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) {
 	s.checkClient()
+
+	errorContext := "Error while getting chapters metadata"
 
 	chaptersChan := make(chan *manga.Chapter)
 	errChan := make(chan error)
@@ -155,7 +156,7 @@ func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) 
 	case <-done:
 		return chapters, nil
 	case err := <-errChan:
-		return nil, err
+		return nil, util.AddErrorContext(err, errorContext)
 	}
 }
 
@@ -205,11 +206,7 @@ func generateMangaChapters(s *Source, mangaURL string, chaptersChan chan *manga.
 		}
 
 		for _, chapter := range chaptersAPIResp.Chapters {
-			chapterReturn, err := getChapterFromResp(chapter, chapter.Chap, mangaURL)
-			if err != nil {
-				errChan <- err
-				return
-			}
+			chapterReturn := getChapterFromResp(chapter, chapter.Chap, mangaURL)
 			chaptersChan <- chapterReturn
 		}
 
@@ -221,16 +218,22 @@ func generateMangaChapters(s *Source, mangaURL string, chaptersChan chan *manga.
 // URL should be like: https://comick.xyz/comic/jitsu-wa-watashi-wa/PZKrW
 // or https://comick.xyz/comic/jitsu-wa-watashi-wa/PZKrW-chapter-121-en
 func getChapterHID(chapterURL string) (string, error) {
+	contextError := "Error while getting chapter HID"
+
 	parts := strings.Split(chapterURL, "/")
 	hid := parts[len(parts)-1]
 
 	parts = strings.Split(hid, "-")
 	hid = parts[0]
 
+	if hid == "" {
+		return "", util.AddErrorContext(fmt.Errorf("HID not found in URL"), contextError)
+	}
+
 	return hid, nil
 }
 
-func getChapterFromResp(chapterResp chapterAPIResponse, chapter string, mangaURL string) (*manga.Chapter, error) {
+func getChapterFromResp(chapterResp chapterAPIResponse, chapter string, mangaURL string) *manga.Chapter {
 	chapterReturn := &manga.Chapter{}
 
 	if chapterResp.Chap == "" && chapterResp.Title == "" {
@@ -252,10 +255,10 @@ func getChapterFromResp(chapterResp chapterAPIResponse, chapter string, mangaURL
 	chapterReturn.URL = fmt.Sprintf("%s/%s", mangaURL, chapterResp.HID)
 	chapterCreatedAt, err := util.GetRFC3339Datetime(chapterResp.CreatedAt)
 	if err != nil {
-		return chapterReturn, nil
+		return chapterReturn
 	}
 	chapterCreatedAt = chapterCreatedAt.Truncate(time.Second)
 	chapterReturn.UpdatedAt = chapterCreatedAt
 
-	return chapterReturn, nil
+	return chapterReturn
 }

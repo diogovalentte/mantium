@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/diogovalentte/mantium/api/src/manga"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 type mangaTestType struct {
@@ -19,7 +20,7 @@ var mangasTestTable = []mangaTestType{
 			Name:            "Death Note",
 			Source:          "mangahub.io",
 			URL:             "https://mangahub.io/manga/death-note_119",
-			CoverImgURL:     "https://thumb.mangahub.io/mn/death-note.jpg",
+			CoverImgURL:     "https://thumb.mghcdn.com/mn/death-note.jpg",
 			CoverImgResized: true,
 			LastUploadChapter: &manga.Chapter{
 				Chapter:   "112",
@@ -36,7 +37,7 @@ var mangasTestTable = []mangaTestType{
 			Name:            "Vagabond",
 			Source:          "mangahub.io",
 			URL:             "https://mangahub.io/manga/vagabond_119",
-			CoverImgURL:     "https://thumb.mangahub.io/mn/vagabond.jpg",
+			CoverImgURL:     "https://thumb.mghcdn.com/mn/vagabond.jpg",
 			CoverImgResized: true,
 			LastUploadChapter: &manga.Chapter{
 				Chapter:   "327",
@@ -53,8 +54,8 @@ var mangasTestTable = []mangaTestType{
 			Name:            "Mob Psycho 100",
 			Source:          "mangahub.io",
 			URL:             "https://mangahub.io/manga/mob-psycho-100",
-			CoverImgURL:     "https://thumb.mangahub.io/mn/mob-psycho-100.jpg",
-			CoverImgResized: true,
+			CoverImgURL:     "https://thumb.mghcdn.com/mn/mob-psycho-100.jpg",
+			CoverImgResized: false,
 			LastUploadChapter: &manga.Chapter{
 				Chapter:   "101",
 				Name:      "101[END]",
@@ -68,8 +69,9 @@ var mangasTestTable = []mangaTestType{
 }
 
 func TestGetMangaMetadata(t *testing.T) {
+	source := Source{}
+
 	t.Run("should scrape metadata from multiple mangas", func(t *testing.T) {
-		source := Source{}
 		for _, test := range mangasTestTable {
 			expected := test.expected
 			mangaURL := test.url
@@ -80,17 +82,32 @@ func TestGetMangaMetadata(t *testing.T) {
 				return
 			}
 
-			// Cover img
 			if actualManga.CoverImg == nil {
 				t.Errorf("expected manga.CoverImg to be different than nil")
 				return
 			}
 			actualManga.CoverImg = nil
 
-			// Compare manga
 			if !reflect.DeepEqual(actualManga, expected) {
-				t.Errorf("expected manga %v, got %v", expected, actualManga)
-				t.Errorf("expected manga.LastChapter %v, got %v", expected.LastUploadChapter, actualManga.LastUploadChapter)
+				t.Errorf("expected manga %s, got %s", expected, actualManga)
+				return
+			}
+		}
+	})
+	t.Run("should not scrape metadata from multiple mangas", func(t *testing.T) {
+		for _, test := range mangasTestTable {
+			mangaURL := test.url + "salt"
+
+			_, err := source.GetMangaMetadata(mangaURL)
+			if err != nil {
+				if util.ErrorContains(err, "Manga not found") {
+					continue
+				} else {
+					t.Errorf("expected error, got %s", err)
+					return
+				}
+			} else {
+				t.Errorf("expected error, got nil")
 				return
 			}
 		}

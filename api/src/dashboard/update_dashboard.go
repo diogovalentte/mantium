@@ -3,9 +3,12 @@ package dashboard
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // WhenUpdateDashboard is a struct that holds the last time a resource
@@ -55,13 +58,13 @@ type Configs struct {
 func GetConfigsFromFile(filePath string) (*Configs, error) {
 	jsonFile, err := os.ReadFile(filePath)
 	if err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, fmt.Sprintf("Error reading configs from file '%s'", filePath))
 	}
 
 	var configs Configs
 	err = json.Unmarshal(jsonFile, &configs)
 	if err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, fmt.Sprintf("Error umarshaling configs from file '%s'", filePath))
 	}
 
 	return &configs, nil

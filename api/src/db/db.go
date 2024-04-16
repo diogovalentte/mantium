@@ -9,6 +9,7 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/diogovalentte/mantium/api/src/config"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 func getConnString() string {
@@ -21,12 +22,15 @@ func getConnString() string {
 func OpenConn() (*sql.DB, error) {
 	db, err := sql.Open("postgres", getConnString())
 	if err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, "Error opening database connection")
 	}
 
 	err = db.Ping()
+	if err != nil {
+		return nil, util.AddErrorContext(err, fmt.Sprintf("Error pinging database %s", getConnString()))
+	}
 
-	return db, err
+	return db, nil
 }
 
 // CreateTables creates the tables in the database
@@ -34,7 +38,7 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
 	log.Info().Msg("Creating tables if not exists...")
 	tx, err := db.Begin()
 	if err != nil {
-		return err
+		return util.AddErrorContext(err, "Error starting transaction to create tables in the database")
 	}
 
 	_, err = tx.Exec(`
@@ -65,7 +69,7 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
     `)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return util.AddErrorContext(err, "Error creating tables in the database")
 	}
 
 	log.Info().Msg("Creating constraints if not exists...")
@@ -116,12 +120,12 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
     `)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return util.AddErrorContext(err, "Error creating constraints in the database")
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return err
+		return util.AddErrorContext(err, "Error committing transaction to create tables in the database")
 	}
 
 	log.Info().Msg("Database tables created")

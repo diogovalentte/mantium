@@ -23,7 +23,7 @@ var GlobalConfigs = &Configs{
 
 // Configs is a struct that holds all the configurations.
 type Configs struct {
-	LogLevel                 zerolog.Level
+	LogLevelInt              int
 	DB                       *DBConfigs
 	Ntfy                     *NtfyConfigs
 	PeriodicallyUpdateMangas *PeriodicallyUpdateMangasConfigs
@@ -61,7 +61,7 @@ func SetConfigs(filePath string) error {
 	if filePath != "" {
 		err := godotenv.Load(filePath)
 		if err != nil {
-			return err
+			return fmt.Errorf("Error loading env file '%s': %s", filePath, err)
 		}
 	}
 
@@ -72,10 +72,10 @@ func SetConfigs(filePath string) error {
 	if logLevelStr != "" {
 		logLevel, err = zerolog.ParseLevel(logLevelStr)
 		if err != nil {
-			return err
+			return fmt.Errorf("Error parsing error level '%s': %s", logLevelStr, err)
 		}
 	}
-	GlobalConfigs.LogLevel = logLevel
+	GlobalConfigs.LogLevelInt = int(logLevel)
 
 	GlobalConfigs.DB.Host = os.Getenv("POSTGRES_HOST")
 	GlobalConfigs.DB.Port = os.Getenv("POSTGRES_PORT")
@@ -98,7 +98,7 @@ func SetConfigs(filePath string) error {
 	if envMinutes != "" {
 		minutes, err = strconv.Atoi(envMinutes)
 		if err != nil {
-			return fmt.Errorf("Error converting UPDATE_MANGAS_PERIODICALLY_MINUTES to int: %s", err)
+			return fmt.Errorf("Error converting UPDATE_MANGAS_PERIODICALLY_MINUTES '%s' to int: %s", envMinutes, err)
 		}
 	}
 	GlobalConfigs.PeriodicallyUpdateMangas.Minutes = minutes

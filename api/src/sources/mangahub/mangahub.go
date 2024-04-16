@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"github.com/gocolly/colly/v2"
+
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // Source is the struct for a mangahub.io source
@@ -46,7 +48,10 @@ func (s *Source) resetCollector() {
 	s.c = newCollector()
 }
 
-func (s *Source) getCoverImg(url string) ([]byte, error) {
+// getCoverImg downloads an image from a URL and tries to resize it.
+func (s *Source) getCoverImg(url string) (imgBytes []byte, resized bool, err error) {
+	contextError := "Error downloading image '%s'"
+
 	httpClient := &http.Client{
 		Timeout: 10 * time.Second, // xD
 		Transport: &http.Transport{
@@ -58,35 +63,46 @@ func (s *Source) getCoverImg(url string) ([]byte, error) {
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		fmt.Printf(`error creating request to download cover image at url "%s": %s`, url, err)
-		return nil, err
-
+		return nil, resized, util.AddErrorContext(util.AddErrorContext(err, "Error while creating request"), fmt.Sprintf(contextError, url))
 	}
 
 	req.Header.Set("User-Agent", "Custom User Agent")
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		fmt.Printf(`error performing request to download manga cover image at url "%s": %s`, url, err)
-		return nil, err
+		return nil, resized, util.AddErrorContext(util.AddErrorContext(err, "Error while executing request"), fmt.Sprintf(contextError, url))
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		fmt.Printf(`unexpected status code while download manga cover image at turl "%s": %d`, url, resp.StatusCode)
-		return nil, err
+		return nil, resized, util.AddErrorContext(fmt.Errorf("Status code is not OK, instead it's %d", resp.StatusCode), fmt.Sprintf(contextError, url))
 	}
 
 	imageBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		err = fmt.Errorf(`error reading image data at url "%s": %s`, url, err)
-		return nil, err
+		return nil, resized, util.AddErrorContext(util.AddErrorContext(err, "Error while reading response body"), fmt.Sprintf(contextError, url))
 	}
 
-	return imageBytes, nil
+	img, err := util.ResizeImage(imageBytes, uint(util.DefaultImageWidth), uint(util.DefaultImageHeight))
+	if err != nil {
+		// JPEG format that has an unsupported subsampling ratio
+		// It's a valid image but the standard library doesn't support it
+		// And other libraries use the standard library under the hood
+		if util.ErrorContains(err, "unsupported JPEG feature: luma/chroma subsampling ratio") {
+			img = imageBytes
+		} else {
+			return nil, resized, util.AddErrorContext(err, fmt.Sprintf(contextError, url))
+		}
+	} else {
+		resized = true
+	}
+
+	return img, resized, nil
 }
 
 func getMangaUploadedTime(timeString string) (time.Time, error) {
+	errorContext := "Error while parsing upload time '%s'"
+
 	layout := "01-02-2006"
 	parsedTime, err := time.Parse(layout, timeString)
 	if err != nil {
@@ -107,7 +123,7 @@ func getMangaUploadedTime(timeString string) (time.Time, error) {
 			"hours ago": func(timeString string) (time.Time, error) {
 				hours, err := strconv.Atoi(strings.TrimSpace(strings.Replace(timeString, "hours ago", "", -1)))
 				if err != nil {
-					return time.Time{}, err
+					return time.Time{}, util.AddErrorContext(err, fmt.Sprintf(errorContext, timeString))
 				}
 				subHours := time.Duration(hours) * time.Hour
 				releaseDate := time.Now().Add(subHours * -1)
@@ -120,7 +136,7 @@ func getMangaUploadedTime(timeString string) (time.Time, error) {
 			"days ago": func(timeString string) (time.Time, error) {
 				days, err := strconv.Atoi(strings.TrimSpace(strings.Replace(timeString, "days ago", "", -1)))
 				if err != nil {
-					return time.Time{}, err
+					return time.Time{}, util.AddErrorContext(err, fmt.Sprintf(errorContext, timeString))
 				}
 				subDays := time.Duration(days) * time.Hour * 24
 				releaseDate := time.Now().Add(subDays * -1)
@@ -134,7 +150,7 @@ func getMangaUploadedTime(timeString string) (time.Time, error) {
 			"weeks ago": func(timeString string) (time.Time, error) {
 				weeks, err := strconv.Atoi(strings.TrimSpace(strings.Replace(timeString, "weeks ago", "", -1)))
 				if err != nil {
-					return time.Time{}, err
+					return time.Time{}, util.AddErrorContext(err, fmt.Sprintf(errorContext, timeString))
 				}
 				subWeeks := time.Duration(weeks) * time.Hour * 24 * 7
 				releaseDate := time.Now().Add(subWeeks * -1)
@@ -150,7 +166,7 @@ func getMangaUploadedTime(timeString string) (time.Time, error) {
 			}
 		}
 
-		return time.Time{}, err
+		return time.Time{}, util.AddErrorContext(fmt.Errorf("No configured parser"), fmt.Sprintf(errorContext, timeString))
 	}
 
 	return parsedTime, nil

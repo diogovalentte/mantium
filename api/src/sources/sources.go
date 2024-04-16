@@ -46,9 +46,11 @@ func DeleteSource(domain string) {
 
 // GetSource returns a source
 func GetSource(domain string) (Source, error) {
+	contextError := "Error while getting source"
+
 	value, ok := sources[domain]
 	if !ok {
-		return nil, fmt.Errorf("source %s not found", domain)
+		return nil, util.AddErrorContext(fmt.Errorf("Source '%s' not found", domain), contextError)
 	}
 	return value, nil
 }
@@ -60,44 +62,47 @@ func GetSources() map[string]Source {
 
 // GetMangaMetadata gets the metadata of a manga using a source
 func GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
-	contextError := "error while getting manga metadata from source"
+	contextError := "Error while getting metadata of manga with URL '%s' from source"
 
 	domain, err := getDomain(mangaURL)
 	if err != nil {
-		return nil, util.AddErrorContext(err, contextError)
+		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, mangaURL))
 	}
 
 	source, err := GetSource(domain)
 	if err != nil {
-		return nil, util.AddErrorContext(err, contextError)
+		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, mangaURL))
 	}
+	contextError = fmt.Sprintf("(%s) %s", domain, contextError)
+
 	manga, err := getManga(mangaURL, source)
 	if err != nil {
-		return nil, util.AddErrorContext(err, contextError)
+		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, mangaURL))
 	}
 
 	return manga, nil
 }
 
-// GetChapterMetadata gets the metadata of a chapter using a source
-// If the chapterURL is not empty, it will use it to get the chapter
-// If the chapterURL is empty, it will use the mangaURL and chapter to get the chapter
+// GetChapterMetadata gets the metadata of a chapter using a source.
+// Each source has its own way to get the chapter. Some can't get the chapter by its URL/chapter,
+// so they get the chapter by the chapter chapter/URL.
 func GetChapterMetadata(mangaURL string, chapter string, chapterURL string) (*manga.Chapter, error) {
-	contextError := "error while getting chapter metadata from source"
+	contextError := "Error while getting metadata of chapter with chapter '%s' and URL '%s' for manga with URL '%s' from source"
 
 	domain, err := getDomain(mangaURL)
 	if err != nil {
-		return nil, util.AddErrorContext(err, contextError)
+		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, chapter, chapterURL, mangaURL))
 	}
 
 	source, err := GetSource(domain)
 	if err != nil {
-		return nil, util.AddErrorContext(err, contextError)
+		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, chapter, chapterURL, mangaURL))
 	}
+	contextError = fmt.Sprintf("(%s) %s", domain, contextError)
 
 	chapterReturn, err := getChapter(mangaURL, chapter, chapterURL, source)
 	if err != nil {
-		return nil, util.AddErrorContext(err, contextError)
+		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, chapter, chapterURL, mangaURL))
 	}
 
 	return chapterReturn, nil
@@ -105,30 +110,33 @@ func GetChapterMetadata(mangaURL string, chapter string, chapterURL string) (*ma
 
 // GetMangaChapters gets the chapters of a manga using a source
 func GetMangaChapters(mangaURL string) ([]*manga.Chapter, error) {
-	contextError := "error while getting manga chapters metadata from source"
+	contextError := "Error while getting manga with URL '%s' chapters from source"
 
 	domain, err := getDomain(mangaURL)
 	if err != nil {
-		return nil, util.AddErrorContext(err, contextError)
+		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, mangaURL))
 	}
 
 	source, err := GetSource(domain)
 	if err != nil {
-		return nil, util.AddErrorContext(err, contextError)
+		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, mangaURL))
 	}
+	contextError = fmt.Sprintf("(%s) %s", domain, contextError)
 
 	chapters, err := getChapters(mangaURL, source)
 	if err != nil {
-		return nil, util.AddErrorContext(err, contextError)
+		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, mangaURL))
 	}
 
 	return chapters, nil
 }
 
 func getDomain(urlString string) (string, error) {
+	errorContext := "Error while getting domain from URL '%s'"
+
 	parsedURL, err := url.Parse(urlString)
 	if err != nil {
-		return "", err
+		return "", util.AddErrorContext(err, fmt.Sprintf(errorContext, urlString))
 	}
 
 	return parsedURL.Hostname(), nil

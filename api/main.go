@@ -4,6 +4,7 @@ package main
 import (
 	"io"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -23,7 +24,9 @@ func init() {
 		panic(err)
 	}
 
-	log := util.GetLogger()
+	logLevelInt := config.GlobalConfigs.LogLevelInt
+	logLevel, _ := zerolog.ParseLevel(strconv.Itoa(logLevelInt))
+	log := util.GetLogger(logLevel)
 
 	setDefaultConfigsFile(log)
 
@@ -74,7 +77,7 @@ func setUpdateMangasMetadataPeriodicallyJob(log *zerolog.Logger) {
 				res, err := util.RequestUpdateMangasMetadata(configs.Notify)
 				if err != nil {
 					log.Error().Msgf("Error updating mangas metadata: %s", err)
-					log.Error().Msgf("Request response: %s", res)
+					log.Error().Msgf("Request response: %v", res)
 					body, err := io.ReadAll(res.Body)
 					if err != nil {
 						log.Error().Msgf("Error while getting the response body: %s", err)

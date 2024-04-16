@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // Client is a client for the Comick API
@@ -39,18 +41,22 @@ func NewComickClient() *Client {
 
 // Request is a helper function to make a request to the Comick API
 func (c *Client) Request(method, url string, body io.Reader) (*http.Response, error) {
+	errorContext := "Error while making '%s' request"
+
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, fmt.Sprintf(errorContext, method))
 	}
 
 	req.Header = c.header
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return nil, err
-	} else if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("non-200 status code -> (%d)", resp.StatusCode)
+		return nil, util.AddErrorContext(err, fmt.Sprintf(errorContext, method))
+	} else if resp.StatusCode != http.StatusOK {
+		defer resp.Body.Close()
+		body, _ := io.ReadAll(resp.Body)
+		return nil, util.AddErrorContext(fmt.Errorf("Non-200 status code -> (%d). Body: %s", resp.StatusCode, string(body)), fmt.Sprintf(errorContext, method))
 	}
 
 	return resp, nil

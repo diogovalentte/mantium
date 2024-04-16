@@ -14,25 +14,27 @@ import (
 func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 	s.checkClient()
 
+	errorContext := "Error while getting manga metadata"
+
 	mangaReturn := &manga.Manga{}
 	mangaReturn.Source = "mangadex.org"
 	mangaReturn.URL = mangaURL
 
 	mangadexMangaID, err := getMangaID(mangaURL)
 	if err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, errorContext)
 	}
 
 	mangaAPIURL := fmt.Sprintf("%s/manga/%s?includes[]=cover_art", baseAPIURL, mangadexMangaID)
 	resp, err := s.client.Request(context.Background(), "GET", mangaAPIURL, nil)
 	if err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, errorContext)
 	}
 	defer resp.Body.Close()
 
 	var mangaAPIResp getMangaAPIResponse
 	if err = json.NewDecoder(resp.Body).Decode(&mangaAPIResp); err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, util.AddErrorContext(fmt.Errorf("Error decoding JSON body response"), errorContext).Error())
 	}
 
 	attributes := &mangaAPIResp.Data.Attributes
@@ -53,7 +55,7 @@ func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 
 	lastUploadChapter, err := s.GetLastChapterMetadata(mangaURL)
 	if err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, errorContext)
 	}
 	lastUploadChapter.Type = 1
 	mangaReturn.LastUploadChapter = lastUploadChapter
@@ -66,30 +68,17 @@ func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 		}
 	}
 	if coverFileName == "" {
-		return nil, fmt.Errorf("cover art not found")
+		return nil, util.AddErrorContext(fmt.Errorf("Cover image not found"), errorContext)
 	}
 	coverURL := fmt.Sprintf("%s/covers/%s/%s", baseUploadsURL, mangadexMangaID, coverFileName)
 	mangaReturn.CoverImgURL = coverURL
 
-	coverImg, err := util.GetImageFromURL(coverURL)
+	coverImg, resized, err := util.GetImageFromURL(coverURL)
 	if err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, errorContext)
 	}
-	resizedCoverImg, err := util.ResizeImage(coverImg, uint(util.DefaultImageWidth), uint(util.DefaultImageHeight))
-	if err != nil {
-		// JPEG format that has an unsupported subsampling ratio
-		// It's a valid image but the standard library doesn't support it
-		// And other libraries use the standard library under the hood
-		if err.Error() == "unsupported JPEG feature: luma/chroma subsampling ratio" {
-			resizedCoverImg = coverImg
-		} else {
-			err = fmt.Errorf("error resizing image: %s", err)
-			return nil, err
-		}
-	} else {
-		mangaReturn.CoverImgResized = true
-	}
-	mangaReturn.CoverImg = resizedCoverImg
+	mangaReturn.CoverImgResized = resized
+	mangaReturn.CoverImg = coverImg
 
 	return mangaReturn, nil
 }
@@ -108,15 +97,17 @@ type getMangaAPIResponse struct {
 // getMangaID returns the ID of a manga given its URL
 // URL should be like: https://mangadex.org/title/87ebd557-8394-4f16-8afe-a8644e555ddc/hirayasumi
 func getMangaID(mangaURL string) (string, error) {
+	errorContext := "Error while getting manga ID from URL"
+
 	pattern := `/title/([0-9a-fA-F-]+)(?:/.*)?$`
 	re, err := regexp.Compile(pattern)
 	if err != nil {
-		return "", err
+		return "", util.AddErrorContext(err, errorContext)
 	}
 
 	matches := re.FindStringSubmatch(mangaURL)
 	if len(matches) < 2 {
-		return "", fmt.Errorf("manga ID not found in URL")
+		return "", util.AddErrorContext(fmt.Errorf("Manga ID not found"), errorContext)
 	}
 
 	return matches[1], nil

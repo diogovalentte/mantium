@@ -14,6 +14,8 @@ import (
 func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 	s.resetCollector()
 
+	errorContext := "Error while getting manga metadata"
+
 	mangaReturn := &manga.Manga{}
 	mangaReturn.Source = "mangahub.io"
 	mangaReturn.URL = mangaURL
@@ -46,9 +48,9 @@ func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 		mangaReturn.CoverImgURL = e.Attr("src")
 	})
 
-	// last chapter
+	// last upload chapter
 	isFirstUL := true
-	s.c.OnHTML("ul.MWqeC:first-of-type > li:first-child a", func(e *colly.HTMLElement) {
+	s.c.OnHTML("ul.MWqeC:first-of-type > li:first-child a._3pfyN", func(e *colly.HTMLElement) {
 		if !isFirstUL {
 			return
 		}
@@ -74,35 +76,21 @@ func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 	err := s.c.Visit(mangaURL)
 	if err != nil {
 		if err.Error() == "Not Found" {
-			return nil, fmt.Errorf("manga not found, is the URL correct?")
+			return nil, util.AddErrorContext(fmt.Errorf("Manga not found"), errorContext)
 		}
-		return nil, err
+		return nil, util.AddErrorContext(util.AddErrorContext(err, "Error while visiting manga URL"), errorContext)
 	}
 	if sharedErr != nil {
-		return nil, sharedErr
+		return nil, util.AddErrorContext(sharedErr, errorContext)
 	}
 
 	// get cover image
-	coverImg, err := s.getCoverImg(mangaReturn.CoverImgURL)
+	coverImg, resized, err := s.getCoverImg(mangaReturn.CoverImgURL)
 	if err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, errorContext)
 	}
-	resizedCoverImg, err := util.ResizeImage(coverImg, uint(util.DefaultImageWidth), uint(util.DefaultImageHeight))
-	if err != nil {
-		// JPEG format that has an unsupported subsampling ratio
-		// It's a valid image but the standard library doesn't support it
-		// And other libraries use the standard library under the hood
-		if err.Error() == "unsupported JPEG feature: luma/chroma subsampling ratio" {
-			resizedCoverImg = coverImg
-		} else {
-			err = fmt.Errorf("error resizing image: %s", err)
-			return nil, err
-		}
-	} else {
-		mangaReturn.CoverImgResized = true
-	}
-
-	mangaReturn.CoverImg = resizedCoverImg
+	mangaReturn.CoverImgResized = resized
+	mangaReturn.CoverImg = coverImg
 
 	return mangaReturn, nil
 }

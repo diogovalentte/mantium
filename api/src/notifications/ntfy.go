@@ -10,15 +10,18 @@ import (
 	"github.com/AnthonyHewins/gotfy"
 
 	"github.com/diogovalentte/mantium/api/src/config"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // GetNtfyPublisher returns a new NtfyPublisher
 func GetNtfyPublisher() (*NtfyPublisher, error) {
+	contextError := "Could not get Ntfy publisher"
+
 	configs := config.GlobalConfigs.Ntfy
 
 	server, err := url.Parse(configs.Address)
 	if err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, contextError)
 	}
 
 	customClient := &http.Client{
@@ -28,7 +31,7 @@ func GetNtfyPublisher() (*NtfyPublisher, error) {
 	}
 	publisher, err := gotfy.NewPublisher(server, customClient)
 	if err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, contextError)
 	}
 
 	return &NtfyPublisher{
@@ -58,6 +61,9 @@ type NtfyPublisher struct {
 // SendMessage sends a message to the Ntfy server
 func (t *NtfyPublisher) SendMessage(ctx context.Context, message *gotfy.Message) error {
 	_, err := t.Publisher.SendMessage(ctx, message)
+	if err != nil {
+		return util.AddErrorContext(err, "Could not send message to Ntfy")
+	}
 
-	return err
+	return nil
 }

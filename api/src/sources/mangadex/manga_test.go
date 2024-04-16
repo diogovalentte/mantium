@@ -1,11 +1,14 @@
 package mangadex
 
 import (
+	"net/url"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/diogovalentte/mantium/api/src/manga"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 type mangaTestType struct {
@@ -68,8 +71,9 @@ var mangasTestTable = []mangaTestType{
 }
 
 func TestGetMangaMetadata(t *testing.T) {
+	source := Source{}
+
 	t.Run("should scrape metadata from multiple mangas", func(t *testing.T) {
-		source := Source{}
 		for _, test := range mangasTestTable {
 			expected := test.expected
 			mangaURL := test.url
@@ -80,17 +84,37 @@ func TestGetMangaMetadata(t *testing.T) {
 				return
 			}
 
-			// Cover img
 			if actualManga.CoverImg == nil {
 				t.Errorf("expected manga.CoverImg to be different than nil")
 				return
 			}
 			actualManga.CoverImg = nil
 
-			// Compare manga
 			if !reflect.DeepEqual(actualManga, expected) {
-				t.Errorf("expected manga %v, got %v", expected, actualManga)
-				t.Errorf("expected manga.LastChapter %v, got %v", expected.LastUploadChapter, actualManga.LastUploadChapter)
+				t.Errorf("expected manga %s, got %s", expected, actualManga)
+				return
+			}
+		}
+	})
+	t.Run("should not scrape metadata from multiple mangas", func(t *testing.T) {
+		for _, test := range mangasTestTable {
+			mangaURL := test.url
+			mangaURL, err := replaceURLID(test.url, "00000000-0000-0000-0000-000000000000")
+			if err != nil {
+				t.Errorf("Error while replacing manga URL ID: %v", err)
+				return
+			}
+
+			_, err = source.GetMangaMetadata(mangaURL)
+			if err != nil {
+				if util.ErrorContains(err, "Non-200 status code -> (404)") {
+					continue
+				} else {
+					t.Errorf("expected error, got %s", err)
+					return
+				}
+			} else {
+				t.Errorf("expected error, got nil")
 				return
 			}
 		}
@@ -118,4 +142,29 @@ func TestGetMangaID(t *testing.T) {
 			}
 		}
 	})
+}
+
+// replaceMangaURLID replaces the ID of a manga/chapter URL with a replacement ID.
+func replaceURLID(urlString string, replacement string) (string, error) {
+	u, err := url.Parse(urlString)
+	if err != nil {
+		return "", err
+	}
+
+	pathParts := strings.Split(u.Path, "/")
+	titleIndex := -1
+	for i, part := range pathParts {
+		if part == "title" || part == "chapter" {
+			titleIndex = i
+			break
+		}
+	}
+
+	if titleIndex != -1 && titleIndex+1 < len(pathParts) {
+		pathParts[titleIndex+1] = replacement
+	}
+
+	u.Path = strings.Join(pathParts, "/")
+
+	return u.String(), nil
 }

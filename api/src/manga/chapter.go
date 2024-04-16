@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 type (
@@ -27,10 +29,16 @@ type Chapter struct {
 	Type      Type
 }
 
+func (c Chapter) String() string {
+	return fmt.Sprintf("Chapter{URL: %s, Chapter: %s, Name: %s, UpdatedAt: %s, Type: %d}", c.URL, c.Chapter, c.Name, c.UpdatedAt, c.Type)
+}
+
 func insertChapterDB(c *Chapter, mangaID ID, tx *sql.Tx) (int, error) {
+	contextError := "Error inserting chapter of manga ID '%d' in the database"
+
 	err := validateChapter(c)
 	if err != nil {
-		return -1, err
+		return -1, util.AddErrorContext(err, fmt.Sprintf(contextError, mangaID))
 	}
 	var chapterID int
 	err = tx.QueryRow(`
@@ -42,13 +50,15 @@ func insertChapterDB(c *Chapter, mangaID ID, tx *sql.Tx) (int, error) {
             id;
     `, mangaID, c.URL, c.Chapter, c.Name, c.UpdatedAt, c.Type).Scan(&chapterID)
 	if err != nil {
-		return -1, err
+		return -1, util.AddErrorContext(err, fmt.Sprintf(contextError, mangaID))
 	}
 
 	return chapterID, nil
 }
 
 func getChapterDB(id int, db *sql.DB) (*Chapter, error) {
+	contextError := "Error getting chapter with ID '%d' from the database"
+
 	var chapter Chapter
 	err := db.QueryRow(`
         SELECT
@@ -60,14 +70,14 @@ func getChapterDB(id int, db *sql.DB) (*Chapter, error) {
     `, id).Scan(&chapter.URL, &chapter.Chapter, &chapter.Name, &chapter.UpdatedAt, &chapter.Type)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("chapter not found, is the ID correct?")
+			return nil, util.AddErrorContext(fmt.Errorf("Chapter not found, is the ID correct?"), fmt.Sprintf(contextError, id))
 		}
-		return nil, err
+		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, id))
 	}
 
 	err = validateChapter(&chapter)
 	if err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, id))
 	}
 
 	return &chapter, nil
@@ -76,16 +86,23 @@ func getChapterDB(id int, db *sql.DB) (*Chapter, error) {
 // upsertMangaChapter updates the last upload or last read chapter of a manga
 // if the manga doesn't exist in the database, it will be inserted
 func upsertMangaChapter(m *Manga, chapter *Chapter, tx *sql.Tx) error {
+	contextError := "Error upserting manga chapter in the database"
+
 	err := validateManga(m)
 	if err != nil {
-		return err
+		return util.AddErrorContext(err, contextError)
+	}
+
+	err = validateChapter(chapter)
+	if err != nil {
+		return util.AddErrorContext(err, contextError)
 	}
 
 	mangaID := m.ID
 	if mangaID == 0 {
 		mangaID, err = getMangaIDByURL(m.URL)
 		if err != nil {
-			return err
+			return util.AddErrorContext(err, contextError)
 		}
 		m.ID = mangaID
 	}
@@ -100,7 +117,7 @@ func upsertMangaChapter(m *Manga, chapter *Chapter, tx *sql.Tx) error {
         RETURNING id;
     `, m.ID, chapter.URL, chapter.Chapter, chapter.Name, chapter.UpdatedAt, chapter.Type).Scan(&chapterID)
 	if err != nil {
-		return err
+		return util.AddErrorContext(err, contextError)
 	}
 
 	var query string
@@ -122,10 +139,10 @@ func upsertMangaChapter(m *Manga, chapter *Chapter, tx *sql.Tx) error {
 	result, err = tx.Exec(query, chapterID, m.ID)
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return err
+		return util.AddErrorContext(err, contextError)
 	}
 	if rowsAffected == 0 {
-		return fmt.Errorf("manga not found in DB")
+		return util.AddErrorContext(fmt.Errorf("manga not found in DB"), contextError)
 	}
 
 	return nil
@@ -138,17 +155,19 @@ func upsertMangaChapter(m *Manga, chapter *Chapter, tx *sql.Tx) error {
 // valdiateChapter should be used every time the API interacts with
 // the mangas and chapter table in the database
 func validateChapter(c *Chapter) error {
+	contextError := "Error validating chapter"
+
 	if c.URL == "" {
-		return fmt.Errorf("chapter URL is empty")
+		return util.AddErrorContext(fmt.Errorf("Chapter URL is empty"), contextError)
 	}
 	if c.Chapter == "" {
-		return fmt.Errorf("chapter chapter is empty")
+		return util.AddErrorContext(fmt.Errorf("Chapter chapter is empty"), contextError)
 	}
 	if c.Name == "" {
-		return fmt.Errorf("chapter name is empty")
+		return util.AddErrorContext(fmt.Errorf("Chapter name is empty"), contextError)
 	}
 	if c.Type != 1 && c.Type != 2 {
-		return fmt.Errorf("chapter type should be 1 (last upload) or 2 (last read)")
+		return util.AddErrorContext(fmt.Errorf("Chapter type should be 1 (last upload) or 2 (last read), instead it's %d", c.Type), contextError)
 	}
 
 	return nil

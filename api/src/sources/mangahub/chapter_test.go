@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/diogovalentte/mantium/api/src/manga"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 type chapterTestType struct {
@@ -44,8 +45,9 @@ var chapterTestTable = []chapterTestType{
 }
 
 func TestGetChapterMetadata(t *testing.T) {
-	t.Run("should scrape metadata of a chapter from multiple mangas", func(t *testing.T) {
-		source := Source{}
+	source := Source{}
+
+	t.Run("should scrape the metadata of a chapter from multiple mangas", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
 			mangaURL := test.url
@@ -56,9 +58,30 @@ func TestGetChapterMetadata(t *testing.T) {
 				return
 			}
 
-			// Compare chapter
 			if !reflect.DeepEqual(actualChapter, expected) {
-				t.Errorf("expected chapter %v, got %v", expected, actualChapter)
+				t.Errorf("expected chapter %s, got %s", expected, actualChapter)
+				return
+			}
+		}
+	})
+	t.Run("should not scrape the metadata of a chapter from multiple mangas", func(t *testing.T) {
+		for _, test := range chapterTestTable {
+			expected := test.expected
+			mangaURL := test.url + "salt"
+
+			actualChapter, err := source.GetChapterMetadata(mangaURL, expected.Chapter, "")
+			if err != nil {
+				if !util.ErrorContains(err, "Manga not found") {
+					t.Errorf("unexpected error: %v", err)
+					return
+				}
+			} else {
+				t.Errorf("expected error, got nil")
+				return
+			}
+
+			if reflect.DeepEqual(actualChapter, expected) {
+				t.Errorf("expected actual chapter %s to NOT be deep equal to expected chapter %s", actualChapter, expected)
 				return
 			}
 		}
@@ -66,8 +89,9 @@ func TestGetChapterMetadata(t *testing.T) {
 }
 
 func TestGetLastChapterMetadata(t *testing.T) {
-	t.Run("should scrape metadata of the last chapter of multiple mangas", func(t *testing.T) {
-		source := Source{}
+	source := Source{}
+
+	t.Run("should scrape the metadata of the last chapter of multiple mangas", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
 			mangaURL := test.url
@@ -78,10 +102,30 @@ func TestGetLastChapterMetadata(t *testing.T) {
 				return
 			}
 
-			// Compare chapter
 			if !reflect.DeepEqual(actualChapter, expected) {
-				t.Errorf("expected chapter %v, got %v", expected, actualChapter)
+				t.Errorf("expected chapter %s, got %s", expected, actualChapter)
 				return
+			}
+		}
+	})
+	t.Run("should not scrape the metadata of the last chapter of multiple mangas", func(t *testing.T) {
+		for _, test := range chapterTestTable {
+			expected := test.expected
+			mangaURL := test.url + "salt"
+
+			actualChapter, err := source.GetLastChapterMetadata(mangaURL)
+			if err != nil {
+				if !util.ErrorContains(err, "Manga not found") {
+					t.Errorf("unexpected error: %v", err)
+					return
+				}
+			} else {
+				t.Errorf("expected error, got nil")
+				return
+			}
+
+			if reflect.DeepEqual(actualChapter, expected) {
+				t.Errorf("expected actual chapter %s to NOT be deep equal to expected chapter %s", actualChapter, expected)
 			}
 		}
 	})
@@ -108,8 +152,9 @@ var chaptersTestTable = []chaptersTestType{
 }
 
 func TestGetChaptersMetadata(t *testing.T) {
-	t.Run("should scrape chapters metadata from multiple mangas", func(t *testing.T) {
-		source := Source{}
+	source := Source{}
+
+	t.Run("should scrape the metadata of multiple chapters", func(t *testing.T) {
 		for _, test := range chaptersTestTable {
 			mangaURL := test.url
 			expectedQuantity := test.quantity
@@ -121,7 +166,7 @@ func TestGetChaptersMetadata(t *testing.T) {
 			}
 
 			if len(chapters) != expectedQuantity {
-				t.Errorf("expected 22 chapters, got %v", len(chapters))
+				t.Errorf("expected %v chapters, got %v", expectedQuantity, len(chapters))
 				return
 			}
 
@@ -142,6 +187,28 @@ func TestGetChaptersMetadata(t *testing.T) {
 					t.Errorf("expected chapter.UpdatedAt to be different than 0")
 					return
 				}
+			}
+		}
+	})
+	t.Run("should not scrape the metadata of multiple chapters", func(t *testing.T) {
+		for _, test := range chaptersTestTable {
+			mangaURL := test.url + "salt"
+			expectedQuantity := 0
+
+			chapters, err := source.GetChaptersMetadata(mangaURL)
+			if err != nil {
+				if !util.ErrorContains(err, "Manga not found") {
+					t.Errorf("unexpected error: %v", err)
+					return
+				}
+			} else {
+				t.Errorf("expected error, got nil")
+				return
+			}
+
+			if len(chapters) != expectedQuantity {
+				t.Errorf("expected %v chapters, got %v", expectedQuantity, len(chapters))
+				return
 			}
 		}
 	})

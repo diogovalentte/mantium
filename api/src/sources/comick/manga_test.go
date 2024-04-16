@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/diogovalentte/mantium/api/src/manga"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 type mangaTestType struct {
@@ -68,8 +69,9 @@ var mangasTestTable = []mangaTestType{
 }
 
 func TestGetMangaMetadata(t *testing.T) {
-	t.Run("should scrape metadata from multiple mangas", func(t *testing.T) {
-		source := Source{}
+	source := Source{}
+
+	t.Run("should get metadata from multiple mangas", func(t *testing.T) {
 		for _, test := range mangasTestTable {
 			expected := test.expected
 			mangaURL := test.url
@@ -80,17 +82,32 @@ func TestGetMangaMetadata(t *testing.T) {
 				return
 			}
 
-			// Cover img
 			if actualManga.CoverImg == nil {
 				t.Errorf("expected manga.CoverImg to be different than nil")
 				return
 			}
 			actualManga.CoverImg = nil
 
-			// Compare manga
 			if !reflect.DeepEqual(actualManga, expected) {
-				t.Errorf("expected manga %v, got %v", expected, actualManga)
-				t.Errorf("expected manga.LastChapter %v, got %v", expected.LastUploadChapter, actualManga.LastUploadChapter)
+				t.Errorf("expected manga %s, got %s", expected, actualManga)
+				return
+			}
+		}
+	})
+	t.Run("should not get metadata from multiple mangas", func(t *testing.T) {
+		for _, test := range mangasTestTable {
+			mangaURL := test.url + "salt"
+
+			_, err := source.GetMangaMetadata(mangaURL)
+			if err != nil {
+				if util.ErrorContains(err, "Non-200 status code -> (404)") {
+					continue
+				} else {
+					t.Errorf("expected error, got %s", err)
+					return
+				}
+			} else {
+				t.Errorf("expected error, got nil")
 				return
 			}
 		}

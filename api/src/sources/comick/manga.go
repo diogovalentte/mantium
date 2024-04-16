@@ -13,25 +13,27 @@ import (
 func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 	s.checkClient()
 
+	errorContext := "Error while getting manga metadata"
+
 	mangaReturn := &manga.Manga{}
 	mangaReturn.Source = "comick.xyz"
 	mangaReturn.URL = mangaURL
 
 	mangaID, err := getMangaSlug(mangaURL)
 	if err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, errorContext)
 	}
 
 	mangaAPIURL := fmt.Sprintf("%s/comic/%s", baseAPIURL, mangaID)
 	resp, err := s.client.Request("GET", mangaAPIURL, nil)
 	if err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, errorContext)
 	}
 	defer resp.Body.Close()
 
 	var mangaAPIResp getMangaAPIResponse
 	if err = json.NewDecoder(resp.Body).Decode(&mangaAPIResp); err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, util.AddErrorContext(fmt.Errorf("Error decoding JSON body response"), errorContext).Error())
 	}
 
 	comic := &mangaAPIResp.Comic
@@ -40,7 +42,7 @@ func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 
 	lastUploadChapter, err := s.GetLastChapterMetadata(mangaURL)
 	if err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, errorContext)
 	}
 	lastUploadChapter.Type = 1
 	mangaReturn.LastUploadChapter = lastUploadChapter
@@ -54,30 +56,17 @@ func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 		}
 	}
 	if coverFileName == "" {
-		return nil, fmt.Errorf("cover art not found")
+		return nil, util.AddErrorContext(fmt.Errorf("Cover image not found"), errorContext)
 	}
 	coverURL := fmt.Sprintf("%s/%s", baseUploadsURL, coverFileName)
 	mangaReturn.CoverImgURL = coverURL
 
-	coverImg, err := util.GetImageFromURL(coverURL)
+	coverImg, resized, err := util.GetImageFromURL(coverURL)
 	if err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(err, errorContext)
 	}
-	resizedCoverImg, err := util.ResizeImage(coverImg, uint(util.DefaultImageWidth), uint(util.DefaultImageHeight))
-	if err != nil {
-		// JPEG format that has an unsupported subsampling ratio
-		// It's a valid image but the standard library doesn't support it
-		// And other libraries use the standard library under the hood
-		if err.Error() == "unsupported JPEG feature: luma/chroma subsampling ratio" {
-			resizedCoverImg = coverImg
-		} else {
-			err = fmt.Errorf("error resizing image: %s", err)
-			return nil, err
-		}
-	} else {
-		mangaReturn.CoverImgResized = true
-	}
-	mangaReturn.CoverImg = resizedCoverImg
+	mangaReturn.CoverImgResized = resized
+	mangaReturn.CoverImg = coverImg
 
 	return mangaReturn, nil
 }
@@ -103,25 +92,27 @@ type mdCover struct {
 func (s *Source) getMangaHID(mangaURL string) (string, error) {
 	s.checkClient()
 
+	errorContext := "Error while getting manga HID"
+
 	mangaReturn := &manga.Manga{}
 	mangaReturn.Source = "comick.xyz"
 	mangaReturn.URL = mangaURL
 
 	mangaSlug, err := getMangaSlug(mangaURL)
 	if err != nil {
-		return "", err
+		return "", util.AddErrorContext(err, errorContext)
 	}
 
 	mangaAPIURL := fmt.Sprintf("%s/comic/%s", baseAPIURL, mangaSlug)
 	resp, err := s.client.Request("GET", mangaAPIURL, nil)
 	if err != nil {
-		return "", err
+		return "", util.AddErrorContext(err, errorContext)
 	}
 	defer resp.Body.Close()
 
 	var mangaAPIResp getMangaAPIResponse
 	if err = json.NewDecoder(resp.Body).Decode(&mangaAPIResp); err != nil {
-		return "", err
+		return "", util.AddErrorContext(err, util.AddErrorContext(fmt.Errorf("Error decoding JSON body response"), errorContext).Error())
 	}
 
 	return mangaAPIResp.Comic.HID, nil
@@ -130,15 +121,17 @@ func (s *Source) getMangaHID(mangaURL string) (string, error) {
 // getMangaSlug returns the slug of a manga given its URL.
 // URL should be like: https://comick.xyz/comic/00-jujutsu-kaisen
 func getMangaSlug(mangaURL string) (string, error) {
+	errorContext := "Error while getting manga slug from URL"
+
 	pattern := `^https?://comick\.[^/]+/comic/([^/]+)(?:/.*)?$`
 	re, err := regexp.Compile(pattern)
 	if err != nil {
-		return "", err
+		return "", util.AddErrorContext(err, errorContext)
 	}
 
 	matches := re.FindStringSubmatch(mangaURL)
 	if len(matches) < 2 {
-		return "", fmt.Errorf("manga Slug not found in URL")
+		return "", util.AddErrorContext(fmt.Errorf("manga Slug not found in URL"), errorContext)
 	}
 
 	return matches[1], nil

@@ -15,15 +15,12 @@ import (
 
 	"github.com/nfnt/resize"
 	"github.com/rs/zerolog"
-
-	"github.com/diogovalentte/mantium/api/src/config"
 )
 
 var logger *zerolog.Logger
 
 // GetLogger returns the zerolog logger instance
-func GetLogger() *zerolog.Logger {
-	logLevel := config.GlobalConfigs.LogLevel
+func GetLogger(logLevel zerolog.Level) *zerolog.Logger {
 	if logger == nil {
 		l := zerolog.New(os.Stdout).Level(logLevel).With().Timestamp().Logger()
 		logger = &l
@@ -33,12 +30,15 @@ func GetLogger() *zerolog.Logger {
 }
 
 // AddErrorContext adds context to an error, like:
-// "error downloading image: Get "https://example.com/image.jpg": dial tcp: lookup example.com: no such host".
-// Should be used to add context to errors that are
-// returned to the user, mostly in exported functions
-// and methods
+// "Error downloading image: Get "https://example.com/image.jpg": dial tcp: lookup example.com: no such host".
+// Should be used in functions that can return multiple errors without a spefic origin/context.
 func AddErrorContext(err error, context string) error {
 	return fmt.Errorf("%s: %w", context, err)
+}
+
+// ErrorContains checks if an error contains a specific string
+func ErrorContains(err error, s string) bool {
+	return strings.Contains(err.Error(), s)
 }
 
 // RemoveLastOccurrence removes the last occurrence of a string from another string
@@ -63,24 +63,23 @@ var (
 	DefaultImageWidth = 250
 )
 
-// GetImageFromURL downloads an image from a URL and returns the image bytes
-func GetImageFromURL(url string) ([]byte, error) {
+// GetImageFromURL downloads an image from a URL and tries to resize it.
+func GetImageFromURL(url string) (imgBytes []byte, resized bool, err error) {
+	contextError := "Error downloading image '%s'"
+
 	resp, err := http.Get(url)
 	if err != nil {
-		err = fmt.Errorf("error downloading image: %s", err)
-		return nil, err
+		return nil, resized, AddErrorContext(err, fmt.Sprintf(contextError, url))
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		err = fmt.Errorf("failed to download image. Status code: %d", resp.StatusCode)
-		return nil, err
+		return nil, resized, AddErrorContext(fmt.Errorf("Status code is not OK, instead it's %d", resp.StatusCode), fmt.Sprintf(contextError, url))
 	}
 
 	imageBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
-		err = fmt.Errorf(`error reading image data at url "%s": %s`, url, err)
-		return nil, err
+		return nil, resized, AddErrorContext(AddErrorContext(err, "Could not read the image data from request body"), fmt.Sprintf(contextError, url))
 	}
 
 	img, err := ResizeImage(imageBytes, uint(DefaultImageWidth), uint(DefaultImageHeight))
@@ -88,27 +87,30 @@ func GetImageFromURL(url string) ([]byte, error) {
 		// JPEG format that has an unsupported subsampling ratio
 		// It's a valid image but the standard library doesn't support it
 		// And other libraries use the standard library under the hood
-		if err.Error() == "unsupported JPEG feature: luma/chroma subsampling ratio" {
+		if ErrorContains(err, "unsupported JPEG feature: luma/chroma subsampling ratio") {
 			img = imageBytes
 		} else {
-			err = fmt.Errorf("error resizing image: %s", err)
-			return nil, err
+			return nil, resized, AddErrorContext(err, fmt.Sprintf(contextError, url))
 		}
+	} else {
+		resized = true
 	}
 
-	return img, nil
+	return img, resized, nil
 }
 
 // ResizeImage resizes an image to the specified width and height
 func ResizeImage(imgBytes []byte, width, height uint) ([]byte, error) {
+	contextError := "Error resizing image to width %d and height %d"
+
 	_, format, err := image.DecodeConfig(bytes.NewReader(imgBytes))
 	if err != nil {
-		return nil, err
+		return nil, AddErrorContext(err, fmt.Sprintf(contextError, width, height))
 	}
 
 	img, _, err := image.Decode(bytes.NewReader(imgBytes))
 	if err != nil {
-		return nil, err
+		return nil, AddErrorContext(err, fmt.Sprintf(contextError, width, height))
 	}
 
 	resizedImg := resize.Resize(width, height, img, resize.Lanczos3)
@@ -120,10 +122,10 @@ func ResizeImage(imgBytes []byte, width, height uint) ([]byte, error) {
 	case "png":
 		err = png.Encode(&resizedBuf, resizedImg)
 	default:
-		return nil, fmt.Errorf("unsupported image format to resize: %s", format)
+		return nil, AddErrorContext(fmt.Errorf("Unsupported image format to resize: %s", format), fmt.Sprintf(contextError, width, height))
 	}
 	if err != nil {
-		return nil, err
+		return nil, AddErrorContext(err, fmt.Sprintf(contextError, width, height))
 	}
 
 	return resizedBuf.Bytes(), nil
@@ -131,17 +133,21 @@ func ResizeImage(imgBytes []byte, width, height uint) ([]byte, error) {
 
 // GetRFC3339Datetime returns a time.Time from a RFC3339 formatted string
 func GetRFC3339Datetime(date string) (time.Time, error) {
+	contextError := "Error parsing RFC3339 datetime '%s'"
+
 	parsedDate, err := time.Parse(time.RFC3339, date)
 	if err != nil {
-		return time.Time{}, err
+		return time.Time{}, AddErrorContext(err, fmt.Sprintf(contextError, date))
 	}
 	parsedDate = parsedDate.In(time.UTC)
 
-	return parsedDate, err
+	return parsedDate, nil
 }
 
 // RequestUpdateMangasMetadata sends a request to the server to update all mangas metadata
 func RequestUpdateMangasMetadata(notify bool) (*http.Response, error) {
+	contextErrror := "Error requesting to update mangas metadata (notify is %v)"
+
 	client := &http.Client{}
 
 	url := "http://localhost:8080/v1/mangas/metadata"
@@ -150,16 +156,16 @@ func RequestUpdateMangasMetadata(notify bool) (*http.Response, error) {
 	}
 	req, err := http.NewRequest("PATCH", url, nil)
 	if err != nil {
-		return nil, err
+		return nil, AddErrorContext(err, fmt.Sprintf(contextErrror, notify))
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, AddErrorContext(err, fmt.Sprintf(contextErrror, notify))
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return resp, fmt.Errorf("failed to update mangas metadata. Status code: %d", resp.StatusCode)
+		return nil, AddErrorContext(fmt.Errorf("Status code is not OK, instead it's %d", resp.StatusCode), fmt.Sprintf(contextErrror, notify))
 	}
 
 	return resp, nil
