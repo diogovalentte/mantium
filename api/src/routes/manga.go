@@ -15,11 +15,14 @@ import (
 
 	"github.com/AnthonyHewins/gotfy"
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog"
 
+	"github.com/diogovalentte/mantium/api/src/config"
 	"github.com/diogovalentte/mantium/api/src/dashboard"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/notifications"
 	"github.com/diogovalentte/mantium/api/src/sources"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // MangaRoutes sets the manga routes
@@ -719,19 +722,23 @@ func UpdateMangasMetadata(c *gin.Context) {
 		return
 	}
 
+	logger := util.GetLogger(zerolog.Level(config.GlobalConfigs.API.LogLevelInt))
+	errHappened := false
 	for _, mangaToUpdate := range mangas {
 		updatedManga, err := sources.GetMangaMetadata(mangaToUpdate.URL)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
+			logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error getting manga metadata, will continue with the next manga...")
+			errHappened = true
+			continue
 		}
 		updatedManga.Status = 1
 
 		if mangaToUpdate.LastUploadChapter.Chapter != updatedManga.LastUploadChapter.Chapter || mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg) || mangaToUpdate.Name != updatedManga.Name {
 			err = manga.UpdateMangaMetadataDB(updatedManga)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-				return
+				logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error saving manga new metadata, will continue with the next manga...")
+				errHappened = true
+				continue
 			}
 
 			// Notify only if the manga's status is 1 (reading) or 2 (completed)
@@ -739,8 +746,9 @@ func UpdateMangasMetadata(c *gin.Context) {
 				if mangaToUpdate.LastUploadChapter.Chapter != updatedManga.LastUploadChapter.Chapter {
 					err = NotifyMangaLastUploadChapterUpdate(mangaToUpdate, updatedManga)
 					if err != nil {
-						c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf(`manga "%s" metadata updated, error while notifying: %s`, mangaToUpdate.URL, err.Error())})
-						return
+						logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg(fmt.Sprintf("Manga metadata updated in DB, but error while notifying: %s.\nWill continue with the next manga...", err.Error()))
+						errHappened = true
+						continue
 					}
 				}
 			}
@@ -749,6 +757,11 @@ func UpdateMangasMetadata(c *gin.Context) {
 	}
 
 	dashboard.UpdateDashboard()
+
+	if errHappened {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Some errors occured while updating the mangas metadata, check the logs for more information"})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Mangas metadata updated successfully"})
 }
