@@ -9,6 +9,28 @@ class DashboardAPIClient:
             200,  # The acceptable status codes from the API requests
         )
 
+    def check_health(self):
+        """Check the health of the API."""
+        url = self.base_api_url + "/v1/health"
+
+        try:
+            res = requests.get(url)
+        except requests.exceptions.ConnectionError:
+            raise Exception(
+                "error while checking the health of the API at "
+                + url
+                + " (Connection Error)"
+            )
+
+        if res.status_code not in self.acceptable_status_codes:
+            raise APIException(
+                "error while checking the health of the API",
+                url,
+                "GET",
+                res.status_code,
+                res.text,
+            )
+
     def check_for_updates(self):
         """Check for the last time some resource that should trigger an reload of the dashboard was updated.
 
@@ -23,7 +45,7 @@ class DashboardAPIClient:
             raise APIException(
                 "error while checking for updates in the API",
                 url,
-                "POST",
+                "GET",
                 res.status_code,
                 res.text,
             )
@@ -44,7 +66,7 @@ class DashboardAPIClient:
             raise APIException(
                 "error while getting the dashboarc configs from the API",
                 url,
-                "POST",
+                "GET",
                 res.status_code,
                 res.text,
             )
@@ -67,7 +89,7 @@ class DashboardAPIClient:
             raise APIException(
                 "error while updating the dashboard columns in the API",
                 url,
-                "POST",
+                "PATCH",
                 res.status_code,
                 res.text,
             )
@@ -86,7 +108,7 @@ class DashboardAPIClient:
             raise APIException(
                 "error while getting last background error",
                 url,
-                "POST",
+                "GET",
                 res.status_code,
                 res.text,
             )
@@ -107,7 +129,7 @@ class DashboardAPIClient:
             raise APIException(
                 "error while deleting last background error",
                 url,
-                "POST",
+                "DELETE",
                 res.status_code,
                 res.text,
             )

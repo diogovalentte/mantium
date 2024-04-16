@@ -555,9 +555,7 @@ class MainDashboard:
             st.stop()
 
 
-def main():
-    api_client = get_api_client()
-
+def main(api_client):
     if "configs_columns_number" not in ss:
         ss["configs_columns_number"] = api_client.get_dashboard_configs()["columns"]
 
@@ -583,8 +581,10 @@ def main():
 
 
 if __name__ == "__main__":
+    api_client = get_api_client()
+    api_client.check_health()
     try:
-        main()
+        main(api_client)
     except Exception as e:
         logger.exception(e)
         ss[ss_dashboard_error_key] = True
