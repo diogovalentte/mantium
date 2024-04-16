@@ -25,6 +25,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger()
 
+ss_dashboard_error_key = "dashboard_error"
+
 
 class MainDashboard:
     def __init__(self, api_client):
@@ -50,6 +52,8 @@ class MainDashboard:
         self.chapter_link_tag_text_color = "rgb(59 130 246)"
 
     def show(self):
+        self.check_dashboard_error()
+
         mangas = self.api_client.get_mangas()
         mangas = [
             manga
@@ -65,11 +69,12 @@ class MainDashboard:
                 self.status_filter_key,
             )
         ]
-        mangas = [
-            manga
-            for manga in mangas
-            if ss.get("search_manga", "").upper() in manga["Name"].upper()
-        ]
+        if ss.get("search_manga", "") != "":
+            mangas = [
+                manga
+                for manga in mangas
+                if ss.get("search_manga", "").upper() in manga["Name"].upper()
+            ]
 
         mangas = self.api_client.sort_mangas(
             mangas,
@@ -100,7 +105,7 @@ class MainDashboard:
                     message = last_background_error["message"]
                     time = last_background_error["time"]
                     st.info(f"Time: {time}")
-                    st.error(f"Message: {message}")
+                    st.error(f"Message: {message[:450]}...")
                     st.button(
                         "Delete Error",
                         use_container_width=True,
@@ -251,7 +256,7 @@ class MainDashboard:
 
         if ss.get("status_filter", 1) == 0:
             st.write(
-                f'**Status**: <span style="float: right;">{self.get_manga_status(manga["Status"])}</span>',
+                f'**Status**: <span style="float: right;">{self.manga_status_options[manga["Status"]]}</span>',
                 unsafe_allow_html=True,
             )
 
@@ -386,42 +391,31 @@ class MainDashboard:
                 use_container_width=True,
                 type="primary",
             ):
-                try:
-                    status = ss.update_manga_form_status
-                    if status != manga["Status"]:
-                        self.api_client.update_manga_status(status, manga["ID"])
+                status = ss.update_manga_form_status
+                if status != manga["Status"]:
+                    self.api_client.update_manga_status(status, manga["ID"])
 
-                    chapter = ss.update_manga_form_chapter
-                    if (
-                        manga["LastReadChapter"] is None
-                        or chapter != manga["LastReadChapter"]["Chapter"]
-                    ):
-                        self.api_client.update_manga_last_read_chapter(
-                            manga["ID"],
-                            manga["URL"],
-                            chapter["Chapter"],
-                            chapter["URL"],
-                        )
-                except Exception as e:
-                    logger.exception(e)
-                    st.error("An error occurred")
-                    st.stop()
-                else:
-                    ss["manga_updated_success"] = True
-                    st.rerun()
+                chapter = ss.update_manga_form_chapter
+                if (
+                    manga["LastReadChapter"] is None
+                    or chapter != manga["LastReadChapter"]["Chapter"]
+                ):
+                    self.api_client.update_manga_last_read_chapter(
+                        manga["ID"],
+                        manga["URL"],
+                        chapter["Chapter"],
+                        chapter["URL"],
+                    )
+                ss["manga_updated_success"] = True
+                st.rerun()
 
             if ss.get("manga_updated_success", False):
                 st.success("Manga updated successfully")
-            ss["manga_updated_success"] = False
+                ss["manga_updated_success"] = False
 
         def delete_manga_btn_callback():
-            try:
-                self.api_client.delete_manga(manga["ID"])
-            except Exception as e:
-                logger.exception(e)
-                st.error("An error occurred")
-            else:
-                ss["manga_to_highlight"] = None
+            self.api_client.delete_manga(manga["ID"])
+            ss["manga_to_highlight"] = None
 
         with stylable_container(
             key="highlight_manga_delete_button",
@@ -434,7 +428,7 @@ class MainDashboard:
         ):
             st.button(
                 "Delete Manga",
-                on_click=delete_manga_btn_callback,  # need to have a callback to delete the ss["manga_to_highlight"]
+                on_click=delete_manga_btn_callback,  # needs to have a callback to delete the ss["manga_to_highlight"]
                 use_container_width=True,
                 key="delete_manga_btn",
             )
@@ -445,17 +439,6 @@ class MainDashboard:
             on_click=lambda: ss.pop("manga_to_highlight"),
             use_container_width=True,
         )
-
-    def get_manga_status(self, status: int | str) -> str | int:
-        if isinstance(status, int):
-            return self.manga_status_options[status]
-        elif isinstance(status, str):
-            for key, value in self.manga_status_options.items():
-                if value == status:
-                    return key
-
-        st.error(f"Invalid manga status: {status}")
-        st.stop()
 
     def show_add_manga_form(self):
         st.text_input(
@@ -469,22 +452,25 @@ class MainDashboard:
             return self.api_client.get_manga_chapters(-1, url)
 
         if st.button("Get Chapters"):
-            ss["manga_add_success"] = False
             try:
                 with st.spinner("Getting manga chapters..."):
                     ss["add_manga_chapter_options"] = get_manga_chapters(
                         ss.add_manga_form_url
                     )
             except APIException as e:
+                resp_text = str(e.response_text)
                 if (
-                    "invalid URI for request" in str(e.response_text)
-                    or "error getting manga from DB: manga doesn't have an ID or URL"
-                    in str(e.response_text)
+                    "Error while getting source: Source '" in str(resp_text)
+                    and "not found" in resp_text
+                ):
+                    st.warning("No source site for this manga")
+                elif (
+                    "Manga doesn't have an ID or URL" in resp_text
+                    or "invalid URI for request" in resp_text
                 ):
                     st.warning("Invalid URL")
                 else:
-                    st.error("An error occurred")
-                    logger.exception(e)
+                    raise e
 
         with st.form(key="add_manga_form", border=False, clear_on_submit=True):
             st.selectbox(
@@ -520,23 +506,18 @@ class MainDashboard:
                         "Provide a manga URL and select the last read chapter first"
                     )
                 else:
-                    try:
-                        self.api_client.add_manga(
-                            ss["add_manga_manga_to_add"]["manga_url"],
-                            ss["add_manga_manga_to_add"]["status"],
-                            ss["add_manga_manga_to_add"]["chapter"],
-                            ss["add_manga_manga_to_add"]["chapter_url"],
-                        )
-                    except Exception as e:
-                        logger.exception(e)
-                        st.error("An error occurred")
-                        st.stop()
-                    else:
-                        ss["manga_add_success"] = True
-                        st.rerun()
+                    self.api_client.add_manga(
+                        ss["add_manga_manga_to_add"]["manga_url"],
+                        ss["add_manga_manga_to_add"]["status"],
+                        ss["add_manga_manga_to_add"]["chapter"],
+                        ss["add_manga_manga_to_add"]["chapter_url"],
+                    )
+                    ss["manga_add_success"] = True
+                    st.rerun()
 
         if ss.get("manga_add_success", False):
             st.success("Manga added successfully")
+            ss["manga_add_success"] = False
 
     def show_configs(self):
         def update_configs_callback():
@@ -565,6 +546,13 @@ class MainDashboard:
                     on_click=update_configs_callback,
                     use_container_width=True,
                 )
+
+    def check_dashboard_error(self):
+        if ss.get(ss_dashboard_error_key, False):
+            st.error("An error occurred. Please check the DASHBOARD logs.")
+            st.info("You can try to refresh the page.")
+            ss[ss_dashboard_error_key] = False
+            st.stop()
 
 
 def main():
@@ -599,4 +587,5 @@ if __name__ == "__main__":
         main()
     except Exception as e:
         logger.exception(e)
-        st.error("An error occurred.")
+        ss[ss_dashboard_error_key] = True
+        st.rerun()
