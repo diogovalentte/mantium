@@ -99,7 +99,8 @@ func UpdateDashboardColumns(c *gin.Context) {
 // @Produce json
 // @Router /dashboard/last_background_error [get]
 func GetLastBackgroundError(c *gin.Context) {
-	c.JSON(http.StatusOK, dashboard.GetLastBackgroundError())
+	lastError := dashboard.GetLastBackgroundError()
+	c.JSON(http.StatusOK, gin.H{"message": lastError.Message, "time": lastError.Time.Format("2006-01-02 15:04:05")})
 }
 
 // @Summary Delete the last background error
