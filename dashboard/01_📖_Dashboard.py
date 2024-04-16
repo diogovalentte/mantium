@@ -356,9 +356,14 @@ class MainDashboard:
             return self.api_client.get_manga_chapters(id, url)
 
         with st.spinner("Getting manga chapters..."):
-            ss["update_manga_chapter_options"] = get_manga_chapters(
-                manga["ID"], manga["URL"]
-            )
+            try:
+                ss["update_manga_chapter_options"] = get_manga_chapters(
+                    manga["ID"], manga["URL"]
+                )
+            except APIException as e:
+                logger.exception(e)
+                st.error("Error while getting manga chapters")
+                ss["update_manga_chapter_options"] = []
 
         with st.form(key="update_manga_form", border=False):
             st.selectbox(
@@ -371,16 +376,23 @@ class MainDashboard:
                 key="update_manga_form_status",
             )
 
+            try:
+                last_read_chapter_idx = (
+                    list(
+                        map(
+                            lambda chapter: chapter["Chapter"],
+                            ss["update_manga_chapter_options"],
+                        )
+                    ).index(manga["LastReadChapter"]["Chapter"])
+                    if manga["LastReadChapter"] is not None
+                    else 0
+                )
+            except ValueError as e:
+                logger.exception(e)
+                last_read_chapter_idx = 0
             st.selectbox(
                 "Last Read Chapter",
-                index=list(
-                    map(
-                        lambda chapter: chapter["Chapter"],
-                        ss["update_manga_chapter_options"],
-                    )
-                ).index(manga["LastReadChapter"]["Chapter"])
-                if manga["LastReadChapter"] is not None
-                else 0,
+                index=last_read_chapter_idx,
                 options=ss["update_manga_chapter_options"],
                 format_func=lambda chapter: f"Ch. {chapter['Chapter']} --- {get_relative_time(datetime.strptime(chapter['UpdatedAt'], '%Y-%m-%dT%H:%M:%SZ'))}",
                 key="update_manga_form_chapter",
