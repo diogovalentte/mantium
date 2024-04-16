@@ -15,6 +15,8 @@ import (
 
 	"github.com/nfnt/resize"
 	"github.com/rs/zerolog"
+
+	"github.com/diogovalentte/mantium/api/src/config"
 )
 
 var logger *zerolog.Logger
@@ -150,7 +152,12 @@ func RequestUpdateMangasMetadata(notify bool) (*http.Response, error) {
 
 	client := &http.Client{}
 
-	url := "http://localhost:8080/v1/mangas/metadata"
+	apiPort := config.GlobalConfigs.API.Port
+	if apiPort == "" {
+		apiPort = "8080"
+	}
+
+	url := fmt.Sprintf("http://localhost:%s/v1/mangas/metadata", apiPort)
 	if notify {
 		url += "?notify=true"
 	}
@@ -161,11 +168,11 @@ func RequestUpdateMangasMetadata(notify bool) (*http.Response, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, AddErrorContext(err, fmt.Sprintf(contextErrror, notify))
+		return resp, AddErrorContext(err, fmt.Sprintf(contextErrror, notify))
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, AddErrorContext(fmt.Errorf("Status code is not OK, instead it's %d", resp.StatusCode), fmt.Sprintf(contextErrror, notify))
+		return resp, AddErrorContext(fmt.Errorf("Status code is not OK, instead it's %d", resp.StatusCode), fmt.Sprintf(contextErrror, notify))
 	}
 
 	return resp, nil

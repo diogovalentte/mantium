@@ -14,6 +14,7 @@ import (
 // It is used to access the configurations throughout the application.
 // Should be initialized by the SetConfigs function.
 var GlobalConfigs = &Configs{
+	API:                      &APIConfigs{},
 	DB:                       &DBConfigs{},
 	Ntfy:                     &NtfyConfigs{},
 	PeriodicallyUpdateMangas: &PeriodicallyUpdateMangasConfigs{},
@@ -23,7 +24,7 @@ var GlobalConfigs = &Configs{
 
 // Configs is a struct that holds all the configurations.
 type Configs struct {
-	LogLevelInt              int
+	API                      *APIConfigs
 	DB                       *DBConfigs
 	Ntfy                     *NtfyConfigs
 	PeriodicallyUpdateMangas *PeriodicallyUpdateMangasConfigs
@@ -31,6 +32,12 @@ type Configs struct {
 	// Relative to main.go
 	ConfigsFilePath        string
 	DefaultConfigsFilePath string
+}
+
+// APIConfigs is a struct that holds the API configurations.
+type APIConfigs struct {
+	Port        string
+	LogLevelInt int
 }
 
 // DBConfigs is a struct that holds the database configurations.
@@ -75,7 +82,9 @@ func SetConfigs(filePath string) error {
 			return fmt.Errorf("Error parsing error level '%s': %s", logLevelStr, err)
 		}
 	}
-	GlobalConfigs.LogLevelInt = int(logLevel)
+	GlobalConfigs.API.LogLevelInt = int(logLevel)
+
+	GlobalConfigs.API.Port = os.Getenv("API_PORT")
 
 	GlobalConfigs.DB.Host = os.Getenv("POSTGRES_HOST")
 	GlobalConfigs.DB.Port = os.Getenv("POSTGRES_PORT")

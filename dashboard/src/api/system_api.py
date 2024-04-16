@@ -21,7 +21,7 @@ class DashboardAPIClient:
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
-                "error while adding manga",
+                "error while checking for updates in the API",
                 url,
                 "POST",
                 res.status_code,
@@ -42,7 +42,7 @@ class DashboardAPIClient:
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
-                "error while adding manga",
+                "error while getting the dashboarc configs from the API",
                 url,
                 "POST",
                 res.status_code,
@@ -65,7 +65,47 @@ class DashboardAPIClient:
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
-                "error while adding manga",
+                "error while updating the dashboard columns in the API",
+                url,
+                "POST",
+                res.status_code,
+                res.text,
+            )
+
+    def get_last_background_error(self):
+        """Get the last background error from the API.
+
+        Returns:
+            (dict): The error.
+        """
+        url = self.base_api_url + "/v1/dashboard/last_background_error"
+
+        res = requests.get(url)
+
+        if res.status_code not in self.acceptable_status_codes:
+            raise APIException(
+                "error while getting last background error",
+                url,
+                "POST",
+                res.status_code,
+                res.text,
+            )
+
+        return res.json()
+
+    def delete_last_background_error(self):
+        """Delete the last background error from the API.
+
+        Returns:
+            (dict): The error.
+        """
+        url = self.base_api_url + "/v1/dashboard/last_background_error"
+
+        res = requests.delete(url)
+
+        if res.status_code not in self.acceptable_status_codes:
+            raise APIException(
+                "error while deleting last background error",
                 url,
                 "POST",
                 res.status_code,

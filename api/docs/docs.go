@@ -59,6 +59,38 @@ const docTemplate = `{
                 }
             }
         },
+        "/dashboard/last_background_error": {
+            "get": {
+                "description": "Returns the last error that happened in the background. Usually used to display the error in the dashboard.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get the last background error",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/dashboard.BackgroundError"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes the last error that happened in the background. Usually used to clear the error in the dashboard.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Delete the last background error",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
         "/dashboard/last_update": {
             "get": {
                 "description": "Returns the last time a resource that should trigger an update in the iframe/dashboard was updated. Usually used to update the dashboard when an event not triggered by the user occurs.",
@@ -394,9 +426,23 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "config.APIConfigs": {
+            "type": "object",
+            "properties": {
+                "logLevelInt": {
+                    "type": "integer"
+                },
+                "port": {
+                    "type": "string"
+                }
+            }
+        },
         "config.Configs": {
             "type": "object",
             "properties": {
+                "api": {
+                    "$ref": "#/definitions/config.APIConfigs"
+                },
                 "configsFilePath": {
                     "description": "A file with configs that should be persisted\nRelative to main.go",
                     "type": "string"
@@ -406,9 +452,6 @@ const docTemplate = `{
                 },
                 "defaultConfigsFilePath": {
                     "type": "string"
-                },
-                "logLevelInt": {
-                    "type": "integer"
                 },
                 "ntfy": {
                     "$ref": "#/definitions/config.NtfyConfigs"
@@ -463,6 +506,19 @@ const docTemplate = `{
                 },
                 "update": {
                     "type": "boolean"
+                }
+            }
+        },
+        "dashboard.BackgroundError": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "description": "Error message.",
+                    "type": "string"
+                },
+                "time": {
+                    "description": "Time when the error occurred.",
+                    "type": "string"
                 }
             }
         },

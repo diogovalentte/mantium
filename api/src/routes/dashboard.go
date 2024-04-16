@@ -19,6 +19,8 @@ func DashboardRoutes(group *gin.RouterGroup) {
 		group.GET("/dashboard/configs", GetDashboardConfigs)
 		group.GET("/dashboard/last_update", GetLastUpdate)
 		group.PATCH("/dashboard/configs/columns", UpdateDashboardColumns)
+		group.GET("/dashboard/last_background_error", GetLastBackgroundError)
+		group.DELETE("/dashboard/last_background_error", DeleteLastBackgroundError)
 	}
 }
 
@@ -89,4 +91,23 @@ func UpdateDashboardColumns(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Configs updated successfully"})
+}
+
+// @Summary Get the last background error
+// @Description Returns the last error that happened in the background. Usually used to display the error in the dashboard.
+// @Success 200 {object} dashboard.BackgroundError
+// @Produce json
+// @Router /dashboard/last_background_error [get]
+func GetLastBackgroundError(c *gin.Context) {
+	c.JSON(http.StatusOK, dashboard.GetLastBackgroundError())
+}
+
+// @Summary Delete the last background error
+// @Description Deletes the last error that happened in the background. Usually used to clear the error in the dashboard.
+// @Success 200 {object} responseMessage
+// @Produce json
+// @Router /dashboard/last_background_error [delete]
+func DeleteLastBackgroundError(c *gin.Context) {
+	dashboard.DeleteLastBackgroundError()
+	c.JSON(http.StatusOK, gin.H{"message": "Last background error deleted"})
 }

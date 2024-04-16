@@ -2,6 +2,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -24,7 +25,7 @@ func init() {
 		panic(err)
 	}
 
-	logLevelInt := config.GlobalConfigs.LogLevelInt
+	logLevelInt := config.GlobalConfigs.API.LogLevelInt
 	logLevel, _ := zerolog.ParseLevel(strconv.Itoa(logLevelInt))
 	log := util.GetLogger(logLevel)
 
@@ -76,13 +77,21 @@ func setUpdateMangasMetadataPeriodicallyJob(log *zerolog.Logger) {
 				log.Info().Msg("Updating mangas metadata...")
 				res, err := util.RequestUpdateMangasMetadata(configs.Notify)
 				if err != nil {
-					log.Error().Msgf("Error updating mangas metadata: %s", err)
+					errMessage := fmt.Sprintf("Error updating mangas metadata in background: %s", err)
+					log.Error().Msgf(errMessage)
 					log.Error().Msgf("Request response: %v", res)
-					body, err := io.ReadAll(res.Body)
-					if err != nil {
-						log.Error().Msgf("Error while getting the response body: %s", err)
+
+					if res != nil {
+						body, err := io.ReadAll(res.Body)
+						if err != nil {
+							log.Error().Msgf("Error while getting the response body: %s", err)
+						}
+						respMessage := fmt.Sprintf("Request response text: %s", string(body))
+						dashboard.SetLastBackgroundError(fmt.Sprintf("%s\n%s", errMessage, respMessage))
+						log.Error().Msgf(respMessage)
+					} else {
+						dashboard.SetLastBackgroundError(fmt.Sprintf("%s\n%s", errMessage, "No response to get the body"))
 					}
-					log.Error().Msgf("Request response text: %s", string(body))
 				} else {
 					log.Info().Msg("Mangas metadata updated")
 				}

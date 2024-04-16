@@ -94,6 +94,21 @@ class MainDashboard:
 
     def sidebar(self) -> None:
         with st.sidebar:
+            last_background_error = self.api_client.get_last_background_error()
+            if last_background_error["message"] != "":
+                with st.expander("An error occurred in the background!", expanded=True):
+                    message = last_background_error["message"]
+                    time = last_background_error["time"]
+                    st.info(f"Time: {time}")
+                    st.error(f"Message: {message}")
+                    st.button(
+                        "Delete Error",
+                        use_container_width=True,
+                        help="Delete the last background error",
+                        on_click=self.api_client.delete_last_background_error,
+                    )
+                st.divider()
+
             st.text_input("Search", key="search_manga")
 
             def status_filter_callback():
