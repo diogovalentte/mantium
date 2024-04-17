@@ -1,15 +1,34 @@
 name: Docker Images CI for GHCR
 
-on: push
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - "*"
 
 jobs:
   build_and_publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Build and push images
         run: |
           docker login --username ${{ secrets.GH_USERNAME }} --password ${{ secrets.GH_TOKEN }} ghcr.io
           docker buildx create --driver-opt network=host --use --name multi-arch
           docker buildx build --platform linux/amd64,linux/arm64 --push --tag ghcr.io/diogovalentte/mantium-api:latest -f Dockerfile_API .
           docker buildx build  --platform linux/amd64,linux/arm64 --push --tag ghcr.io/diogovalentte/mantium-dashboard:latest -f Dockerfile_dashboard .
+
+      - name: Set up Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      - name: Update my portainer stack xD
+        run: |
+          python3 .github/workflows/update_portainer_stack.py ${{ secrets.PORTAINER_URL }} ${{ secrets.PORTAINER_USERNAME }} ${{ secrets.PORTAINER_PASSWORD }} ${{ secrets.PORTAINER_STACK_NAME }} ${{ secrets.GH_USERNAME }} ${{ secrets.GH_TOKEN }}
