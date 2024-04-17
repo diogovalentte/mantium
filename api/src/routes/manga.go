@@ -723,12 +723,12 @@ func UpdateMangasMetadata(c *gin.Context) {
 	}
 
 	logger := util.GetLogger(zerolog.Level(config.GlobalConfigs.API.LogLevelInt))
-	errHappened := false
+	var lastError error
 	for _, mangaToUpdate := range mangas {
 		updatedManga, err := sources.GetMangaMetadata(mangaToUpdate.URL)
 		if err != nil {
 			logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error getting manga metadata, will continue with the next manga...")
-			errHappened = true
+			lastError = err
 			continue
 		}
 		updatedManga.Status = 1
@@ -737,7 +737,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 			err = manga.UpdateMangaMetadataDB(updatedManga)
 			if err != nil {
 				logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error saving manga new metadata, will continue with the next manga...")
-				errHappened = true
+				lastError = err
 				continue
 			}
 
@@ -747,7 +747,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 					err = NotifyMangaLastUploadChapterUpdate(mangaToUpdate, updatedManga)
 					if err != nil {
 						logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg(fmt.Sprintf("Manga metadata updated in DB, but error while notifying: %s.\nWill continue with the next manga...", err.Error()))
-						errHappened = true
+						lastError = err
 						continue
 					}
 				}
@@ -758,8 +758,8 @@ func UpdateMangasMetadata(c *gin.Context) {
 
 	dashboard.UpdateDashboard()
 
-	if errHappened {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Some errors occured while updating the mangas metadata, check the logs for more information"})
+	if lastError != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Some errors occured while updating the mangas metadata, check the logs for more information. Last error: " + lastError.Error()})
 		return
 	}
 
