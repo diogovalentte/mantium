@@ -48,6 +48,7 @@ jobs:
           context: .
           file: ./Dockerfile_dashboard
           push: true
+          provenance: false
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.dashboard-image-meta.outputs.tags }}
           labels: ${{ steps.dashboard-image-meta.outputs.labels }}
@@ -58,6 +59,7 @@ jobs:
           context: .
           file: ./Dockerfile_API
           push: true
+          provenance: false
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.api-image-meta.outputs.tags }}
           labels: ${{ steps.api-image-meta.outputs.labels }}
