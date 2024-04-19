@@ -1,26 +1,66 @@
-name: Docker Images CI for GHCR
+name: Create and publish a container image
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
+    tags:
       - "*"
 
+env:
+  REGISTRY: ghcr.io
+  DASHBOARD_IMAGE_NAME: ${{ github.repository }}-dashboard
+  API_IMAGE_NAME: ${{ github.repository }}-api
+
 jobs:
-  build_and_publish:
+  build-and-publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Check out
+        uses: actions/checkout@v4
 
-      - name: Build and push images
-        run: |
-          docker login --username ${{ secrets.GH_USERNAME }} --password ${{ secrets.GH_TOKEN }} ghcr.io
-          docker buildx create --driver-opt network=host --use --name multi-arch
-          docker buildx build --platform linux/amd64,linux/arm64 --push --tag ghcr.io/diogovalentte/mantium-api:latest -f Dockerfile_API .
-          docker buildx build  --platform linux/amd64,linux/arm64 --push --tag ghcr.io/diogovalentte/mantium-dashboard:latest -f Dockerfile_dashboard .
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GH_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for dashboard Docker
+        id: dashboard-image-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.DASHBOARD_IMAGE_NAME }}
+
+      - name: Extract metadata (tags, labels) for API Docker
+        id: api-image-meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.API_IMAGE_NAME }}
+
+      - name: Build and push dashboard Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./Dockerfile_dashboard
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.dashboard-image-meta.outputs.tags }}
+          labels: ${{ steps.dashboard-image-meta.outputs.labels }}
+
+      - name: Build and push API Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./Dockerfile_API
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.api-image-meta.outputs.tags }}
+          labels: ${{ steps.api-image-meta.outputs.labels }}
 
       - name: Set up Tailscale
         uses: tailscale/github-action@v2
