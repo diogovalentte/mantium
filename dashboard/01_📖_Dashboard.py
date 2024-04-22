@@ -102,6 +102,9 @@ class MainDashboard:
             last_background_error = self.api_client.get_last_background_error()
             if last_background_error["message"] != "":
                 with st.expander("An error occurred in the background!", expanded=True):
+                    logger.error(
+                        f"Background error: {last_background_error['message']}"
+                    )
                     message = last_background_error["message"]
                     time = last_background_error["time"]
                     st.info(f"Time: {time}")
