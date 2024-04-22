@@ -413,17 +413,22 @@ class MainDashboard:
                     manga["LastReadChapter"] is None
                     or chapter != manga["LastReadChapter"]["Chapter"]
                 ):
-                    self.api_client.update_manga_last_read_chapter(
-                        manga["ID"],
-                        manga["URL"],
-                        chapter["Chapter"],
-                        chapter["URL"],
-                    )
-                ss["manga_updated_success"] = True
-                st.rerun()
-
-            if ss.get("manga_updated_success", False):
-                st.success("Manga updated successfully")
+                    try:
+                        self.api_client.update_manga_last_read_chapter(
+                            manga["ID"],
+                            manga["URL"],
+                            chapter["Chapter"],
+                            chapter["URL"],
+                        )
+                    except APIException as e:
+                        logger.exception(e)
+                        st.error(
+                            "Error while updating manga. Check the dashboard logs."
+                        )
+                        st.stop()
+                    else:
+                        ss["manga_updated_success"] = True
+                        st.rerun()
 
         def delete_manga_btn_callback():
             self.api_client.delete_manga(manga["ID"])
@@ -452,6 +457,9 @@ class MainDashboard:
             use_container_width=True,
         )
 
+        if ss.get("manga_updated_success", False):
+            st.success("Manga updated successfully")
+
     def show_add_manga_form(self):
         st.text_input(
             "Manga URL",
@@ -463,8 +471,9 @@ class MainDashboard:
         def get_manga_chapters(url: str):
             return self.api_client.get_manga_chapters(-1, url)
 
-        if st.button("Get Chapters"):
-            ss["manga_add_success"] = False
+        if st.button("Get Chapters", use_container_width=True):
+            ss["manga_add_warning_message"] = ""
+            ss["manga_add_success_message"] = ""
             try:
                 with st.spinner("Getting manga chapters..."):
                     ss["add_manga_chapter_options"] = get_manga_chapters(
@@ -513,23 +522,57 @@ class MainDashboard:
                 ss.add_manga_form_url = ""
                 del ss["add_manga_chapter_options"]
 
-            if st.form_submit_button("Add Manga", on_click=add_manga_callback):
+            if st.form_submit_button(
+                "Add Manga", on_click=add_manga_callback, use_container_width=True
+            ):
                 if ss.get("add_manga_manga_to_add", None) is None:
                     st.warning(
                         "Provide a manga URL and select the last read chapter first"
                     )
                 else:
-                    self.api_client.add_manga(
-                        ss["add_manga_manga_to_add"]["manga_url"],
-                        ss["add_manga_manga_to_add"]["status"],
-                        ss["add_manga_manga_to_add"]["chapter"],
-                        ss["add_manga_manga_to_add"]["chapter_url"],
-                    )
-                    ss["manga_add_success"] = True
-                    st.rerun()
+                    try:
+                        self.api_client.add_manga(
+                            ss["add_manga_manga_to_add"]["manga_url"],
+                            ss["add_manga_manga_to_add"]["status"],
+                            ss["add_manga_manga_to_add"]["chapter"],
+                            ss["add_manga_manga_to_add"]["chapter_url"],
+                        )
+                    except APIException as e:
+                        kaizoku_error = (
+                            "Manga added to DB, but error while adding it to Kaizoku"
+                        )
+                        if kaizoku_error in str(e):
+                            if "MangaHub source is not implemented" in str(e):
+                                ss[
+                                    "manga_add_warning_message"
+                                ] = f"{kaizoku_error}: MangaHub source is not implemented in Kaizoku"
+                            elif (
+                                "Cannot find manga. Maybe there is no Anilist page for this manga (Kaizoku can't add mangas that don't have one)"
+                                in str(e)
+                            ):
+                                ss[
+                                    "manga_add_warning_message"
+                                ] = f"{kaizoku_error}: Cannot find manga. Maybe there is no Anilist page for this manga (Kaizoku can't add mangas that don't have one)"
+                            else:
+                                logger.exception(e)
+                                ss[
+                                    "manga_add_warning_message"
+                                ] = f"{kaizoku_error}, check the dashboard logs."
+                            st.rerun()
+                        else:
+                            logger.exception(e)
+                            st.error(
+                                "Error while adding manga. Check the dashboard logs."
+                            )
+                            st.stop()
+                    else:
+                        ss["manga_add_success_message"] = "Manga added successfully"
+                        st.rerun()
 
-        if ss.get("manga_add_success", False):
-            st.success("Manga added successfully")
+        if ss.get("manga_add_warning_message", "") != "":
+            st.warning(ss["manga_add_warning_message"])
+        elif ss.get("manga_add_success_message", "") != "":
+            st.success(ss["manga_add_success_message"])
 
     def show_configs(self):
         def update_configs_callback():

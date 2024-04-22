@@ -358,6 +358,32 @@ const docTemplate = `{
                 }
             }
         },
+        "/mangas/add_to_kaizoku": {
+            "post": {
+                "description": "Add the mangas in the database to Kaizoku. If it fails to add a manga, it will continue with the next manga.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Add mangas to Kaizoku",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Filter which mangas to add by status. 1=reading, 2=completed, 3=on hold, 4=dropped, 5=plan to read. ",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
         "/mangas/iframe": {
             "get": {
                 "description": "Returns an iFrame with mangas. Only mangas with unread chapters, and status reading or completed. Sort by last upload chapter date. Designed to be used with [Homarr](https://github.com/ajnart/homarr).",
@@ -453,6 +479,9 @@ const docTemplate = `{
                 "defaultConfigsFilePath": {
                     "type": "string"
                 },
+                "kaizoku": {
+                    "$ref": "#/definitions/config.KaizokuConfigs"
+                },
                 "ntfy": {
                     "$ref": "#/definitions/config.NtfyConfigs"
                 },
@@ -478,6 +507,20 @@ const docTemplate = `{
                 },
                 "user": {
                     "type": "string"
+                }
+            }
+        },
+        "config.KaizokuConfigs": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string"
+                },
+                "defaultInterval": {
+                    "type": "string"
+                },
+                "valid": {
+                    "type": "boolean"
                 }
             }
         },
@@ -537,7 +580,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "updatedAt": {
-                    "description": "UpdatedAt is the time when the chapter was uploaded or updated (read)",
+                    "description": "UpdatedAt is the time when the chapter was uploaded or updated (read)\nShould round/trucate at the second and be at UTC.",
                     "type": "string"
                 },
                 "url": {

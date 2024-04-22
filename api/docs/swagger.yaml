@@ -19,6 +19,8 @@ definitions:
         $ref: '#/definitions/config.DBConfigs'
       defaultConfigsFilePath:
         type: string
+      kaizoku:
+        $ref: '#/definitions/config.KaizokuConfigs'
       ntfy:
         $ref: '#/definitions/config.NtfyConfigs'
       periodicallyUpdateMangas:
@@ -36,6 +38,15 @@ definitions:
         type: string
       user:
         type: string
+    type: object
+  config.KaizokuConfigs:
+    properties:
+      address:
+        type: string
+      defaultInterval:
+        type: string
+      valid:
+        type: boolean
     type: object
   config.NtfyConfigs:
     properties:
@@ -76,8 +87,9 @@ definitions:
       type:
         type: integer
       updatedAt:
-        description: UpdatedAt is the time when the chapter was uploaded or updated
-          (read)
+        description: |-
+          UpdatedAt is the time when the chapter was uploaded or updated (read)
+          Should round/trucate at the second and be at UTC.
         type: string
       url:
         description: URL is the URL of the chapter
@@ -402,6 +414,25 @@ paths:
               $ref: '#/definitions/manga.Manga'
             type: array
       summary: Get mangas
+  /mangas/add_to_kaizoku:
+    post:
+      description: Add the mangas in the database to Kaizoku. If it fails to add a
+        manga, it will continue with the next manga.
+      parameters:
+      - description: 'Filter which mangas to add by status. 1=reading, 2=completed,
+          3=on hold, 4=dropped, 5=plan to read. '
+        example: 1
+        in: query
+        name: status
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Add mangas to Kaizoku
   /mangas/iframe:
     get:
       description: Returns an iFrame with mangas. Only mangas with unread chapters,

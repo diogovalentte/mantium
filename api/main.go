@@ -45,6 +45,12 @@ func init() {
 
 	setUpdateMangasMetadataPeriodicallyJob(log)
 	dashboard.UpdateDashboard()
+
+	if config.GlobalConfigs.Kaizoku.Valid {
+		log.Info().Msg("Will use the Kaizoku integration")
+	} else {
+		log.Error().Msg("Will not use the Kaizoku integration")
+	}
 }
 
 func main() {

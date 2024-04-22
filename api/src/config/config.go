@@ -18,6 +18,7 @@ var GlobalConfigs = &Configs{
 	DB:                       &DBConfigs{},
 	Ntfy:                     &NtfyConfigs{},
 	PeriodicallyUpdateMangas: &PeriodicallyUpdateMangasConfigs{},
+	Kaizoku:                  &KaizokuConfigs{},
 	ConfigsFilePath:          "./configs/configs.json",
 	DefaultConfigsFilePath:   "./defaults/configs.json",
 }
@@ -28,6 +29,7 @@ type Configs struct {
 	DB                       *DBConfigs
 	Ntfy                     *NtfyConfigs
 	PeriodicallyUpdateMangas *PeriodicallyUpdateMangasConfigs
+	Kaizoku                  *KaizokuConfigs
 	// A file with configs that should be persisted
 	// Relative to main.go
 	ConfigsFilePath        string
@@ -63,6 +65,12 @@ type PeriodicallyUpdateMangasConfigs struct {
 	Minutes int
 }
 
+type KaizokuConfigs struct {
+	Address         string
+	DefaultInterval string
+	Valid           bool
+}
+
 // SetConfigs sets the configurations based on a .env file if provided or using environment variables.
 func SetConfigs(filePath string) error {
 	if filePath != "" {
@@ -95,6 +103,12 @@ func SetConfigs(filePath string) error {
 	GlobalConfigs.Ntfy.Address = os.Getenv("NTFY_ADDRESS")
 	GlobalConfigs.Ntfy.Topic = os.Getenv("NTFY_TOPIC")
 	GlobalConfigs.Ntfy.Token = os.Getenv("NTFY_TOKEN")
+
+	GlobalConfigs.Kaizoku.Address = os.Getenv("KAIZOKU_ADDRESS")
+	GlobalConfigs.Kaizoku.DefaultInterval = os.Getenv("KAIZOKU_DEFAULT_INTERVAL")
+	if GlobalConfigs.Kaizoku.DefaultInterval != "" && GlobalConfigs.Kaizoku.Address != "" {
+		GlobalConfigs.Kaizoku.Valid = true
+	}
 
 	if os.Getenv("UPDATE_MANGAS_PERIODICALLY") == "true" {
 		GlobalConfigs.PeriodicallyUpdateMangas.Update = true

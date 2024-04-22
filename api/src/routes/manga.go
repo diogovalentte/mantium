@@ -19,6 +19,7 @@ import (
 
 	"github.com/diogovalentte/mantium/api/src/config"
 	"github.com/diogovalentte/mantium/api/src/dashboard"
+	"github.com/diogovalentte/mantium/api/src/integrations/kaizoku"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/notifications"
 	"github.com/diogovalentte/mantium/api/src/sources"
@@ -37,6 +38,7 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.PATCH("/manga/status", UpdateMangaStatus)
 		group.PATCH("/manga/last_read_chapter", UpdateMangaLastReadChapter)
 		group.PATCH("/mangas/metadata", UpdateMangasMetadata)
+		group.POST("/mangas/add_to_kaizoku", AddMangasToKaizoku)
 	}
 }
 
@@ -80,6 +82,17 @@ func AddManga(c *gin.Context) {
 	}
 
 	dashboard.UpdateDashboard()
+
+	if config.GlobalConfigs.Kaizoku.Valid {
+		kaizoku := kaizoku.Kaizoku{}
+		kaizoku.Init()
+		err = kaizoku.AddManga(mangaAdd)
+		if err != nil {
+			err = util.AddErrorContext(err, "Manga added to DB, but error while adding it to Kaizoku")
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Manga added successfully"})
 }
@@ -724,6 +737,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 
 	logger := util.GetLogger(zerolog.Level(config.GlobalConfigs.API.LogLevelInt))
 	var lastError error
+	var newMetadata bool
 	for _, mangaToUpdate := range mangas {
 		updatedManga, err := sources.GetMangaMetadata(mangaToUpdate.URL)
 		if err != nil {
@@ -734,6 +748,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 		updatedManga.Status = 1
 
 		if mangaToUpdate.LastUploadChapter.Chapter != updatedManga.LastUploadChapter.Chapter || mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg) || mangaToUpdate.Name != updatedManga.Name {
+			newMetadata = true
 			err = manga.UpdateMangaMetadataDB(updatedManga)
 			if err != nil {
 				logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error saving manga new metadata, will continue with the next manga...")
@@ -763,7 +778,100 @@ func UpdateMangasMetadata(c *gin.Context) {
 		return
 	}
 
+	if config.GlobalConfigs.Kaizoku.Valid && newMetadata {
+		kaizoku := kaizoku.Kaizoku{}
+		kaizoku.Init()
+
+		maxRetries := 12
+		for i := 0; i < maxRetries; i++ {
+			err = kaizoku.CheckOutOfSyncChapters()
+			if err != nil {
+				if util.ErrorContains(err, "There is another active job running") {
+					time.Sleep(5 * time.Second)
+					continue
+				} else {
+					logger.Error().Err(err).Msg("Error adding job to check out of sync chapters to queue in Kaizoku")
+					c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext(err, "Error adding job to check out of sync chapters to queue in Kaizoku").Error()})
+					return
+				}
+			} else {
+				break
+			}
+		}
+		maxRetries = 12
+		for i := 0; i < maxRetries; i++ {
+			err = kaizoku.FixOutOfSyncChapters()
+			if err != nil {
+				if util.ErrorContains(err, "There is another active job running") {
+					time.Sleep(5 * time.Second)
+					continue
+				} else {
+					logger.Error().Err(err).Msg("Error adding job to fix out of sync chapters to queue in Kaizoku")
+					c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext(err, "Error adding job to fix out of sync chapters to queue in Kaizoku").Error()})
+					return
+				}
+			} else {
+				break
+			}
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "Mangas metadata updated successfully"})
+}
+
+// @Summary Add mangas to Kaizoku
+// @Description Add the mangas in the database to Kaizoku. If it fails to add a manga, it will continue with the next manga.
+// @Produce json
+// @Param status query int false "Filter which mangas to add by status. 1=reading, 2=completed, 3=on hold, 4=dropped, 5=plan to read. " Example(1)
+// @Success 200 {object} responseMessage
+// @Router /mangas/add_to_kaizoku [post]
+func AddMangasToKaizoku(c *gin.Context) {
+	if !config.GlobalConfigs.Kaizoku.Valid {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Kaizoku is not configured in the API"})
+		return
+	}
+
+	statusFilterStr := c.Query("status")
+	var statusFilter int
+	var err error
+	if statusFilterStr == "" {
+		statusFilter = -1
+	} else {
+		statusFilter, err = strconv.Atoi(statusFilterStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "status must be a number"})
+			return
+		}
+	}
+
+	mangas, err := manga.GetMangasDB()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	kaizoku := kaizoku.Kaizoku{}
+	kaizoku.Init()
+	logger := util.GetLogger(zerolog.Level(config.GlobalConfigs.API.LogLevelInt))
+	var lastError error
+	for _, dbManga := range mangas {
+		if statusFilter != -1 && dbManga.Status != manga.Status(statusFilter) {
+			continue
+		}
+		err = kaizoku.AddManga(dbManga)
+		if err != nil {
+			logger.Error().Err(err).Str("manga_url", dbManga.URL).Msg("Error adding manga to Kaizoku, will continue with the next manga...")
+			lastError = err
+			continue
+		}
+	}
+
+	if lastError != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Some errors occured while adding some mangas to Kaizoku, check the logs for more information. Last error: " + lastError.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Mangas added to Kaizoku successfully"})
 }
 
 func getMangaIDAndURL(mangaIDStr string, mangaURL string) (manga.ID, string, error) {
