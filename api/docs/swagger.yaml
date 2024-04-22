@@ -419,12 +419,14 @@ paths:
       description: Add the mangas in the database to Kaizoku. If it fails to add a
         manga, it will continue with the next manga.
       parameters:
-      - description: 'Filter which mangas to add by status. 1=reading, 2=completed,
-          3=on hold, 4=dropped, 5=plan to read. '
-        example: 1
+      - collectionFormat: csv
+        description: 'Filter which mangas to add by status. 1=reading, 2=completed,
+          3=on hold, 4=dropped, 5=plan to read. Example: status=1,2,3,5'
         in: query
+        items:
+          type: integer
         name: status
-        type: integer
+        type: array
       produces:
       - application/json
       responses:

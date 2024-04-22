@@ -822,7 +822,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 // @Summary Add mangas to Kaizoku
 // @Description Add the mangas in the database to Kaizoku. If it fails to add a manga, it will continue with the next manga.
 // @Produce json
-// @Param status query int false "Filter which mangas to add by status. 1=reading, 2=completed, 3=on hold, 4=dropped, 5=plan to read. " Example(1)
+// @Param status query []int false "Filter which mangas to add by status. 1=reading, 2=completed, 3=on hold, 4=dropped, 5=plan to read. Example: status=1,2,3,5" Example(1,2,3,5)
 // @Success 200 {object} responseMessage
 // @Router /mangas/add_to_kaizoku [post]
 func AddMangasToKaizoku(c *gin.Context) {
@@ -832,15 +832,16 @@ func AddMangasToKaizoku(c *gin.Context) {
 	}
 
 	statusFilterStr := c.Query("status")
-	var statusFilter int
-	var err error
-	if statusFilterStr == "" {
-		statusFilter = -1
-	} else {
-		statusFilter, err = strconv.Atoi(statusFilterStr)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "status must be a number"})
-			return
+	var statusFilter []int
+	if statusFilterStr != "" {
+		statusStrings := strings.Split(statusFilterStr, ",")
+		for _, statusStr := range statusStrings {
+			status, err := strconv.Atoi(statusStr)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"message": "status must be a list of numbers"})
+				return
+			}
+			statusFilter = append(statusFilter, status)
 		}
 	}
 
@@ -855,8 +856,17 @@ func AddMangasToKaizoku(c *gin.Context) {
 	logger := util.GetLogger(zerolog.Level(config.GlobalConfigs.API.LogLevelInt))
 	var lastError error
 	for _, dbManga := range mangas {
-		if statusFilter != -1 && dbManga.Status != manga.Status(statusFilter) {
-			continue
+		if len(statusFilter) > 0 {
+			var found bool
+			for _, status := range statusFilter {
+				if dbManga.Status == manga.Status(status) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				continue
+			}
 		}
 		err = kaizoku.AddManga(dbManga)
 		if err != nil {

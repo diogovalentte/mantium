@@ -367,9 +367,12 @@ const docTemplate = `{
                 "summary": "Add mangas to Kaizoku",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Filter which mangas to add by status. 1=reading, 2=completed, 3=on hold, 4=dropped, 5=plan to read. ",
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Filter which mangas to add by status. 1=reading, 2=completed, 3=on hold, 4=dropped, 5=plan to read. Example: status=1,2,3,5",
                         "name": "status",
                         "in": "query"
                     }
