@@ -820,7 +820,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 }
 
 // @Summary Add mangas to Kaizoku
-// @Description Add the mangas in the database to Kaizoku. If it fails to add a manga, it will continue with the next manga.
+// @Description Add the mangas in the database to Kaizoku. If it fails to add a manga, it will continue with the next manga. This is a heavy operation depending on the number of mangas in the database.
 // @Produce json
 // @Param status query []int false "Filter which mangas to add by status. 1=reading, 2=completed, 3=on hold, 4=dropped, 5=plan to read. Example: status=1,2,3,5" Example(1,2,3,5)
 // @Success 200 {object} responseMessage

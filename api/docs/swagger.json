@@ -349,7 +349,7 @@
         },
         "/mangas/add_to_kaizoku": {
             "post": {
-                "description": "Add the mangas in the database to Kaizoku. If it fails to add a manga, it will continue with the next manga.",
+                "description": "Add the mangas in the database to Kaizoku. If it fails to add a manga, it will continue with the next manga. This is a heavy operation depending on the number of mangas in the database.",
                 "produces": [
                     "application/json"
                 ],
