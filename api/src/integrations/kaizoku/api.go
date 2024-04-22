@@ -126,7 +126,7 @@ func (k *Kaizoku) AddManga(manga *manga.Manga) error {
 	err = validateResponse(resp)
 	if err != nil {
 		if util.ErrorContains(err, fmt.Sprintf("Cannot find the %s.", mangaTitle)) {
-			return util.AddErrorContext(fmt.Errorf("Cannot find manga. Maybe there is no Anilist page for this manga (Kaizoku can't add mangas that don't have one)"), fmt.Sprintf(errorContext, manga))
+			return util.AddErrorContext(fmt.Errorf("Cannot find manga. Maybe there is no Anilist page for this manga (Kaizoku can't add mangas that don't have one): Error: %s", err.Error()), fmt.Sprintf(errorContext, manga))
 		}
 		return util.AddErrorContext(err, fmt.Sprintf(errorContext, manga))
 	}
