@@ -783,36 +783,41 @@ func UpdateMangasMetadata(c *gin.Context) {
 		kaizoku.Init()
 
 		maxRetries := 12
+		retryInterval := 5 * time.Second
 		for i := 0; i < maxRetries; i++ {
 			err = kaizoku.CheckOutOfSyncChapters()
 			if err != nil {
 				if util.ErrorContains(err, "There is another active job running") {
-					time.Sleep(5 * time.Second)
+					time.Sleep(retryInterval)
 					continue
-				} else {
-					logger.Error().Err(err).Msg("Error adding job to check out of sync chapters to queue in Kaizoku")
-					c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext(err, "Error adding job to check out of sync chapters to queue in Kaizoku").Error()})
-					return
 				}
-			} else {
-				break
+				logger.Error().Err(err).Msg("Error adding job to check out of sync chapters to queue in Kaizoku")
+				time.Sleep(retryInterval)
+				continue
 			}
+			break
+		}
+		if err != nil && !util.ErrorContains(err, "There is another active job running") {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext(err, "Error adding job to check out of sync chapters to queue in Kaizoku").Error()})
+			return
 		}
 		maxRetries = 12
 		for i := 0; i < maxRetries; i++ {
 			err = kaizoku.FixOutOfSyncChapters()
 			if err != nil {
 				if util.ErrorContains(err, "There is another active job running") {
-					time.Sleep(5 * time.Second)
+					time.Sleep(retryInterval)
 					continue
-				} else {
-					logger.Error().Err(err).Msg("Error adding job to fix out of sync chapters to queue in Kaizoku")
-					c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext(err, "Error adding job to fix out of sync chapters to queue in Kaizoku").Error()})
-					return
 				}
-			} else {
-				break
+				logger.Error().Err(err).Msg("Error adding job to fix out of sync chapters to queue in Kaizoku")
+				time.Sleep(retryInterval)
+				continue
 			}
+			break
+		}
+		if err != nil && !util.ErrorContains(err, "There is another active job running") {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext(err, "Error adding job to fix out of sync chapters to queue in Kaizoku").Error()})
+			return
 		}
 	}
 
