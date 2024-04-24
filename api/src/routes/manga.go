@@ -782,46 +782,120 @@ func UpdateMangasMetadata(c *gin.Context) {
 		kaizoku := kaizoku.Kaizoku{}
 		kaizoku.Init()
 
+		timeout := 5 * time.Minute
 		maxRetries := 12
 		retryInterval := 5 * time.Second
-		for i := 0; i < maxRetries; i++ {
-			err = kaizoku.CheckOutOfSyncChapters()
-			if err != nil {
-				if util.ErrorContains(err, "There is another active job running") {
-					time.Sleep(retryInterval)
-					continue
-				}
-				logger.Error().Err(err).Msg("Error adding job to check out of sync chapters to queue in Kaizoku")
-				time.Sleep(retryInterval)
-				continue
-			}
-			break
+
+		logger.Info().Msg("Adding job to check out of sync chapters to queue in Kaizoku...")
+		logger.Info().Msg("Waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku...")
+		err := waitUntilEmptyCheckFixOutOfSyncChaptersQueues(&kaizoku, timeout, retryInterval, logger)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err})
+			return
 		}
+		err = retryKaizokuJob(kaizoku.CheckOutOfSyncChapters, maxRetries, retryInterval, logger, "Error adding job to check out of sync chapters to queue in Kaizoku")
 		if err != nil && !util.ErrorContains(err, "There is another active job running") {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext(err, "Error adding job to check out of sync chapters to queue in Kaizoku").Error()})
 			return
 		}
-		maxRetries = 12
-		for i := 0; i < maxRetries; i++ {
-			err = kaizoku.FixOutOfSyncChapters()
-			if err != nil {
-				if util.ErrorContains(err, "There is another active job running") {
-					time.Sleep(retryInterval)
-					continue
-				}
-				logger.Error().Err(err).Msg("Error adding job to fix out of sync chapters to queue in Kaizoku")
-				time.Sleep(retryInterval)
-				continue
-			}
-			break
+
+		logger.Info().Msg("Adding job to fix out of sync chapters to queue in Kaizoku...")
+		logger.Info().Msg("Waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku...")
+		err = waitUntilEmptyCheckFixOutOfSyncChaptersQueues(&kaizoku, timeout, retryInterval, logger)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err})
+			return
 		}
-		if err != nil && !util.ErrorContains(err, "There is another active job running") {
+		err = retryKaizokuJob(kaizoku.FixOutOfSyncChapters, maxRetries, retryInterval, logger, "Error adding job to fix out of sync chapters to queue in Kaizoku")
+		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext(err, "Error adding job to fix out of sync chapters to queue in Kaizoku").Error()})
+			return
+		}
+
+		logger.Info().Msg("Adding job to retry failed to fix out of sync chapters to queue in Kaizoku...")
+		logger.Info().Msg("Waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku...")
+		err = waitUntilEmptyCheckFixOutOfSyncChaptersQueues(&kaizoku, timeout, retryInterval, logger)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err})
+			return
+		}
+		err = retryKaizokuJob(kaizoku.RetryFailedFixOutOfSyncChaptersQueueJobs, maxRetries, retryInterval, logger, "Error adding job to try failed to fix out of sync chapters to queue in Kaizoku")
+		if err != nil && !util.ErrorContains(err, "There is another active job running") {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext(err, "Error adding job to try failed to fix out of sync chapters to queue in Kaizoku").Error()})
 			return
 		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Mangas metadata updated successfully"})
+}
+
+func waitUntilEmptyCheckFixOutOfSyncChaptersQueues(kaizoku *kaizoku.Kaizoku, timeout time.Duration, retryInterval time.Duration, logger *zerolog.Logger) error {
+	result := make(chan error)
+	go func() {
+		for {
+			jobsCount, err := getCheckFixOutOfSyncChaptersActiveWaitingJobs(kaizoku)
+			if err != nil {
+				result <- err
+				return
+			}
+			logger.Debug().Msgf("Jobs in checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues: %d", jobsCount)
+			if jobsCount == 0 {
+				result <- nil
+				return
+			}
+			time.Sleep(retryInterval)
+		}
+	}()
+
+	select {
+	case <-time.After(timeout):
+		return fmt.Errorf("Timeout while waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku")
+	case err := <-result:
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func retryKaizokuJob(jobFunc func() error, maxRetries int, retryInterval time.Duration, logger *zerolog.Logger, errorMessage string) error {
+	var err error
+	for i := 0; i < maxRetries; i++ {
+		err = jobFunc()
+		if err == nil {
+			return nil
+		}
+
+		if util.ErrorContains(err, "There is another active job running") {
+			return err
+		}
+
+		logger.Error().Err(err).Msg(errorMessage)
+		if i < maxRetries-1 {
+			logger.Info().Msgf("Retrying in %s...", retryInterval)
+		}
+		time.Sleep(retryInterval)
+	}
+
+	return err
+}
+
+func getCheckFixOutOfSyncChaptersActiveWaitingJobs(kaizoku *kaizoku.Kaizoku) (int, error) {
+	queues, err := kaizoku.GetQueues()
+	if err != nil {
+		return 0, err
+	}
+
+	jobsCount := 0
+	for _, queue := range queues {
+		if queue.Name != "checkOutOfSyncChaptersQueue" && queue.Name != "fixOutOfSyncChaptersQueue" {
+			continue
+		}
+		jobsCount += queue.Counts.Active + queue.Counts.Waiting
+	}
+
+	return jobsCount, nil
 }
 
 // @Summary Add mangas to Kaizoku

@@ -10,15 +10,15 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
 
 	"github.com/diogovalentte/mantium/api/src"
+	"github.com/diogovalentte/mantium/api/src/config"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/routes"
 )
 
 func setup() error {
-	err := godotenv.Load("../../../.env.test")
+	err := config.SetConfigs("../../../.env.test")
 	if err != nil {
 		return err
 	}

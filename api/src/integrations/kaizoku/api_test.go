@@ -240,3 +240,64 @@ func TestRemoveManga(t *testing.T) {
 		}
 	})
 }
+
+var queuesTest = []string{
+	"downloadQueue",
+	"checkChaptersQueue",
+	"notificationQueue",
+	"updateMetadataQueue",
+	"integrationQueue",
+	"checkOutOfSyncChaptersQueue",
+	"fixOutOfSyncChaptersQueue",
+}
+
+func TestGetQueues(t *testing.T) {
+	k := Kaizoku{}
+	k.Init()
+
+	t.Run("Test get queues", func(t *testing.T) {
+		queues, err := k.GetQueues()
+		if err != nil {
+			t.Errorf("Error while getting queues: %v", err)
+			return
+		}
+
+		if len(queues) != len(queuesTest) {
+			t.Errorf("Invalid number of queues")
+			return
+		}
+	})
+}
+
+func TestGetQueue(t *testing.T) {
+	k := Kaizoku{}
+	k.Init()
+
+	t.Run("Test get queue", func(t *testing.T) {
+		for _, queueName := range queuesTest {
+			queue, err := k.GetQueue(queueName)
+			if err != nil {
+				t.Errorf("Error while getting queue: %v", err)
+				return
+			}
+
+			if queue.Name != queueName {
+				t.Errorf("Invalid queue name")
+				return
+			}
+		}
+	})
+}
+
+func TestRetryFailedFixOutOfSyncChaptersQueueJobs(t *testing.T) {
+	k := Kaizoku{}
+	k.Init()
+
+	t.Run("Test retry failed fix out of sync chapters queue jobs", func(t *testing.T) {
+		err := k.RetryFailedFixOutOfSyncChaptersQueueJobs()
+		if err != nil {
+			t.Errorf("Error while retrying failed fix out of sync chapters queue jobs: %v", err)
+			return
+		}
+	})
+}
