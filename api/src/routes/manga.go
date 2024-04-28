@@ -531,7 +531,7 @@ BACKGROUND-ERROR-HTML
 		backgroundErrorHTML := `
 <div class="mangas-container" style="background-color: red;">
     <div class="text-wrap" style="margin-left: 20px;">
-        <span class="manga-name">An error occured in the background. Check the dashboard and your logs.</span>
+        <span class="manga-name">An error occured in the background. Check the dashboard and API logs.</span>
 
         <div>
             <span style="margin-right: 7px;" class="info-label"><i class="fa-solid fa-calendar-days"></i> ERROR-TIME</span>
