@@ -66,22 +66,38 @@ var (
 )
 
 // GetImageFromURL downloads an image from a URL and tries to resize it.
-func GetImageFromURL(url string) (imgBytes []byte, resized bool, err error) {
+// If the image is not resized, it returns the original image.
+func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgBytes []byte, resized bool, err error) {
 	contextError := "Error downloading image '%s'"
 
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, resized, AddErrorContext(err, fmt.Sprintf(contextError, url))
-	}
-	defer resp.Body.Close()
+	imageBytes := make([]byte, 0)
+	for i := 0; i < retries; i++ {
+		resp, err := http.Get(url)
+		if err != nil {
+			if i == retries-1 {
+				return nil, resized, AddErrorContext(err, fmt.Sprintf(contextError, url))
+			}
+			time.Sleep(retryInterval)
+			continue
+		}
+		defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, resized, AddErrorContext(fmt.Errorf("Status code is not OK, instead it's %d", resp.StatusCode), fmt.Sprintf(contextError, url))
-	}
+		if resp.StatusCode != http.StatusOK {
+			if i == retries-1 {
+				return nil, resized, AddErrorContext(fmt.Errorf("Status code is not OK, instead it's %d", resp.StatusCode), fmt.Sprintf(contextError, url))
+			}
+			time.Sleep(retryInterval)
+			continue
+		}
 
-	imageBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, resized, AddErrorContext(AddErrorContext(err, "Could not read the image data from request body"), fmt.Sprintf(contextError, url))
+		imageBytes, err = io.ReadAll(resp.Body)
+		if err != nil {
+			if i == retries-1 {
+				return nil, resized, AddErrorContext(AddErrorContext(err, "Could not read the image data from request body"), fmt.Sprintf(contextError, url))
+			}
+			time.Sleep(retryInterval)
+			continue
+		}
 	}
 
 	img, err := ResizeImage(imageBytes, uint(DefaultImageWidth), uint(DefaultImageHeight))

@@ -3,6 +3,7 @@ package mangahub
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gocolly/colly/v2"
 
@@ -85,7 +86,7 @@ func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 	}
 
 	// get cover image
-	coverImg, resized, err := s.getCoverImg(mangaReturn.CoverImgURL)
+	coverImg, resized, err := s.getCoverImg(mangaReturn.CoverImgURL, 3, 1*time.Second)
 	if err != nil {
 		return nil, util.AddErrorContext(err, errorContext)
 	}

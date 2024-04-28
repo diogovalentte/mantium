@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"time"
 
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/util"
@@ -61,7 +62,7 @@ func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 	coverURL := fmt.Sprintf("%s/%s", baseUploadsURL, coverFileName)
 	mangaReturn.CoverImgURL = coverURL
 
-	coverImg, resized, err := util.GetImageFromURL(coverURL)
+	coverImg, resized, err := util.GetImageFromURL(coverURL, 3, 1*time.Second)
 	if err != nil {
 		return nil, util.AddErrorContext(err, errorContext)
 	}

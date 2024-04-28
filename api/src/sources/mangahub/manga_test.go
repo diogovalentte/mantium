@@ -102,14 +102,12 @@ func TestGetMangaMetadata(t *testing.T) {
 			if err != nil {
 				if util.ErrorContains(err, "Manga not found") {
 					continue
-				} else {
-					t.Errorf("expected error, got %s", err)
-					return
 				}
-			} else {
-				t.Errorf("expected error, got nil")
+				t.Errorf("expected error, got %s", err)
 				return
 			}
+			t.Errorf("expected error, got nil")
+			return
 		}
 	})
 }

@@ -49,7 +49,7 @@ func (s *Source) resetCollector() {
 }
 
 // getCoverImg downloads an image from a URL and tries to resize it.
-func (s *Source) getCoverImg(url string) (imgBytes []byte, resized bool, err error) {
+func (s *Source) getCoverImg(url string, retries int, retryInterval time.Duration) (imgBytes []byte, resized bool, err error) {
 	contextError := "Error downloading image '%s'"
 
 	httpClient := &http.Client{
@@ -61,26 +61,45 @@ func (s *Source) getCoverImg(url string) (imgBytes []byte, resized bool, err err
 		},
 	}
 
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, resized, util.AddErrorContext(util.AddErrorContext(err, "Error while creating request"), fmt.Sprintf(contextError, url))
-	}
+	imageBytes := make([]byte, 0)
+	for i := 0; i < retries; i++ {
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			if i == retries-1 {
+				return nil, resized, util.AddErrorContext(util.AddErrorContext(err, "Error while creating request"), fmt.Sprintf(contextError, url))
+			}
+			time.Sleep(retryInterval)
+			continue
+		}
 
-	req.Header.Set("User-Agent", "Custom User Agent")
+		req.Header.Set("User-Agent", "Custom User Agent")
 
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return nil, resized, util.AddErrorContext(util.AddErrorContext(err, "Error while executing request"), fmt.Sprintf(contextError, url))
-	}
-	defer resp.Body.Close()
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			if i == retries-1 {
+				return nil, resized, util.AddErrorContext(util.AddErrorContext(err, "Error while executing request"), fmt.Sprintf(contextError, url))
+			}
+			time.Sleep(retryInterval)
+			continue
+		}
+		defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, resized, util.AddErrorContext(fmt.Errorf("Status code is not OK, instead it's %d", resp.StatusCode), fmt.Sprintf(contextError, url))
-	}
+		if resp.StatusCode != http.StatusOK {
+			if i == retries-1 {
+				return nil, resized, util.AddErrorContext(fmt.Errorf("Status code is not OK, instead it's %d", resp.StatusCode), fmt.Sprintf(contextError, url))
+			}
+			time.Sleep(retryInterval)
+			continue
+		}
 
-	imageBytes, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, resized, util.AddErrorContext(util.AddErrorContext(err, "Error while reading response body"), fmt.Sprintf(contextError, url))
+		imageBytes, err = io.ReadAll(resp.Body)
+		if err != nil {
+			if i == retries-1 {
+				return nil, resized, util.AddErrorContext(util.AddErrorContext(err, "Error while reading response body"), fmt.Sprintf(contextError, url))
+			}
+			time.Sleep(retryInterval)
+			continue
+		}
 	}
 
 	img, err := util.ResizeImage(imageBytes, uint(util.DefaultImageWidth), uint(util.DefaultImageHeight))

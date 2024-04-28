@@ -71,7 +71,7 @@ var mangasTestTable = []mangaTestType{
 func TestGetMangaMetadata(t *testing.T) {
 	source := Source{}
 
-	t.Run("should get metadata from multiple mangas", func(t *testing.T) {
+	t.Run("should get the metadata from multiple mangas", func(t *testing.T) {
 		for _, test := range mangasTestTable {
 			expected := test.expected
 			mangaURL := test.url
@@ -94,7 +94,7 @@ func TestGetMangaMetadata(t *testing.T) {
 			}
 		}
 	})
-	t.Run("should not get metadata from multiple mangas", func(t *testing.T) {
+	t.Run("should not get the metadata from multiple mangas", func(t *testing.T) {
 		for _, test := range mangasTestTable {
 			mangaURL := test.url + "salt"
 
@@ -102,14 +102,12 @@ func TestGetMangaMetadata(t *testing.T) {
 			if err != nil {
 				if util.ErrorContains(err, "Non-200 status code -> (404)") {
 					continue
-				} else {
-					t.Errorf("expected error, got %s", err)
-					return
 				}
-			} else {
-				t.Errorf("expected error, got nil")
+				t.Errorf("expected error, got %s", err)
 				return
 			}
+			t.Errorf("expected error, got nil")
+			return
 		}
 	})
 }
