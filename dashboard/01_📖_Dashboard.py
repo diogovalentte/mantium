@@ -105,10 +105,8 @@ class MainDashboard:
                     logger.error(
                         f"Background error: {last_background_error['message']}"
                     )
-                    message = last_background_error["message"]
-                    time = last_background_error["time"]
-                    st.info(f"Time: {time}")
-                    st.error(f"Message: {message[:450]}...")
+                    st.error("Check the dashboard and API logs for more information.")
+                    st.info(f"Time: {last_background_error['time']}")
                     st.button(
                         "Delete Error",
                         use_container_width=True,
