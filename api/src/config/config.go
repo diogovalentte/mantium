@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
@@ -65,10 +66,12 @@ type PeriodicallyUpdateMangasConfigs struct {
 	Minutes int
 }
 
+// KaizokuConfigs is a struct that holds the configurations for the Kaizoku integration.
 type KaizokuConfigs struct {
-	Address         string
-	DefaultInterval string
-	Valid           bool
+	Valid                       bool
+	Address                     string
+	DefaultInterval             string
+	WaitUntilEmptyQueuesTimeout time.Duration
 }
 
 // SetConfigs sets the configurations based on a .env file if provided or using environment variables.
@@ -107,6 +110,17 @@ func SetConfigs(filePath string) error {
 	GlobalConfigs.Kaizoku.Address = os.Getenv("KAIZOKU_ADDRESS")
 	GlobalConfigs.Kaizoku.DefaultInterval = os.Getenv("KAIZOKU_DEFAULT_INTERVAL")
 	if GlobalConfigs.Kaizoku.DefaultInterval != "" && GlobalConfigs.Kaizoku.Address != "" {
+		waitUntilEmptyQueuesTimeoutStr := os.Getenv("KAIZOKU_WAIT_UNTIL_EMPTY_QUEUES_TIMEOUT_MINUTES")
+		if waitUntilEmptyQueuesTimeoutStr != "" {
+			waitUntilEmptyQueuesTimeout, err := strconv.Atoi(waitUntilEmptyQueuesTimeoutStr)
+			if err != nil {
+				return fmt.Errorf("Error converting KAIZOKU_WAIT_UNTIL_EMPTY_QUEUES_TIMEOUT_MINUTES '%s' to int: %s", waitUntilEmptyQueuesTimeoutStr, err)
+			}
+			GlobalConfigs.Kaizoku.WaitUntilEmptyQueuesTimeout = time.Duration(waitUntilEmptyQueuesTimeout) * time.Minute
+		} else {
+			GlobalConfigs.Kaizoku.WaitUntilEmptyQueuesTimeout = 5 * time.Minute
+		}
+
 		GlobalConfigs.Kaizoku.Valid = true
 	}
 

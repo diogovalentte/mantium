@@ -779,13 +779,13 @@ func UpdateMangasMetadata(c *gin.Context) {
 		kaizoku := kaizoku.Kaizoku{}
 		kaizoku.Init()
 
-		timeout := 5 * time.Minute
-		maxRetries := 12
+		waitUntilEmptyQueuesTimeout := config.GlobalConfigs.Kaizoku.WaitUntilEmptyQueuesTimeout
 		retryInterval := 5 * time.Second
+		maxRetries := 12
 
 		logger.Info().Msg("Adding job to check out of sync chapters to queue in Kaizoku...")
 		logger.Info().Msg("Waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku...")
-		err := waitUntilEmptyCheckFixOutOfSyncChaptersQueues(&kaizoku, timeout, retryInterval, logger)
+		err := waitUntilEmptyCheckFixOutOfSyncChaptersQueues(&kaizoku, waitUntilEmptyQueuesTimeout, retryInterval, logger)
 		if err != nil {
 			if lastUpdateMetadataError != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
@@ -806,7 +806,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 
 		logger.Info().Msg("Adding job to fix out of sync chapters to queue in Kaizoku...")
 		logger.Info().Msg("Waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku...")
-		err = waitUntilEmptyCheckFixOutOfSyncChaptersQueues(&kaizoku, timeout, retryInterval, logger)
+		err = waitUntilEmptyCheckFixOutOfSyncChaptersQueues(&kaizoku, waitUntilEmptyQueuesTimeout, retryInterval, logger)
 		if err != nil {
 			if lastUpdateMetadataError != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
@@ -827,7 +827,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 
 		logger.Info().Msg("Adding job to retry failed to fix out of sync chapters to queue in Kaizoku...")
 		logger.Info().Msg("Waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku...")
-		err = waitUntilEmptyCheckFixOutOfSyncChaptersQueues(&kaizoku, timeout, retryInterval, logger)
+		err = waitUntilEmptyCheckFixOutOfSyncChaptersQueues(&kaizoku, waitUntilEmptyQueuesTimeout, retryInterval, logger)
 		if err != nil {
 			if lastUpdateMetadataError != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
