@@ -736,13 +736,13 @@ func UpdateMangasMetadata(c *gin.Context) {
 	}
 
 	logger := util.GetLogger(zerolog.Level(config.GlobalConfigs.API.LogLevelInt))
-	var lastError error
+	var lastUpdateMetadataError error
 	var newMetadata bool
 	for _, mangaToUpdate := range mangas {
 		updatedManga, err := sources.GetMangaMetadata(mangaToUpdate.URL)
 		if err != nil {
 			logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error getting manga metadata, will continue with the next manga...")
-			lastError = err
+			lastUpdateMetadataError = err
 			continue
 		}
 		updatedManga.Status = 1
@@ -752,7 +752,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 			err = manga.UpdateMangaMetadataDB(updatedManga)
 			if err != nil {
 				logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error saving manga new metadata, will continue with the next manga...")
-				lastError = err
+				lastUpdateMetadataError = err
 				continue
 			}
 
@@ -762,7 +762,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 					err = NotifyMangaLastUploadChapterUpdate(mangaToUpdate, updatedManga)
 					if err != nil {
 						logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg(fmt.Sprintf("Manga metadata updated in DB, but error while notifying: %s.\nWill continue with the next manga...", err.Error()))
-						lastError = err
+						lastUpdateMetadataError = err
 						continue
 					}
 				}
@@ -771,11 +771,8 @@ func UpdateMangasMetadata(c *gin.Context) {
 
 	}
 
-	dashboard.UpdateDashboard()
-
-	if lastError != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Some errors occured while updating the mangas metadata, check the logs for more information. Last error: " + lastError.Error()})
-		return
+	if newMetadata {
+		dashboard.UpdateDashboard()
 	}
 
 	if config.GlobalConfigs.Kaizoku.Valid && newMetadata {
@@ -790,11 +787,19 @@ func UpdateMangasMetadata(c *gin.Context) {
 		logger.Info().Msg("Waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku...")
 		err := waitUntilEmptyCheckFixOutOfSyncChaptersQueues(&kaizoku, timeout, retryInterval, logger)
 		if err != nil {
+			if lastUpdateMetadataError != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
+				return
+			}
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err})
 			return
 		}
 		err = retryKaizokuJob(kaizoku.CheckOutOfSyncChapters, maxRetries, retryInterval, logger, "Error adding job to check out of sync chapters to queue in Kaizoku")
 		if err != nil && !util.ErrorContains(err, "There is another active job running") {
+			if lastUpdateMetadataError != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
+				return
+			}
 			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext(err, "Error adding job to check out of sync chapters to queue in Kaizoku").Error()})
 			return
 		}
@@ -803,11 +808,19 @@ func UpdateMangasMetadata(c *gin.Context) {
 		logger.Info().Msg("Waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku...")
 		err = waitUntilEmptyCheckFixOutOfSyncChaptersQueues(&kaizoku, timeout, retryInterval, logger)
 		if err != nil {
+			if lastUpdateMetadataError != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
+				return
+			}
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err})
 			return
 		}
 		err = retryKaizokuJob(kaizoku.FixOutOfSyncChapters, maxRetries, retryInterval, logger, "Error adding job to fix out of sync chapters to queue in Kaizoku")
 		if err != nil {
+			if lastUpdateMetadataError != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
+				return
+			}
 			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext(err, "Error adding job to fix out of sync chapters to queue in Kaizoku").Error()})
 			return
 		}
@@ -816,14 +829,27 @@ func UpdateMangasMetadata(c *gin.Context) {
 		logger.Info().Msg("Waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku...")
 		err = waitUntilEmptyCheckFixOutOfSyncChaptersQueues(&kaizoku, timeout, retryInterval, logger)
 		if err != nil {
+			if lastUpdateMetadataError != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
+				return
+			}
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err})
 			return
 		}
 		err = retryKaizokuJob(kaizoku.RetryFailedFixOutOfSyncChaptersQueueJobs, maxRetries, retryInterval, logger, "Error adding job to try failed to fix out of sync chapters to queue in Kaizoku")
 		if err != nil && !util.ErrorContains(err, "There is another active job running") {
+			if lastUpdateMetadataError != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
+				return
+			}
 			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext(err, "Error adding job to try failed to fix out of sync chapters to queue in Kaizoku").Error()})
 			return
 		}
+	}
+
+	if lastUpdateMetadataError != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Mangas metadata updated successfully"})
