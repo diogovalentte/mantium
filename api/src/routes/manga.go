@@ -875,7 +875,7 @@ func waitUntilEmptyCheckFixOutOfSyncChaptersQueues(kaizoku *kaizoku.Kaizoku, tim
 
 	select {
 	case <-time.After(timeout):
-		return fmt.Errorf("Timeout while waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku")
+		return fmt.Errorf("Timeout while waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku. Current timeout is %s, maybe try to increase it?", timeout.String())
 	case err := <-result:
 		if err != nil {
 			return err
