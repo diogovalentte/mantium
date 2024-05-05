@@ -738,37 +738,50 @@ func UpdateMangasMetadata(c *gin.Context) {
 	logger := util.GetLogger(zerolog.Level(config.GlobalConfigs.API.LogLevelInt))
 	var lastUpdateMetadataError error
 	var newMetadata bool
+	retries := 3
+	retryInteval := 3 * time.Second
 	for _, mangaToUpdate := range mangas {
-		updatedManga, err := sources.GetMangaMetadata(mangaToUpdate.URL)
-		if err != nil {
-			logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error getting manga metadata, will continue with the next manga...")
-			lastUpdateMetadataError = err
-			continue
-		}
-		updatedManga.Status = 1
-
-		if mangaToUpdate.LastUploadChapter.Chapter != updatedManga.LastUploadChapter.Chapter || mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg) || mangaToUpdate.Name != updatedManga.Name {
-			newMetadata = true
-			err = manga.UpdateMangaMetadataDB(updatedManga)
+		for i := 0; i < retries; i++ {
+			updatedManga, err := sources.GetMangaMetadata(mangaToUpdate.URL)
 			if err != nil {
-				logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error saving manga new metadata, will continue with the next manga...")
-				lastUpdateMetadataError = err
+				if i == retries-1 {
+					logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error getting manga metadata, will continue with the next manga...")
+					lastUpdateMetadataError = err
+				}
+				logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msgf("Error getting manga metadata, retrying in %d seconds...", retryInteval)
+				time.Sleep(retryInteval)
 				continue
 			}
+			updatedManga.Status = 1
 
-			// Notify only if the manga's status is 1 (reading) or 2 (completed)
-			if notify && (mangaToUpdate.Status == 1 || mangaToUpdate.Status == 2) {
-				if mangaToUpdate.LastUploadChapter.Chapter != updatedManga.LastUploadChapter.Chapter {
-					err = NotifyMangaLastUploadChapterUpdate(mangaToUpdate, updatedManga)
-					if err != nil {
-						logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg(fmt.Sprintf("Manga metadata updated in DB, but error while notifying: %s.\nWill continue with the next manga...", err.Error()))
-						lastUpdateMetadataError = err
-						continue
+			if mangaToUpdate.LastUploadChapter.Chapter != updatedManga.LastUploadChapter.Chapter || mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg) || mangaToUpdate.Name != updatedManga.Name {
+				newMetadata = true
+				err = manga.UpdateMangaMetadataDB(updatedManga)
+				if err != nil {
+					logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error saving manga new metadata to DB, will continue with the next manga...")
+					lastUpdateMetadataError = err
+					continue
+				}
+
+				// Notify only if the manga's status is 1 (reading) or 2 (completed)
+				if notify && (mangaToUpdate.Status == 1 || mangaToUpdate.Status == 2) {
+					if mangaToUpdate.LastUploadChapter.Chapter != updatedManga.LastUploadChapter.Chapter {
+						for j := 0; j < retries; j++ {
+							err = NotifyMangaLastUploadChapterUpdate(mangaToUpdate, updatedManga)
+							if err != nil {
+								if j == retries-1 {
+									logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg(fmt.Sprintf("Manga metadata updated in DB, but error while notifying: %s.\nWill continue with the next manga...", err.Error()))
+									lastUpdateMetadataError = err
+								}
+								logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msgf("Manga metadata updated in DB, but error while notifying: %s.\nRetrying in %d seconds...", err.Error(), retryInteval)
+							}
+						}
 					}
 				}
 			}
-		}
 
+			break
+		}
 	}
 
 	if newMetadata {
