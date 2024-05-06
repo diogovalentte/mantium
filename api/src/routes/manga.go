@@ -748,7 +748,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 					logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error getting manga metadata, will continue with the next manga...")
 					lastUpdateMetadataError = err
 				}
-				logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msgf("Error getting manga metadata, retrying in %d seconds...", retryInteval)
+				logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msgf("Error getting manga metadata, retrying in %.2f seconds...", retryInteval.Seconds())
 				time.Sleep(retryInteval)
 				continue
 			}
@@ -773,8 +773,9 @@ func UpdateMangasMetadata(c *gin.Context) {
 									logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg(fmt.Sprintf("Manga metadata updated in DB, but error while notifying: %s.\nWill continue with the next manga...", err.Error()))
 									lastUpdateMetadataError = err
 								}
-								logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msgf("Manga metadata updated in DB, but error while notifying: %s.\nRetrying in %d seconds...", err.Error(), retryInteval)
+								logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msgf("Manga metadata updated in DB, but error while notifying: %s.\nRetrying in %.2f seconds...", err.Error(), retryInteval.Seconds())
 							}
+							break
 						}
 					}
 				}
