@@ -251,7 +251,7 @@ class MainDashboard:
             button[title="View fullscreen"]{
                 display: none !important;
             }
-            </style>
+        </style>
         """
         st.markdown(hide_img_fs, unsafe_allow_html=True)
 
@@ -271,7 +271,8 @@ class MainDashboard:
             manga["LastUploadChapter"]["URL"],
             f'Ch. {manga["LastUploadChapter"]["Chapter"]}',
         )
-        upload_date = get_relative_time(manga["LastUploadChapter"]["UpdatedAt"])
+        upload_date = manga["LastUploadChapter"]["UpdatedAt"]
+        relative_upload_date = get_relative_time(upload_date)
 
         tagger(
             "<strong>Last Released Chapter:</strong>",
@@ -280,18 +281,20 @@ class MainDashboard:
             "float: right;",
         )
         st.caption(
-            f'**Release Date**: <span style="float: right;">{upload_date}</span>',
+            f'**Release Date**: <span style="float: right;" title="{upload_date}">{relative_upload_date}</span>',
             unsafe_allow_html=True,
         )
 
         chapter = f"""<snap style="text-decoration: none; color: {self.chapter_link_tag_text_color}">N/A</span>"""
         read_date = "N/A"
+        relative_read_date = "N/A"
         if manga["LastReadChapter"] is not None:
             chapter = chapter_tag_content.format(
                 manga["LastReadChapter"]["URL"],
                 f'Ch. {manga["LastReadChapter"]["Chapter"]}',
             )
-            read_date = get_relative_time(manga["LastReadChapter"]["UpdatedAt"])
+            read_date = manga["LastReadChapter"]["UpdatedAt"]
+            relative_read_date = get_relative_time(read_date)
 
         tagger(
             "<strong>Last Read Chapter:</strong>",
@@ -300,7 +303,7 @@ class MainDashboard:
             "float: right;",
         )
         st.caption(
-            f'**Read Date**: <span style="float: right;">{read_date}</span>',
+            f'**Read Date**: <span style="float: right;" title="{read_date}">{relative_read_date}</span>',
             unsafe_allow_html=True,
         )
 
