@@ -77,11 +77,10 @@ func (s *Source) getChapterMetadataByURL(chapterURL string) (*manga.Chapter, err
 		}
 	}
 
-	chapterCreatedAt, err := util.GetRFC3339Datetime(attributes.PublishAt)
+	chapterReturn.UpdatedAt, err = util.GetRFC3339Datetime(attributes.PublishAt)
 	if err != nil {
 		return nil, err
 	}
-	chapterReturn.UpdatedAt = chapterCreatedAt
 
 	return chapterReturn, nil
 }
@@ -152,11 +151,10 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 		}
 	}
 
-	chapterCreatedAt, err := util.GetRFC3339Datetime(attributes.PublishAt)
+	chapterReturn.UpdatedAt, err = util.GetRFC3339Datetime(attributes.PublishAt)
 	if err != nil {
 		return nil, util.AddErrorContext(err, errorContext)
 	}
-	chapterReturn.UpdatedAt = chapterCreatedAt
 
 	return chapterReturn, nil
 }
@@ -251,12 +249,11 @@ func generateMangaFeed(s *Source, mangaURL string, chaptersChan chan<- *manga.Ch
 				}
 			}
 
-			chapterCreatedAt, err := util.GetRFC3339Datetime(attributes.PublishAt)
+			chapterReturn.UpdatedAt, err = util.GetRFC3339Datetime(attributes.PublishAt)
 			if err != nil {
 				errChan <- err
 				return
 			}
-			chapterReturn.UpdatedAt = chapterCreatedAt
 
 			chaptersChan <- chapterReturn
 		}

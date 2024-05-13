@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/util"
@@ -248,6 +247,7 @@ func getChapterHID(chapterURL string) (string, error) {
 
 func getChapterFromResp(chapterResp chapterAPIResponse, chapter string, mangaURL string) (*manga.Chapter, error) {
 	chapterReturn := &manga.Chapter{}
+	var err error
 
 	if chapterResp.Chap == "" && chapterResp.Title == "" {
 		chapterReturn.Chapter = chapter
@@ -266,12 +266,10 @@ func getChapterFromResp(chapterResp chapterAPIResponse, chapter string, mangaURL
 		}
 	}
 	chapterReturn.URL = fmt.Sprintf("%s/%s", mangaURL, chapterResp.HID)
-	chapterCreatedAt, err := util.GetRFC3339Datetime(chapterResp.CreatedAt)
+	chapterReturn.UpdatedAt, err = util.GetRFC3339Datetime(chapterResp.CreatedAt)
 	if err != nil {
 		return chapterReturn, err
 	}
-	chapterCreatedAt = chapterCreatedAt.Truncate(time.Second)
-	chapterReturn.UpdatedAt = chapterCreatedAt
 
 	return chapterReturn, nil
 }

@@ -180,7 +180,7 @@ func getMangaUploadedTime(timeString string) (time.Time, error) {
 			if strings.Contains(timeString, pattern) {
 				parsedTime, err = action(timeString)
 				if err == nil {
-					return parsedTime.In(time.UTC).Round(time.Second), nil
+					return parsedTime.Truncate(time.Second), nil
 				}
 			}
 		}

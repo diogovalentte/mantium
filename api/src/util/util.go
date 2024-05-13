@@ -149,7 +149,8 @@ func ResizeImage(imgBytes []byte, width, height uint) ([]byte, error) {
 	return resizedBuf.Bytes(), nil
 }
 
-// GetRFC3339Datetime returns a time.Time from a RFC3339 formatted string
+// GetRFC3339Datetime returns a time.Time from a RFC3339 formatted string.
+// Also truncate the time to seconds.
 func GetRFC3339Datetime(date string) (time.Time, error) {
 	contextError := "Error parsing RFC3339 datetime '%s'"
 
@@ -157,7 +158,7 @@ func GetRFC3339Datetime(date string) (time.Time, error) {
 	if err != nil {
 		return time.Time{}, AddErrorContext(err, fmt.Sprintf(contextError, date))
 	}
-	parsedDate = parsedDate.In(time.UTC).Round(time.Second)
+	parsedDate = parsedDate.Truncate(time.Second)
 
 	return parsedDate, nil
 }
