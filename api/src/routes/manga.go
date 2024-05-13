@@ -805,7 +805,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
 		err = retryKaizokuJob(kaizoku.CheckOutOfSyncChapters, maxRetries, retryInterval, logger, "Error adding job to check out of sync chapters to queue in Kaizoku")
@@ -826,7 +826,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
 		err = retryKaizokuJob(kaizoku.FixOutOfSyncChapters, maxRetries, retryInterval, logger, "Error adding job to fix out of sync chapters to queue in Kaizoku")
@@ -847,7 +847,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
 		err = retryKaizokuJob(kaizoku.RetryFailedFixOutOfSyncChaptersQueueJobs, maxRetries, retryInterval, logger, "Error adding job to try failed to fix out of sync chapters to queue in Kaizoku")
