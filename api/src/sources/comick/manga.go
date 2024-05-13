@@ -1,7 +1,6 @@
 package comick
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"time"
@@ -26,15 +25,10 @@ func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 	}
 
 	mangaAPIURL := fmt.Sprintf("%s/comic/%s", baseAPIURL, mangaID)
-	resp, err := s.client.Request("GET", mangaAPIURL, nil)
+	var mangaAPIResp getMangaAPIResponse
+	_, err = s.client.Request("GET", mangaAPIURL, nil, &mangaAPIResp)
 	if err != nil {
 		return nil, util.AddErrorContext(err, errorContext)
-	}
-	defer resp.Body.Close()
-
-	var mangaAPIResp getMangaAPIResponse
-	if err = json.NewDecoder(resp.Body).Decode(&mangaAPIResp); err != nil {
-		return nil, util.AddErrorContext(err, util.AddErrorContext(fmt.Errorf("Error decoding JSON body response"), errorContext).Error())
 	}
 
 	comic := &mangaAPIResp.Comic
@@ -105,15 +99,10 @@ func (s *Source) getMangaHID(mangaURL string) (string, error) {
 	}
 
 	mangaAPIURL := fmt.Sprintf("%s/comic/%s", baseAPIURL, mangaSlug)
-	resp, err := s.client.Request("GET", mangaAPIURL, nil)
+	var mangaAPIResp getMangaAPIResponse
+	_, err = s.client.Request("GET", mangaAPIURL, nil, &mangaAPIResp)
 	if err != nil {
 		return "", util.AddErrorContext(err, errorContext)
-	}
-	defer resp.Body.Close()
-
-	var mangaAPIResp getMangaAPIResponse
-	if err = json.NewDecoder(resp.Body).Decode(&mangaAPIResp); err != nil {
-		return "", util.AddErrorContext(err, util.AddErrorContext(fmt.Errorf("Error decoding JSON body response"), errorContext).Error())
 	}
 
 	return mangaAPIResp.Comic.HID, nil

@@ -119,6 +119,8 @@ func (s *Source) getCoverImg(url string, retries int, retryInterval time.Duratio
 	return img, resized, nil
 }
 
+// getMangaUploadedTime parses the time string from the mangahub site.
+// The returned time is in timezone local.
 func getMangaUploadedTime(timeString string) (time.Time, error) {
 	errorContext := "Error while parsing upload time '%s'"
 
@@ -150,7 +152,7 @@ func getMangaUploadedTime(timeString string) (time.Time, error) {
 			},
 			"Yesterday": func(timeString string) (time.Time, error) {
 				yesterday := time.Now().Add(time.Hour * -24)
-				return time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 0, 0, 0, 0, time.UTC), nil
+				return time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 0, 0, 0, 0, yesterday.Location()), nil
 			},
 			"days ago": func(timeString string) (time.Time, error) {
 				days, err := strconv.Atoi(strings.TrimSpace(strings.Replace(timeString, "days ago", "", -1)))
@@ -159,12 +161,12 @@ func getMangaUploadedTime(timeString string) (time.Time, error) {
 				}
 				subDays := time.Duration(days) * time.Hour * 24
 				releaseDate := time.Now().Add(subDays * -1)
-				return time.Date(releaseDate.Year(), releaseDate.Month(), releaseDate.Day(), 0, 0, 0, 0, time.UTC), nil
+				return time.Date(releaseDate.Year(), releaseDate.Month(), releaseDate.Day(), 0, 0, 0, 0, releaseDate.Location()), nil
 			},
 			"1 week ago": func(timeString string) (time.Time, error) {
 				subOneWeek := time.Duration(1) * time.Hour * 24 * 7
 				releaseDate := time.Now().Add(subOneWeek * -1)
-				return time.Date(releaseDate.Year(), releaseDate.Month(), releaseDate.Day(), 0, 0, 0, 0, time.UTC), nil
+				return time.Date(releaseDate.Year(), releaseDate.Month(), releaseDate.Day(), 0, 0, 0, 0, releaseDate.Location()), nil
 			},
 			"weeks ago": func(timeString string) (time.Time, error) {
 				weeks, err := strconv.Atoi(strings.TrimSpace(strings.Replace(timeString, "weeks ago", "", -1)))
@@ -173,7 +175,7 @@ func getMangaUploadedTime(timeString string) (time.Time, error) {
 				}
 				subWeeks := time.Duration(weeks) * time.Hour * 24 * 7
 				releaseDate := time.Now().Add(subWeeks * -1)
-				return time.Date(releaseDate.Year(), releaseDate.Month(), releaseDate.Day(), 0, 0, 0, 0, time.UTC), nil
+				return time.Date(releaseDate.Year(), releaseDate.Month(), releaseDate.Day(), 0, 0, 0, 0, releaseDate.Location()), nil
 			},
 		}
 		for pattern, action := range patternsToCheck {
@@ -188,5 +190,5 @@ func getMangaUploadedTime(timeString string) (time.Time, error) {
 		return time.Time{}, util.AddErrorContext(fmt.Errorf("No configured datetime parser"), fmt.Sprintf(errorContext, timeString))
 	}
 
-	return parsedTime.In(time.UTC).Round(time.Second), nil
+	return parsedTime.Truncate(time.Second), nil
 }

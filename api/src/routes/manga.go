@@ -73,7 +73,7 @@ func AddManga(c *gin.Context) {
 		return
 	}
 	mangaAdd.LastReadChapter.Type = 2
-	mangaAdd.LastReadChapter.UpdatedAt = currentTime.In(time.UTC).Round(time.Second)
+	mangaAdd.LastReadChapter.UpdatedAt = currentTime.Truncate(time.Second)
 
 	_, err = mangaAdd.InsertIntoDB()
 	if err != nil {
@@ -694,7 +694,7 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 		}
 	}
 	chapter.Type = 2
-	chapter.UpdatedAt = currentTime.In(time.UTC).Round(time.Second)
+	chapter.UpdatedAt = currentTime.Truncate(time.Second)
 
 	err = mangaUpdate.UpsertChapterInDB(chapter)
 	if err != nil {

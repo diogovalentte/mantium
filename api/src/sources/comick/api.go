@@ -2,9 +2,11 @@ package comick
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 
 	"github.com/diogovalentte/mantium/api/src/util"
 )
@@ -40,10 +42,10 @@ func NewComickClient() *Client {
 }
 
 // Request is a helper function to make a request to the Comick API
-func (c *Client) Request(method, url string, body io.Reader) (*http.Response, error) {
+func (c *Client) Request(method, url string, reqBody io.Reader, retBody interface{}) (*http.Response, error) {
 	errorContext := "Error while making '%s' request"
 
-	req, err := http.NewRequest(method, url, body)
+	req, err := http.NewRequest(method, url, reqBody)
 	if err != nil {
 		return nil, util.AddErrorContext(err, fmt.Sprintf(errorContext, method))
 	}
@@ -57,6 +59,14 @@ func (c *Client) Request(method, url string, body io.Reader) (*http.Response, er
 		defer resp.Body.Close()
 		body, _ := io.ReadAll(resp.Body)
 		return nil, util.AddErrorContext(fmt.Errorf("Non-200 status code -> (%d). Body: %s", resp.StatusCode, string(body)), fmt.Sprintf(errorContext, method))
+	}
+
+	if retBody != nil {
+		defer resp.Body.Close()
+		if err = json.NewDecoder(resp.Body).Decode(retBody); err != nil {
+			body, _ := io.ReadAll(resp.Body)
+			return nil, util.AddErrorContext(fmt.Errorf("Error decoding request body response into '%s'. Body: %s", reflect.TypeOf(retBody).Name(), string(body)), fmt.Sprintf(errorContext, method))
+		}
 	}
 
 	return resp, nil

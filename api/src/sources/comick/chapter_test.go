@@ -50,6 +50,7 @@ func TestGetChapterMetadata(t *testing.T) {
 	t.Run("should get the metadata of a chapter from multiple mangas", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
+			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
 			mangaURL := test.url
 			chapterURL := expected.URL
 
@@ -61,6 +62,7 @@ func TestGetChapterMetadata(t *testing.T) {
 
 			if !reflect.DeepEqual(actualChapter, expected) {
 				t.Errorf("expected chapter %s, got %s", expected, actualChapter)
+				return
 			}
 
 			actualChapter, err = source.GetChapterMetadata(mangaURL, expected.Chapter, "")
@@ -80,6 +82,7 @@ func TestGetChapterMetadata(t *testing.T) {
 	t.Run("should not get the metadata of a chapter from multiple mangas", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
+			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
 			mangaURL := test.url + "salt"
 			chapterURL := expected.URL + "salt"
 
@@ -123,6 +126,7 @@ func TestGetLastChapterMetadata(t *testing.T) {
 	t.Run("should get the metadata of the last chapter of multiple mangas", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
+			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
 			mangaURL := test.url
 
 			actualChapter, err := source.GetLastChapterMetadata(mangaURL)
@@ -140,6 +144,7 @@ func TestGetLastChapterMetadata(t *testing.T) {
 	t.Run("should not get the metadata of the last chapter of multiple mangas", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
+			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
 			mangaURL := test.url + "salt"
 
 			actualChapter, err := source.GetLastChapterMetadata(mangaURL)

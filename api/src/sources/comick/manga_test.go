@@ -74,6 +74,7 @@ func TestGetMangaMetadata(t *testing.T) {
 	t.Run("should get the metadata from multiple mangas", func(t *testing.T) {
 		for _, test := range mangasTestTable {
 			expected := test.expected
+			expected.LastUploadChapter.UpdatedAt = expected.LastUploadChapter.UpdatedAt.In(time.Local)
 			mangaURL := test.url
 
 			actualManga, err := source.GetMangaMetadata(mangaURL)

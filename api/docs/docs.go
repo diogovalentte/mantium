@@ -583,7 +583,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "updatedAt": {
-                    "description": "UpdatedAt is the time when the chapter was uploaded or updated (read)\nShould round/trucate at the second and be at UTC.",
+                    "description": "UpdatedAt is the time when the chapter was uploaded or updated (read).\nShould truncate at the second.\nThe timezone should be the default/system timezone.",
                     "type": "string"
                 },
                 "url": {

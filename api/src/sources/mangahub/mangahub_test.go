@@ -88,7 +88,7 @@ func TestGetMangaUploadedTime(t *testing.T) {
 			}
 
 			expectedDate := time.Now().Add(test.sub * -1)
-			expected := time.Date(expectedDate.Year(), expectedDate.Month(), expectedDate.Day(), 0, 0, 0, 0, time.UTC)
+			expected := time.Date(expectedDate.Year(), expectedDate.Month(), expectedDate.Day(), 0, 0, 0, 0, time.Local)
 			if actual != expected {
 				t.Errorf("expected %v, got %v", expected, actual)
 				return

@@ -88,8 +88,9 @@ definitions:
         type: integer
       updatedAt:
         description: |-
-          UpdatedAt is the time when the chapter was uploaded or updated (read)
-          Should round/trucate at the second and be at UTC.
+          UpdatedAt is the time when the chapter was uploaded or updated (read).
+          Should truncate at the second.
+          The timezone should be the default/system timezone.
         type: string
       url:
         description: URL is the URL of the chapter

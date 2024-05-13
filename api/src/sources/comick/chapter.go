@@ -1,7 +1,6 @@
 package comick
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -44,15 +43,10 @@ func (s *Source) getChapterMetadataByURL(chapterURL, mangaURL string) (*manga.Ch
 	}
 
 	mangaAPIURL := fmt.Sprintf("%s/chapter/%s", baseAPIURL, chapterHID)
-	resp, err := s.client.Request("GET", mangaAPIURL, nil)
+	var chapterAPIResp getChapterAPIResponse
+	_, err = s.client.Request("GET", mangaAPIURL, nil, &chapterAPIResp)
 	if err != nil {
 		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var chapterAPIResp getChapterAPIResponse
-	if err = json.NewDecoder(resp.Body).Decode(&chapterAPIResp); err != nil {
-		return nil, util.AddErrorContext(err, "Error decoding JSON body response")
 	}
 
 	chapterReturn, err := getChapterFromResp(chapterAPIResp.Chapter, chapterAPIResp.Chapter.Chap, mangaURL)
@@ -77,15 +71,10 @@ func (s *Source) getChapterMetadataByChapter(mangaURL string, chapter string) (*
 	}
 
 	mangaAPIURL := fmt.Sprintf("%s/comic/%s/chapters?lang=en&limit=1&chap=%s", baseAPIURL, mangaHID, chapter)
-	resp, err := s.client.Request("GET", mangaAPIURL, nil)
+	var chaptersAPIResp getChaptersAPIResponse
+	_, err = s.client.Request("GET", mangaAPIURL, nil, &chaptersAPIResp)
 	if err != nil {
 		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var chaptersAPIResp getChaptersAPIResponse
-	if err = json.NewDecoder(resp.Body).Decode(&chaptersAPIResp); err != nil {
-		return nil, util.AddErrorContext(err, "Error decoding JSON body response")
 	}
 
 	if len(chaptersAPIResp.Chapters) == 0 {
@@ -112,15 +101,10 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 	}
 
 	mangaAPIURL := fmt.Sprintf("%s/comic/%s/chapters?lang=en&limit=1", baseAPIURL, mangaHID) // default order is by chapter desc
-	resp, err := s.client.Request("GET", mangaAPIURL, nil)
+	var chaptersAPIResp getChaptersAPIResponse
+	_, err = s.client.Request("GET", mangaAPIURL, nil, &chaptersAPIResp)
 	if err != nil {
 		return nil, util.AddErrorContext(err, errorContext)
-	}
-	defer resp.Body.Close()
-
-	var chaptersAPIResp getChaptersAPIResponse
-	if err = json.NewDecoder(resp.Body).Decode(&chaptersAPIResp); err != nil {
-		return nil, util.AddErrorContext(err, util.AddErrorContext(fmt.Errorf("Error decoding JSON body response"), errorContext).Error())
 	}
 
 	if len(chaptersAPIResp.Chapters) == 0 {
@@ -196,15 +180,9 @@ func generateMangaChapters(s *Source, mangaURL string, chaptersChan chan *manga.
 	for {
 
 		mangaAPIURL := fmt.Sprintf("%s/comic/%s/chapters?lang=en&page=%d", baseAPIURL, mangaHID, currentPage)
-		resp, err := s.client.Request("GET", mangaAPIURL, nil)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		defer resp.Body.Close()
-
 		var chaptersAPIResp getChaptersAPIResponse
-		if err = json.NewDecoder(resp.Body).Decode(&chaptersAPIResp); err != nil {
+		_, err = s.client.Request("GET", mangaAPIURL, nil, &chaptersAPIResp)
+		if err != nil {
 			errChan <- err
 			return
 		}

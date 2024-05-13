@@ -54,6 +54,7 @@ func TestGetChapterMetadata(t *testing.T) {
 	t.Run("should get the metadata of a chapter from multiple mangas", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
+			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
 			chapterURL := test.chapterURL
 
 			actualChapter, err := source.GetChapterMetadata("", "", chapterURL)
@@ -71,6 +72,7 @@ func TestGetChapterMetadata(t *testing.T) {
 	t.Run("should not get the metadata of a chapter from multiple mangas", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
+			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
 			chapterURL := expected.URL
 			chapterURL, err := replaceURLID(chapterURL, "00000000-0000-0000-0000-000000000000")
 			if err != nil {
@@ -120,6 +122,7 @@ func TestGetLastChapterMetadata(t *testing.T) {
 	t.Run("should get the metadata of the last chapter of multiple mangas", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
+			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
 			mangaURL := test.mangaURL
 
 			actualChapter, err := source.GetLastChapterMetadata(mangaURL)
@@ -137,6 +140,7 @@ func TestGetLastChapterMetadata(t *testing.T) {
 	t.Run("should not get the metadata of the last chapter of multiple mangas", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
+			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
 			mangaURL := test.mangaURL
 			mangaURL, err := replaceURLID(mangaURL, "00000000-0000-0000-0000-000000000000")
 			if err != nil {
