@@ -71,12 +71,10 @@ func TestGetMangaUploadedTime(t *testing.T) {
 		for _, test := range absUploadTimeTestTable {
 			actual, err := getMangaUploadedTime(test.arg)
 			if err != nil {
-				t.Errorf("error while getting manga uploaded time: %v", err)
-				return
+				t.Fatalf("error while getting manga uploaded time: %v", err)
 			}
 			if actual != test.expected {
-				t.Errorf("expected %v, got %v", test.expected, actual)
-				return
+				t.Fatalf("expected %v, got %v", test.expected, actual)
 			}
 		}
 	})
@@ -84,14 +82,13 @@ func TestGetMangaUploadedTime(t *testing.T) {
 		for _, test := range relativeUploadTimeTestTable {
 			actual, err := getMangaUploadedTime(test.arg)
 			if err != nil {
-				t.Errorf("error while getting manga uploaded time: %v", err)
+				t.Fatalf("error while getting manga uploaded time: %v", err)
 			}
 
 			expectedDate := time.Now().Add(test.sub * -1)
 			expected := time.Date(expectedDate.Year(), expectedDate.Month(), expectedDate.Day(), 0, 0, 0, 0, time.Local)
 			if actual != expected {
-				t.Errorf("expected %v, got %v", expected, actual)
-				return
+				t.Fatalf("expected %v, got %v", expected, actual)
 			}
 		}
 	})
@@ -99,19 +96,17 @@ func TestGetMangaUploadedTime(t *testing.T) {
 		for _, test := range relativeHourTestTable {
 			actual, err := getMangaUploadedTime(test.arg)
 			if err != nil {
-				t.Errorf("error while getting manga uploaded time: %v", err)
+				t.Fatalf("error while getting manga uploaded time: %v", err)
 			}
 
 			expectedDate := time.Now().Add(test.sub * -1)
 			beforeExpected := expectedDate.Add(1 * time.Second)
 			afterExpected := expectedDate.Add(-1 * time.Second)
 			if !actual.Before(beforeExpected) {
-				t.Errorf("expected %v to be before %v", actual, beforeExpected)
-				return
+				t.Fatalf("expected %v to be before %v", actual, beforeExpected)
 			}
 			if !actual.After(afterExpected) {
-				t.Errorf("expected %v to be after %v", actual, afterExpected)
-				return
+				t.Fatalf("expected %v to be after %v", actual, afterExpected)
 			}
 		}
 	})

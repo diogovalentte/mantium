@@ -79,19 +79,16 @@ func TestGetMangaMetadata(t *testing.T) {
 
 			actualManga, err := source.GetMangaMetadata(mangaURL)
 			if err != nil {
-				t.Errorf("error while getting manga: %v", err)
-				return
+				t.Fatalf("error while getting manga: %v", err)
 			}
 
 			if actualManga.CoverImg == nil {
-				t.Errorf("expected manga.CoverImg to be different than nil")
-				return
+				t.Fatalf("expected manga.CoverImg to be different than nil")
 			}
 			actualManga.CoverImg = nil
 
 			if !reflect.DeepEqual(actualManga, expected) {
-				t.Errorf("expected manga %s, got %s", expected, actualManga)
-				return
+				t.Fatalf("expected manga %s, got %s", expected, actualManga)
 			}
 		}
 	})
@@ -104,11 +101,9 @@ func TestGetMangaMetadata(t *testing.T) {
 				if util.ErrorContains(err, "Non-200 status code -> (404)") {
 					continue
 				}
-				t.Errorf("expected error, got %s", err)
-				return
+				t.Fatalf("expected error, got %s", err)
 			}
-			t.Errorf("expected error, got nil")
-			return
+			t.Fatalf("expected error, got nil")
 		}
 	})
 }
@@ -124,12 +119,10 @@ func TestGetMangaID(t *testing.T) {
 			expected := "00-jujutsu-kaisen"
 			result, err := getMangaSlug(mangaURL)
 			if err != nil {
-				t.Errorf("Error: %s", err)
-				return
+				t.Fatalf("Error: %s", err)
 			}
 			if result != expected {
-				t.Errorf("Expected %s, got %s", expected, result)
-				return
+				t.Fatalf("Expected %s, got %s", expected, result)
 			}
 		}
 	})

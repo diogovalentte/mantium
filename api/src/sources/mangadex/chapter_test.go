@@ -59,13 +59,11 @@ func TestGetChapterMetadata(t *testing.T) {
 
 			actualChapter, err := source.GetChapterMetadata("", "", chapterURL)
 			if err != nil {
-				t.Errorf("error while getting chapter: %v", err)
-				return
+				t.Fatalf("error while getting chapter: %v", err)
 			}
 
 			if !reflect.DeepEqual(actualChapter, expected) {
-				t.Errorf("expected chapter %s, got %s", expected, actualChapter)
-				return
+				t.Fatalf("expected chapter %s, got %s", expected, actualChapter)
 			}
 		}
 	})
@@ -76,42 +74,35 @@ func TestGetChapterMetadata(t *testing.T) {
 			chapterURL := expected.URL
 			chapterURL, err := replaceURLID(chapterURL, "00000000-0000-0000-0000-000000000000")
 			if err != nil {
-				t.Errorf("Error while replacing chapter URL ID: %v", err)
-				return
+				t.Fatalf("Error while replacing chapter URL ID: %v", err)
 			}
 
 			actualChapter, err := source.GetChapterMetadata("", "", chapterURL)
 			if err != nil {
 				if !util.ErrorContains(err, "Non-200 status code -> (404)") {
-					t.Errorf("unexpected error: %v", err)
-					return
+					t.Fatalf("unexpected error: %v", err)
 				}
 			} else {
-				t.Errorf("expected error, got nil")
-				return
+				t.Fatalf("expected error, got nil")
 			}
 
 			if reflect.DeepEqual(actualChapter, expected) {
-				t.Errorf("expected actual chapter %s to NOT be deep equal to expected chapter %s", actualChapter, expected)
+				t.Fatalf("expected actual chapter %s to NOT be deep equal to expected chapter %s", actualChapter, expected)
 			}
 
 			actualChapter, err = source.GetChapterMetadata("", expected.Chapter, "")
 			if err != nil {
 				if !util.ErrorContains(err, "Not implemented") {
-					t.Errorf("unexpected error: %v", err)
-					return
+					t.Fatalf("unexpected error: %v", err)
 				}
 			} else {
-				t.Errorf("expected error, got nil")
-				return
+				t.Fatalf("expected error, got nil")
 			}
 
 			if reflect.DeepEqual(actualChapter, expected) {
-				t.Errorf("expected actual chapter %s to NOT be deep equal to expected chapter %s", actualChapter, expected)
-				return
+				t.Fatalf("expected actual chapter %s to NOT be deep equal to expected chapter %s", actualChapter, expected)
 			}
 
-			return
 		}
 	})
 }
@@ -127,13 +118,11 @@ func TestGetLastChapterMetadata(t *testing.T) {
 
 			actualChapter, err := source.GetLastChapterMetadata(mangaURL)
 			if err != nil {
-				t.Errorf("error while getting chapter: %v", err)
-				return
+				t.Fatalf("error while getting chapter: %v", err)
 			}
 
 			if !reflect.DeepEqual(actualChapter, expected) {
-				t.Errorf("expected chapter %s, got %s", expected, actualChapter)
-				return
+				t.Fatalf("expected chapter %s, got %s", expected, actualChapter)
 			}
 		}
 	})
@@ -144,22 +133,20 @@ func TestGetLastChapterMetadata(t *testing.T) {
 			mangaURL := test.mangaURL
 			mangaURL, err := replaceURLID(mangaURL, "00000000-0000-0000-0000-000000000000")
 			if err != nil {
-				t.Errorf("Error while replacing chapter URL ID: %v", err)
+				t.Fatalf("Error while replacing chapter URL ID: %v", err)
 			}
 
 			actualChapter, err := source.GetLastChapterMetadata(mangaURL)
 			if err != nil {
 				if !util.ErrorContains(err, "No chapter found") {
-					t.Errorf("unexpected error: %v", err)
-					return
+					t.Fatalf("unexpected error: %v", err)
 				}
 			} else {
-				t.Errorf("expected error, got nil")
-				return
+				t.Fatalf("expected error, got nil")
 			}
 
 			if reflect.DeepEqual(actualChapter, expected) {
-				t.Errorf("expected actual chapter %s to NOT be deep equal to expected chapter %s", actualChapter, expected)
+				t.Fatalf("expected actual chapter %s to NOT be deep equal to expected chapter %s", actualChapter, expected)
 			}
 		}
 	})
@@ -195,31 +182,25 @@ func TestGetChaptersMetadata(t *testing.T) {
 
 			chapters, err := source.GetChaptersMetadata(mangaURL)
 			if err != nil {
-				t.Errorf("error while getting chapters: %v", err)
-				return
+				t.Fatalf("error while getting chapters: %v", err)
 			}
 
 			if len(chapters) != expectedQuantity {
-				t.Errorf("expected %v chapters, got %v", expectedQuantity, len(chapters))
-				return
+				t.Fatalf("expected %v chapters, got %v", expectedQuantity, len(chapters))
 			}
 
 			for _, chapter := range chapters {
 				if chapter.Chapter == "" {
-					t.Errorf("expected chapter.Chapter to be different than ''")
-					return
+					t.Fatalf("expected chapter.Chapter to be different than ''")
 				}
 				if chapter.Name == "" {
-					t.Errorf("expected chapter.ChapterName to be different than ''")
-					return
+					t.Fatalf("expected chapter.ChapterName to be different than ''")
 				}
 				if chapter.URL == "" {
-					t.Errorf("expected chapter.URL to be different than ''")
-					return
+					t.Fatalf("expected chapter.URL to be different than ''")
 				}
 				if chapter.UpdatedAt.IsZero() {
-					t.Errorf("expected chapter.UpdatedAt to be different than 0")
-					return
+					t.Fatalf("expected chapter.UpdatedAt to be different than 0")
 				}
 			}
 		}
@@ -229,19 +210,17 @@ func TestGetChaptersMetadata(t *testing.T) {
 			mangaURL := test.url
 			mangaURL, err := replaceURLID(mangaURL, "00000000-0000-0000-0000-000000000000")
 			if err != nil {
-				t.Errorf("Error while replacing manga URL ID: %v", err)
+				t.Fatalf("Error while replacing manga URL ID: %v", err)
 			}
 			expectedQuantity := 0
 
 			chapters, err := source.GetChaptersMetadata(mangaURL)
 			if err != nil {
-				t.Errorf("expected error, got nil")
-				return
+				t.Fatalf("expected error, got nil")
 			}
 
 			if len(chapters) != expectedQuantity {
-				t.Errorf("expected %v chapters, got %v", expectedQuantity, len(chapters))
-				return
+				t.Fatalf("expected %v chapters, got %v", expectedQuantity, len(chapters))
 			}
 		}
 	})
@@ -253,12 +232,10 @@ func TestGetChapterID(t *testing.T) {
 		expected := "e393167b-573c-414f-8514-f7ff1fc6604d"
 		result, err := getChapterID(chapterURL)
 		if err != nil {
-			t.Errorf("Error: %s", err)
-			return
+			t.Fatalf("Error: %s", err)
 		}
 		if result != expected {
-			t.Errorf("Expected %s, got %s", expected, result)
-			return
+			t.Fatalf("Expected %s, got %s", expected, result)
 		}
 	})
 }

@@ -56,27 +56,21 @@ func TestGetChapterMetadata(t *testing.T) {
 
 			actualChapter, err := source.GetChapterMetadata(mangaURL, "", chapterURL)
 			if err != nil {
-				t.Errorf("error while getting chapter: %v", err)
-				return
+				t.Fatalf("error while getting chapter: %v", err)
 			}
 
 			if !reflect.DeepEqual(actualChapter, expected) {
-				t.Errorf("expected chapter %s, got %s", expected, actualChapter)
-				return
+				t.Fatalf("expected chapter %s, got %s", expected, actualChapter)
 			}
 
 			actualChapter, err = source.GetChapterMetadata(mangaURL, expected.Chapter, "")
 			if err != nil {
-				t.Errorf("error while getting chapter: %v", err)
-				return
+				t.Fatalf("error while getting chapter: %v", err)
 			}
 
 			if !reflect.DeepEqual(actualChapter, expected) {
-				t.Errorf("expected chapter %s, got %s", expected, actualChapter)
-				return
+				t.Fatalf("expected chapter %s, got %s", expected, actualChapter)
 			}
-
-			return
 		}
 	})
 	t.Run("should not get the metadata of a chapter from multiple mangas", func(t *testing.T) {
@@ -89,32 +83,27 @@ func TestGetChapterMetadata(t *testing.T) {
 			actualChapter, err := source.GetChapterMetadata(mangaURL, "", chapterURL)
 			if err != nil {
 				if !util.ErrorContains(err, "Non-200 status code -> (404)") {
-					t.Errorf("unexpected error: %v", err)
-					return
+					t.Fatalf("unexpected error: %v", err)
 				}
 			} else {
-				t.Errorf("expected error, got nil")
-				return
+				t.Fatalf("expected error, got nil")
 			}
 
 			if reflect.DeepEqual(actualChapter, expected) {
-				t.Errorf("expected actual chapter %v to NOT be deep equal to expected chapter %v", actualChapter, expected)
+				t.Fatalf("expected actual chapter %v to NOT be deep equal to expected chapter %v", actualChapter, expected)
 			}
 
 			actualChapter, err = source.GetChapterMetadata(mangaURL, expected.Chapter, "")
 			if err != nil {
 				if !util.ErrorContains(err, "Non-200 status code -> (404)") {
-					t.Errorf("unexpected error: %v", err)
-					return
+					t.Fatalf("unexpected error: %v", err)
 				}
 			} else {
-				t.Errorf("expected error, got nil")
-				return
+				t.Fatalf("expected error, got nil")
 			}
 
 			if reflect.DeepEqual(actualChapter, expected) {
-				t.Errorf("expected actual chapter %s to NOT be deep equal to expected chapter %s", actualChapter, expected)
-				return
+				t.Fatalf("expected actual chapter %s to NOT be deep equal to expected chapter %s", actualChapter, expected)
 			}
 		}
 	})
@@ -131,13 +120,11 @@ func TestGetLastChapterMetadata(t *testing.T) {
 
 			actualChapter, err := source.GetLastChapterMetadata(mangaURL)
 			if err != nil {
-				t.Errorf("error while getting chapter: %v", err)
-				return
+				t.Fatalf("error while getting chapter: %v", err)
 			}
 
 			if !reflect.DeepEqual(actualChapter, expected) {
-				t.Errorf("expected chapter %s, got %s", expected, actualChapter)
-				return
+				t.Fatalf("expected chapter %s, got %s", expected, actualChapter)
 			}
 		}
 	})
@@ -150,16 +137,14 @@ func TestGetLastChapterMetadata(t *testing.T) {
 			actualChapter, err := source.GetLastChapterMetadata(mangaURL)
 			if err != nil {
 				if !util.ErrorContains(err, "Non-200 status code -> (404)") {
-					t.Errorf("unexpected error: %v", err)
-					return
+					t.Fatalf("unexpected error: %v", err)
 				}
 			} else {
-				t.Errorf("expected error, got nil")
-				return
+				t.Fatalf("expected error, got nil")
 			}
 
 			if reflect.DeepEqual(actualChapter, expected) {
-				t.Errorf("expected actual chapter %s to NOT be deep equal to expected chapter %s", actualChapter, expected)
+				t.Fatalf("expected actual chapter %s to NOT be deep equal to expected chapter %s", actualChapter, expected)
 			}
 		}
 	})
@@ -195,31 +180,25 @@ func TestGetChaptersMetadata(t *testing.T) {
 
 			chapters, err := source.GetChaptersMetadata(mangaURL)
 			if err != nil {
-				t.Errorf("error while getting chapters: %v", err)
-				return
+				t.Fatalf("error while getting chapters: %v", err)
 			}
 
 			if len(chapters) != expectedQuantity {
-				t.Errorf("expected %v chapters, got %v", expectedQuantity, len(chapters))
-				return
+				t.Fatalf("expected %v chapters, got %v", expectedQuantity, len(chapters))
 			}
 
 			for _, chapter := range chapters {
 				if chapter.Chapter == "" {
-					t.Errorf("expected chapter.Chapter to be different than ''")
-					return
+					t.Fatalf("expected chapter.Chapter to be different than ''")
 				}
 				if chapter.Name == "" {
-					t.Errorf("expected chapter.ChapterName to be different than ''")
-					return
+					t.Fatalf("expected chapter.ChapterName to be different than ''")
 				}
 				if chapter.URL == "" {
-					t.Errorf("expected chapter.URL to be different than ''")
-					return
+					t.Fatalf("expected chapter.URL to be different than ''")
 				}
 				if chapter.UpdatedAt.IsZero() {
-					t.Errorf("expected chapter.UpdatedAt to be different than 0")
-					return
+					t.Fatalf("expected chapter.UpdatedAt to be different than 0")
 				}
 			}
 		}
@@ -232,17 +211,14 @@ func TestGetChaptersMetadata(t *testing.T) {
 			chapters, err := source.GetChaptersMetadata(mangaURL)
 			if err != nil {
 				if !util.ErrorContains(err, "Non-200 status code -> (404)") {
-					t.Errorf("unexpected error: %v", err)
-					return
+					t.Fatalf("unexpected error: %v", err)
 				}
 			} else {
-				t.Errorf("expected error, got nil")
-				return
+				t.Fatalf("expected error, got nil")
 			}
 
 			if len(chapters) != expectedQuantity {
-				t.Errorf("expected %v chapters, got %v", expectedQuantity, len(chapters))
-				return
+				t.Fatalf("expected %v chapters, got %v", expectedQuantity, len(chapters))
 			}
 		}
 	})
