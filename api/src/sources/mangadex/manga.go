@@ -2,7 +2,6 @@ package mangadex
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"time"
@@ -27,15 +26,10 @@ func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 	}
 
 	mangaAPIURL := fmt.Sprintf("%s/manga/%s?includes[]=cover_art", baseAPIURL, mangadexMangaID)
-	resp, err := s.client.Request(context.Background(), "GET", mangaAPIURL, nil)
+	var mangaAPIResp getMangaAPIResponse
+	_, err = s.client.Request(context.Background(), "GET", mangaAPIURL, nil, &mangaAPIResp)
 	if err != nil {
 		return nil, util.AddErrorContext(err, errorContext)
-	}
-	defer resp.Body.Close()
-
-	var mangaAPIResp getMangaAPIResponse
-	if err = json.NewDecoder(resp.Body).Decode(&mangaAPIResp); err != nil {
-		return nil, util.AddErrorContext(err, util.AddErrorContext(fmt.Errorf("Error decoding JSON body response"), errorContext).Error())
 	}
 
 	attributes := &mangaAPIResp.Data.Attributes

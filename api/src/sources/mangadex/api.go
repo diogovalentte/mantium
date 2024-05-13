@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 
 	"github.com/diogovalentte/mantium/api/src/util"
 )
@@ -32,10 +33,10 @@ func NewMangadexClient() *Client {
 }
 
 // Request is a helper function to make a request to the Mangadex API
-func (c *Client) Request(ctx context.Context, method, url string, body io.Reader) (*http.Response, error) {
+func (c *Client) Request(ctx context.Context, method, url string, reqBody io.Reader, retBody interface{}) (*http.Response, error) {
 	errorContext := "Error while making '%s' request"
 
-	req, err := http.NewRequestWithContext(ctx, method, url, body)
+	req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
 	if err != nil {
 		return nil, util.AddErrorContext(err, fmt.Sprintf(errorContext, method))
 	}
@@ -50,15 +51,21 @@ func (c *Client) Request(ctx context.Context, method, url string, body io.Reader
 		// Decode to an ErrorResponse struct.
 		var er ErrorResponse
 
+		defer resp.Body.Close()
 		if err = json.NewDecoder(resp.Body).Decode(&er); err != nil {
 			defer resp.Body.Close()
 			body, _ := io.ReadAll(resp.Body)
 			return nil, util.AddErrorContext(fmt.Errorf("Error while decoding API error response into ErrorResponse. Body: %s", string(body)), fmt.Sprintf(errorContext, method))
 		}
-		defer func(Body io.ReadCloser) {
-			_ = Body.Close()
-		}(resp.Body)
 		return nil, util.AddErrorContext(fmt.Errorf(er.GetErrors()), fmt.Sprintf(errorContext, method))
+	}
+
+	if retBody != nil {
+		defer resp.Body.Close()
+		if err = json.NewDecoder(resp.Body).Decode(retBody); err != nil {
+			body, _ := io.ReadAll(resp.Body)
+			return nil, util.AddErrorContext(fmt.Errorf("Error decoding request body response into '%s'. Body: %s", reflect.TypeOf(retBody).Name(), string(body)), fmt.Sprintf(errorContext, method))
+		}
 	}
 
 	return resp, nil

@@ -2,7 +2,6 @@ package mangadex
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"regexp"
 
@@ -47,15 +46,10 @@ func (s *Source) getChapterMetadataByURL(chapterURL string) (*manga.Chapter, err
 	}
 
 	chapterAPIURL := fmt.Sprintf("%s/chapter/%s", baseAPIURL, chapterID)
-	resp, err := s.client.Request(context.Background(), "GET", chapterAPIURL, nil)
+	var chapterAPIResp getChapterAPIResponse
+	_, err = s.client.Request(context.Background(), "GET", chapterAPIURL, nil, &chapterAPIResp)
 	if err != nil {
 		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var chapterAPIResp getChapterAPIResponse
-	if err = json.NewDecoder(resp.Body).Decode(&chapterAPIResp); err != nil {
-		return nil, util.AddErrorContext(err, "Error decoding JSON body response")
 	}
 
 	attributes := &chapterAPIResp.Data.Attributes
@@ -114,15 +108,10 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 
 	// URL gets the last chapter of the manga
 	mangaAPIURL := fmt.Sprintf("%s/manga/%s/feed?translatedLanguage[]=en&order[chapter]=desc&limit=1&offset=0", baseAPIURL, mangaID)
-	resp, err := s.client.Request(context.Background(), "GET", mangaAPIURL, nil)
+	var feedAPIResp getMangaFeedAPIResponse
+	_, err = s.client.Request(context.Background(), "GET", mangaAPIURL, nil, &feedAPIResp)
 	if err != nil {
 		return nil, util.AddErrorContext(err, errorContext)
-	}
-	defer resp.Body.Close()
-
-	var feedAPIResp getMangaFeedAPIResponse
-	if err = json.NewDecoder(resp.Body).Decode(&feedAPIResp); err != nil {
-		return nil, util.AddErrorContext(err, util.AddErrorContext(fmt.Errorf("Error decoding JSON body response"), errorContext).Error())
 	}
 
 	if len(feedAPIResp.Data) == 0 {
@@ -211,15 +200,9 @@ func generateMangaFeed(s *Source, mangaURL string, chaptersChan chan<- *manga.Ch
 
 	for totalChapters >= requestOffset {
 		mangaAPIURL := fmt.Sprintf("%s/manga/%s/feed?translatedLanguage[]=en&order[chapter]=desc&limit=%d&offset=%d", baseAPIURL, mangaID, requestLimit, requestOffset)
-		resp, err := s.client.Request(context.Background(), "GET", mangaAPIURL, nil)
-		if err != nil {
-			errChan <- err
-			return
-		}
-		defer resp.Body.Close()
-
 		var feedAPIResp getMangaFeedAPIResponse
-		if err = json.NewDecoder(resp.Body).Decode(&feedAPIResp); err != nil {
+		_, err = s.client.Request(context.Background(), "GET", mangaAPIURL, nil, &feedAPIResp)
+		if err != nil {
 			errChan <- err
 			return
 		}
