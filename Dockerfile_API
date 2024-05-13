@@ -10,5 +10,6 @@ RUN go build -o main .
 
 ENV GIN_MODE=release
 ENV API_PORT=8080
+ENV TZ=UTC
 
 CMD ["./main"]

@@ -5,6 +5,7 @@ WORKDIR /app/dashboard
 COPY ./dashboard .
 
 ENV DASHBOARD_PORT=8501
+ENV TZ=UTC
 
 RUN pip install --no-cache-dir -r requirements.txt
 

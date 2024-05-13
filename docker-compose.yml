@@ -19,6 +19,7 @@ services:
     volumes:
       - ./configs:/app/api/configs
     environment:
+      - TZ=${TZ:-UTC} # uses UTC if not specified
       - POSTGRES_HOST=mantium-db
       - POSTGRES_PORT=${POSTGRES_PORT:-5432}
       - POSTGRES_DB=${POSTGRES_DB:-postgres}
@@ -55,6 +56,7 @@ services:
     container_name: mantium-dashboard
     image: ghcr.io/diogovalentte/mantium-dashboard:latest
     environment:
+      - TZ=${TZ:-UTC} # uses UTC if not specified
       - DASHBOARD_PORT=${DASHBOARD_PORT:-8501}
       - API_ADDRESS=${API_ADDRESS:-http://mantium-api:8080}
     logging:
