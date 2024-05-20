@@ -26,7 +26,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/config.Configs"
+                            "$ref": "#/definitions/dashboard.Configs"
                         }
                     }
                 }
@@ -254,6 +254,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/manga/cover_img": {
+            "patch": {
+                "description": "Updates a manga cover image in the database. You must provide either the manga ID or the manga URL. By default, the cover image is fetched from the source site, but you can manually provide an image URL or upload a file. If you want the application to fetch the cover image from the source site, leave the URL field empty and don't upload a file and set the get_cover_img_from_source field to true.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Update manga cover image",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Manga ID",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"https://mangadex.org/title/1/one-piece\"",
+                        "description": "Manga URL",
+                        "name": "url",
+                        "in": "query"
+                    },
+                    {
+                        "type": "file",
+                        "description": "Manga cover image",
+                        "name": "cover_img",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"https://example.com/cover.jpg\"",
+                        "description": "Manga cover image URL",
+                        "name": "cover_img_url",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "Manga status",
+                        "name": "get_cover_img_from_source",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
         "/manga/last_read_chapter": {
             "patch": {
                 "description": "Updates a manga last read chapter in the database. If both ` + "`" + `chapter` + "`" + ` and ` + "`" + `chapter_url` + "`" + ` are empty strings in the body, set the last read chapter to the last upload chapter in the database. You must provide either the manga ID or the manga URL.",
@@ -455,106 +508,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "config.APIConfigs": {
-            "type": "object",
-            "properties": {
-                "logLevelInt": {
-                    "type": "integer"
-                },
-                "port": {
-                    "type": "string"
-                }
-            }
-        },
-        "config.Configs": {
-            "type": "object",
-            "properties": {
-                "api": {
-                    "$ref": "#/definitions/config.APIConfigs"
-                },
-                "configsFilePath": {
-                    "description": "A file with configs that should be persisted\nRelative to main.go",
-                    "type": "string"
-                },
-                "db": {
-                    "$ref": "#/definitions/config.DBConfigs"
-                },
-                "defaultConfigsFilePath": {
-                    "type": "string"
-                },
-                "kaizoku": {
-                    "$ref": "#/definitions/config.KaizokuConfigs"
-                },
-                "ntfy": {
-                    "$ref": "#/definitions/config.NtfyConfigs"
-                },
-                "periodicallyUpdateMangas": {
-                    "$ref": "#/definitions/config.PeriodicallyUpdateMangasConfigs"
-                }
-            }
-        },
-        "config.DBConfigs": {
-            "type": "object",
-            "properties": {
-                "db": {
-                    "type": "string"
-                },
-                "host": {
-                    "type": "string"
-                },
-                "password": {
-                    "type": "string"
-                },
-                "port": {
-                    "type": "string"
-                },
-                "user": {
-                    "type": "string"
-                }
-            }
-        },
-        "config.KaizokuConfigs": {
-            "type": "object",
-            "properties": {
-                "address": {
-                    "type": "string"
-                },
-                "defaultInterval": {
-                    "type": "string"
-                },
-                "valid": {
-                    "type": "boolean"
-                }
-            }
-        },
-        "config.NtfyConfigs": {
-            "type": "object",
-            "properties": {
-                "address": {
-                    "type": "string"
-                },
-                "token": {
-                    "type": "string"
-                },
-                "topic": {
-                    "type": "string"
-                }
-            }
-        },
-        "config.PeriodicallyUpdateMangasConfigs": {
-            "type": "object",
-            "properties": {
-                "minutes": {
-                    "type": "integer"
-                },
-                "notify": {
-                    "type": "boolean"
-                },
-                "update": {
-                    "type": "boolean"
-                }
-            }
-        },
         "dashboard.BackgroundError": {
             "type": "object",
             "properties": {
@@ -565,6 +518,19 @@ const docTemplate = `{
                 "time": {
                     "description": "Time when the error occurred.",
                     "type": "string"
+                }
+            }
+        },
+        "dashboard.Configs": {
+            "type": "object",
+            "properties": {
+                "dashboard": {
+                    "type": "object",
+                    "properties": {
+                        "columns": {
+                            "type": "integer"
+                        }
+                    }
                 }
             }
         },
@@ -601,6 +567,10 @@ const docTemplate = `{
                     "items": {
                         "type": "integer"
                     }
+                },
+                "coverImgFixed": {
+                    "description": "CoverImgFixed is true if the cover image is fixed. If true, the cover image will not be updated when updating the manga metadata.\nIt's used for when the cover image is manually set by the user.",
+                    "type": "boolean"
                 },
                 "coverImgResized": {
                     "description": "CoverImgResized is true if the cover image was resized",

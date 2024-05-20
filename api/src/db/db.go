@@ -66,6 +66,17 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
           "type" smallint,
           PRIMARY KEY ("url", "type")
         );
+
+        CREATE TABLE IF NOT EXISTS "chapters" (
+          "id" serial UNIQUE,
+          "manga_id" integer NOT NULL,
+          "url" varchar(255),
+          "chapter" varchar(255),
+          "name" varchar(255),
+          "updated_at" timestamp,
+          "type" smallint,
+          PRIMARY KEY ("url", "type")
+        );
     `)
 	if err != nil {
 		tx.Rollback()
@@ -121,6 +132,15 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
 	if err != nil {
 		tx.Rollback()
 		return util.AddErrorContext(err, "Error creating constraints in the database")
+	}
+
+	log.Info().Msg("Doing migrations if not exists...")
+	_, err = tx.Exec(`
+        ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "cover_img_fixed" BOOLEAN NOT NULL DEFAULT FALSE;
+    `)
+	if err != nil {
+		tx.Rollback()
+		return util.AddErrorContext(err, "Error applying migrations in the database")
 	}
 
 	err = tx.Commit()

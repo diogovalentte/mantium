@@ -402,36 +402,82 @@ class MainDashboard:
                 key="update_manga_form_chapter",
             )
 
+            with st.popover(
+                "Update Cover Image",
+                help="Update the cover image of the manga",
+                use_container_width=True,
+            ):
+                st.info(
+                    "By default, the cover image is fetched from the source site, but you can manually provide an image URL or upload a file."
+                )
+                st.text_input(
+                    "Cover Image URL",
+                    placeholder="https://example.com/image.jpg",
+                    key="update_manga_form_cover_img_url",
+                )
+                st.file_uploader(
+                    "Upload Cover Image",
+                    type=["png", "jpg", "jpeg"],
+                    key="update_manga_form_cover_img_upload",
+                )
+                st.divider()
+                st.info(
+                    "If you want the application to fetch the cover image from the source site, leave the URL field empty and don't upload a file, and check the box below."
+                )
+                st.checkbox(
+                    "Get cover image from source site.",
+                    key="update_manga_form_get_cover_img_from_source",
+                )
+
             if st.form_submit_button(
                 "Update Manga",
                 use_container_width=True,
                 type="primary",
             ):
-                status = ss.update_manga_form_status
-                if status != manga["Status"]:
-                    self.api_client.update_manga_status(status, manga["ID"])
+                try:
+                    status = ss.update_manga_form_status
+                    if status != manga["Status"]:
+                        self.api_client.update_manga_status(status, manga["ID"])
 
-                chapter = ss.update_manga_form_chapter
-                if (
-                    manga["LastReadChapter"] is None
-                    or chapter != manga["LastReadChapter"]["Chapter"]
-                ):
-                    try:
+                    chapter = ss.update_manga_form_chapter
+                    if (
+                        manga["LastReadChapter"] is None
+                        or chapter != manga["LastReadChapter"]["Chapter"]
+                    ):
                         self.api_client.update_manga_last_read_chapter(
                             manga["ID"],
                             manga["URL"],
                             chapter["Chapter"],
                             chapter["URL"],
                         )
-                    except APIException as e:
-                        logger.exception(e)
-                        st.error(
-                            "Error while updating manga. Check the dashboard logs."
+
+                    cover_url = ss.update_manga_form_cover_img_url
+                    cover_upload = ss.update_manga_form_cover_img_upload
+                    get_cover_img_from_source = (
+                        ss.update_manga_form_get_cover_img_from_source
+                    )
+
+                    if cover_url != "" or cover_upload is not None:
+                        self.api_client.update_manga_cover_img(
+                            manga["ID"],
+                            manga["URL"],
+                            cover_img_url=cover_url,
+                            cover_img=cover_upload.getvalue() if cover_upload else b"",
+                            get_cover_img_from_source=get_cover_img_from_source,
                         )
-                        st.stop()
-                    else:
-                        ss["manga_updated_success"] = True
-                        st.rerun()
+                    elif get_cover_img_from_source:
+                        self.api_client.update_manga_cover_img(
+                            manga["ID"],
+                            manga["URL"],
+                            get_cover_img_from_source=True,
+                        )
+                except APIException as e:
+                    logger.exception(e)
+                    st.error("Error while updating manga. Check the dashboard logs.")
+                    st.stop()
+                else:
+                    ss["manga_updated_success"] = True
+                    st.rerun()
 
         def delete_manga_btn_callback():
             self.api_client.delete_manga(manga["ID"])

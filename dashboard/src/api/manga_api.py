@@ -162,6 +162,31 @@ class MangaAPIClient:
 
         return res.json()
 
+    def update_manga_cover_img(
+        self,
+        manga_id: int,
+        manga_url: str,
+        cover_img_url: str = "",
+        cover_img: bytes = b"",
+        get_cover_img_from_source: bool = False,
+    ) -> dict[str, str]:
+        path = "/cover_img"
+        url = f"{self.base_url}{path}"
+        url = f"{url}?id={manga_id}&url={manga_url}{'&cover_img_url=%s' % cover_img_url if cover_img_url else ''}{f'&get_cover_img_from_source={str(get_cover_img_from_source).lower()}' if get_cover_img_from_source else ''}"
+
+        res = requests.patch(url, files={"cover_img": cover_img})
+
+        if res.status_code not in self.acceptable_status_codes:
+            raise APIException(
+                "error while updating manga cover image",
+                url,
+                "PATCH",
+                res.status_code,
+                res.text,
+            )
+
+        return res.json()
+
     def delete_manga(self, manga_id: int = 0, manga_url: str = "") -> dict[str, str]:
         url = self.base_url
         url = f"{url}?id={manga_id}&url={manga_url}"

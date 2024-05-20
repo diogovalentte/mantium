@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/diogovalentte/mantium/api/src/dashboard"
 	"github.com/diogovalentte/mantium/api/src/db"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
@@ -39,6 +38,9 @@ type Manga struct {
 	CoverImgResized bool
 	// CoverImgURL is the URL of the cover image
 	CoverImgURL string
+	// CoverImgFixed is true if the cover image is fixed. If true, the cover image will not be updated when updating the manga metadata.
+	// It's used for when the cover image is manually set by the user.
+	CoverImgFixed bool
 	// PreferredGroup is the preferred group that translates (and more) the manga
 	// Not all sources have multiple groups
 	PreferredGroup string
@@ -49,8 +51,8 @@ type Manga struct {
 }
 
 func (m Manga) String() string {
-	return fmt.Sprintf("Manga{ID: %d, Source: %s, URL: %s, Name: %s, Status: %d, ConverImg: []byte, ConverImgResized: %v, CoverImgURL: %s, PreferredGroup: %s, LastUploadChapter: %s, LastReadChapter: %s}",
-		m.ID, m.Source, m.URL, m.Name, m.Status, m.CoverImgResized, m.CoverImgURL, m.PreferredGroup, m.LastUploadChapter, m.LastReadChapter)
+	return fmt.Sprintf("Manga{ID: %d, Source: %s, URL: %s, Name: %s, Status: %d, CoverImg: []byte, CoverImgResized: %v, CoverImgURL: %s, CoverImgFixed: %v, PreferredGroup: %s, LastUploadChapter: %s, LastReadChapter: %s}",
+		m.ID, m.Source, m.URL, m.Name, m.Status, m.CoverImgResized, m.CoverImgURL, m.CoverImgFixed, m.PreferredGroup, m.LastUploadChapter, m.LastReadChapter)
 }
 
 // InsertIntoDB saves the manga into the database
@@ -91,12 +93,12 @@ func insertMangaIntoDB(m *Manga, tx *sql.Tx) (ID, error) {
 	var mangaID ID
 	err = tx.QueryRow(`
         INSERT INTO mangas
-            (source, url, name, status, cover_img, cover_img_resized, cover_img_url, preferred_group)
+            (source, url, name, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group)
         VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8)
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING
             id;
-    `, m.Source, m.URL, m.Name, m.Status, m.CoverImg, m.CoverImgResized, m.CoverImgURL, m.PreferredGroup).Scan(&mangaID)
+    `, m.Source, m.URL, m.Name, m.Status, m.CoverImg, m.CoverImgResized, m.CoverImgURL, m.CoverImgFixed, m.PreferredGroup).Scan(&mangaID)
 	if err != nil {
 		if err.Error() == `pq: duplicate key value violates unique constraint "mangas_pkey"` {
 			return -1, fmt.Errorf("manga already exists in DB")
@@ -347,8 +349,6 @@ func (m *Manga) UpdateNameInDB(name string) error {
 	}
 	m.Name = name
 
-	dashboard.UpdateDashboard()
-
 	return nil
 }
 
@@ -392,7 +392,8 @@ func updateMangaName(m *Manga, name string, tx *sql.Tx) error {
 	return nil
 }
 
-// UpdateCoverImgInDB updates the manga cover image in the database
+// UpdateCoverImgInDB updates the manga cover image in the database.
+// It doesn't care if the cover image is fixed or not.
 func (m *Manga) UpdateCoverImgInDB(coverImg []byte, coverImgResized bool, coverImgURL string) error {
 	contextError := "Error updating manga '%s' cover image to '%s' in DB"
 
@@ -407,7 +408,7 @@ func (m *Manga) UpdateCoverImgInDB(coverImg []byte, coverImgResized bool, coverI
 		return util.AddErrorContext(err, fmt.Sprintf(contextError, m, coverImgURL))
 	}
 
-	err = updateMangaCoverImg(m, coverImg, coverImgResized, coverImgURL, tx)
+	err = updateMangaCoverImg(m, coverImg, coverImgResized, coverImgURL, m.CoverImgFixed, tx)
 	if err != nil {
 		tx.Rollback()
 		return util.AddErrorContext(err, fmt.Sprintf(contextError, m, coverImgURL))
@@ -421,12 +422,10 @@ func (m *Manga) UpdateCoverImgInDB(coverImg []byte, coverImgResized bool, coverI
 	m.CoverImgResized = coverImgResized
 	m.CoverImgURL = coverImgURL
 
-	dashboard.UpdateDashboard()
-
 	return nil
 }
 
-func updateMangaCoverImg(m *Manga, coverImg []byte, coverImgResized bool, coverImgURL string, tx *sql.Tx) error {
+func updateMangaCoverImg(m *Manga, coverImg []byte, coverImgResized bool, coverImgURL string, fixed bool, tx *sql.Tx) error {
 	err := validateManga(m)
 	if err != nil {
 		return err
@@ -436,18 +435,18 @@ func updateMangaCoverImg(m *Manga, coverImg []byte, coverImgResized bool, coverI
 	if m.ID > 0 {
 		result, err = tx.Exec(`
             UPDATE mangas
-            SET cover_img = $1, cover_img_resized = $2, cover_img_url = $3
-            WHERE id = $4;
-        `, coverImg, coverImgResized, coverImgURL, m.ID)
+            SET cover_img = $1, cover_img_resized = $2, cover_img_url = $3, cover_img_fixed = $4
+            WHERE id = $5;
+        `, coverImg, coverImgResized, coverImgURL, fixed, m.ID)
 		if err != nil {
 			return err
 		}
 	} else if m.URL != "" {
 		result, err = tx.Exec(`
             UPDATE mangas
-            SET cover_img = $1, cover_img_resized = $2, cover_img_url = $3
-            WHERE url = $4;
-        `, coverImg, coverImgResized, coverImgURL, m.URL)
+            SET cover_img = $1, cover_img_resized = $2, cover_img_url = $3, cover_img_fixed = $4
+            WHERE url = $5;
+        `, coverImg, coverImgResized, coverImgURL, fixed, m.URL)
 		if err != nil {
 			return err
 		}
@@ -514,9 +513,11 @@ func updateMangaMetadata(m *Manga, tx *sql.Tx) error {
 		return err
 	}
 
-	err = updateMangaCoverImg(m, m.CoverImg, m.CoverImgResized, m.CoverImgURL, tx)
-	if err != nil {
-		return err
+	if !m.CoverImgFixed {
+		err = updateMangaCoverImg(m, m.CoverImg, m.CoverImgResized, m.CoverImgURL, m.CoverImgFixed, tx)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

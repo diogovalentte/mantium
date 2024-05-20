@@ -7,6 +7,8 @@ import (
 	"encoding/base64"
 	"fmt"
 	"html/template"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -37,6 +39,7 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.GET("/manga/chapters", GetMangaChapters)
 		group.PATCH("/manga/status", UpdateMangaStatus)
 		group.PATCH("/manga/last_read_chapter", UpdateMangaLastReadChapter)
+		group.PATCH("/manga/cover_img", UpdateMangaCoverImg)
 		group.PATCH("/mangas/metadata", UpdateMangasMetadata)
 		group.POST("/mangas/add_to_kaizoku", AddMangasToKaizoku)
 	}
@@ -713,8 +716,120 @@ type UpdateMangaChapterRequest struct {
 	ChapterURL string `json:"chapter_url"`
 }
 
-// UpdateMangasMetadata updates the mangas metadata in the database
-// It updates: the last upload chapter (and its metadata), the manga name and cover image
+// @Summary Update manga cover image
+// @Description Updates a manga cover image in the database. You must provide either the manga ID or the manga URL. By default, the cover image is fetched from the source site, but you can manually provide an image URL or upload a file. If you want the application to fetch the cover image from the source site, leave the URL field empty and don't upload a file and set the get_cover_img_from_source field to true.
+// @Produce json
+// @Param id query int false "Manga ID" Example(1)
+// @Param url query string false "Manga URL" Example("https://mangadex.org/title/1/one-piece")
+// @Param cover_img formData file false "Manga cover image"
+// @Param cover_img_url query string false "Manga cover image URL" Example("https://example.com/cover.jpg")
+// @Param get_cover_img_from_source query bool false "Manga status" Example(true)
+// @Success 200 {object} responseMessage
+// @Router /manga/cover_img [patch]
+func UpdateMangaCoverImg(c *gin.Context) {
+	mangaIDStr := c.Query("id")
+	mangaURL := c.Query("url")
+	coverImgURL := c.Query("cover_img_url")
+	getCoverImgFromSource := c.Query("get_cover_img_from_source")
+	mangaID, mangaURL, err := getMangaIDAndURL(mangaIDStr, mangaURL)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	mangaToUpdate, err := manga.GetMangaDB(mangaID, mangaURL)
+	if err != nil {
+		if strings.Contains(err.Error(), "manga not found in DB") {
+			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	var requestFile multipart.File
+	requestFile, _, err = c.Request.FormFile("cover_img")
+	if err != nil && err != http.ErrMissingFile {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	defer requestFile.Close()
+
+	coverImg, err := io.ReadAll(requestFile)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	retries := 3
+	retryInterval := 3 * time.Second
+	if len(coverImg) != 0 {
+		if !util.IsImageValid(coverImg) {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "invalid image"})
+			return
+		}
+
+		mangaToUpdate.CoverImgFixed = true
+
+		isImgRezied := false
+		resizedCoverImg, err := util.ResizeImage(coverImg, uint(util.DefaultImageWidth), uint(util.DefaultImageHeight))
+		if err == nil {
+			isImgRezied = true
+			err = mangaToUpdate.UpdateCoverImgInDB(resizedCoverImg, isImgRezied, coverImgURL)
+		} else {
+			err = mangaToUpdate.UpdateCoverImgInDB(coverImg, isImgRezied, coverImgURL)
+		}
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	} else if coverImgURL != "" {
+		coverImg, isImgRezied, err := util.GetImageFromURL(coverImgURL, retries, retryInterval)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+
+		if !util.IsImageValid(coverImg) {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "invalid image"})
+			return
+		}
+
+		mangaToUpdate.CoverImgFixed = true
+
+		err = mangaToUpdate.UpdateCoverImgInDB(coverImg, isImgRezied, coverImgURL)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	} else if getCoverImgFromSource == "true" {
+		var updatedManga *manga.Manga
+		for i := 0; i < retries; i++ {
+			updatedManga, err = sources.GetMangaMetadata(mangaToUpdate.URL)
+			if err != nil {
+				if i == retries-1 {
+					c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+					return
+				}
+				time.Sleep(retryInterval)
+				continue
+			}
+		}
+
+		mangaToUpdate.CoverImgFixed = false
+
+		err = mangaToUpdate.UpdateCoverImgInDB(updatedManga.CoverImg, updatedManga.CoverImgResized, updatedManga.CoverImgURL)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	}
+
+	dashboard.UpdateDashboard()
+
+	c.JSON(http.StatusOK, gin.H{"message": "Manga cover image updated successfully"})
+}
 
 // @Summary Update mangas metadata
 // @Description Get the mangas metadata from the sources and update them in the database.
@@ -739,7 +854,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 	var lastUpdateMetadataError error
 	var newMetadata bool
 	retries := 3
-	retryInteval := 3 * time.Second
+	retryInterval := 3 * time.Second
 	for _, mangaToUpdate := range mangas {
 		for i := 0; i < retries; i++ {
 			updatedManga, err := sources.GetMangaMetadata(mangaToUpdate.URL)
@@ -748,13 +863,13 @@ func UpdateMangasMetadata(c *gin.Context) {
 					logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error getting manga metadata, will continue with the next manga...")
 					lastUpdateMetadataError = err
 				}
-				logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msgf("Error getting manga metadata, retrying in %.2f seconds...", retryInteval.Seconds())
-				time.Sleep(retryInteval)
+				logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msgf("Error getting manga metadata, retrying in %.2f seconds...", retryInterval.Seconds())
+				time.Sleep(retryInterval)
 				continue
 			}
 			updatedManga.Status = 1
 
-			if mangaToUpdate.LastUploadChapter.Chapter != updatedManga.LastUploadChapter.Chapter || mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg) || mangaToUpdate.Name != updatedManga.Name {
+			if mangaToUpdate.LastUploadChapter.Chapter != updatedManga.LastUploadChapter.Chapter || (!mangaToUpdate.CoverImgFixed && (mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg))) || mangaToUpdate.Name != updatedManga.Name {
 				newMetadata = true
 				err = manga.UpdateMangaMetadataDB(updatedManga)
 				if err != nil {
@@ -773,7 +888,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 									logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg(fmt.Sprintf("Manga metadata updated in DB, but error while notifying: %s.\nWill continue with the next manga...", err.Error()))
 									lastUpdateMetadataError = err
 								}
-								logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msgf("Manga metadata updated in DB, but error while notifying: %s.\nRetrying in %.2f seconds...", err.Error(), retryInteval.Seconds())
+								logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msgf("Manga metadata updated in DB, but error while notifying: %s.\nRetrying in %.2f seconds...", err.Error(), retryInterval.Seconds())
 							}
 							break
 						}

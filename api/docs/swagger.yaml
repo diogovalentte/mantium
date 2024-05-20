@@ -1,71 +1,4 @@
 definitions:
-  config.APIConfigs:
-    properties:
-      logLevelInt:
-        type: integer
-      port:
-        type: string
-    type: object
-  config.Configs:
-    properties:
-      api:
-        $ref: '#/definitions/config.APIConfigs'
-      configsFilePath:
-        description: |-
-          A file with configs that should be persisted
-          Relative to main.go
-        type: string
-      db:
-        $ref: '#/definitions/config.DBConfigs'
-      defaultConfigsFilePath:
-        type: string
-      kaizoku:
-        $ref: '#/definitions/config.KaizokuConfigs'
-      ntfy:
-        $ref: '#/definitions/config.NtfyConfigs'
-      periodicallyUpdateMangas:
-        $ref: '#/definitions/config.PeriodicallyUpdateMangasConfigs'
-    type: object
-  config.DBConfigs:
-    properties:
-      db:
-        type: string
-      host:
-        type: string
-      password:
-        type: string
-      port:
-        type: string
-      user:
-        type: string
-    type: object
-  config.KaizokuConfigs:
-    properties:
-      address:
-        type: string
-      defaultInterval:
-        type: string
-      valid:
-        type: boolean
-    type: object
-  config.NtfyConfigs:
-    properties:
-      address:
-        type: string
-      token:
-        type: string
-      topic:
-        type: string
-    type: object
-  config.PeriodicallyUpdateMangasConfigs:
-    properties:
-      minutes:
-        type: integer
-      notify:
-        type: boolean
-      update:
-        type: boolean
-    type: object
   dashboard.BackgroundError:
     properties:
       message:
@@ -74,6 +7,14 @@ definitions:
       time:
         description: Time when the error occurred.
         type: string
+    type: object
+  dashboard.Configs:
+    properties:
+      dashboard:
+        properties:
+          columns:
+            type: integer
+        type: object
     type: object
   manga.Chapter:
     properties:
@@ -103,6 +44,11 @@ definitions:
         items:
           type: integer
         type: array
+      coverImgFixed:
+        description: |-
+          CoverImgFixed is true if the cover image is fixed. If true, the cover image will not be updated when updating the manga metadata.
+          It's used for when the cover image is manually set by the user.
+        type: boolean
       coverImgResized:
         description: CoverImgResized is true if the cover image was resized
         type: boolean
@@ -186,7 +132,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/config.Configs'
+            $ref: '#/definitions/dashboard.Configs'
       summary: Get the dashboard configs
   /dashboard/configs/columns:
     patch:
@@ -342,6 +288,47 @@ paths:
               $ref: '#/definitions/manga.Chapter'
             type: array
       summary: Get manga chapters
+  /manga/cover_img:
+    patch:
+      description: Updates a manga cover image in the database. You must provide either
+        the manga ID or the manga URL. By default, the cover image is fetched from
+        the source site, but you can manually provide an image URL or upload a file.
+        If you want the application to fetch the cover image from the source site,
+        leave the URL field empty and don't upload a file and set the get_cover_img_from_source
+        field to true.
+      parameters:
+      - description: Manga ID
+        example: 1
+        in: query
+        name: id
+        type: integer
+      - description: Manga URL
+        example: '"https://mangadex.org/title/1/one-piece"'
+        in: query
+        name: url
+        type: string
+      - description: Manga cover image
+        in: formData
+        name: cover_img
+        type: file
+      - description: Manga cover image URL
+        example: '"https://example.com/cover.jpg"'
+        in: query
+        name: cover_img_url
+        type: string
+      - description: Manga status
+        example: true
+        in: query
+        name: get_cover_img_from_source
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Update manga cover image
   /manga/last_read_chapter:
     patch:
       description: Updates a manga last read chapter in the database. If both `chapter`

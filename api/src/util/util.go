@@ -104,7 +104,7 @@ func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgB
 	if err != nil {
 		// JPEG format that has an unsupported subsampling ratio
 		// It's a valid image but the standard library doesn't support it
-		// And other libraries use the standard library under the hood
+		// and other libraries use the standard library under the hood
 		if ErrorContains(err, "unsupported JPEG feature: luma/chroma subsampling ratio") {
 			img = imageBytes
 		} else {
@@ -147,6 +147,12 @@ func ResizeImage(imgBytes []byte, width, height uint) ([]byte, error) {
 	}
 
 	return resizedBuf.Bytes(), nil
+}
+
+// IsImageValid checks if an image is valid by decoding it
+func IsImageValid(imgBytes []byte) bool {
+	_, _, err := image.DecodeConfig(bytes.NewReader(imgBytes))
+	return err == nil
 }
 
 // GetRFC3339Datetime returns a time.Time from a RFC3339 formatted string.
