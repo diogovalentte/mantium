@@ -572,7 +572,10 @@ class MainDashboard:
                 del ss["add_manga_chapter_options"]
 
             if st.form_submit_button(
-                "Add Manga", on_click=add_manga_callback, use_container_width=True
+                "Add Manga",
+                on_click=add_manga_callback,
+                use_container_width=True,
+                type="primary",
             ):
                 if ss.get("add_manga_manga_to_add", None) is None:
                     st.warning(
