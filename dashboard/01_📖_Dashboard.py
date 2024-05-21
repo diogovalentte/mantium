@@ -422,7 +422,7 @@ class MainDashboard:
                 )
                 st.divider()
                 st.info(
-                    "If you want the application to fetch the cover image from the source site, leave the URL field empty and don't upload a file, and check the box below."
+                    "If you manually changed the cover image and want to go back and let the application fetch the cover image from the source site, leave the URL field empty and don't upload a file, check the box below, and click the button to update the manga."
                 )
                 st.checkbox(
                     "Get cover image from source site.",
