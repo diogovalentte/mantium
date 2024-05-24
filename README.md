@@ -15,7 +15,6 @@ The basic workflow is:
 ![image](https://github.com/diogovalentte/mantium/assets/49578155/69e5d417-e3c8-4a4e-9613-b47eff54ecce)
 
 - I'm not a web developer or a UX designer, the dashboard is not great, but it's useful.
-- I don't really plan on actively maintaining the project. I'll add features or new sites only when want, but I'll fix bugs and accept pull requests. And of course, anyone can fork the project.
 
 # Project structure and configuration
 
