@@ -30,6 +30,24 @@ The dashboard shows you the mangas you're tracking and is where you interact wit
   - When you click the button to highlight a manga, it shows a form to update the manga status or last read chapter or delete the manga.
   - Set some configs, like the number of columns in the dashboard.
 
+# iFrame
+
+The API has an endpoint that returns an HTML code to be used as iFrame. It's a minimalist version of the dashboard, showing only mangas with unread chapters with status reading or completed.
+
+- **Note**: check the API docs to see which query arguments the iFrame endpoint needs.
+
+![image](https://github.com/diogovalentte/mantium/assets/49578155/e88d85f2-0109-444a-b225-878a5db01400)
+
+When you add an iFrame widget in your Homarr dashboard, it's **>your<** web browser that fetches the HTML content from the API and shows it to you, not Homarr. So your browser needs to be able to access the API, that's how an iFrame works.
+
+- **Examples**:
+  - If you run the API on your server, you need to add your server IP address + port in the Homarr widget, and you need to make sure your browser can access this IP + port.
+  - If you're accessing Homarr or another dashboard with a domain and using HTTPS (like `https://dash.domain.com`), you also need to access this API with a domain and use HTTPS (like `https://mantium-api.domain.com`) to add the iFrame to Homarr. If you try to use HTTP with your HTTPS, your browser will block the iFrame.
+
+# Kaizoku integration
+
+More about it [here](https://github.com/diogovalentte/mantium/blob/main/kaizoku-integration.md).
+
 # Running
 
 By default, the API will be available on port `8080` and the dashboard on port `8501`. They're not accessible by other machines. To access the API and the dashboard in other machines, you need to run them behind a reverse proxy or run the containers in [host network mode](https://docs.docker.com/network/drivers/host/).
@@ -54,24 +72,6 @@ The steps are at the bottom of this README.
 
 - The dashboard and the API don't have any authentication system, so anyone who can access the dashboard and the API can do whatever they want. You can add an authentication portal like [Authelia](https://github.com/authelia/authelia) or [Authentik](https://github.com/goauthentik/authentik) in front of the dashboard to protect it and don't expose the API at all.
   - If you want to use the iFrame returned by the API, you can also put an authentication portal in front of it, if the API and dashboard containers are in the same Docker network. The dashboard will communicate with the API using the API's container name.
-
-# iFrame
-
-The API has an endpoint that returns an HTML code to be used as iFrame (designed to be used in [Homarr](https://github.com/ajnart/homarr)). It's a minimalist version of the dashboard, showing only mangas with unread chapters.
-
-- **Note**: check the API docs to see which query arguments the iFrame endpoint needs.
-
-![image](https://github.com/diogovalentte/mantium/assets/49578155/e88d85f2-0109-444a-b225-878a5db01400)
-
-When you add an iFrame widget in your Homarr dashboard, it's **>your<** web browser that fetches the HTML content from the API and shows it to you, not Homarr. So your browser needs to be able to access the API, that's how an iFrame works.
-
-- **Examples**:
-  - If you run the API on your server, you need to add your server IP address + port in the Homarr widget, and you need to make sure your browser can access this IP + port.
-  - If you're accessing Homarr or another dashboard with a domain and using HTTPS (like `https://dash.domain.com`), you also need to access this API with a domain and use HTTPS (like `https://mantium-api.domain.com`) to add the iFrame to Homarr. If you try to use HTTP with your HTTPS, your browser will block the iFrame.
-
-# Kaizoku integration
-
-More about it [here](https://github.com/diogovalentte/mantium/kaizoku-integration.md).
 
 # Commom problems:
 
