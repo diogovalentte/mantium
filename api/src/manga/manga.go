@@ -554,26 +554,26 @@ func getMangaFromDB(m *Manga, db *sql.DB) error {
 	if m.ID > 0 {
 		query := `
             SELECT
-                id, source, url, name, status, cover_img, cover_img_resized, cover_img_url, preferred_group, last_upload_chapter, last_read_chapter
+                id, source, url, name, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group, last_upload_chapter, last_read_chapter
             FROM
                 mangas
             WHERE
                 id = $1;
         `
-		err := db.QueryRow(query, m.ID).Scan(&m.ID, &m.Source, &m.URL, &m.Name, &m.Status, &m.CoverImg, &m.CoverImgResized, &m.CoverImgURL, &m.PreferredGroup, &lastUploadChapterID, &lastReadChapterID)
+		err := db.QueryRow(query, m.ID).Scan(&m.ID, &m.Source, &m.URL, &m.Name, &m.Status, &m.CoverImg, &m.CoverImgResized, &m.CoverImgURL, &m.CoverImgFixed, &m.PreferredGroup, &lastUploadChapterID, &lastReadChapterID)
 		if err != nil {
 			return err
 		}
 	} else if m.URL != "" {
 		query := `
             SELECT
-                id, source, url, name, status, cover_img, cover_img_resized, cover_img_url, preferred_group, last_upload_chapter, last_read_chapter
+                id, source, url, name, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group, last_upload_chapter, last_read_chapter
             FROM
                 mangas
             WHERE
                 url = $1;
         `
-		err := db.QueryRow(query, m.URL).Scan(&m.ID, &m.Source, &m.URL, &m.Name, &m.Status, &m.CoverImg, &m.CoverImgResized, &m.CoverImgURL, &m.PreferredGroup, &lastUploadChapterID, &lastReadChapterID)
+		err := db.QueryRow(query, m.URL).Scan(&m.ID, &m.Source, &m.URL, &m.Name, &m.Status, &m.CoverImg, &m.CoverImgResized, &m.CoverImgURL, &m.CoverImgFixed, &m.PreferredGroup, &lastUploadChapterID, &lastReadChapterID)
 		if err != nil {
 			return err
 		}
@@ -660,7 +660,7 @@ func GetMangasDB() ([]*Manga, error) {
 func getMangasFromDB(db *sql.DB) ([]*Manga, error) {
 	query := `
         SELECT
-            id, source, url, name, status, cover_img, cover_img_resized, cover_img_url, preferred_group, last_upload_chapter, last_read_chapter
+            id, source, url, name, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group, last_upload_chapter, last_read_chapter
         FROM
             mangas;
     `
@@ -675,7 +675,7 @@ func getMangasFromDB(db *sql.DB) ([]*Manga, error) {
 		var manga Manga
 		var lastUploadChapterID sql.NullInt64
 		var lastReadChapterID sql.NullInt64
-		err = rows.Scan(&manga.ID, &manga.Source, &manga.URL, &manga.Name, &manga.Status, &manga.CoverImg, &manga.CoverImgResized, &manga.CoverImgURL, &manga.PreferredGroup, &lastUploadChapterID, &lastReadChapterID)
+		err = rows.Scan(&manga.ID, &manga.Source, &manga.URL, &manga.Name, &manga.Status, &manga.CoverImg, &manga.CoverImgResized, &manga.CoverImgURL, &manga.CoverImgFixed, &manga.PreferredGroup, &lastUploadChapterID, &lastReadChapterID)
 		if err != nil {
 			return nil, err
 		}

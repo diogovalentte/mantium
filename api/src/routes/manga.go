@@ -871,6 +871,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 
 			if mangaToUpdate.LastUploadChapter.Chapter != updatedManga.LastUploadChapter.Chapter || (!mangaToUpdate.CoverImgFixed && (mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg))) || mangaToUpdate.Name != updatedManga.Name {
 				newMetadata = true
+				updatedManga.CoverImgFixed = mangaToUpdate.CoverImgFixed
 				err = manga.UpdateMangaMetadataDB(updatedManga)
 				if err != nil {
 					logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error saving manga new metadata to DB, will continue with the next manga...")
