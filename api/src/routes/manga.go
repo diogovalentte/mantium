@@ -279,7 +279,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
     <meta name="referrer" content="no-referrer"> <!-- If not set, can't load Mangedex images when behind a domain or reverse proxy -->
     <script src="https://kit.fontawesome.com/3f763b063a.js" crossorigin="anonymous"></script>
     <meta name="color-scheme" content="MANGAS-CONTAINER-BACKGROUND-COLOR">
-    <title>Movie Display Template</title>
+    <title>Mantium</title>
     <style>
         body {
             background: transparent !important;

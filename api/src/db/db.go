@@ -52,7 +52,7 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
           "cover_img_resized" bool,
           "cover_img_url" varchar(255),
           "preferred_group" varchar(30),
-          "last_upload_chapter" smallint,
+          "last_released_chapter" smallint,
           "last_read_chapter" smallint
         );
 
@@ -67,16 +67,22 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
           PRIMARY KEY ("url", "type")
         );
 
-        CREATE TABLE IF NOT EXISTS "chapters" (
-          "id" serial UNIQUE,
-          "manga_id" integer NOT NULL,
-          "url" varchar(255),
-          "chapter" varchar(255),
-          "name" varchar(255),
-          "updated_at" timestamp,
-          "type" smallint,
-          PRIMARY KEY ("url", "type")
-        );
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 
+                FROM information_schema.columns 
+                WHERE table_name='mangas' 
+                  AND column_name='last_upload_chapter'
+            ) AND NOT EXISTS (
+                SELECT 1 
+                FROM information_schema.columns 
+                WHERE table_name='mangas' 
+                  AND column_name='last_released_chapter'
+            ) THEN
+                ALTER TABLE mangas RENAME COLUMN last_upload_chapter TO last_released_chapter;
+            END IF;
+        END $$;
     `)
 	if err != nil {
 		tx.Rollback()
@@ -90,9 +96,9 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
        		if not exists (
        			select 1
        			from pg_catalog.pg_constraint
-       			where conname = 'mangas_last_upload_chapter'
+       			where conname = 'mangas_last_released_chapter'
        		) then
-       			ALTER TABLE "mangas" ADD CONSTRAINT mangas_last_upload_chapter FOREIGN KEY ("last_upload_chapter") REFERENCES "chapters" ("id");
+       			ALTER TABLE "mangas" ADD CONSTRAINT mangas_last_released_chapter FOREIGN KEY ("last_released_chapter") REFERENCES "chapters" ("id");
        		end if;
        	end $$;
 
