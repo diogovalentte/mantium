@@ -3,6 +3,7 @@ package util
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -70,12 +71,32 @@ var (
 func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgBytes []byte, resized bool, err error) {
 	contextError := "error downloading image '%s'"
 
+	httpClient := &http.Client{
+		Timeout: 10 * time.Second,
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				MaxVersion: tls.VersionTLS12,
+			},
+		},
+	}
+
 	imageBytes := make([]byte, 0)
 	for i := 0; i < retries; i++ {
-		resp, err := http.Get(url)
+		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			if i == retries-1 {
-				return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), err)
+				return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), AddErrorContext("error while creating request", err))
+			}
+			time.Sleep(retryInterval)
+			continue
+		}
+
+		req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0")
+
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			if i == retries-1 {
+				return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), AddErrorContext("error while executing request", err))
 			}
 			time.Sleep(retryInterval)
 			continue

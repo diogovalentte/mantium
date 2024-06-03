@@ -7,7 +7,6 @@ package mangahub
 import (
 	"crypto/tls"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -46,79 +45,6 @@ func (s *Source) resetCollector() {
 	}
 
 	s.c = newCollector()
-}
-
-// getCoverImg downloads an image from a URL and tries to resize it.
-func (s *Source) getCoverImg(url string, retries int, retryInterval time.Duration) (imgBytes []byte, resized bool, err error) {
-	contextError := "error downloading image '%s'"
-
-	httpClient := &http.Client{
-		Timeout: 10 * time.Second, // xD
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				MaxVersion: tls.VersionTLS12,
-			},
-		},
-	}
-
-	imageBytes := make([]byte, 0)
-	for i := 0; i < retries; i++ {
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			if i == retries-1 {
-				return nil, resized, util.AddErrorContext(fmt.Sprintf(contextError, url), util.AddErrorContext("error while creating request", err))
-			}
-			time.Sleep(retryInterval)
-			continue
-		}
-
-		req.Header.Set("User-Agent", "Custom User Agent")
-
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			if i == retries-1 {
-				return nil, resized, util.AddErrorContext(fmt.Sprintf(contextError, url), util.AddErrorContext("error while executing request", err))
-			}
-			time.Sleep(retryInterval)
-			continue
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			if i == retries-1 {
-				defer resp.Body.Close()
-				body, _ := io.ReadAll(resp.Body)
-				return nil, resized, util.AddErrorContext(fmt.Sprintf(contextError, url), fmt.Errorf("non-200 status code -> (%d). Body: %s", resp.StatusCode, string(body)))
-			}
-			time.Sleep(retryInterval)
-			continue
-		}
-
-		imageBytes, err = io.ReadAll(resp.Body)
-		if err != nil {
-			if i == retries-1 {
-				return nil, resized, util.AddErrorContext(fmt.Sprintf(contextError, url), util.AddErrorContext("error while reading response body", err))
-			}
-			time.Sleep(retryInterval)
-			continue
-		}
-	}
-
-	img, err := util.ResizeImage(imageBytes, uint(util.DefaultImageWidth), uint(util.DefaultImageHeight))
-	if err != nil {
-		// JPEG format that has an unsupported subsampling ratio
-		// It's a valid image but the standard library doesn't support it
-		// And other libraries use the standard library under the hood
-		if util.ErrorContains(err, "unsupported JPEG feature: luma/chroma subsampling ratio") {
-			img = imageBytes
-		} else {
-			return nil, resized, util.AddErrorContext(fmt.Sprintf(contextError, url), err)
-		}
-	} else {
-		resized = true
-	}
-
-	return img, resized, nil
 }
 
 // getMangaReleaseTime parses the time string from the mangahub site.

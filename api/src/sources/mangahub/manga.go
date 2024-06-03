@@ -97,7 +97,7 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 	}
 
 	// get cover image
-	coverImg, resized, err := s.getCoverImg(mangaReturn.CoverImgURL, 3, 1*time.Second)
+	coverImg, resized, err := util.GetImageFromURL(mangaReturn.CoverImgURL, 3, 1*time.Second)
 	if err != nil {
 		return nil, util.AddErrorContext(errorContext, err)
 	}
