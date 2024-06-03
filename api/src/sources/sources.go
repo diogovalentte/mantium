@@ -47,11 +47,11 @@ func DeleteSource(domain string) {
 
 // GetSource returns a source
 func GetSource(domain string) (Source, error) {
-	contextError := "Error while getting source"
+	contextError := "error while getting source"
 
 	value, ok := sources[domain]
 	if !ok {
-		return nil, util.AddErrorContext(contextError, fmt.Errorf("Source '%s' not found", domain))
+		return nil, util.AddErrorContext(contextError, fmt.Errorf("source '%s' not found", domain))
 	}
 	return value, nil
 }
@@ -63,7 +63,7 @@ func GetSources() map[string]Source {
 
 // GetMangaMetadata gets the metadata of a manga using a source
 func GetMangaMetadata(mangaURL string, ignoreGetLastChapterError bool) (*manga.Manga, error) {
-	contextError := "Error while getting metadata of manga with URL '%s' from source"
+	contextError := "error while getting metadata of manga with URL '%s' from source"
 
 	domain, err := getDomain(mangaURL)
 	if err != nil {
@@ -88,7 +88,7 @@ func GetMangaMetadata(mangaURL string, ignoreGetLastChapterError bool) (*manga.M
 // Each source has its own way to get the chapter. Some can't get the chapter by its URL/chapter,
 // so they get the chapter by the chapter chapter/URL.
 func GetChapterMetadata(mangaURL string, chapter string, chapterURL string) (*manga.Chapter, error) {
-	contextError := "Error while getting metadata of chapter with chapter '%s' and URL '%s' for manga with URL '%s' from source"
+	contextError := "error while getting metadata of chapter with chapter '%s' and URL '%s' for manga with URL '%s' from source"
 
 	domain, err := getDomain(mangaURL)
 	if err != nil {
@@ -111,7 +111,7 @@ func GetChapterMetadata(mangaURL string, chapter string, chapterURL string) (*ma
 
 // GetMangaChapters gets the chapters of a manga using a source
 func GetMangaChapters(mangaURL string) ([]*manga.Chapter, error) {
-	contextError := "Error while getting manga with URL '%s' chapters from source"
+	contextError := "error while getting manga with URL '%s' chapters from source"
 
 	domain, err := getDomain(mangaURL)
 	if err != nil {
@@ -133,7 +133,7 @@ func GetMangaChapters(mangaURL string) ([]*manga.Chapter, error) {
 }
 
 func getDomain(urlString string) (string, error) {
-	errorContext := "Error while getting domain from URL '%s'"
+	errorContext := "error while getting domain from URL '%s'"
 
 	parsedURL, err := url.Parse(urlString)
 	if err != nil {

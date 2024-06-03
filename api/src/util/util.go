@@ -68,7 +68,7 @@ var (
 // GetImageFromURL downloads an image from a URL and tries to resize it.
 // If the image is not resized, it returns the original image.
 func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgBytes []byte, resized bool, err error) {
-	contextError := "Error downloading image '%s'"
+	contextError := "error downloading image '%s'"
 
 	imageBytes := make([]byte, 0)
 	for i := 0; i < retries; i++ {
@@ -84,7 +84,9 @@ func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgB
 
 		if resp.StatusCode != http.StatusOK {
 			if i == retries-1 {
-				return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), fmt.Errorf("Status code is not OK, instead it's %d", resp.StatusCode))
+				defer resp.Body.Close()
+				body, _ := io.ReadAll(resp.Body)
+				return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), fmt.Errorf("non-200 status code -> (%d). Body: %s", resp.StatusCode, string(body)))
 			}
 			time.Sleep(retryInterval)
 			continue
@@ -93,7 +95,7 @@ func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgB
 		imageBytes, err = io.ReadAll(resp.Body)
 		if err != nil {
 			if i == retries-1 {
-				return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), AddErrorContext("Could not read the image data from request body", err))
+				return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), AddErrorContext("could not read the image data from request body", err))
 			}
 			time.Sleep(retryInterval)
 			continue
@@ -119,7 +121,7 @@ func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgB
 
 // ResizeImage resizes an image to the specified width and height
 func ResizeImage(imgBytes []byte, width, height uint) ([]byte, error) {
-	contextError := "Error resizing image to width %d and height %d"
+	contextError := "error resizing image to width %d and height %d"
 
 	_, format, err := image.DecodeConfig(bytes.NewReader(imgBytes))
 	if err != nil {
@@ -140,7 +142,7 @@ func ResizeImage(imgBytes []byte, width, height uint) ([]byte, error) {
 	case "png":
 		err = png.Encode(&resizedBuf, resizedImg)
 	default:
-		return nil, AddErrorContext(fmt.Sprintf(contextError, width, height), fmt.Errorf("Unsupported image format to resize: %s", format))
+		return nil, AddErrorContext(fmt.Sprintf(contextError, width, height), fmt.Errorf("unsupported image format to resize: %s", format))
 	}
 	if err != nil {
 		return nil, AddErrorContext(fmt.Sprintf(contextError, width, height), err)
@@ -158,7 +160,7 @@ func IsImageValid(imgBytes []byte) bool {
 // GetRFC3339Datetime returns a time.Time from a RFC3339 formatted string.
 // Also truncate the time to seconds.
 func GetRFC3339Datetime(date string) (time.Time, error) {
-	contextError := "Error parsing RFC3339 datetime '%s'"
+	contextError := "error parsing RFC3339 datetime '%s'"
 
 	parsedDate, err := time.Parse(time.RFC3339, date)
 	if err != nil {
@@ -171,7 +173,7 @@ func GetRFC3339Datetime(date string) (time.Time, error) {
 
 // RequestUpdateMangasMetadata sends a request to the server to update all mangas metadata
 func RequestUpdateMangasMetadata(notify bool) (*http.Response, error) {
-	contextErrror := "Error requesting to update mangas metadata (notify is %v)"
+	contextErrror := "error requesting to update mangas metadata (notify is %v)"
 
 	client := &http.Client{}
 
@@ -195,7 +197,9 @@ func RequestUpdateMangasMetadata(notify bool) (*http.Response, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return resp, AddErrorContext(fmt.Sprintf(contextErrror, notify), fmt.Errorf("Status code is not OK, instead it's %d", resp.StatusCode))
+		defer resp.Body.Close()
+		body, _ := io.ReadAll(resp.Body)
+		return resp, AddErrorContext(fmt.Sprintf(contextErrror, notify), fmt.Errorf("non-200 status code -> (%d). Body", resp.StatusCode, string(body)))
 	}
 
 	return resp, nil

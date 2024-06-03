@@ -50,7 +50,7 @@ func (s *Source) resetCollector() {
 
 // getCoverImg downloads an image from a URL and tries to resize it.
 func (s *Source) getCoverImg(url string, retries int, retryInterval time.Duration) (imgBytes []byte, resized bool, err error) {
-	contextError := "Error downloading image '%s'"
+	contextError := "error downloading image '%s'"
 
 	httpClient := &http.Client{
 		Timeout: 10 * time.Second, // xD
@@ -66,7 +66,7 @@ func (s *Source) getCoverImg(url string, retries int, retryInterval time.Duratio
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			if i == retries-1 {
-				return nil, resized, util.AddErrorContext(fmt.Sprintf(contextError, url), util.AddErrorContext("Error while creating request", err))
+				return nil, resized, util.AddErrorContext(fmt.Sprintf(contextError, url), util.AddErrorContext("error while creating request", err))
 			}
 			time.Sleep(retryInterval)
 			continue
@@ -77,7 +77,7 @@ func (s *Source) getCoverImg(url string, retries int, retryInterval time.Duratio
 		resp, err := httpClient.Do(req)
 		if err != nil {
 			if i == retries-1 {
-				return nil, resized, util.AddErrorContext(fmt.Sprintf(contextError, url), util.AddErrorContext("Error while executing request", err))
+				return nil, resized, util.AddErrorContext(fmt.Sprintf(contextError, url), util.AddErrorContext("error while executing request", err))
 			}
 			time.Sleep(retryInterval)
 			continue
@@ -86,7 +86,9 @@ func (s *Source) getCoverImg(url string, retries int, retryInterval time.Duratio
 
 		if resp.StatusCode != http.StatusOK {
 			if i == retries-1 {
-				return nil, resized, util.AddErrorContext(fmt.Sprintf(contextError, url), fmt.Errorf("Status code is not OK, instead it's %d", resp.StatusCode))
+				defer resp.Body.Close()
+				body, _ := io.ReadAll(resp.Body)
+				return nil, resized, util.AddErrorContext(fmt.Sprintf(contextError, url), fmt.Errorf("non-200 status code -> (%d). Body: %s", resp.StatusCode, string(body)))
 			}
 			time.Sleep(retryInterval)
 			continue
@@ -95,7 +97,7 @@ func (s *Source) getCoverImg(url string, retries int, retryInterval time.Duratio
 		imageBytes, err = io.ReadAll(resp.Body)
 		if err != nil {
 			if i == retries-1 {
-				return nil, resized, util.AddErrorContext(fmt.Sprintf(contextError, url), util.AddErrorContext("Error while reading response body", err))
+				return nil, resized, util.AddErrorContext(fmt.Sprintf(contextError, url), util.AddErrorContext("error while reading response body", err))
 			}
 			time.Sleep(retryInterval)
 			continue
@@ -122,7 +124,7 @@ func (s *Source) getCoverImg(url string, retries int, retryInterval time.Duratio
 // getMangaReleaseTime parses the time string from the mangahub site.
 // The returned time is in timezone local.
 func getMangaReleaseTime(timeString string) (time.Time, error) {
-	errorContext := "Error while parsing release time '%s'"
+	errorContext := "error while parsing release time '%s'"
 
 	layout := "01-02-2006"
 	parsedTime, err := time.Parse(layout, timeString)
@@ -187,7 +189,7 @@ func getMangaReleaseTime(timeString string) (time.Time, error) {
 			}
 		}
 
-		return time.Time{}, util.AddErrorContext(fmt.Sprintf(errorContext, timeString), fmt.Errorf("No configured datetime parser"))
+		return time.Time{}, util.AddErrorContext(fmt.Sprintf(errorContext, timeString), fmt.Errorf("no configured datetime parser"))
 	}
 
 	return parsedTime.Truncate(time.Second), nil

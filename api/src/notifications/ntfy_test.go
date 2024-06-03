@@ -34,12 +34,12 @@ func TestMain(m *testing.M) {
 func TestSendNtfyMessage(t *testing.T) {
 	publisher, err := GetNtfyPublisher()
 	if err != nil {
-		t.Errorf("Error getting ntfy publisher: %v", err)
+		t.Fatalf("error getting ntfy publisher: %v", err)
 	}
 
 	link, err := url.Parse("https://www.google.com")
 	if err != nil {
-		t.Errorf("Error parsing link: %v", err)
+		t.Fatalf("error parsing link: %v", err)
 	}
 	msg := &gotfy.Message{
 		Topic:   publisher.Topic,
@@ -57,6 +57,6 @@ func TestSendNtfyMessage(t *testing.T) {
 	ctx := context.Background()
 	err = publisher.SendMessage(ctx, msg)
 	if err != nil {
-		t.Errorf("Error sending message: %v", err)
+		t.Fatalf("error sending message: %v", err)
 	}
 }

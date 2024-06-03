@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/diogovalentte/mantium/api/src/db"
+	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
@@ -57,7 +58,7 @@ func (m Manga) String() string {
 
 // InsertIntoDB saves the manga into the database
 func (m *Manga) InsertIntoDB() (ID, error) {
-	contextError := "Error inserting manga '%s' into DB"
+	contextError := "error inserting manga '%s' into DB"
 
 	db, err := db.OpenConn()
 	if err != nil {
@@ -101,7 +102,7 @@ func insertMangaIntoDB(m *Manga, tx *sql.Tx) (ID, error) {
     `, m.Source, m.URL, m.Name, m.Status, m.CoverImg, m.CoverImgResized, m.CoverImgURL, m.CoverImgFixed, m.PreferredGroup).Scan(&mangaID)
 	if err != nil {
 		if err.Error() == `pq: duplicate key value violates unique constraint "mangas_pkey"` {
-			return -1, fmt.Errorf("manga already exists in DB")
+			return -1, errordefs.ErrMangaAlreadyInDB
 		}
 		return -1, err
 	}
@@ -149,7 +150,7 @@ func insertMangaIntoDB(m *Manga, tx *sql.Tx) (ID, error) {
 
 // DeleteFromDB deletes the manga and its chapters from the database if they exists.
 func (m *Manga) DeleteFromDB() error {
-	contextError := "Error deleting manga '%s' from DB"
+	contextError := "error deleting manga '%s' from DB"
 
 	db, err := db.OpenConn()
 	if err != nil {
@@ -202,7 +203,7 @@ func deleteMangaDB(m *Manga, tx *sql.Tx) error {
 			return err
 		}
 	} else {
-		return fmt.Errorf("Manga doesn't have an ID or URL")
+		return errordefs.ErrMangaDoesntHaveIDAndURL
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -210,7 +211,7 @@ func deleteMangaDB(m *Manga, tx *sql.Tx) error {
 		return err
 	}
 	if rowsAffected == 0 {
-		return fmt.Errorf("Manga not found in DB")
+		return errordefs.ErrMangaNotFoundDB
 	}
 
 	return nil
@@ -218,7 +219,7 @@ func deleteMangaDB(m *Manga, tx *sql.Tx) error {
 
 // UpdateStatusInDB updates the manga status in the database
 func (m *Manga) UpdateStatusInDB(status Status) error {
-	contextError := "Error updating manga '%s' status in DB"
+	contextError := "error updating manga '%s' status in DB"
 
 	db, err := db.OpenConn()
 	if err != nil {
@@ -276,7 +277,7 @@ func updateMangaStatusDB(m *Manga, status Status, tx *sql.Tx) error {
 			return err
 		}
 	} else {
-		return fmt.Errorf("Manga doesn't have an ID or URL")
+		return errordefs.ErrMangaDoesntHaveIDAndURL
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -284,7 +285,7 @@ func updateMangaStatusDB(m *Manga, status Status, tx *sql.Tx) error {
 		return err
 	}
 	if rowsAffected == 0 {
-		return fmt.Errorf("Manga not found in DB")
+		return errordefs.ErrMangaNotFoundDB
 	}
 	m.Status = status
 
@@ -294,7 +295,7 @@ func updateMangaStatusDB(m *Manga, status Status, tx *sql.Tx) error {
 // UpsertChapterInDB updates the last read/released chapter in the database
 // The chapter.Type field must be set
 func (m *Manga) UpsertChapterInDB(chapter *Chapter) error {
-	contextError := "Error upserting chapter '%s' to manga '%s' in DB"
+	contextError := "error upserting chapter '%s' to manga '%s' in DB"
 
 	db, err := db.OpenConn()
 	if err != nil {
@@ -324,7 +325,7 @@ func (m *Manga) UpsertChapterInDB(chapter *Chapter) error {
 
 // UpdateNameInDB updates the manga name in the database
 func (m *Manga) UpdateNameInDB(name string) error {
-	contextError := "Error updating manga '%s' name to '%s' in DB"
+	contextError := "error updating manga '%s' name to '%s' in DB"
 
 	db, err := db.OpenConn()
 	if err != nil {
@@ -378,7 +379,7 @@ func updateMangaName(m *Manga, name string, tx *sql.Tx) error {
 			return err
 		}
 	} else {
-		return fmt.Errorf("Manga doesn't have an ID or URL")
+		return errordefs.ErrMangaDoesntHaveIDAndURL
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -386,7 +387,7 @@ func updateMangaName(m *Manga, name string, tx *sql.Tx) error {
 		return err
 	}
 	if rowsAffected == 0 {
-		return fmt.Errorf("Manga not found in DB")
+		return errordefs.ErrMangaNotFoundDB
 	}
 
 	return nil
@@ -395,28 +396,28 @@ func updateMangaName(m *Manga, name string, tx *sql.Tx) error {
 // UpdateCoverImgInDB updates the manga cover image in the database.
 // It doesn't care if the cover image is fixed or not.
 func (m *Manga) UpdateCoverImgInDB(coverImg []byte, coverImgResized bool, coverImgURL string) error {
-	contextError := "Error updating manga '%s' cover image to '%s' in DB"
+	contextError := "error updating manga '%s' cover image to URL '%s' or/and image with '%d' bytes in DB"
 
 	db, err := db.OpenConn()
 	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m, coverImgURL), err)
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, coverImgURL, len(coverImg)), err)
 	}
 	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m, coverImgURL), err)
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, coverImgURL, len(coverImg)), err)
 	}
 
 	err = updateMangaCoverImg(m, coverImg, coverImgResized, coverImgURL, m.CoverImgFixed, tx)
 	if err != nil {
 		tx.Rollback()
-		return util.AddErrorContext(fmt.Sprintf(contextError, m, coverImgURL), err)
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, coverImgURL, len(coverImg)), err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m, coverImgURL), err)
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, coverImgURL, len(coverImg)), err)
 	}
 	m.CoverImg = coverImg
 	m.CoverImgResized = coverImgResized
@@ -451,7 +452,7 @@ func updateMangaCoverImg(m *Manga, coverImg []byte, coverImgResized bool, coverI
 			return err
 		}
 	} else {
-		return fmt.Errorf("Manga doesn't have an ID or URL")
+		return errordefs.ErrMangaDoesntHaveIDAndURL
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -459,7 +460,7 @@ func updateMangaCoverImg(m *Manga, coverImg []byte, coverImgResized bool, coverI
 		return err
 	}
 	if rowsAffected == 0 {
-		return fmt.Errorf("Manga not found in DB")
+		return errordefs.ErrMangaNotFoundDB
 	}
 
 	return nil
@@ -470,7 +471,7 @@ func updateMangaCoverImg(m *Manga, coverImg []byte, coverImgResized bool, coverI
 // The manga argument should have the ID or URL set to identify which manga to update.
 // The other fields of the manga will be the new values for the manga in the database.
 func UpdateMangaMetadataDB(m *Manga) error {
-	contextError := "Error updating manga '%s' metadata in DB"
+	contextError := "error updating manga '%s' metadata in DB"
 
 	db, err := db.OpenConn()
 	if err != nil {
@@ -527,7 +528,7 @@ func updateMangaMetadata(m *Manga, tx *sql.Tx) error {
 
 // GetMangaDB gets a manga from the database by its ID or URL
 func GetMangaDB(mangaID ID, mangaURL string) (*Manga, error) {
-	contextError := "Error getting manga with ID '%d' and URL '%s' from DB"
+	contextError := "error getting manga with ID '%d' and URL '%s' from DB"
 
 	db, err := db.OpenConn()
 	if err != nil {
@@ -542,7 +543,7 @@ func GetMangaDB(mangaID ID, mangaURL string) (*Manga, error) {
 	err = getMangaFromDB(&mangaGet, db)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaID, mangaURL), fmt.Errorf("Manga not found in DB"))
+			return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaID, mangaURL), errordefs.ErrMangaNotFoundDB)
 		}
 		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaID, mangaURL), err)
 	}
@@ -580,7 +581,7 @@ func getMangaFromDB(m *Manga, db *sql.DB) error {
 			return err
 		}
 	} else {
-		return fmt.Errorf("Manga doesn't have an ID or URL")
+		return errordefs.ErrMangaDoesntHaveIDAndURL
 	}
 
 	if lastReleasedChapterID.Valid && lastReleasedChapterID.Int64 != 0 {
@@ -607,7 +608,7 @@ func getMangaFromDB(m *Manga, db *sql.DB) error {
 }
 
 func getMangaIDByURL(url string) (ID, error) {
-	contextError := "Error getting manga ID by URL '%s' from DB"
+	contextError := "error getting manga ID by URL '%s' from DB"
 
 	db, err := db.OpenConn()
 	if err != nil {
@@ -623,7 +624,7 @@ func getMangaIDByURL(url string) (ID, error) {
     `, url).Scan(&mangaID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return -1, util.AddErrorContext(fmt.Sprintf(contextError, url), fmt.Errorf("Manga not found in DB"))
+			return -1, util.AddErrorContext(fmt.Sprintf(contextError, url), errordefs.ErrMangaNotFoundDB)
 		}
 		return -1, util.AddErrorContext(fmt.Sprintf(contextError, url), err)
 	}
@@ -643,7 +644,7 @@ func GetMangaDBByURL(url string) (*Manga, error) {
 
 // GetMangasDB gets all mangas from the database
 func GetMangasDB() ([]*Manga, error) {
-	contextError := "Error getting mangas from DB"
+	contextError := "error getting mangas from DB"
 
 	db, err := db.OpenConn()
 	if err != nil {
@@ -710,20 +711,20 @@ func getMangasFromDB(db *sql.DB) ([]*Manga, error) {
 
 // validateManga should be used every time the API interacts with the mangas table in the database
 func validateManga(m *Manga) error {
-	contextError := "Error validating manga"
+	contextError := "error validating manga"
 
 	err := validateStatus(m.Status)
 	if err != nil {
 		return util.AddErrorContext(contextError, err)
 	}
 	if m.Source == "" {
-		return util.AddErrorContext(contextError, fmt.Errorf("Manga source is empty"))
+		return util.AddErrorContext(contextError, fmt.Errorf("manga source is empty"))
 	}
 	if m.URL == "" {
-		return util.AddErrorContext(contextError, fmt.Errorf("Manga URL is empty"))
+		return util.AddErrorContext(contextError, fmt.Errorf("manga URL is empty"))
 	}
 	if m.Name == "" {
-		return util.AddErrorContext(contextError, fmt.Errorf("Manga name is empty"))
+		return util.AddErrorContext(contextError, fmt.Errorf("manga name is empty"))
 	}
 
 	if m.LastReleasedChapter != nil {
@@ -744,7 +745,7 @@ func validateManga(m *Manga) error {
 
 func validateStatus(status Status) error {
 	if status < 1 || status > 5 {
-		return fmt.Errorf("Manga status should be >= 1 && <= 5, instead it's %d", status)
+		return fmt.Errorf("manga status should be >= 1 && <= 5, instead it's %d", status)
 	}
 
 	return nil

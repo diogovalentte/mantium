@@ -15,7 +15,7 @@ import (
 
 // GetNtfyPublisher returns a new NtfyPublisher
 func GetNtfyPublisher() (*NtfyPublisher, error) {
-	contextError := "Could not get Ntfy publisher"
+	contextError := "could not get Ntfy publisher"
 
 	configs := config.GlobalConfigs.Ntfy
 
@@ -62,7 +62,7 @@ type NtfyPublisher struct {
 func (t *NtfyPublisher) SendMessage(ctx context.Context, message *gotfy.Message) error {
 	_, err := t.Publisher.SendMessage(ctx, message)
 	if err != nil {
-		return util.AddErrorContext("Could not send message to Ntfy", err)
+		return util.AddErrorContext("could not send message to Ntfy", err)
 	}
 
 	return nil

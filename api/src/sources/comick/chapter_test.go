@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
@@ -47,7 +48,7 @@ var chapterTestTable = []chapterTestType{
 func TestGetChapterMetadata(t *testing.T) {
 	source := Source{}
 
-	t.Run("should get the metadata of a chapter from multiple mangas", func(t *testing.T) {
+	t.Run("Should get the metadata of a chapter from multiple mangas", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
 			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
@@ -73,7 +74,7 @@ func TestGetChapterMetadata(t *testing.T) {
 			}
 		}
 	})
-	t.Run("should not get the metadata of a chapter from multiple mangas", func(t *testing.T) {
+	t.Run("Should not get the metadata of a chapter from multiple mangas", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
 			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
@@ -82,7 +83,7 @@ func TestGetChapterMetadata(t *testing.T) {
 
 			actualChapter, err := source.GetChapterMetadata(mangaURL, "", chapterURL)
 			if err != nil {
-				if !util.ErrorContains(err, "Non-200 status code -> (404)") {
+				if !util.ErrorContains(err, errordefs.ErrChapterNotFound.Error()) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			} else {
@@ -95,7 +96,7 @@ func TestGetChapterMetadata(t *testing.T) {
 
 			actualChapter, err = source.GetChapterMetadata(mangaURL, expected.Chapter, "")
 			if err != nil {
-				if !util.ErrorContains(err, "Non-200 status code -> (404)") {
+				if !util.ErrorContains(err, errordefs.ErrMangaNotFound.Error()) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			} else {
@@ -136,7 +137,7 @@ func TestGetLastChapterMetadata(t *testing.T) {
 
 			actualChapter, err := source.GetLastChapterMetadata(mangaURL)
 			if err != nil {
-				if !util.ErrorContains(err, "Non-200 status code -> (404)") {
+				if !util.ErrorContains(err, errordefs.ErrMangaNotFound.Error()) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			} else {
@@ -210,7 +211,7 @@ func TestGetChaptersMetadata(t *testing.T) {
 
 			chapters, err := source.GetChaptersMetadata(mangaURL)
 			if err != nil {
-				if !util.ErrorContains(err, "Non-200 status code -> (404)") {
+				if !util.ErrorContains(err, errordefs.ErrMangaNotFound.Error()) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			} else {

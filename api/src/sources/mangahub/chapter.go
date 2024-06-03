@@ -6,16 +6,17 @@ import (
 
 	"github.com/gocolly/colly/v2"
 
+	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // GetChapterMetadata returns a chapter by its chapter or URL
 func (s *Source) GetChapterMetadata(mangaURL string, chapter string, chapterURL string) (*manga.Chapter, error) {
-	errorContext := "Error while getting metadata of chapter with chapter '%s' and URL '%s', and manga URL '%s'"
+	errorContext := "error while getting metadata of chapter with chapter '%s' and URL '%s', and manga URL '%s'"
 
 	if chapter == "" && chapterURL == "" {
-		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL), fmt.Errorf("Chapter or chapter URL is required"))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL), errordefs.ErrChapterDoesntHaveChapterAndURL)
 	}
 
 	returnChapter := &manga.Chapter{}
@@ -36,7 +37,7 @@ func (s *Source) GetChapterMetadata(mangaURL string, chapter string, chapterURL 
 
 // GetChapterMetadataByURL scrapes the manga page and return the chapter by its URL
 func (s *Source) GetChapterMetadataByURL(_ string) (*manga.Chapter, error) {
-	return nil, fmt.Errorf("Not implemented")
+	return nil, fmt.Errorf("not implemented")
 }
 
 // GetChapterMetadataByChapter scrapes the manga page and return the chapter by its chapter
@@ -73,7 +74,7 @@ func (s *Source) GetChapterMetadataByChapter(mangaURL string, chapter string) (*
 	err := s.c.Visit(mangaURL)
 	if err != nil {
 		if err.Error() == "Not Found" {
-			return nil, fmt.Errorf("Manga not found")
+			return nil, errordefs.ErrMangaNotFound
 		}
 		return nil, err
 	}
@@ -81,7 +82,7 @@ func (s *Source) GetChapterMetadataByChapter(mangaURL string, chapter string) (*
 		return nil, sharedErr
 	}
 	if !chapterFound {
-		return nil, fmt.Errorf("Chapter not found")
+		return nil, errordefs.ErrChapterNotFound
 	}
 
 	return chapterReturn, nil
@@ -91,7 +92,7 @@ func (s *Source) GetChapterMetadataByChapter(mangaURL string, chapter string) (*
 func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error) {
 	s.resetCollector()
 
-	errorContext := "Error while getting last chapter metadata"
+	errorContext := "error while getting last chapter metadata"
 	chapterReturn := &manga.Chapter{}
 	var sharedErr error
 
@@ -122,7 +123,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 	err := s.c.Visit(mangaURL)
 	if err != nil {
 		if err.Error() == "Not Found" {
-			return nil, util.AddErrorContext(errorContext, fmt.Errorf("Manga not found"))
+			return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
 		}
 		return nil, util.AddErrorContext(errorContext, err)
 	}
@@ -137,7 +138,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) {
 	s.resetCollector()
 
-	errorContext := "Error while getting chapters metadata"
+	errorContext := "error while getting chapters metadata"
 	chapters := []*manga.Chapter{}
 	var sharedErr error
 
@@ -167,7 +168,7 @@ func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) 
 	err := s.c.Visit(mangaURL)
 	if err != nil {
 		if err.Error() == "Not Found" {
-			return nil, util.AddErrorContext(errorContext, fmt.Errorf("Manga not found"))
+			return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
 		}
 		return nil, util.AddErrorContext(errorContext, err)
 	}

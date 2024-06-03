@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/diogovalentte/mantium/api/src/errors"
+	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // GetChapterMetadata returns a chapter by its chapter or URL
 func (s *Source) GetChapterMetadata(mangaURL string, chapter string, chapterURL string) (*manga.Chapter, error) {
-	errorContext := "Error while getting metadata of chapter with chapter '%s' and URL '%s', and manga URL '%s'"
+	errorContext := "error while getting metadata of chapter with chapter '%s' and URL '%s', and manga URL '%s'"
 
 	if chapter == "" && chapterURL == "" {
-		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL), fmt.Errorf("Chapter or chapter URL is required"))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL), errordefs.ErrChapterDoesntHaveChapterAndURL)
 	}
 
 	returnChapter := &manga.Chapter{}
@@ -50,6 +50,9 @@ func (s *Source) getChapterMetadataByURL(chapterURL string) (*manga.Chapter, err
 	var chapterAPIResp getChapterAPIResponse
 	_, err = s.client.Request(context.Background(), "GET", chapterAPIURL, nil, &chapterAPIResp)
 	if err != nil {
+		if util.ErrorContains(err, "non-200 status code -> (404)") {
+			return nil, errordefs.ErrChapterNotFound
+		}
 		return nil, err
 	}
 
@@ -93,14 +96,14 @@ type getChapterAPIResponse struct {
 
 // getChapterMetadataByChapter scrapes the manga page and return the chapter by its chapter
 func (s *Source) getChapterMetadataByChapter(_ string, _ string) (*manga.Chapter, error) {
-	return nil, fmt.Errorf("Not implemented")
+	return nil, fmt.Errorf("not implemented")
 }
 
 // GetLastChapterMetadata returns the last chapter of a manga by its URL
 func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error) {
 	s.checkClient()
 
-	errorContext := "Error while getting last chapter metadata"
+	errorContext := "error while getting last chapter metadata"
 
 	mangaID, err := getMangaID(mangaURL)
 	if err != nil {
@@ -112,11 +115,14 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 	var feedAPIResp getMangaFeedAPIResponse
 	_, err = s.client.Request(context.Background(), "GET", mangaAPIURL, nil, &feedAPIResp)
 	if err != nil {
+		if util.ErrorContains(err, "non-200 status code -> (404)") {
+			return nil, errordefs.ErrChapterNotFound
+		}
 		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	if len(feedAPIResp.Data) == 0 {
-		return nil, util.AddErrorContext(errorContext, errors.ErrLastReleasedChapterNotFound)
+		return nil, util.AddErrorContext(errorContext, errordefs.ErrLastReleasedChapterNotFound)
 	}
 
 	chapterReturn := &manga.Chapter{}
@@ -153,7 +159,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) {
 	s.checkClient()
 
-	errorContext := "Error while getting chapters metadata"
+	errorContext := "error while getting chapters metadata"
 
 	chaptersChan := make(chan *manga.Chapter)
 	errChan := make(chan error)
@@ -204,6 +210,9 @@ func generateMangaFeed(s *Source, mangaURL string, chaptersChan chan<- *manga.Ch
 		var feedAPIResp getMangaFeedAPIResponse
 		_, err = s.client.Request(context.Background(), "GET", mangaAPIURL, nil, &feedAPIResp)
 		if err != nil {
+			if util.ErrorContains(err, "non-200 status code -> (404)") {
+				err = util.AddErrorContext(err.Error(), errordefs.ErrMangaNotFound)
+			}
 			errChan <- err
 			return
 		}
@@ -261,7 +270,7 @@ type getMangaFeedAPIResponse struct {
 // getChapterID returns the ID of a chapter given its URL.
 // URL should be like: https://mangadex.org/chapter/87ebd557-8394-4f16-8afe-a8644e555ddc
 func getChapterID(chapterURL string) (string, error) {
-	errorContext := "Error while getting chapter ID"
+	errorContext := "error while getting chapter ID"
 
 	pattern := `https://mangadex\.org/chapter/([0-9a-fA-F-]+)`
 	re, err := regexp.Compile(pattern)
@@ -271,7 +280,7 @@ func getChapterID(chapterURL string) (string, error) {
 
 	matches := re.FindStringSubmatch(chapterURL)
 	if len(matches) < 2 {
-		return "", util.AddErrorContext(errorContext, fmt.Errorf("Chapter ID not found in URL"))
+		return "", util.AddErrorContext(errorContext, fmt.Errorf("chapter ID not found in URL"))
 	}
 
 	return matches[1], nil

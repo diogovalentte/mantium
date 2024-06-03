@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/diogovalentte/mantium/api/src/errors"
+	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // GetChapterMetadata returns a chapter by its chapter or URL
 func (s *Source) GetChapterMetadata(mangaURL, chapter, chapterURL string) (*manga.Chapter, error) {
-	errorContext := "Error while getting metadata of chapter with chapter '%s' and URL '%s', and manga URL '%s'"
+	errorContext := "error while getting metadata of chapter with chapter '%s' and URL '%s', and manga URL '%s'"
 
 	if chapter == "" && chapterURL == "" {
-		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL), fmt.Errorf("Chapter or chapter URL is required"))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL), errordefs.ErrChapterDoesntHaveChapterAndURL)
 	}
 
 	returnChapter := &manga.Chapter{}
@@ -47,6 +47,9 @@ func (s *Source) getChapterMetadataByURL(chapterURL, mangaURL string) (*manga.Ch
 	var chapterAPIResp getChapterAPIResponse
 	_, err = s.client.Request("GET", mangaAPIURL, nil, &chapterAPIResp)
 	if err != nil {
+		if util.ErrorContains(err, "non-200 status code -> (404)") {
+			return nil, errordefs.ErrChapterNotFound
+		}
 		return nil, err
 	}
 
@@ -75,6 +78,9 @@ func (s *Source) getChapterMetadataByChapter(mangaURL string, chapter string) (*
 	var chaptersAPIResp getChaptersAPIResponse
 	_, err = s.client.Request("GET", mangaAPIURL, nil, &chaptersAPIResp)
 	if err != nil {
+		if util.ErrorContains(err, "non-200 status code -> (404)") {
+			return nil, errordefs.ErrChapterNotFound
+		}
 		return nil, err
 	}
 
@@ -94,7 +100,7 @@ func (s *Source) getChapterMetadataByChapter(mangaURL string, chapter string) (*
 func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error) {
 	s.checkClient()
 
-	errorContext := "Error while getting last chapter metadata"
+	errorContext := "error while getting last chapter metadata"
 
 	mangaHID, err := s.getMangaHID(mangaURL)
 	if err != nil {
@@ -109,7 +115,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 	}
 
 	if len(chaptersAPIResp.Chapters) == 0 {
-		return nil, util.AddErrorContext(errorContext, errors.ErrLastReleasedChapterNotFound)
+		return nil, util.AddErrorContext(errorContext, errordefs.ErrLastReleasedChapterNotFound)
 	}
 
 	chapterReturn, err := getChapterFromResp(chaptersAPIResp.Chapters[0], chaptersAPIResp.Chapters[0].Chap, mangaURL)
@@ -124,7 +130,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) {
 	s.checkClient()
 
-	errorContext := "Error while getting chapters metadata"
+	errorContext := "error while getting chapters metadata"
 
 	chaptersChan := make(chan *manga.Chapter)
 	errChan := make(chan error)
@@ -184,6 +190,9 @@ func generateMangaChapters(s *Source, mangaURL string, chaptersChan chan *manga.
 		var chaptersAPIResp getChaptersAPIResponse
 		_, err = s.client.Request("GET", mangaAPIURL, nil, &chaptersAPIResp)
 		if err != nil {
+			if util.ErrorContains(err, "non-200 status code -> (404)") {
+				err = util.AddErrorContext(err.Error(), errordefs.ErrMangaNotFound)
+			}
 			errChan <- err
 			return
 		}
@@ -209,7 +218,7 @@ func generateMangaChapters(s *Source, mangaURL string, chaptersChan chan *manga.
 // URL should be like: https://comick.xyz/comic/jitsu-wa-watashi-wa/PZKrW
 // or https://comick.xyz/comic/jitsu-wa-watashi-wa/PZKrW-chapter-121-en
 func getChapterHID(chapterURL string) (string, error) {
-	contextError := "Error while getting chapter HID"
+	contextError := "error while getting chapter HID"
 
 	parts := strings.Split(chapterURL, "/")
 	hid := parts[len(parts)-1]

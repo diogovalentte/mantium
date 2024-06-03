@@ -41,9 +41,9 @@ func TestRequest(t *testing.T) {
 	k.Init()
 
 	t.Run("Test Request", func(t *testing.T) {
-		_, err := k.Request("GET", k.Address, nil)
+		_, err := k.baseRequest("GET", k.Address, nil)
 		if err != nil {
-			t.Fatalf("Error while making request: %v", err)
+			t.Fatalf("error while making request: %v", err)
 		}
 	})
 }
@@ -55,11 +55,11 @@ func TestGetSources(t *testing.T) {
 	t.Run("Test get manga sources", func(t *testing.T) {
 		sources, err := k.GetSources()
 		if err != nil {
-			t.Fatalf("Error while getting manga sources: %v", err)
+			t.Fatalf("error while getting manga sources: %v", err)
 		}
 
 		if len(sources) == 0 {
-			t.Fatalf("No sources found")
+			t.Fatalf("no sources found")
 		}
 	})
 }
@@ -72,7 +72,7 @@ func TestAddManga(t *testing.T) {
 		for _, testManga := range mangasTest {
 			err := k.AddManga(testManga)
 			if err != nil {
-				t.Fatalf("Error while adding manga: %v", err)
+				t.Fatalf("error while adding manga: %v", err)
 			}
 		}
 	})
@@ -81,11 +81,11 @@ func TestAddManga(t *testing.T) {
 			testManga.Source = "invalid"
 			err := k.AddManga(testManga)
 			if err != nil {
-				if !util.ErrorContains(err, "Unknown source") {
-					t.Fatalf("Unknown rrror while adding manga: %v", err)
+				if !util.ErrorContains(err, "unknown source") {
+					t.Fatalf("unknown error while adding manga: %v", err)
 				}
 			} else {
-				t.Fatalf("Error is nil when it shouldn't")
+				t.Fatalf("error is nil when it shouldn't")
 			}
 		}
 	})
@@ -95,10 +95,10 @@ func TestAddManga(t *testing.T) {
 			err := k.AddManga(testManga)
 			if err != nil {
 				if !util.ErrorContains(err, fmt.Sprintf("Cannot find the %s.", testManga.Name)) {
-					t.Fatalf("Unknown rrror while adding manga: %v", err)
+					t.Fatalf("unknown error while adding manga: %v", err)
 				}
 			} else {
-				t.Fatalf("Error is nil when it shouldn't")
+				t.Fatalf("error is nil when it shouldn't")
 			}
 		}
 	})
@@ -111,22 +111,22 @@ func TestGetMangas(t *testing.T) {
 	t.Run("Test get mangas", func(t *testing.T) {
 		mangas, err := k.GetMangas()
 		if err != nil {
-			t.Fatalf("Error while getting mangas: %v", err)
+			t.Fatalf("error while getting mangas: %v", err)
 		}
 
 		if len(mangas) == 0 {
-			t.Fatalf("No mangas found")
+			t.Fatalf("no mangas found")
 		}
 
 		for _, manga := range mangas {
 			if manga.ID == 0 {
-				t.Fatalf("Manga ID not found")
+				t.Fatalf("manga ID not found")
 			}
 			if manga.Title == "" {
-				t.Fatalf("Manga title not found")
+				t.Fatalf("manga title not found")
 			}
 			if manga.Source == "" {
-				t.Fatalf("Manga source not found")
+				t.Fatalf("manga source not found")
 			}
 		}
 	})
@@ -140,17 +140,17 @@ func TestGetManga(t *testing.T) {
 		for _, testManga := range mangasTest {
 			manga, err := k.GetManga(testManga.Name)
 			if err != nil {
-				t.Fatalf("Error while getting manga: %v", err)
+				t.Fatalf("error while getting manga: %v", err)
 			}
 
 			if manga.ID == 0 {
-				t.Fatalf("Manga ID not found")
+				t.Fatalf("manga ID not found")
 			}
 			if manga.Title == "" {
-				t.Fatalf("Manga title not found")
+				t.Fatalf("manga title not found")
 			}
 			if manga.Source == "" {
-				t.Fatalf("Manga source not found")
+				t.Fatalf("manga source not found")
 			}
 		}
 	})
@@ -159,11 +159,11 @@ func TestGetManga(t *testing.T) {
 			testManga.Name = "invalid"
 			_, err := k.GetManga(testManga.Name)
 			if err != nil {
-				if !util.ErrorContains(err, "Manga not found in Kaizoku") {
-					t.Fatalf("Unknown error while adding manga: %v", err)
+				if !util.ErrorContains(err, "manga not found in Kaizoku") {
+					t.Fatalf("unknown error while adding manga: %v", err)
 				}
 			} else {
-				t.Fatalf("Error is nil when it shouldn't")
+				t.Fatalf("error is nil when it shouldn't")
 			}
 		}
 	})
@@ -176,7 +176,7 @@ func TestCheckOutOfSyncChapters(t *testing.T) {
 	t.Run("Test check out of sync chapters", func(t *testing.T) {
 		err := k.CheckOutOfSyncChapters()
 		if err != nil {
-			t.Fatalf("Error while checking out of sync chapters: %v", err)
+			t.Fatalf("error while checking out of sync chapters: %v", err)
 		}
 	})
 }
@@ -190,8 +190,8 @@ func TestFixOutOfSyncChapters(t *testing.T) {
 		if err != nil {
 			// If called right after CheckOutOfSyncChapters, it will return an error
 			// because the check out of sync chapters job is still running.
-			if !util.ErrorContains(err, "There is another active job running.") {
-				t.Fatalf("Error while fixing out of sync chapters: %v", err)
+			if !util.ErrorContains(err, "there is another active job running.") {
+				t.Fatalf("error while fixing out of sync chapters: %v", err)
 			}
 		}
 	})
@@ -207,12 +207,12 @@ func TestRemoveManga(t *testing.T) {
 		for _, testManga := range mangasTest {
 			manga, err := k.GetManga(testManga.Name)
 			if err != nil {
-				t.Fatalf("Error while getting manga: %v", err)
+				t.Fatalf("error while getting manga: %v", err)
 			}
 
 			err = k.RemoveManga(manga.ID, true)
 			if err != nil {
-				t.Fatalf("Error while removing manga: %v", err)
+				t.Fatalf("error while removing manga: %v", err)
 			}
 		}
 	})
@@ -235,11 +235,11 @@ func TestGetQueues(t *testing.T) {
 	t.Run("Test get queues", func(t *testing.T) {
 		queues, err := k.GetQueues()
 		if err != nil {
-			t.Fatalf("Error while getting queues: %v", err)
+			t.Fatalf("error while getting queues: %v", err)
 		}
 
 		if len(queues) != len(queuesTest) {
-			t.Fatalf("Invalid number of queues")
+			t.Fatalf("invalid number of queues")
 		}
 	})
 }
@@ -252,11 +252,11 @@ func TestGetQueue(t *testing.T) {
 		for _, queueName := range queuesTest {
 			queue, err := k.GetQueue(queueName)
 			if err != nil {
-				t.Fatalf("Error while getting queue: %v", err)
+				t.Fatalf("error while getting queue: %v", err)
 			}
 
 			if queue.Name != queueName {
-				t.Fatalf("Invalid queue name")
+				t.Fatalf("invalid queue name")
 			}
 		}
 	})
@@ -269,7 +269,7 @@ func TestRetryFailedFixOutOfSyncChaptersQueueJobs(t *testing.T) {
 	t.Run("Test retry failed fix out of sync chapters queue jobs", func(t *testing.T) {
 		err := k.RetryFailedFixOutOfSyncChaptersQueueJobs()
 		if err != nil {
-			t.Fatalf("Error while retrying failed fix out of sync chapters queue jobs: %v", err)
+			t.Fatalf("error while retrying failed fix out of sync chapters queue jobs: %v", err)
 		}
 	})
 }

@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
@@ -71,7 +72,7 @@ var mangasTestTable = []mangaTestType{
 func TestGetMangaMetadata(t *testing.T) {
 	source := Source{}
 
-	t.Run("should scrape metadata from multiple mangas", func(t *testing.T) {
+	t.Run("Should scrape metadata from multiple mangas", func(t *testing.T) {
 		for _, test := range mangasTestTable {
 			expected := test.expected
 			mangaURL := test.url
@@ -91,13 +92,13 @@ func TestGetMangaMetadata(t *testing.T) {
 			}
 		}
 	})
-	t.Run("should not scrape metadata from multiple mangas", func(t *testing.T) {
+	t.Run("Should not scrape metadata from multiple mangas", func(t *testing.T) {
 		for _, test := range mangasTestTable {
 			mangaURL := test.url + "salt"
 
 			_, err := source.GetMangaMetadata(mangaURL, false)
 			if err != nil {
-				if util.ErrorContains(err, "Manga not found") {
+				if util.ErrorContains(err, errordefs.ErrMangaNotFound.Error()) {
 					continue
 				}
 				t.Fatalf("expected error, got %s", err)

@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/diogovalentte/mantium/api/src/errors"
+	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
@@ -14,7 +14,7 @@ import (
 func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError bool) (*manga.Manga, error) {
 	s.checkClient()
 
-	errorContext := "Error while getting manga metadata"
+	errorContext := "error while getting manga metadata"
 
 	mangaReturn := &manga.Manga{}
 	mangaReturn.Source = "comick.xyz"
@@ -29,6 +29,9 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 	var mangaAPIResp getMangaAPIResponse
 	_, err = s.client.Request("GET", mangaAPIURL, nil, &mangaAPIResp)
 	if err != nil {
+		if util.ErrorContains(err, "non-200 status code -> (404)") {
+			return nil, errordefs.ErrMangaNotFound
+		}
 		return nil, util.AddErrorContext(errorContext, err)
 	}
 
@@ -38,7 +41,7 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 
 	lastReleasedChapter, err := s.GetLastChapterMetadata(mangaURL)
 	if err != nil {
-		if !(ignoreGetLastChapterError && util.ErrorContains(err, errors.ErrLastReleasedChapterNotFound.Message)) {
+		if !(ignoreGetLastChapterError && util.ErrorContains(err, errordefs.ErrLastReleasedChapterNotFound.Message)) {
 			return nil, util.AddErrorContext(errorContext, err)
 		}
 	} else {
@@ -55,7 +58,7 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 		}
 	}
 	if coverFileName == "" {
-		return nil, util.AddErrorContext(errorContext, fmt.Errorf("Cover image not found"))
+		return nil, util.AddErrorContext(errorContext, fmt.Errorf("cover image not found"))
 	}
 	coverURL := fmt.Sprintf("%s/%s", baseUploadsURL, coverFileName)
 	mangaReturn.CoverImgURL = coverURL
@@ -91,7 +94,7 @@ type mdCover struct {
 func (s *Source) getMangaHID(mangaURL string) (string, error) {
 	s.checkClient()
 
-	errorContext := "Error while getting manga HID"
+	errorContext := "error while getting manga HID"
 
 	mangaReturn := &manga.Manga{}
 	mangaReturn.Source = "comick.xyz"
@@ -106,6 +109,9 @@ func (s *Source) getMangaHID(mangaURL string) (string, error) {
 	var mangaAPIResp getMangaAPIResponse
 	_, err = s.client.Request("GET", mangaAPIURL, nil, &mangaAPIResp)
 	if err != nil {
+		if util.ErrorContains(err, "non-200 status code -> (404)") {
+			return "", errordefs.ErrMangaNotFound
+		}
 		return "", util.AddErrorContext(errorContext, err)
 	}
 
@@ -115,7 +121,7 @@ func (s *Source) getMangaHID(mangaURL string) (string, error) {
 // getMangaSlug returns the slug of a manga given its URL.
 // URL should be like: https://comick.xyz/comic/00-jujutsu-kaisen
 func getMangaSlug(mangaURL string) (string, error) {
-	errorContext := "Error while getting manga slug from URL"
+	errorContext := "error while getting manga slug from URL"
 
 	pattern := `^https?://comick\.[^/]+/comic/([^/]+)(?:/.*)?$`
 	re, err := regexp.Compile(pattern)

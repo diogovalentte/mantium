@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
@@ -73,7 +74,7 @@ var mangasTestTable = []mangaTestType{
 func TestGetMangaMetadata(t *testing.T) {
 	source := Source{}
 
-	t.Run("should get the  metadata from multiple mangas", func(t *testing.T) {
+	t.Run("Should get the  metadata from multiple mangas", func(t *testing.T) {
 		for _, test := range mangasTestTable {
 			expected := test.expected
 			expected.LastReleasedChapter.UpdatedAt = expected.LastReleasedChapter.UpdatedAt.In(time.Local)
@@ -94,17 +95,17 @@ func TestGetMangaMetadata(t *testing.T) {
 			}
 		}
 	})
-	t.Run("should not get the metadata from multiple mangas", func(t *testing.T) {
+	t.Run("Should not get the metadata from multiple mangas", func(t *testing.T) {
 		for _, test := range mangasTestTable {
 			mangaURL := test.url
 			mangaURL, err := replaceURLID(test.url, "00000000-0000-0000-0000-000000000000")
 			if err != nil {
-				t.Fatalf("Error while replacing manga URL ID: %v", err)
+				t.Fatalf("error while replacing manga URL ID: %v", err)
 			}
 
 			_, err = source.GetMangaMetadata(mangaURL, false)
 			if err != nil {
-				if util.ErrorContains(err, "Non-200 status code -> (404)") {
+				if util.ErrorContains(err, errordefs.ErrMangaNotFound.Error()) {
 					continue
 				}
 				t.Fatalf("expected error, got %s", err)
@@ -121,15 +122,15 @@ var getMangaIDTestTable = []string{
 }
 
 func TestGetMangaID(t *testing.T) {
-	t.Run("should return the ID of a manga URL", func(t *testing.T) {
+	t.Run("Should return the ID of a manga URL", func(t *testing.T) {
 		for _, mangaURL := range getMangaIDTestTable {
 			expected := "87ebd557-8394-4f16-8afe-a8644e555ddc"
 			result, err := getMangaID(mangaURL)
 			if err != nil {
-				t.Fatalf("Error: %s", err)
+				t.Fatal(err)
 			}
 			if result != expected {
-				t.Fatalf("Expected %s, got %s", expected, result)
+				t.Fatalf("expected %s, got %s", expected, result)
 			}
 		}
 	})

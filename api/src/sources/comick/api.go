@@ -43,7 +43,7 @@ func NewComickClient() *Client {
 
 // Request is a helper function to make a request to the Comick API
 func (c *Client) Request(method, url string, reqBody io.Reader, retBody interface{}) (*http.Response, error) {
-	errorContext := "Error while making '%s' request"
+	errorContext := "error while making '%s' request"
 
 	req, err := http.NewRequest(method, url, reqBody)
 	if err != nil {
@@ -58,14 +58,14 @@ func (c *Client) Request(method, url string, reqBody io.Reader, retBody interfac
 	} else if resp.StatusCode != http.StatusOK {
 		defer resp.Body.Close()
 		body, _ := io.ReadAll(resp.Body)
-		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, method), fmt.Errorf("Non-200 status code -> (%d). Body: %s", resp.StatusCode, string(body)))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, method), fmt.Errorf("non-200 status code -> (%d). Body: %s", resp.StatusCode, string(body)))
 	}
 
 	if retBody != nil {
 		defer resp.Body.Close()
 		if err = json.NewDecoder(resp.Body).Decode(retBody); err != nil {
 			body, _ := io.ReadAll(resp.Body)
-			return nil, util.AddErrorContext(fmt.Sprintf(errorContext, method), fmt.Errorf("Error decoding request body response into '%s'. Body: %s", reflect.TypeOf(retBody).Name(), string(body)))
+			return nil, util.AddErrorContext(fmt.Sprintf(errorContext, method), fmt.Errorf("error decoding request body response into '%s'. Body: %s", reflect.TypeOf(retBody).Name(), string(body)))
 		}
 	}
 

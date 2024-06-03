@@ -58,13 +58,13 @@ type Configs struct {
 func GetConfigsFromFile(filePath string) (*Configs, error) {
 	jsonFile, err := os.ReadFile(filePath)
 	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf("Error reading configs from file '%s'", filePath), err)
+		return nil, util.AddErrorContext(fmt.Sprintf("error reading configs from file '%s'", filePath), err)
 	}
 
 	var configs Configs
 	err = json.Unmarshal(jsonFile, &configs)
 	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf("Error umarshaling configs from file '%s'", filePath), err)
+		return nil, util.AddErrorContext(fmt.Sprintf("error umarshaling configs from file '%s'", filePath), err)
 	}
 
 	return &configs, nil

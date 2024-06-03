@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/diogovalentte/mantium/api/src/errors"
+	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
@@ -15,7 +15,7 @@ import (
 func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError bool) (*manga.Manga, error) {
 	s.checkClient()
 
-	errorContext := "Error while getting manga metadata"
+	errorContext := "error while getting manga metadata"
 
 	mangaReturn := &manga.Manga{}
 	mangaReturn.Source = "mangadex.org"
@@ -30,6 +30,9 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 	var mangaAPIResp getMangaAPIResponse
 	_, err = s.client.Request(context.Background(), "GET", mangaAPIURL, nil, &mangaAPIResp)
 	if err != nil {
+		if util.ErrorContains(err, "non-200 status code -> (404)") {
+			return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
+		}
 		return nil, util.AddErrorContext(errorContext, err)
 	}
 
@@ -51,7 +54,7 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 
 	lastReleasedChapter, err := s.GetLastChapterMetadata(mangaURL)
 	if err != nil {
-		if !(ignoreGetLastChapterError && util.ErrorContains(err, errors.ErrLastReleasedChapterNotFound.Message)) {
+		if !(ignoreGetLastChapterError && util.ErrorContains(err, errordefs.ErrLastReleasedChapterNotFound.Message)) {
 			return nil, util.AddErrorContext(errorContext, err)
 		}
 	} else {
@@ -67,7 +70,7 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 		}
 	}
 	if coverFileName == "" {
-		return nil, util.AddErrorContext(errorContext, fmt.Errorf("Cover image not found"))
+		return nil, util.AddErrorContext(errorContext, fmt.Errorf("cover image not found"))
 	}
 	coverURL := fmt.Sprintf("%s/covers/%s/%s", baseUploadsURL, mangadexMangaID, coverFileName)
 	mangaReturn.CoverImgURL = coverURL
@@ -96,7 +99,7 @@ type getMangaAPIResponse struct {
 // getMangaID returns the ID of a manga given its URL
 // URL should be like: https://mangadex.org/title/87ebd557-8394-4f16-8afe-a8644e555ddc/hirayasumi
 func getMangaID(mangaURL string) (string, error) {
-	errorContext := "Error while getting manga ID from URL"
+	errorContext := "error while getting manga ID from URL"
 
 	pattern := `/title/([0-9a-fA-F-]+)(?:/.*)?$`
 	re, err := regexp.Compile(pattern)
@@ -106,7 +109,7 @@ func getMangaID(mangaURL string) (string, error) {
 
 	matches := re.FindStringSubmatch(mangaURL)
 	if len(matches) < 2 {
-		return "", util.AddErrorContext(errorContext, fmt.Errorf("Manga ID not found"))
+		return "", util.AddErrorContext(errorContext, fmt.Errorf("manga ID not found"))
 	}
 
 	return matches[1], nil

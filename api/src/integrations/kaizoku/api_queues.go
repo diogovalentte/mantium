@@ -9,10 +9,10 @@ import (
 )
 
 func (k *Kaizoku) GetQueues() ([]*Queue, error) {
-	errorContext := "Error while getting queues"
+	errorContext := "(kaizoku) error while getting queues"
 
 	url := fmt.Sprintf("%s/bull/queues/api/queues", k.Address)
-	resp, err := k.Request(http.MethodGet, url, nil)
+	resp, err := k.baseRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, util.AddErrorContext(errorContext, err)
 	}
@@ -25,14 +25,14 @@ func (k *Kaizoku) GetQueues() ([]*Queue, error) {
 	var queues getQueuesResponse
 	err = json.NewDecoder(resp.Body).Decode(&queues)
 	if err != nil {
-		return nil, util.AddErrorContext(util.AddErrorContext(errorContext, fmt.Errorf("Error while decoding response body")).Error(), err)
+		return nil, util.AddErrorContext(util.AddErrorContext(errorContext, fmt.Errorf("error while decoding response body")).Error(), err)
 	}
 
 	return queues.Queues, nil
 }
 
 func (k *Kaizoku) GetQueue(queueName string) (*Queue, error) {
-	errorContext := "Error while getting queue '%s'"
+	errorContext := "(kaizoku) error while getting queue '%s'"
 
 	queues, err := k.GetQueues()
 	if err != nil {
@@ -48,17 +48,17 @@ func (k *Kaizoku) GetQueue(queueName string) (*Queue, error) {
 	}
 
 	if queue == nil {
-		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, queueName), fmt.Errorf("Queue not found"))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, queueName), fmt.Errorf("queue not found"))
 	}
 
 	return queue, nil
 }
 
 func (k *Kaizoku) RetryFailedFixOutOfSyncChaptersQueueJobs() error {
-	errorContext := "Error while retrying failed fix out of sync chapters queue jobs"
+	errorContext := "(kaizoku) error while retrying failed 'fix out of sync chapters' queue jobs"
 
 	url := fmt.Sprintf("%s/bull/queues/api/queues/fixOutOfSyncChaptersQueue/retry/failed", k.Address)
-	resp, err := k.Request(http.MethodPut, url, nil)
+	resp, err := k.baseRequest(http.MethodPut, url, nil)
 	if err != nil {
 		return util.AddErrorContext(errorContext, err)
 	}

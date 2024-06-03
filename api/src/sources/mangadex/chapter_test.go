@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/diogovalentte/mantium/api/src/errors"
+	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
@@ -52,7 +52,7 @@ var chapterTestTable = []chapterTestType{
 func TestGetChapterMetadata(t *testing.T) {
 	source := Source{}
 
-	t.Run("should get the metadata of a chapter from multiple mangas", func(t *testing.T) {
+	t.Run("Should get the metadata of a chapter from multiple mangas", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
 			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
@@ -68,19 +68,19 @@ func TestGetChapterMetadata(t *testing.T) {
 			}
 		}
 	})
-	t.Run("should not get the metadata of a chapter from multiple mangas", func(t *testing.T) {
+	t.Run("Should not get the metadata of a chapter from multiple mangas", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
 			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
 			chapterURL := expected.URL
 			chapterURL, err := replaceURLID(chapterURL, "00000000-0000-0000-0000-000000000000")
 			if err != nil {
-				t.Fatalf("Error while replacing chapter URL ID: %v", err)
+				t.Fatalf("error while replacing chapter URL ID: %v", err)
 			}
 
 			actualChapter, err := source.GetChapterMetadata("", "", chapterURL)
 			if err != nil {
-				if !util.ErrorContains(err, "Non-200 status code -> (404)") {
+				if !util.ErrorContains(err, errordefs.ErrChapterNotFound.Error()) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			} else {
@@ -93,7 +93,7 @@ func TestGetChapterMetadata(t *testing.T) {
 
 			actualChapter, err = source.GetChapterMetadata("", expected.Chapter, "")
 			if err != nil {
-				if !util.ErrorContains(err, "Not implemented") {
+				if !util.ErrorContains(err, "not implemented") {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			} else {
@@ -111,7 +111,7 @@ func TestGetChapterMetadata(t *testing.T) {
 func TestGetLastChapterMetadata(t *testing.T) {
 	source := Source{}
 
-	t.Run("should get the metadata of the last chapter of multiple mangas", func(t *testing.T) {
+	t.Run("Should get the metadata of the last chapter of multiple mangas", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
 			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
@@ -127,19 +127,19 @@ func TestGetLastChapterMetadata(t *testing.T) {
 			}
 		}
 	})
-	t.Run("should not get the metadata of the last chapter of multiple mangas", func(t *testing.T) {
+	t.Run("Should not get the metadata of the last chapter of multiple mangas", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
 			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
 			mangaURL := test.mangaURL
 			mangaURL, err := replaceURLID(mangaURL, "00000000-0000-0000-0000-000000000000")
 			if err != nil {
-				t.Fatalf("Error while replacing chapter URL ID: %v", err)
+				t.Fatalf("error while replacing chapter URL ID: %v", err)
 			}
 
 			actualChapter, err := source.GetLastChapterMetadata(mangaURL)
 			if err != nil {
-				if !util.ErrorContains(err, errors.ErrLastReleasedChapterNotFound.Error()) {
+				if !util.ErrorContains(err, errordefs.ErrLastReleasedChapterNotFound.Error()) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			} else {
@@ -176,7 +176,7 @@ var chaptersTestTable = []chaptersTestType{
 func TestGetChaptersMetadata(t *testing.T) {
 	source := Source{}
 
-	t.Run("should get the metadata of multiple chapters", func(t *testing.T) {
+	t.Run("Should get the metadata of multiple chapters", func(t *testing.T) {
 		for _, test := range chaptersTestTable {
 			mangaURL := test.url
 			expectedQuantity := test.quantity
@@ -206,12 +206,12 @@ func TestGetChaptersMetadata(t *testing.T) {
 			}
 		}
 	})
-	t.Run("should not get the metadata of multiple chapters", func(t *testing.T) {
+	t.Run("Should not get the metadata of multiple chapters", func(t *testing.T) {
 		for _, test := range chaptersTestTable {
 			mangaURL := test.url
 			mangaURL, err := replaceURLID(mangaURL, "00000000-0000-0000-0000-000000000000")
 			if err != nil {
-				t.Fatalf("Error while replacing manga URL ID: %v", err)
+				t.Fatalf("error while replacing manga URL ID: %v", err)
 			}
 			expectedQuantity := 0
 
@@ -228,15 +228,15 @@ func TestGetChaptersMetadata(t *testing.T) {
 }
 
 func TestGetChapterID(t *testing.T) {
-	t.Run("should return the ID of a chapter URL", func(t *testing.T) {
+	t.Run("Should return the ID of a chapter URL", func(t *testing.T) {
 		chapterURL := "https://mangadex.org/chapter/e393167b-573c-414f-8514-f7ff1fc6604d"
 		expected := "e393167b-573c-414f-8514-f7ff1fc6604d"
 		result, err := getChapterID(chapterURL)
 		if err != nil {
-			t.Fatalf("Error: %s", err)
+			t.Fatalf("error: %s", err)
 		}
 		if result != expected {
-			t.Fatalf("Expected %s, got %s", expected, result)
+			t.Fatalf("expected %s, got %s", expected, result)
 		}
 	})
 }

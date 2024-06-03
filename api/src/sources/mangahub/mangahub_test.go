@@ -67,7 +67,7 @@ var relativeHourTestTable = []releaseTimeTestType{
 }
 
 func TestGetMangaReleaseTime(t *testing.T) {
-	t.Run("should return a time.Time from absolute time args", func(t *testing.T) {
+	t.Run("Should return a time.Time from absolute time args", func(t *testing.T) {
 		for _, test := range absReleaseTimeTestTable {
 			actual, err := getMangaReleaseTime(test.arg)
 			if err != nil {
@@ -78,7 +78,7 @@ func TestGetMangaReleaseTime(t *testing.T) {
 			}
 		}
 	})
-	t.Run("should return a time.Time from relative time args where expected is greater than one day ago", func(t *testing.T) {
+	t.Run("Should return a time.Time from relative time args where expected is greater than one day ago", func(t *testing.T) {
 		for _, test := range relativeReleaseTimeTestTable {
 			actual, err := getMangaReleaseTime(test.arg)
 			if err != nil {
@@ -92,7 +92,7 @@ func TestGetMangaReleaseTime(t *testing.T) {
 			}
 		}
 	})
-	t.Run("should return a time.Time from relative time args where expected is less than one day ago", func(t *testing.T) {
+	t.Run("Should return a time.Time from relative time args where expected is less than one day ago", func(t *testing.T) {
 		for _, test := range relativeHourTestTable {
 			actual, err := getMangaReleaseTime(test.arg)
 			if err != nil {

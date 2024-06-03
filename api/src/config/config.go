@@ -79,7 +79,7 @@ func SetConfigs(filePath string) error {
 	if filePath != "" {
 		err := godotenv.Load(filePath)
 		if err != nil {
-			return fmt.Errorf("Error loading env file '%s': %s", filePath, err)
+			return fmt.Errorf("error loading env file '%s': %s", filePath, err)
 		}
 	}
 
@@ -90,7 +90,7 @@ func SetConfigs(filePath string) error {
 	if logLevelStr != "" {
 		logLevel, err = zerolog.ParseLevel(logLevelStr)
 		if err != nil {
-			return fmt.Errorf("Error parsing error level '%s': %s", logLevelStr, err)
+			return fmt.Errorf("error parsing error level '%s': %s", logLevelStr, err)
 		}
 	}
 	GlobalConfigs.API.LogLevelInt = int(logLevel)
@@ -114,7 +114,7 @@ func SetConfigs(filePath string) error {
 		if waitUntilEmptyQueuesTimeoutStr != "" {
 			waitUntilEmptyQueuesTimeout, err := strconv.Atoi(waitUntilEmptyQueuesTimeoutStr)
 			if err != nil {
-				return fmt.Errorf("Error converting KAIZOKU_WAIT_UNTIL_EMPTY_QUEUES_TIMEOUT_MINUTES '%s' to int: %s", waitUntilEmptyQueuesTimeoutStr, err)
+				return fmt.Errorf("error converting KAIZOKU_WAIT_UNTIL_EMPTY_QUEUES_TIMEOUT_MINUTES '%s' to int: %s", waitUntilEmptyQueuesTimeoutStr, err)
 			}
 			GlobalConfigs.Kaizoku.WaitUntilEmptyQueuesTimeout = time.Duration(waitUntilEmptyQueuesTimeout) * time.Minute
 		} else {
@@ -135,7 +135,7 @@ func SetConfigs(filePath string) error {
 	if envMinutes != "" {
 		minutes, err = strconv.Atoi(envMinutes)
 		if err != nil {
-			return fmt.Errorf("Error converting UPDATE_MANGAS_PERIODICALLY_MINUTES '%s' to int: %s", envMinutes, err)
+			return fmt.Errorf("error converting UPDATE_MANGAS_PERIODICALLY_MINUTES '%s' to int: %s", envMinutes, err)
 		}
 	}
 	GlobalConfigs.PeriodicallyUpdateMangas.Minutes = minutes

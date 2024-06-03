@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
@@ -36,7 +37,7 @@ func (c Chapter) String() string {
 }
 
 func insertChapterDB(c *Chapter, mangaID ID, tx *sql.Tx) (int, error) {
-	contextError := "Error inserting chapter of manga ID '%d' in the database"
+	contextError := "error inserting chapter of manga ID '%d' in the database"
 
 	err := validateChapter(c)
 	if err != nil {
@@ -59,7 +60,7 @@ func insertChapterDB(c *Chapter, mangaID ID, tx *sql.Tx) (int, error) {
 }
 
 func getChapterDB(id int, db *sql.DB) (*Chapter, error) {
-	contextError := "Error getting chapter with ID '%d' from the database"
+	contextError := "error getting chapter with ID '%d' from the database"
 
 	var chapter Chapter
 	err := db.QueryRow(`
@@ -72,7 +73,7 @@ func getChapterDB(id int, db *sql.DB) (*Chapter, error) {
     `, id).Scan(&chapter.URL, &chapter.Chapter, &chapter.Name, &chapter.UpdatedAt, &chapter.Type)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, util.AddErrorContext(fmt.Sprintf(contextError, id), fmt.Errorf("Chapter not found, is the ID correct?"))
+			return nil, util.AddErrorContext(fmt.Sprintf(contextError, id), errordefs.ErrChapterNotFoundDB)
 		}
 		return nil, util.AddErrorContext(fmt.Sprintf(contextError, id), err)
 	}
@@ -88,7 +89,7 @@ func getChapterDB(id int, db *sql.DB) (*Chapter, error) {
 // upsertMangaChapter updates the last released or last read chapter of a manga
 // if the manga doesn't exist in the database, it will be inserted
 func upsertMangaChapter(m *Manga, chapter *Chapter, tx *sql.Tx) error {
-	contextError := "Error upserting manga chapter in the database"
+	contextError := "error upserting manga chapter in the database"
 
 	err := validateManga(m)
 	if err != nil {
@@ -144,7 +145,7 @@ func upsertMangaChapter(m *Manga, chapter *Chapter, tx *sql.Tx) error {
 		return util.AddErrorContext(contextError, err)
 	}
 	if rowsAffected == 0 {
-		return util.AddErrorContext(contextError, fmt.Errorf("manga not found in DB"))
+		return util.AddErrorContext(contextError, errordefs.ErrMangaNotFoundDB)
 	}
 
 	return nil
@@ -157,19 +158,19 @@ func upsertMangaChapter(m *Manga, chapter *Chapter, tx *sql.Tx) error {
 // valdiateChapter should be used every time the API interacts with
 // the mangas and chapter table in the database
 func validateChapter(c *Chapter) error {
-	contextError := "Error validating chapter"
+	contextError := "error validating chapter"
 
 	if c.URL == "" {
-		return util.AddErrorContext(contextError, fmt.Errorf("Chapter URL is empty"))
+		return util.AddErrorContext(contextError, fmt.Errorf("chapter URL is empty"))
 	}
 	if c.Chapter == "" {
-		return util.AddErrorContext(contextError, fmt.Errorf("Chapter chapter is empty"))
+		return util.AddErrorContext(contextError, fmt.Errorf("chapter chapter is empty"))
 	}
 	if c.Name == "" {
-		return util.AddErrorContext(contextError, fmt.Errorf("Chapter name is empty"))
+		return util.AddErrorContext(contextError, fmt.Errorf("chapter name is empty"))
 	}
 	if c.Type != 1 && c.Type != 2 {
-		return util.AddErrorContext(contextError, fmt.Errorf("Chapter type should be 1 (last release) or 2 (last read), instead it's %d", c.Type))
+		return util.AddErrorContext(contextError, fmt.Errorf("chapter type should be 1 (last release) or 2 (last read), instead it's %d", c.Type))
 	}
 
 	return nil

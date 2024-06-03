@@ -21,6 +21,7 @@ import (
 
 	"github.com/diogovalentte/mantium/api/src/config"
 	"github.com/diogovalentte/mantium/api/src/dashboard"
+	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/integrations/kaizoku"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/notifications"
@@ -141,7 +142,7 @@ func DeleteManga(c *gin.Context) {
 
 	mangaDelete, err := manga.GetMangaDB(mangaID, mangaURL)
 	if err != nil {
-		if strings.Contains(err.Error(), "manga not found in DB") {
+		if strings.Contains(err.Error(), errordefs.ErrMangaNotFoundDB.Error()) {
 			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
 			return
 		}
@@ -178,7 +179,7 @@ func GetManga(c *gin.Context) {
 
 	mangaGet, err := manga.GetMangaDB(mangaID, mangaURL)
 	if err != nil {
-		if strings.Contains(err.Error(), "manga not found in DB") {
+		if strings.Contains(err.Error(), errordefs.ErrMangaNotFoundDB.Error()) {
 			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
 			return
 		}
@@ -597,7 +598,7 @@ func GetMangaChapters(c *gin.Context) {
 	if mangaURL == "" {
 		mangaGet, err := manga.GetMangaDB(mangaID, mangaURL)
 		if err != nil {
-			if strings.Contains(err.Error(), "manga not found in DB") {
+			if strings.Contains(err.Error(), errordefs.ErrMangaNotFoundDB.Error()) {
 				c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
 				return
 			}
@@ -636,7 +637,7 @@ func UpdateMangaStatus(c *gin.Context) {
 
 	mangaUpdate, err := manga.GetMangaDB(mangaID, mangaURL)
 	if err != nil {
-		if strings.Contains(err.Error(), "manga not found in DB") {
+		if strings.Contains(err.Error(), errordefs.ErrMangaNotFoundDB.Error()) {
 			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
 			return
 		}
@@ -693,7 +694,7 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 
 	mangaUpdate, err := manga.GetMangaDB(mangaID, mangaURL)
 	if err != nil {
-		if strings.Contains(err.Error(), "manga not found in DB") {
+		if strings.Contains(err.Error(), errordefs.ErrMangaNotFoundDB.Error()) {
 			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
 			return
 		}
@@ -754,7 +755,7 @@ func UpdateMangaCoverImg(c *gin.Context) {
 
 	mangaToUpdate, err := manga.GetMangaDB(mangaID, mangaURL)
 	if err != nil {
-		if strings.Contains(err.Error(), "manga not found in DB") {
+		if strings.Contains(err.Error(), errordefs.ErrMangaNotFoundDB.Error()) {
 			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
 			return
 		}
@@ -937,19 +938,19 @@ func UpdateMangasMetadata(c *gin.Context) {
 		err := waitUntilEmptyCheckFixOutOfSyncChaptersQueues(&kaizoku, waitUntilEmptyQueuesTimeout, retryInterval, logger)
 		if err != nil {
 			if lastUpdateMetadataError != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
+				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
 				return
 			}
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
 		err = retryKaizokuJob(kaizoku.CheckOutOfSyncChapters, maxRetries, retryInterval, logger, "Error adding job to check out of sync chapters to queue in Kaizoku")
-		if err != nil && !util.ErrorContains(err, "There is another active job running") {
+		if err != nil && !util.ErrorContains(err, "there is another active job running") {
 			if lastUpdateMetadataError != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
+				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext("Error adding job to check out of sync chapters to queue in Kaizoku", err).Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext("error adding job to check out of sync chapters to queue in Kaizoku", err).Error()})
 			return
 		}
 
@@ -958,7 +959,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 		err = waitUntilEmptyCheckFixOutOfSyncChaptersQueues(&kaizoku, waitUntilEmptyQueuesTimeout, retryInterval, logger)
 		if err != nil {
 			if lastUpdateMetadataError != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
+				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
 				return
 			}
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -967,10 +968,10 @@ func UpdateMangasMetadata(c *gin.Context) {
 		err = retryKaizokuJob(kaizoku.FixOutOfSyncChapters, maxRetries, retryInterval, logger, "Error adding job to fix out of sync chapters to queue in Kaizoku")
 		if err != nil {
 			if lastUpdateMetadataError != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
+				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext("Error adding job to fix out of sync chapters to queue in Kaizoku", err).Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext("error adding job to fix out of sync chapters to queue in Kaizoku", err).Error()})
 			return
 		}
 
@@ -979,25 +980,25 @@ func UpdateMangasMetadata(c *gin.Context) {
 		err = waitUntilEmptyCheckFixOutOfSyncChaptersQueues(&kaizoku, waitUntilEmptyQueuesTimeout, retryInterval, logger)
 		if err != nil {
 			if lastUpdateMetadataError != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
+				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
 				return
 			}
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
 		err = retryKaizokuJob(kaizoku.RetryFailedFixOutOfSyncChaptersQueueJobs, maxRetries, retryInterval, logger, "Error adding job to try failed to fix out of sync chapters to queue in Kaizoku")
-		if err != nil && !util.ErrorContains(err, "There is another active job running") {
+		if err != nil && !util.ErrorContains(err, "there is another active job running") {
 			if lastUpdateMetadataError != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
+				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext("Error adding job to try failed to fix out of sync chapters to queue in Kaizoku", err).Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext("error adding job to try failed to fix out of sync chapters to queue in Kaizoku", err).Error()})
 			return
 		}
 	}
 
 	if lastUpdateMetadataError != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
 		return
 	}
 
@@ -1024,7 +1025,7 @@ func waitUntilEmptyCheckFixOutOfSyncChaptersQueues(kaizoku *kaizoku.Kaizoku, tim
 
 	select {
 	case <-time.After(timeout):
-		return fmt.Errorf("Timeout while waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku. Current timeout is %s, maybe try to increase it?", timeout.String())
+		return fmt.Errorf("timeout while waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku. Current timeout is %s, maybe try to increase it?", timeout.String())
 	case err := <-result:
 		if err != nil {
 			return err
@@ -1042,7 +1043,7 @@ func retryKaizokuJob(jobFunc func() error, maxRetries int, retryInterval time.Du
 			return nil
 		}
 
-		if util.ErrorContains(err, "There is another active job running") {
+		if util.ErrorContains(err, "there is another active job running") {
 			return err
 		}
 
@@ -1081,7 +1082,7 @@ func getCheckFixOutOfSyncChaptersActiveWaitingJobs(kaizoku *kaizoku.Kaizoku) (in
 // @Router /mangas/add_to_kaizoku [post]
 func AddMangasToKaizoku(c *gin.Context) {
 	if !config.GlobalConfigs.Kaizoku.Valid {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Kaizoku is not configured in the API"})
+		c.JSON(http.StatusBadRequest, gin.H{"message": "kaizoku is not configured in the API"})
 		return
 	}
 
@@ -1124,14 +1125,14 @@ func AddMangasToKaizoku(c *gin.Context) {
 		}
 		err = kaizoku.AddManga(dbManga)
 		if err != nil {
-			logger.Error().Err(err).Str("manga_url", dbManga.URL).Msg("Error adding manga to Kaizoku, will continue with the next manga...")
+			logger.Error().Err(err).Str("manga_url", dbManga.URL).Msg("error adding manga to Kaizoku, will continue with the next manga...")
 			lastError = err
 			continue
 		}
 	}
 
 	if lastError != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": "Some errors occured while adding some mangas to Kaizoku, check the logs for more information. Last error: " + lastError.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "some errors occured while adding some mangas to Kaizoku, check the logs for more information. Last error: " + lastError.Error()})
 		return
 	}
 

@@ -13,6 +13,7 @@ import (
 
 	"github.com/diogovalentte/mantium/api/src"
 	"github.com/diogovalentte/mantium/api/src/config"
+	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/routes"
 )
@@ -83,7 +84,7 @@ func TestAddManga(t *testing.T) {
 		}
 
 		actual := resMap["message"]
-		expected := "Manga not found"
+		expected := errordefs.ErrMangaNotFound.Error()
 		if !strContains(actual, expected) {
 			t.Fatalf(`expected actual message "%s" to contain expected message "%s"`, actual, expected)
 		}
@@ -100,7 +101,7 @@ func TestAddManga(t *testing.T) {
 		}
 
 		actual := resMap["message"]
-		expected := "Chapter not found"
+		expected := errordefs.ErrChapterNotFound.Error()
 		if !strContains(actual, expected) {
 			t.Fatalf(`expected actual message "%s" to contain expected message "%s"`, actual, expected)
 		}
@@ -138,7 +139,7 @@ func TestGetMangas(t *testing.T) {
 		}
 
 		actual := resMap["message"]
-		expected := "Manga not found in DB"
+		expected := errordefs.ErrMangaNotFoundDB.Error()
 		if !strContains(actual, expected) {
 			t.Fatalf(`expected actual message "%s" to contain expected message "%s"`, actual, expected)
 		}
@@ -156,7 +157,7 @@ func TestGetMangas(t *testing.T) {
 		}
 
 		actual := resMap["message"]
-		expected := "Manga not found in DB"
+		expected := errordefs.ErrMangaNotFoundDB.Error()
 		if !strContains(actual, expected) {
 			t.Fatalf(`expected actual message "%s" to contain expected message "%s"`, actual, expected)
 		}
@@ -211,7 +212,7 @@ func TestGetMangaChapters(t *testing.T) {
 		}
 
 		actual := resMap["message"]
-		expected := "Manga not found"
+		expected := errordefs.ErrMangaNotFound.Error()
 		if !strContains(actual, expected) {
 			t.Fatalf(`expected actual message "%s" to contain expected message "%s"`, actual, expected)
 		}
@@ -268,7 +269,7 @@ func TestUpdateManga(t *testing.T) {
 		}
 
 		actual := resMap["message"]
-		expected := "Manga not found in DB"
+		expected := errordefs.ErrMangaNotFoundDB.Error()
 		if !strContains(actual, expected) {
 			t.Fatalf(`expected actual message "%s" to contain expected message "%s"`, actual, expected)
 		}
@@ -299,7 +300,7 @@ func TestDeleteManga(t *testing.T) {
 		}
 
 		actual := resMap["message"]
-		expected := "Manga not found in DB"
+		expected := errordefs.ErrMangaNotFoundDB.Error()
 		if !strContains(actual, expected) {
 			t.Fatalf(`expected actual message "%s" to contain expected message "%s"`, actual, expected)
 		}
@@ -313,7 +314,7 @@ func TestDeleteManga(t *testing.T) {
 		}
 
 		actual := resMap["message"]
-		expected := "Manga not found in DB"
+		expected := errordefs.ErrMangaNotFoundDB.Error()
 		if !strContains(actual, expected) {
 			t.Fatalf(`expected actual message "%s" to contain expected message "%s"`, actual, expected)
 		}

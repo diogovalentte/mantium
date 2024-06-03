@@ -1,13 +1,12 @@
 package mangahub
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
 	"github.com/gocolly/colly/v2"
 
-	"github.com/diogovalentte/mantium/api/src/errors"
+	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
@@ -16,7 +15,7 @@ import (
 func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError bool) (*manga.Manga, error) {
 	s.resetCollector()
 
-	errorContext := "Error while getting manga metadata"
+	errorContext := "error while getting manga metadata"
 
 	mangaReturn := &manga.Manga{}
 	mangaReturn.Source = "mangahub.io"
@@ -85,16 +84,16 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 	err := s.c.Visit(mangaURL)
 	if err != nil {
 		if err.Error() == "Not Found" {
-			return nil, util.AddErrorContext(errorContext, fmt.Errorf("Manga not found"))
+			return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
 		}
-		return nil, util.AddErrorContext(errorContext, util.AddErrorContext("Error while visiting manga URL", err))
+		return nil, util.AddErrorContext(errorContext, util.AddErrorContext("error while visiting manga URL", err))
 	}
 	if sharedErr != nil {
 		return nil, util.AddErrorContext(errorContext, sharedErr)
 	}
 
 	if mangaReturn.LastReleasedChapter == nil && !ignoreGetLastChapterError {
-		return nil, util.AddErrorContext(errorContext, errors.ErrLastReleasedChapterNotFound)
+		return nil, util.AddErrorContext(errorContext, errordefs.ErrLastReleasedChapterNotFound)
 	}
 
 	// get cover image
