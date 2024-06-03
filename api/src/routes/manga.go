@@ -104,7 +104,7 @@ func AddManga(c *gin.Context) {
 		kaizoku.Init()
 		err = kaizoku.AddManga(mangaAdd)
 		if err != nil {
-			err = util.AddErrorContext(err, "manga added to DB, but error while adding it to Kaizoku")
+			err = util.AddErrorContext("manga added to DB, but error while adding it to Kaizoku", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
@@ -949,7 +949,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext(err, "Error adding job to check out of sync chapters to queue in Kaizoku").Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext("Error adding job to check out of sync chapters to queue in Kaizoku", err).Error()})
 			return
 		}
 
@@ -970,7 +970,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext(err, "Error adding job to fix out of sync chapters to queue in Kaizoku").Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext("Error adding job to fix out of sync chapters to queue in Kaizoku", err).Error()})
 			return
 		}
 
@@ -991,7 +991,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
 				return
 			}
-			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext(err, "Error adding job to try failed to fix out of sync chapters to queue in Kaizoku").Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext("Error adding job to try failed to fix out of sync chapters to queue in Kaizoku", err).Error()})
 			return
 		}
 	}

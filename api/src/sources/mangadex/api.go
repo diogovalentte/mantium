@@ -38,16 +38,16 @@ func (c *Client) Request(ctx context.Context, method, url string, reqBody io.Rea
 
 	req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(errorContext, method))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, method), err)
 	}
 
 	req.Header = c.header
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(errorContext, method))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, method), err)
 	} else if resp.StatusCode != http.StatusOK {
-		errorContext = util.AddErrorContext(fmt.Errorf("Non-200 status code -> (%d) %%s", resp.StatusCode), errorContext).Error()
+		errorContext = util.AddErrorContext(errorContext, fmt.Errorf("Non-200 status code -> (%d) %%s", resp.StatusCode)).Error()
 		// Decode to an ErrorResponse struct.
 		var er ErrorResponse
 
@@ -55,16 +55,16 @@ func (c *Client) Request(ctx context.Context, method, url string, reqBody io.Rea
 		if err = json.NewDecoder(resp.Body).Decode(&er); err != nil {
 			defer resp.Body.Close()
 			body, _ := io.ReadAll(resp.Body)
-			return nil, util.AddErrorContext(fmt.Errorf("Error while decoding API error response into ErrorResponse. Body: %s", string(body)), fmt.Sprintf(errorContext, method))
+			return nil, util.AddErrorContext(fmt.Sprintf(errorContext, method), fmt.Errorf("Error while decoding API error response into ErrorResponse. Body: %s", string(body)))
 		}
-		return nil, util.AddErrorContext(fmt.Errorf(er.GetErrors()), fmt.Sprintf(errorContext, method))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, method), fmt.Errorf(er.GetErrors()))
 	}
 
 	if retBody != nil {
 		defer resp.Body.Close()
 		if err = json.NewDecoder(resp.Body).Decode(retBody); err != nil {
 			body, _ := io.ReadAll(resp.Body)
-			return nil, util.AddErrorContext(fmt.Errorf("Error decoding request body response into '%s'. Body: %s", reflect.TypeOf(retBody).Name(), string(body)), fmt.Sprintf(errorContext, method))
+			return nil, util.AddErrorContext(fmt.Sprintf(errorContext, method), fmt.Errorf("Error decoding request body response into '%s'. Body: %s", reflect.TypeOf(retBody).Name(), string(body)))
 		}
 	}
 

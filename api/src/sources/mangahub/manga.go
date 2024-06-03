@@ -85,22 +85,22 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 	err := s.c.Visit(mangaURL)
 	if err != nil {
 		if err.Error() == "Not Found" {
-			return nil, util.AddErrorContext(fmt.Errorf("Manga not found"), errorContext)
+			return nil, util.AddErrorContext(errorContext, fmt.Errorf("Manga not found"))
 		}
-		return nil, util.AddErrorContext(util.AddErrorContext(err, "Error while visiting manga URL"), errorContext)
+		return nil, util.AddErrorContext(errorContext, util.AddErrorContext("Error while visiting manga URL", err))
 	}
 	if sharedErr != nil {
-		return nil, util.AddErrorContext(sharedErr, errorContext)
+		return nil, util.AddErrorContext(errorContext, sharedErr)
 	}
 
 	if mangaReturn.LastUploadChapter == nil && !ignoreGetLastChapterError {
-		return nil, util.AddErrorContext(errors.ErrLastReleasedChapterNotFound, errorContext)
+		return nil, util.AddErrorContext(errorContext, errors.ErrLastReleasedChapterNotFound)
 	}
 
 	// get cover image
 	coverImg, resized, err := s.getCoverImg(mangaReturn.CoverImgURL, 3, 1*time.Second)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 	mangaReturn.CoverImgResized = resized
 	mangaReturn.CoverImg = coverImg

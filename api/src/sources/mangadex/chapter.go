@@ -15,7 +15,7 @@ func (s *Source) GetChapterMetadata(mangaURL string, chapter string, chapterURL 
 	errorContext := "Error while getting metadata of chapter with chapter '%s' and URL '%s', and manga URL '%s'"
 
 	if chapter == "" && chapterURL == "" {
-		return nil, util.AddErrorContext(fmt.Errorf("Chapter or chapter URL is required"), fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL), fmt.Errorf("Chapter or chapter URL is required"))
 	}
 
 	returnChapter := &manga.Chapter{}
@@ -28,7 +28,7 @@ func (s *Source) GetChapterMetadata(mangaURL string, chapter string, chapterURL 
 	}
 
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL), err)
 	}
 
 	return returnChapter, nil
@@ -104,7 +104,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 
 	mangaID, err := getMangaID(mangaURL)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	// URL gets the last chapter of the manga
@@ -112,11 +112,11 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 	var feedAPIResp getMangaFeedAPIResponse
 	_, err = s.client.Request(context.Background(), "GET", mangaAPIURL, nil, &feedAPIResp)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	if len(feedAPIResp.Data) == 0 {
-		return nil, util.AddErrorContext(errors.ErrLastReleasedChapterNotFound, errorContext)
+		return nil, util.AddErrorContext(errorContext, errors.ErrLastReleasedChapterNotFound)
 	}
 
 	chapterReturn := &manga.Chapter{}
@@ -143,7 +143,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 
 	chapterReturn.UpdatedAt, err = util.GetRFC3339Datetime(attributes.PublishAt)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	return chapterReturn, nil
@@ -178,7 +178,7 @@ func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) 
 	case <-done:
 		return chapters, nil
 	case err := <-errChan:
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 }
 
@@ -266,12 +266,12 @@ func getChapterID(chapterURL string) (string, error) {
 	pattern := `https://mangadex\.org/chapter/([0-9a-fA-F-]+)`
 	re, err := regexp.Compile(pattern)
 	if err != nil {
-		return "", util.AddErrorContext(err, errorContext)
+		return "", util.AddErrorContext(errorContext, err)
 	}
 
 	matches := re.FindStringSubmatch(chapterURL)
 	if len(matches) < 2 {
-		return "", util.AddErrorContext(fmt.Errorf("Chapter ID not found in URL"), errorContext)
+		return "", util.AddErrorContext(errorContext, fmt.Errorf("Chapter ID not found in URL"))
 	}
 
 	return matches[1], nil

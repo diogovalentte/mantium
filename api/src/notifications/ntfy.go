@@ -21,7 +21,7 @@ func GetNtfyPublisher() (*NtfyPublisher, error) {
 
 	server, err := url.Parse(configs.Address)
 	if err != nil {
-		return nil, util.AddErrorContext(err, contextError)
+		return nil, util.AddErrorContext(contextError, err)
 	}
 
 	customClient := &http.Client{
@@ -31,7 +31,7 @@ func GetNtfyPublisher() (*NtfyPublisher, error) {
 	}
 	publisher, err := gotfy.NewPublisher(server, customClient)
 	if err != nil {
-		return nil, util.AddErrorContext(err, contextError)
+		return nil, util.AddErrorContext(contextError, err)
 	}
 
 	return &NtfyPublisher{
@@ -62,7 +62,7 @@ type NtfyPublisher struct {
 func (t *NtfyPublisher) SendMessage(ctx context.Context, message *gotfy.Message) error {
 	_, err := t.Publisher.SendMessage(ctx, message)
 	if err != nil {
-		return util.AddErrorContext(err, "Could not send message to Ntfy")
+		return util.AddErrorContext("Could not send message to Ntfy", err)
 	}
 
 	return nil

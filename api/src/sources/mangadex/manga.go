@@ -23,14 +23,14 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 
 	mangadexMangaID, err := getMangaID(mangaURL)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	mangaAPIURL := fmt.Sprintf("%s/manga/%s?includes[]=cover_art", baseAPIURL, mangadexMangaID)
 	var mangaAPIResp getMangaAPIResponse
 	_, err = s.client.Request(context.Background(), "GET", mangaAPIURL, nil, &mangaAPIResp)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	attributes := &mangaAPIResp.Data.Attributes
@@ -52,7 +52,7 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 	lastUploadChapter, err := s.GetLastChapterMetadata(mangaURL)
 	if err != nil {
 		if !(ignoreGetLastChapterError && util.ErrorContains(err, errors.ErrLastReleasedChapterNotFound.Message)) {
-			return nil, util.AddErrorContext(err, errorContext)
+			return nil, util.AddErrorContext(errorContext, err)
 		}
 	} else {
 		lastUploadChapter.Type = 1
@@ -67,14 +67,14 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 		}
 	}
 	if coverFileName == "" {
-		return nil, util.AddErrorContext(fmt.Errorf("Cover image not found"), errorContext)
+		return nil, util.AddErrorContext(errorContext, fmt.Errorf("Cover image not found"))
 	}
 	coverURL := fmt.Sprintf("%s/covers/%s/%s", baseUploadsURL, mangadexMangaID, coverFileName)
 	mangaReturn.CoverImgURL = coverURL
 
 	coverImg, resized, err := util.GetImageFromURL(coverURL, 3, 1*time.Second)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 	mangaReturn.CoverImgResized = resized
 	mangaReturn.CoverImg = coverImg
@@ -101,12 +101,12 @@ func getMangaID(mangaURL string) (string, error) {
 	pattern := `/title/([0-9a-fA-F-]+)(?:/.*)?$`
 	re, err := regexp.Compile(pattern)
 	if err != nil {
-		return "", util.AddErrorContext(err, errorContext)
+		return "", util.AddErrorContext(errorContext, err)
 	}
 
 	matches := re.FindStringSubmatch(mangaURL)
 	if len(matches) < 2 {
-		return "", util.AddErrorContext(fmt.Errorf("Manga ID not found"), errorContext)
+		return "", util.AddErrorContext(errorContext, fmt.Errorf("Manga ID not found"))
 	}
 
 	return matches[1], nil

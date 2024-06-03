@@ -15,7 +15,7 @@ func (s *Source) GetChapterMetadata(mangaURL string, chapter string, chapterURL 
 	errorContext := "Error while getting metadata of chapter with chapter '%s' and URL '%s', and manga URL '%s'"
 
 	if chapter == "" && chapterURL == "" {
-		return nil, util.AddErrorContext(fmt.Errorf("Chapter or chapter URL is required"), fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL), fmt.Errorf("Chapter or chapter URL is required"))
 	}
 
 	returnChapter := &manga.Chapter{}
@@ -28,7 +28,7 @@ func (s *Source) GetChapterMetadata(mangaURL string, chapter string, chapterURL 
 	}
 
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL), err)
 	}
 
 	return returnChapter, nil
@@ -122,12 +122,12 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 	err := s.c.Visit(mangaURL)
 	if err != nil {
 		if err.Error() == "Not Found" {
-			return nil, util.AddErrorContext(fmt.Errorf("Manga not found"), errorContext)
+			return nil, util.AddErrorContext(errorContext, fmt.Errorf("Manga not found"))
 		}
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 	if sharedErr != nil {
-		return nil, util.AddErrorContext(sharedErr, errorContext)
+		return nil, util.AddErrorContext(errorContext, sharedErr)
 	}
 
 	return chapterReturn, nil
@@ -167,12 +167,12 @@ func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) 
 	err := s.c.Visit(mangaURL)
 	if err != nil {
 		if err.Error() == "Not Found" {
-			return nil, util.AddErrorContext(fmt.Errorf("Manga not found"), errorContext)
+			return nil, util.AddErrorContext(errorContext, fmt.Errorf("Manga not found"))
 		}
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 	if sharedErr != nil {
-		return nil, util.AddErrorContext(sharedErr, errorContext)
+		return nil, util.AddErrorContext(errorContext, sharedErr)
 	}
 
 	return chapters, nil

@@ -14,18 +14,18 @@ func (k *Kaizoku) GetQueues() ([]*Queue, error) {
 	url := fmt.Sprintf("%s/bull/queues/api/queues", k.Address)
 	resp, err := k.Request(http.MethodGet, url, nil)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 	defer resp.Body.Close()
 	err = validateResponse(resp)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	var queues getQueuesResponse
 	err = json.NewDecoder(resp.Body).Decode(&queues)
 	if err != nil {
-		return nil, util.AddErrorContext(err, util.AddErrorContext(fmt.Errorf("Error while decoding response body"), errorContext).Error())
+		return nil, util.AddErrorContext(util.AddErrorContext(errorContext, fmt.Errorf("Error while decoding response body")).Error(), err)
 	}
 
 	return queues.Queues, nil
@@ -36,7 +36,7 @@ func (k *Kaizoku) GetQueue(queueName string) (*Queue, error) {
 
 	queues, err := k.GetQueues()
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(errorContext, queueName))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, queueName), err)
 	}
 
 	var queue *Queue
@@ -48,7 +48,7 @@ func (k *Kaizoku) GetQueue(queueName string) (*Queue, error) {
 	}
 
 	if queue == nil {
-		return nil, util.AddErrorContext(fmt.Errorf("Queue not found"), fmt.Sprintf(errorContext, queueName))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, queueName), fmt.Errorf("Queue not found"))
 	}
 
 	return queue, nil
@@ -60,12 +60,12 @@ func (k *Kaizoku) RetryFailedFixOutOfSyncChaptersQueueJobs() error {
 	url := fmt.Sprintf("%s/bull/queues/api/queues/fixOutOfSyncChaptersQueue/retry/failed", k.Address)
 	resp, err := k.Request(http.MethodPut, url, nil)
 	if err != nil {
-		return util.AddErrorContext(err, errorContext)
+		return util.AddErrorContext(errorContext, err)
 	}
 	defer resp.Body.Close()
 	err = validateResponse(resp)
 	if err != nil {
-		return util.AddErrorContext(err, errorContext)
+		return util.AddErrorContext(errorContext, err)
 	}
 
 	return nil

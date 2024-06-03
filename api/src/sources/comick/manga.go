@@ -22,14 +22,14 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 
 	mangaID, err := getMangaSlug(mangaURL)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	mangaAPIURL := fmt.Sprintf("%s/comic/%s", baseAPIURL, mangaID)
 	var mangaAPIResp getMangaAPIResponse
 	_, err = s.client.Request("GET", mangaAPIURL, nil, &mangaAPIResp)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	comic := &mangaAPIResp.Comic
@@ -39,7 +39,7 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 	lastUploadChapter, err := s.GetLastChapterMetadata(mangaURL)
 	if err != nil {
 		if !(ignoreGetLastChapterError && util.ErrorContains(err, errors.ErrLastReleasedChapterNotFound.Message)) {
-			return nil, util.AddErrorContext(err, errorContext)
+			return nil, util.AddErrorContext(errorContext, err)
 		}
 	} else {
 		lastUploadChapter.Type = 1
@@ -55,14 +55,14 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 		}
 	}
 	if coverFileName == "" {
-		return nil, util.AddErrorContext(fmt.Errorf("Cover image not found"), errorContext)
+		return nil, util.AddErrorContext(errorContext, fmt.Errorf("Cover image not found"))
 	}
 	coverURL := fmt.Sprintf("%s/%s", baseUploadsURL, coverFileName)
 	mangaReturn.CoverImgURL = coverURL
 
 	coverImg, resized, err := util.GetImageFromURL(coverURL, 3, 1*time.Second)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 	mangaReturn.CoverImgResized = resized
 	mangaReturn.CoverImg = coverImg
@@ -99,14 +99,14 @@ func (s *Source) getMangaHID(mangaURL string) (string, error) {
 
 	mangaSlug, err := getMangaSlug(mangaURL)
 	if err != nil {
-		return "", util.AddErrorContext(err, errorContext)
+		return "", util.AddErrorContext(errorContext, err)
 	}
 
 	mangaAPIURL := fmt.Sprintf("%s/comic/%s", baseAPIURL, mangaSlug)
 	var mangaAPIResp getMangaAPIResponse
 	_, err = s.client.Request("GET", mangaAPIURL, nil, &mangaAPIResp)
 	if err != nil {
-		return "", util.AddErrorContext(err, errorContext)
+		return "", util.AddErrorContext(errorContext, err)
 	}
 
 	return mangaAPIResp.Comic.HID, nil
@@ -120,12 +120,12 @@ func getMangaSlug(mangaURL string) (string, error) {
 	pattern := `^https?://comick\.[^/]+/comic/([^/]+)(?:/.*)?$`
 	re, err := regexp.Compile(pattern)
 	if err != nil {
-		return "", util.AddErrorContext(err, errorContext)
+		return "", util.AddErrorContext(errorContext, err)
 	}
 
 	matches := re.FindStringSubmatch(mangaURL)
 	if len(matches) < 2 {
-		return "", util.AddErrorContext(fmt.Errorf("manga Slug not found in URL"), errorContext)
+		return "", util.AddErrorContext(errorContext, fmt.Errorf("manga Slug not found in URL"))
 	}
 
 	return matches[1], nil

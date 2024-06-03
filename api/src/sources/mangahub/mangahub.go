@@ -66,7 +66,7 @@ func (s *Source) getCoverImg(url string, retries int, retryInterval time.Duratio
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			if i == retries-1 {
-				return nil, resized, util.AddErrorContext(util.AddErrorContext(err, "Error while creating request"), fmt.Sprintf(contextError, url))
+				return nil, resized, util.AddErrorContext(fmt.Sprintf(contextError, url), util.AddErrorContext("Error while creating request", err))
 			}
 			time.Sleep(retryInterval)
 			continue
@@ -77,7 +77,7 @@ func (s *Source) getCoverImg(url string, retries int, retryInterval time.Duratio
 		resp, err := httpClient.Do(req)
 		if err != nil {
 			if i == retries-1 {
-				return nil, resized, util.AddErrorContext(util.AddErrorContext(err, "Error while executing request"), fmt.Sprintf(contextError, url))
+				return nil, resized, util.AddErrorContext(fmt.Sprintf(contextError, url), util.AddErrorContext("Error while executing request", err))
 			}
 			time.Sleep(retryInterval)
 			continue
@@ -86,7 +86,7 @@ func (s *Source) getCoverImg(url string, retries int, retryInterval time.Duratio
 
 		if resp.StatusCode != http.StatusOK {
 			if i == retries-1 {
-				return nil, resized, util.AddErrorContext(fmt.Errorf("Status code is not OK, instead it's %d", resp.StatusCode), fmt.Sprintf(contextError, url))
+				return nil, resized, util.AddErrorContext(fmt.Sprintf(contextError, url), fmt.Errorf("Status code is not OK, instead it's %d", resp.StatusCode))
 			}
 			time.Sleep(retryInterval)
 			continue
@@ -95,7 +95,7 @@ func (s *Source) getCoverImg(url string, retries int, retryInterval time.Duratio
 		imageBytes, err = io.ReadAll(resp.Body)
 		if err != nil {
 			if i == retries-1 {
-				return nil, resized, util.AddErrorContext(util.AddErrorContext(err, "Error while reading response body"), fmt.Sprintf(contextError, url))
+				return nil, resized, util.AddErrorContext(fmt.Sprintf(contextError, url), util.AddErrorContext("Error while reading response body", err))
 			}
 			time.Sleep(retryInterval)
 			continue
@@ -110,7 +110,7 @@ func (s *Source) getCoverImg(url string, retries int, retryInterval time.Duratio
 		if util.ErrorContains(err, "unsupported JPEG feature: luma/chroma subsampling ratio") {
 			img = imageBytes
 		} else {
-			return nil, resized, util.AddErrorContext(err, fmt.Sprintf(contextError, url))
+			return nil, resized, util.AddErrorContext(fmt.Sprintf(contextError, url), err)
 		}
 	} else {
 		resized = true
@@ -144,7 +144,7 @@ func getMangaUploadedTime(timeString string) (time.Time, error) {
 			"hours ago": func(timeString string) (time.Time, error) {
 				hours, err := strconv.Atoi(strings.TrimSpace(strings.Replace(timeString, "hours ago", "", -1)))
 				if err != nil {
-					return time.Time{}, util.AddErrorContext(err, fmt.Sprintf(errorContext, timeString))
+					return time.Time{}, util.AddErrorContext(fmt.Sprintf(errorContext, timeString), err)
 				}
 				subHours := time.Duration(hours) * time.Hour
 				releaseDate := time.Now().Add(subHours * -1)
@@ -157,7 +157,7 @@ func getMangaUploadedTime(timeString string) (time.Time, error) {
 			"days ago": func(timeString string) (time.Time, error) {
 				days, err := strconv.Atoi(strings.TrimSpace(strings.Replace(timeString, "days ago", "", -1)))
 				if err != nil {
-					return time.Time{}, util.AddErrorContext(err, fmt.Sprintf(errorContext, timeString))
+					return time.Time{}, util.AddErrorContext(fmt.Sprintf(errorContext, timeString), err)
 				}
 				subDays := time.Duration(days) * time.Hour * 24
 				releaseDate := time.Now().Add(subDays * -1)
@@ -171,7 +171,7 @@ func getMangaUploadedTime(timeString string) (time.Time, error) {
 			"weeks ago": func(timeString string) (time.Time, error) {
 				weeks, err := strconv.Atoi(strings.TrimSpace(strings.Replace(timeString, "weeks ago", "", -1)))
 				if err != nil {
-					return time.Time{}, util.AddErrorContext(err, fmt.Sprintf(errorContext, timeString))
+					return time.Time{}, util.AddErrorContext(fmt.Sprintf(errorContext, timeString), err)
 				}
 				subWeeks := time.Duration(weeks) * time.Hour * 24 * 7
 				releaseDate := time.Now().Add(subWeeks * -1)
@@ -187,7 +187,7 @@ func getMangaUploadedTime(timeString string) (time.Time, error) {
 			}
 		}
 
-		return time.Time{}, util.AddErrorContext(fmt.Errorf("No configured datetime parser"), fmt.Sprintf(errorContext, timeString))
+		return time.Time{}, util.AddErrorContext(fmt.Sprintf(errorContext, timeString), fmt.Errorf("No configured datetime parser"))
 	}
 
 	return parsedTime.Truncate(time.Second), nil

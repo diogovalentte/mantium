@@ -40,7 +40,7 @@ func insertChapterDB(c *Chapter, mangaID ID, tx *sql.Tx) (int, error) {
 
 	err := validateChapter(c)
 	if err != nil {
-		return -1, util.AddErrorContext(err, fmt.Sprintf(contextError, mangaID))
+		return -1, util.AddErrorContext(fmt.Sprintf(contextError, mangaID), err)
 	}
 	var chapterID int
 	err = tx.QueryRow(`
@@ -52,7 +52,7 @@ func insertChapterDB(c *Chapter, mangaID ID, tx *sql.Tx) (int, error) {
             id;
     `, mangaID, c.URL, c.Chapter, c.Name, c.UpdatedAt, c.Type).Scan(&chapterID)
 	if err != nil {
-		return -1, util.AddErrorContext(err, fmt.Sprintf(contextError, mangaID))
+		return -1, util.AddErrorContext(fmt.Sprintf(contextError, mangaID), err)
 	}
 
 	return chapterID, nil
@@ -72,14 +72,14 @@ func getChapterDB(id int, db *sql.DB) (*Chapter, error) {
     `, id).Scan(&chapter.URL, &chapter.Chapter, &chapter.Name, &chapter.UpdatedAt, &chapter.Type)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, util.AddErrorContext(fmt.Errorf("Chapter not found, is the ID correct?"), fmt.Sprintf(contextError, id))
+			return nil, util.AddErrorContext(fmt.Sprintf(contextError, id), fmt.Errorf("Chapter not found, is the ID correct?"))
 		}
-		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, id))
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, id), err)
 	}
 
 	err = validateChapter(&chapter)
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, id))
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, id), err)
 	}
 
 	return &chapter, nil
@@ -92,19 +92,19 @@ func upsertMangaChapter(m *Manga, chapter *Chapter, tx *sql.Tx) error {
 
 	err := validateManga(m)
 	if err != nil {
-		return util.AddErrorContext(err, contextError)
+		return util.AddErrorContext(contextError, err)
 	}
 
 	err = validateChapter(chapter)
 	if err != nil {
-		return util.AddErrorContext(err, contextError)
+		return util.AddErrorContext(contextError, err)
 	}
 
 	mangaID := m.ID
 	if mangaID == 0 {
 		mangaID, err = getMangaIDByURL(m.URL)
 		if err != nil {
-			return util.AddErrorContext(err, contextError)
+			return util.AddErrorContext(contextError, err)
 		}
 		m.ID = mangaID
 	}
@@ -119,7 +119,7 @@ func upsertMangaChapter(m *Manga, chapter *Chapter, tx *sql.Tx) error {
         RETURNING id;
     `, m.ID, chapter.URL, chapter.Chapter, chapter.Name, chapter.UpdatedAt, chapter.Type).Scan(&chapterID)
 	if err != nil {
-		return util.AddErrorContext(err, contextError)
+		return util.AddErrorContext(contextError, err)
 	}
 
 	var query string
@@ -141,10 +141,10 @@ func upsertMangaChapter(m *Manga, chapter *Chapter, tx *sql.Tx) error {
 	result, err = tx.Exec(query, chapterID, m.ID)
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return util.AddErrorContext(err, contextError)
+		return util.AddErrorContext(contextError, err)
 	}
 	if rowsAffected == 0 {
-		return util.AddErrorContext(fmt.Errorf("manga not found in DB"), contextError)
+		return util.AddErrorContext(contextError, fmt.Errorf("manga not found in DB"))
 	}
 
 	return nil
@@ -160,16 +160,16 @@ func validateChapter(c *Chapter) error {
 	contextError := "Error validating chapter"
 
 	if c.URL == "" {
-		return util.AddErrorContext(fmt.Errorf("Chapter URL is empty"), contextError)
+		return util.AddErrorContext(contextError, fmt.Errorf("Chapter URL is empty"))
 	}
 	if c.Chapter == "" {
-		return util.AddErrorContext(fmt.Errorf("Chapter chapter is empty"), contextError)
+		return util.AddErrorContext(contextError, fmt.Errorf("Chapter chapter is empty"))
 	}
 	if c.Name == "" {
-		return util.AddErrorContext(fmt.Errorf("Chapter name is empty"), contextError)
+		return util.AddErrorContext(contextError, fmt.Errorf("Chapter name is empty"))
 	}
 	if c.Type != 1 && c.Type != 2 {
-		return util.AddErrorContext(fmt.Errorf("Chapter type should be 1 (last upload) or 2 (last read), instead it's %d", c.Type), contextError)
+		return util.AddErrorContext(contextError, fmt.Errorf("Chapter type should be 1 (last upload) or 2 (last read), instead it's %d", c.Type))
 	}
 
 	return nil

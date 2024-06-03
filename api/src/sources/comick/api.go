@@ -47,25 +47,25 @@ func (c *Client) Request(method, url string, reqBody io.Reader, retBody interfac
 
 	req, err := http.NewRequest(method, url, reqBody)
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(errorContext, method))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, method), err)
 	}
 
 	req.Header = c.header
 
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(errorContext, method))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, method), err)
 	} else if resp.StatusCode != http.StatusOK {
 		defer resp.Body.Close()
 		body, _ := io.ReadAll(resp.Body)
-		return nil, util.AddErrorContext(fmt.Errorf("Non-200 status code -> (%d). Body: %s", resp.StatusCode, string(body)), fmt.Sprintf(errorContext, method))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, method), fmt.Errorf("Non-200 status code -> (%d). Body: %s", resp.StatusCode, string(body)))
 	}
 
 	if retBody != nil {
 		defer resp.Body.Close()
 		if err = json.NewDecoder(resp.Body).Decode(retBody); err != nil {
 			body, _ := io.ReadAll(resp.Body)
-			return nil, util.AddErrorContext(fmt.Errorf("Error decoding request body response into '%s'. Body: %s", reflect.TypeOf(retBody).Name(), string(body)), fmt.Sprintf(errorContext, method))
+			return nil, util.AddErrorContext(fmt.Sprintf(errorContext, method), fmt.Errorf("Error decoding request body response into '%s'. Body: %s", reflect.TypeOf(retBody).Name(), string(body)))
 		}
 	}
 

@@ -14,7 +14,7 @@ func (s *Source) GetChapterMetadata(mangaURL, chapter, chapterURL string) (*mang
 	errorContext := "Error while getting metadata of chapter with chapter '%s' and URL '%s', and manga URL '%s'"
 
 	if chapter == "" && chapterURL == "" {
-		return nil, util.AddErrorContext(fmt.Errorf("Chapter or chapter URL is required"), fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL), fmt.Errorf("Chapter or chapter URL is required"))
 	}
 
 	returnChapter := &manga.Chapter{}
@@ -28,7 +28,7 @@ func (s *Source) GetChapterMetadata(mangaURL, chapter, chapterURL string) (*mang
 	}
 
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL), err)
 	}
 
 	return returnChapter, nil
@@ -98,23 +98,23 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 
 	mangaHID, err := s.getMangaHID(mangaURL)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	mangaAPIURL := fmt.Sprintf("%s/comic/%s/chapters?lang=en&limit=1", baseAPIURL, mangaHID) // default order is by chapter desc
 	var chaptersAPIResp getChaptersAPIResponse
 	_, err = s.client.Request("GET", mangaAPIURL, nil, &chaptersAPIResp)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	if len(chaptersAPIResp.Chapters) == 0 {
-		return nil, util.AddErrorContext(errors.ErrLastReleasedChapterNotFound, errorContext)
+		return nil, util.AddErrorContext(errorContext, errors.ErrLastReleasedChapterNotFound)
 	}
 
 	chapterReturn, err := getChapterFromResp(chaptersAPIResp.Chapters[0], chaptersAPIResp.Chapters[0].Chap, mangaURL)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	return chapterReturn, nil
@@ -149,7 +149,7 @@ func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) 
 	case <-done:
 		return chapters, nil
 	case err := <-errChan:
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 }
 
@@ -218,7 +218,7 @@ func getChapterHID(chapterURL string) (string, error) {
 	hid = parts[0]
 
 	if hid == "" {
-		return "", util.AddErrorContext(fmt.Errorf("HID not found in URL"), contextError)
+		return "", util.AddErrorContext(contextError, fmt.Errorf("HID not found in URL"))
 	}
 
 	return hid, nil

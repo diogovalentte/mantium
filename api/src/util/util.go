@@ -34,7 +34,7 @@ func GetLogger(logLevel zerolog.Level) *zerolog.Logger {
 // AddErrorContext adds context to an error, like:
 // "Error downloading image: Get "https://example.com/image.jpg": dial tcp: lookup example.com: no such host".
 // Should be used in functions that can return multiple errors without a spefic origin/context.
-func AddErrorContext(err error, context string) error {
+func AddErrorContext(context string, err error) error {
 	return fmt.Errorf("%s: %w", context, err)
 }
 
@@ -75,7 +75,7 @@ func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgB
 		resp, err := http.Get(url)
 		if err != nil {
 			if i == retries-1 {
-				return nil, resized, AddErrorContext(err, fmt.Sprintf(contextError, url))
+				return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), err)
 			}
 			time.Sleep(retryInterval)
 			continue
@@ -84,7 +84,7 @@ func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgB
 
 		if resp.StatusCode != http.StatusOK {
 			if i == retries-1 {
-				return nil, resized, AddErrorContext(fmt.Errorf("Status code is not OK, instead it's %d", resp.StatusCode), fmt.Sprintf(contextError, url))
+				return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), fmt.Errorf("Status code is not OK, instead it's %d", resp.StatusCode))
 			}
 			time.Sleep(retryInterval)
 			continue
@@ -93,7 +93,7 @@ func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgB
 		imageBytes, err = io.ReadAll(resp.Body)
 		if err != nil {
 			if i == retries-1 {
-				return nil, resized, AddErrorContext(AddErrorContext(err, "Could not read the image data from request body"), fmt.Sprintf(contextError, url))
+				return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), AddErrorContext("Could not read the image data from request body", err))
 			}
 			time.Sleep(retryInterval)
 			continue
@@ -108,7 +108,7 @@ func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgB
 		if ErrorContains(err, "unsupported JPEG feature: luma/chroma subsampling ratio") {
 			img = imageBytes
 		} else {
-			return nil, resized, AddErrorContext(err, fmt.Sprintf(contextError, url))
+			return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), err)
 		}
 	} else {
 		resized = true
@@ -123,12 +123,12 @@ func ResizeImage(imgBytes []byte, width, height uint) ([]byte, error) {
 
 	_, format, err := image.DecodeConfig(bytes.NewReader(imgBytes))
 	if err != nil {
-		return nil, AddErrorContext(err, fmt.Sprintf(contextError, width, height))
+		return nil, AddErrorContext(fmt.Sprintf(contextError, width, height), err)
 	}
 
 	img, _, err := image.Decode(bytes.NewReader(imgBytes))
 	if err != nil {
-		return nil, AddErrorContext(err, fmt.Sprintf(contextError, width, height))
+		return nil, AddErrorContext(fmt.Sprintf(contextError, width, height), err)
 	}
 
 	resizedImg := resize.Resize(width, height, img, resize.Lanczos3)
@@ -140,10 +140,10 @@ func ResizeImage(imgBytes []byte, width, height uint) ([]byte, error) {
 	case "png":
 		err = png.Encode(&resizedBuf, resizedImg)
 	default:
-		return nil, AddErrorContext(fmt.Errorf("Unsupported image format to resize: %s", format), fmt.Sprintf(contextError, width, height))
+		return nil, AddErrorContext(fmt.Sprintf(contextError, width, height), fmt.Errorf("Unsupported image format to resize: %s", format))
 	}
 	if err != nil {
-		return nil, AddErrorContext(err, fmt.Sprintf(contextError, width, height))
+		return nil, AddErrorContext(fmt.Sprintf(contextError, width, height), err)
 	}
 
 	return resizedBuf.Bytes(), nil
@@ -162,7 +162,7 @@ func GetRFC3339Datetime(date string) (time.Time, error) {
 
 	parsedDate, err := time.Parse(time.RFC3339, date)
 	if err != nil {
-		return time.Time{}, AddErrorContext(err, fmt.Sprintf(contextError, date))
+		return time.Time{}, AddErrorContext(fmt.Sprintf(contextError, date), err)
 	}
 	parsedDate = parsedDate.In(time.Local).Truncate(time.Second)
 
@@ -186,16 +186,16 @@ func RequestUpdateMangasMetadata(notify bool) (*http.Response, error) {
 	}
 	req, err := http.NewRequest("PATCH", url, nil)
 	if err != nil {
-		return nil, AddErrorContext(err, fmt.Sprintf(contextErrror, notify))
+		return nil, AddErrorContext(fmt.Sprintf(contextErrror, notify), err)
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return resp, AddErrorContext(err, fmt.Sprintf(contextErrror, notify))
+		return resp, AddErrorContext(fmt.Sprintf(contextErrror, notify), err)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return resp, AddErrorContext(fmt.Errorf("Status code is not OK, instead it's %d", resp.StatusCode), fmt.Sprintf(contextErrror, notify))
+		return resp, AddErrorContext(fmt.Sprintf(contextErrror, notify), fmt.Errorf("Status code is not OK, instead it's %d", resp.StatusCode))
 	}
 
 	return resp, nil

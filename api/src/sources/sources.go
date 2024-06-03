@@ -51,7 +51,7 @@ func GetSource(domain string) (Source, error) {
 
 	value, ok := sources[domain]
 	if !ok {
-		return nil, util.AddErrorContext(fmt.Errorf("Source '%s' not found", domain), contextError)
+		return nil, util.AddErrorContext(contextError, fmt.Errorf("Source '%s' not found", domain))
 	}
 	return value, nil
 }
@@ -67,18 +67,18 @@ func GetMangaMetadata(mangaURL string, ignoreGetLastChapterError bool) (*manga.M
 
 	domain, err := getDomain(mangaURL)
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, mangaURL))
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL), err)
 	}
 
 	source, err := GetSource(domain)
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, mangaURL))
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL), err)
 	}
 	contextError = fmt.Sprintf("(%s) %s", domain, contextError)
 
 	manga, err := getManga(mangaURL, source, ignoreGetLastChapterError)
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, mangaURL))
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL), err)
 	}
 
 	return manga, nil
@@ -92,18 +92,18 @@ func GetChapterMetadata(mangaURL string, chapter string, chapterURL string) (*ma
 
 	domain, err := getDomain(mangaURL)
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, chapter, chapterURL, mangaURL))
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, chapter, chapterURL, mangaURL), err)
 	}
 
 	source, err := GetSource(domain)
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, chapter, chapterURL, mangaURL))
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, chapter, chapterURL, mangaURL), err)
 	}
 	contextError = fmt.Sprintf("(%s) %s", domain, contextError)
 
 	chapterReturn, err := getChapter(mangaURL, chapter, chapterURL, source)
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, chapter, chapterURL, mangaURL))
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, chapter, chapterURL, mangaURL), err)
 	}
 
 	return chapterReturn, nil
@@ -115,18 +115,18 @@ func GetMangaChapters(mangaURL string) ([]*manga.Chapter, error) {
 
 	domain, err := getDomain(mangaURL)
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, mangaURL))
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL), err)
 	}
 
 	source, err := GetSource(domain)
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, mangaURL))
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL), err)
 	}
 	contextError = fmt.Sprintf("(%s) %s", domain, contextError)
 
 	chapters, err := getChapters(mangaURL, source)
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, mangaURL))
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL), err)
 	}
 
 	return chapters, nil
@@ -137,7 +137,7 @@ func getDomain(urlString string) (string, error) {
 
 	parsedURL, err := url.Parse(urlString)
 	if err != nil {
-		return "", util.AddErrorContext(err, fmt.Sprintf(errorContext, urlString))
+		return "", util.AddErrorContext(fmt.Sprintf(errorContext, urlString), err)
 	}
 
 	return parsedURL.Hostname(), nil

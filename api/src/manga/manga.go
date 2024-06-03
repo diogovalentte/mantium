@@ -61,24 +61,24 @@ func (m *Manga) InsertIntoDB() (ID, error) {
 
 	db, err := db.OpenConn()
 	if err != nil {
-		return -1, util.AddErrorContext(err, fmt.Sprintf(contextError, m))
+		return -1, util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
 	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
-		return -1, util.AddErrorContext(err, fmt.Sprintf(contextError, m))
+		return -1, util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
 
 	mangaID, err := insertMangaIntoDB(m, tx)
 	if err != nil {
 		tx.Rollback()
-		return -1, util.AddErrorContext(err, fmt.Sprintf(contextError, m))
+		return -1, util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return -1, util.AddErrorContext(err, fmt.Sprintf(contextError, m))
+		return -1, util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
 
 	return mangaID, nil
@@ -153,24 +153,24 @@ func (m *Manga) DeleteFromDB() error {
 
 	db, err := db.OpenConn()
 	if err != nil {
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, m))
+		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
 	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, m))
+		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
 
 	err = deleteMangaDB(m, tx)
 	if err != nil {
 		tx.Rollback()
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, m))
+		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, m))
+		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
 
 	return nil
@@ -222,24 +222,24 @@ func (m *Manga) UpdateStatusInDB(status Status) error {
 
 	db, err := db.OpenConn()
 	if err != nil {
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, m))
+		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
 	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, m))
+		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
 
 	err = updateMangaStatusDB(m, status, tx)
 	if err != nil {
 		tx.Rollback()
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, m))
+		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, m))
+		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
 
 	return nil
@@ -298,24 +298,24 @@ func (m *Manga) UpsertChapterInDB(chapter *Chapter) error {
 
 	db, err := db.OpenConn()
 	if err != nil {
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, chapter, m))
+		return util.AddErrorContext(fmt.Sprintf(contextError, chapter, m), err)
 	}
 	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, chapter, m))
+		return util.AddErrorContext(fmt.Sprintf(contextError, chapter, m), err)
 	}
 
 	err = upsertMangaChapter(m, chapter, tx)
 	if err != nil {
 		tx.Rollback()
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, chapter, m))
+		return util.AddErrorContext(fmt.Sprintf(contextError, chapter, m), err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, chapter, m))
+		return util.AddErrorContext(fmt.Sprintf(contextError, chapter, m), err)
 	}
 	m.LastUploadChapter = chapter
 
@@ -328,24 +328,24 @@ func (m *Manga) UpdateNameInDB(name string) error {
 
 	db, err := db.OpenConn()
 	if err != nil {
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, m, name))
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, name), err)
 	}
 	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, m, name))
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, name), err)
 	}
 
 	err = updateMangaName(m, name, tx)
 	if err != nil {
 		tx.Rollback()
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, m, name))
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, name), err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, m, name))
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, name), err)
 	}
 	m.Name = name
 
@@ -399,24 +399,24 @@ func (m *Manga) UpdateCoverImgInDB(coverImg []byte, coverImgResized bool, coverI
 
 	db, err := db.OpenConn()
 	if err != nil {
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, m, coverImgURL))
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, coverImgURL), err)
 	}
 	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, m, coverImgURL))
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, coverImgURL), err)
 	}
 
 	err = updateMangaCoverImg(m, coverImg, coverImgResized, coverImgURL, m.CoverImgFixed, tx)
 	if err != nil {
 		tx.Rollback()
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, m, coverImgURL))
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, coverImgURL), err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, m, coverImgURL))
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, coverImgURL), err)
 	}
 	m.CoverImg = coverImg
 	m.CoverImgResized = coverImgResized
@@ -474,24 +474,24 @@ func UpdateMangaMetadataDB(m *Manga) error {
 
 	db, err := db.OpenConn()
 	if err != nil {
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, m))
+		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
 	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, m))
+		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
 
 	err = updateMangaMetadata(m, tx)
 	if err != nil {
 		tx.Rollback()
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, m))
+		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return util.AddErrorContext(err, fmt.Sprintf(contextError, m))
+		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
 
 	return nil
@@ -531,7 +531,7 @@ func GetMangaDB(mangaID ID, mangaURL string) (*Manga, error) {
 
 	db, err := db.OpenConn()
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, mangaID, mangaURL))
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaID, mangaURL), err)
 	}
 	defer db.Close()
 
@@ -542,9 +542,9 @@ func GetMangaDB(mangaID ID, mangaURL string) (*Manga, error) {
 	err = getMangaFromDB(&mangaGet, db)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, util.AddErrorContext(fmt.Errorf("Manga not found in DB"), fmt.Sprintf(contextError, mangaID, mangaURL))
+			return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaID, mangaURL), fmt.Errorf("Manga not found in DB"))
 		}
-		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, mangaID, mangaURL))
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaID, mangaURL), err)
 	}
 
 	return &mangaGet, nil
@@ -611,7 +611,7 @@ func getMangaIDByURL(url string) (ID, error) {
 
 	db, err := db.OpenConn()
 	if err != nil {
-		return -1, util.AddErrorContext(err, fmt.Sprintf(contextError, url))
+		return -1, util.AddErrorContext(fmt.Sprintf(contextError, url), err)
 	}
 	defer db.Close()
 
@@ -623,9 +623,9 @@ func getMangaIDByURL(url string) (ID, error) {
     `, url).Scan(&mangaID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return -1, util.AddErrorContext(fmt.Errorf("Manga not found in DB"), fmt.Sprintf(contextError, url))
+			return -1, util.AddErrorContext(fmt.Sprintf(contextError, url), fmt.Errorf("Manga not found in DB"))
 		}
-		return -1, util.AddErrorContext(err, fmt.Sprintf(contextError, url))
+		return -1, util.AddErrorContext(fmt.Sprintf(contextError, url), err)
 	}
 
 	return mangaID, nil
@@ -647,13 +647,13 @@ func GetMangasDB() ([]*Manga, error) {
 
 	db, err := db.OpenConn()
 	if err != nil {
-		return nil, util.AddErrorContext(err, contextError)
+		return nil, util.AddErrorContext(contextError, err)
 	}
 	defer db.Close()
 
 	mangas, err := getMangasFromDB(db)
 	if err != nil {
-		return nil, util.AddErrorContext(err, contextError)
+		return nil, util.AddErrorContext(contextError, err)
 	}
 
 	return mangas, nil
@@ -714,28 +714,28 @@ func validateManga(m *Manga) error {
 
 	err := validateStatus(m.Status)
 	if err != nil {
-		return util.AddErrorContext(err, contextError)
+		return util.AddErrorContext(contextError, err)
 	}
 	if m.Source == "" {
-		return util.AddErrorContext(fmt.Errorf("Manga source is empty"), contextError)
+		return util.AddErrorContext(contextError, fmt.Errorf("Manga source is empty"))
 	}
 	if m.URL == "" {
-		return util.AddErrorContext(fmt.Errorf("Manga URL is empty"), contextError)
+		return util.AddErrorContext(contextError, fmt.Errorf("Manga URL is empty"))
 	}
 	if m.Name == "" {
-		return util.AddErrorContext(fmt.Errorf("Manga name is empty"), contextError)
+		return util.AddErrorContext(contextError, fmt.Errorf("Manga name is empty"))
 	}
 
 	if m.LastUploadChapter != nil {
 		err := validateChapter(m.LastUploadChapter)
 		if err != nil {
-			return util.AddErrorContext(err, contextError+" last upload chapter")
+			return util.AddErrorContext(contextError+" last upload chapter", err)
 		}
 	}
 	if m.LastReadChapter != nil {
 		err := validateChapter(m.LastReadChapter)
 		if err != nil {
-			return util.AddErrorContext(err, contextError+" last read chapter")
+			return util.AddErrorContext(contextError+" last read chapter", err)
 		}
 	}
 

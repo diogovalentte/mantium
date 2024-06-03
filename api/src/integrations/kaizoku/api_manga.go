@@ -16,14 +16,14 @@ func (k *Kaizoku) Request(method, url string, body io.Reader) (*http.Response, e
 
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(errorContext, method))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, method), err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := k.c.Do(req)
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(errorContext, method))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, method), err)
 	}
 
 	return resp, nil
@@ -44,18 +44,18 @@ func (k *Kaizoku) GetSources() ([]string, error) {
 	url := fmt.Sprintf("%s/api/trpc/manga.sources", k.Address)
 	resp, err := k.Request(http.MethodGet, url, nil)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 	defer resp.Body.Close()
 	err = validateResponse(resp)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	var mangas getMangaSources
 	err = json.NewDecoder(resp.Body).Decode(&mangas)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	return mangas.Result.Data.JSON, nil
@@ -67,18 +67,18 @@ func (k *Kaizoku) GetMangas() ([]*Manga, error) {
 	url := fmt.Sprintf("%s/api/trpc/manga.query", k.Address)
 	resp, err := k.Request(http.MethodGet, url, nil)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 	defer resp.Body.Close()
 	err = validateResponse(resp)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	var mangas getMangasResponse
 	err = json.NewDecoder(resp.Body).Decode(&mangas)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	return mangas.Result.Data.JSON, nil
@@ -89,7 +89,7 @@ func (k *Kaizoku) GetManga(mangaName string) (*Manga, error) {
 
 	mangas, err := k.GetMangas()
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf(errorContext, mangaName))
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaName), err)
 	}
 
 	for _, m := range mangas {
@@ -98,7 +98,7 @@ func (k *Kaizoku) GetManga(mangaName string) (*Manga, error) {
 		}
 	}
 
-	return nil, util.AddErrorContext(fmt.Errorf("Manga not found in Kaizoku"), fmt.Sprintf(errorContext, mangaName))
+	return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaName), fmt.Errorf("Manga not found in Kaizoku"))
 }
 
 func (k *Kaizoku) AddManga(manga *manga.Manga) error {
@@ -108,27 +108,27 @@ func (k *Kaizoku) AddManga(manga *manga.Manga) error {
 	mangaInterval := k.DefaultInterval
 	mangaSource, err := k.getKaizokuSource(manga.Source)
 	if err != nil {
-		return util.AddErrorContext(err, fmt.Sprintf(errorContext, manga))
+		return util.AddErrorContext(fmt.Sprintf(errorContext, manga), err)
 	}
 	reqBody := fmt.Sprintf(`{"0":{"json":{"title":"%s","source":"%s","interval":"%s"}}}`, mangaTitle, mangaSource, mangaInterval)
 
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
-		return util.AddErrorContext(err, util.AddErrorContext(fmt.Errorf("Error while marshalling request body"), fmt.Sprintf(errorContext, manga)).Error())
+		return util.AddErrorContext(util.AddErrorContext(fmt.Sprintf(errorContext, manga), fmt.Errorf("Error while marshalling request body")).Error(), err)
 	}
 
 	url := fmt.Sprintf("%s/api/trpc/manga.add?batch=1", k.Address)
 	resp, err := k.Request(http.MethodPost, url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return util.AddErrorContext(err, fmt.Sprintf(errorContext, manga))
+		return util.AddErrorContext(fmt.Sprintf(errorContext, manga), err)
 	}
 	defer resp.Body.Close()
 	err = validateResponse(resp)
 	if err != nil {
 		if util.ErrorContains(err, fmt.Sprintf("Cannot find the %s.", mangaTitle)) {
-			return util.AddErrorContext(fmt.Errorf("Cannot find manga. Maybe there is no Anilist page for this manga (Kaizoku can't add mangas that don't have one): Error: %s", err.Error()), fmt.Sprintf(errorContext, manga))
+			return util.AddErrorContext(fmt.Sprintf(errorContext, manga), fmt.Errorf("Cannot find manga. Maybe there is no Anilist page for this manga (Kaizoku can't add mangas that don't have one): Error: %s", err.Error()))
 		}
-		return util.AddErrorContext(err, fmt.Sprintf(errorContext, manga))
+		return util.AddErrorContext(fmt.Sprintf(errorContext, manga), err)
 	}
 
 	return nil
@@ -141,20 +141,20 @@ func (k *Kaizoku) RemoveManga(mangaId int, removeFiles bool) error {
 
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
-		return util.AddErrorContext(err, util.AddErrorContext(fmt.Errorf("Error while marshalling request body"), fmt.Sprintf(errorContext, mangaId, removeFiles)).Error())
+		return util.AddErrorContext(util.AddErrorContext(fmt.Sprintf(errorContext, mangaId, removeFiles), fmt.Errorf("Error while marshalling request body")).Error(), err)
 	}
 
 	url := fmt.Sprintf("%s/api/trpc/manga.remove?batch=1", k.Address)
 	resp, err := k.Request(http.MethodPost, url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return util.AddErrorContext(err, fmt.Sprintf(errorContext, mangaId, removeFiles))
+		return util.AddErrorContext(fmt.Sprintf(errorContext, mangaId, removeFiles), err)
 	}
 	defer resp.Body.Close()
 
 	// It returns 500 when the manga is removed with success (weird)
 	if resp.StatusCode != http.StatusInternalServerError && resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return util.AddErrorContext(fmt.Errorf("Non-200/500 status code -> (%d). Body: %s", resp.StatusCode, string(body)), fmt.Sprintf(errorContext, mangaId, removeFiles))
+		return util.AddErrorContext(fmt.Sprintf(errorContext, mangaId, removeFiles), fmt.Errorf("Non-200/500 status code -> (%d). Body: %s", resp.StatusCode, string(body)))
 	}
 
 	return nil
@@ -167,21 +167,21 @@ func (k *Kaizoku) CheckOutOfSyncChapters() error {
 
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
-		return util.AddErrorContext(err, util.AddErrorContext(fmt.Errorf("Error while marshalling request body"), errorContext).Error())
+		return util.AddErrorContext(util.AddErrorContext(errorContext, fmt.Errorf("Error while marshalling request body")).Error(), err)
 	}
 
 	url := fmt.Sprintf("%s/api/trpc/manga.checkOutOfSyncChapters?batch=1", k.Address)
 	resp, err := k.Request(http.MethodPost, url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return util.AddErrorContext(err, errorContext)
+		return util.AddErrorContext(errorContext, err)
 	}
 	defer resp.Body.Close()
 	err = validateResponse(resp)
 	if err != nil {
 		if util.ErrorContains(err, "There is another active job running. Please wait until it finishes") {
-			return util.AddErrorContext(fmt.Errorf("There is another active job running."), errorContext)
+			return util.AddErrorContext(errorContext, fmt.Errorf("There is another active job running."))
 		}
-		return util.AddErrorContext(err, errorContext)
+		return util.AddErrorContext(errorContext, err)
 	}
 
 	return nil
@@ -194,21 +194,21 @@ func (k *Kaizoku) FixOutOfSyncChapters() error {
 
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
-		return util.AddErrorContext(err, util.AddErrorContext(fmt.Errorf("Error while marshalling request body"), errorContext).Error())
+		return util.AddErrorContext(util.AddErrorContext(errorContext, fmt.Errorf("Error while marshalling request body")).Error(), err)
 	}
 
 	url := fmt.Sprintf("%s/api/trpc/manga.fixOutOfSyncChapters?batch=1", k.Address)
 	resp, err := k.Request(http.MethodPost, url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return util.AddErrorContext(err, errorContext)
+		return util.AddErrorContext(errorContext, err)
 	}
 	defer resp.Body.Close()
 	err = validateResponse(resp)
 	if err != nil {
 		if util.ErrorContains(err, "There is another active job running. Please wait until it finishes") {
-			return util.AddErrorContext(fmt.Errorf("There is another active job running."), errorContext)
+			return util.AddErrorContext(errorContext, fmt.Errorf("There is another active job running."))
 		}
-		return util.AddErrorContext(err, errorContext)
+		return util.AddErrorContext(errorContext, err)
 	}
 
 	return nil
@@ -234,7 +234,7 @@ func (k *Kaizoku) getKaizokuSource(source string) (string, error) {
 	errorContext := "Error while getting Kaizoku source"
 	kaizokuSources, err := k.GetSources()
 	if err != nil {
-		return "", util.AddErrorContext(err, errorContext)
+		return "", util.AddErrorContext(errorContext, err)
 	}
 
 	var returnSource string
@@ -244,9 +244,9 @@ func (k *Kaizoku) getKaizokuSource(source string) (string, error) {
 	case "comick.xyz":
 		returnSource = "ComicK"
 	case "mangahub.io":
-		return "", util.AddErrorContext(fmt.Errorf("MangaHub source is not implemented"), errorContext)
+		return "", util.AddErrorContext(errorContext, fmt.Errorf("MangaHub source is not implemented"))
 	default:
-		return "", util.AddErrorContext(fmt.Errorf("Unknown source"), errorContext)
+		return "", util.AddErrorContext(errorContext, fmt.Errorf("Unknown source"))
 	}
 
 	for _, s := range kaizokuSources {
@@ -255,5 +255,5 @@ func (k *Kaizoku) getKaizokuSource(source string) (string, error) {
 		}
 	}
 
-	return "", util.AddErrorContext(fmt.Errorf("Source not found in Kaizoku"), errorContext)
+	return "", util.AddErrorContext(errorContext, fmt.Errorf("Source not found in Kaizoku"))
 }

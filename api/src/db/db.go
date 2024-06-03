@@ -22,12 +22,12 @@ func getConnString() string {
 func OpenConn() (*sql.DB, error) {
 	db, err := sql.Open("postgres", getConnString())
 	if err != nil {
-		return nil, util.AddErrorContext(err, "Error opening database connection")
+		return nil, util.AddErrorContext("Error opening database connection", err)
 	}
 
 	err = db.Ping()
 	if err != nil {
-		return nil, util.AddErrorContext(err, fmt.Sprintf("Error pinging database %s", getConnString()))
+		return nil, util.AddErrorContext(fmt.Sprintf("Error pinging database %s", getConnString()), err)
 	}
 
 	return db, nil
@@ -38,7 +38,7 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
 	log.Info().Msg("Creating tables if not exists...")
 	tx, err := db.Begin()
 	if err != nil {
-		return util.AddErrorContext(err, "Error starting transaction to create tables in the database")
+		return util.AddErrorContext("Error starting transaction to create tables in the database", err)
 	}
 
 	_, err = tx.Exec(`
@@ -80,7 +80,7 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
     `)
 	if err != nil {
 		tx.Rollback()
-		return util.AddErrorContext(err, "Error creating tables in the database")
+		return util.AddErrorContext("Error creating tables in the database", err)
 	}
 
 	log.Info().Msg("Creating constraints if not exists...")
@@ -131,7 +131,7 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
     `)
 	if err != nil {
 		tx.Rollback()
-		return util.AddErrorContext(err, "Error creating constraints in the database")
+		return util.AddErrorContext("Error creating constraints in the database", err)
 	}
 
 	log.Info().Msg("Doing migrations if not exists...")
@@ -140,12 +140,12 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
     `)
 	if err != nil {
 		tx.Rollback()
-		return util.AddErrorContext(err, "Error applying migrations in the database")
+		return util.AddErrorContext("Error applying migrations in the database", err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return util.AddErrorContext(err, "Error committing transaction to create tables in the database")
+		return util.AddErrorContext("Error committing transaction to create tables in the database", err)
 	}
 
 	log.Info().Msg("Database tables created")
