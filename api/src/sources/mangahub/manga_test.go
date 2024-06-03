@@ -76,7 +76,7 @@ func TestGetMangaMetadata(t *testing.T) {
 			expected := test.expected
 			mangaURL := test.url
 
-			actualManga, err := source.GetMangaMetadata(mangaURL)
+			actualManga, err := source.GetMangaMetadata(mangaURL, false)
 			if err != nil {
 				t.Fatalf("error while getting manga: %v", err)
 			}
@@ -95,7 +95,7 @@ func TestGetMangaMetadata(t *testing.T) {
 		for _, test := range mangasTestTable {
 			mangaURL := test.url + "salt"
 
-			_, err := source.GetMangaMetadata(mangaURL)
+			_, err := source.GetMangaMetadata(mangaURL, false)
 			if err != nil {
 				if util.ErrorContains(err, "Manga not found") {
 					continue

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/diogovalentte/mantium/api/src/errors"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
@@ -108,7 +109,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 	}
 
 	if len(chaptersAPIResp.Chapters) == 0 {
-		return nil, util.AddErrorContext(fmt.Errorf("Chapter not found"), errorContext)
+		return nil, util.AddErrorContext(errors.ErrLastReleasedChapterNotFound, errorContext)
 	}
 
 	chapterReturn, err := getChapterFromResp(chaptersAPIResp.Chapters[0], chaptersAPIResp.Chapters[0].Chap, mangaURL)

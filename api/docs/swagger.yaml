@@ -249,6 +249,14 @@ paths:
       - application/json
       description: Gets a manga metadata from source and inserts in the database.
       parameters:
+      - description: If true, assumes the manga has no chapters and sets the last
+          read and released chapters to null without even checking if the manga really
+          doesn't have released chapters. If false, gets the manga's last released
+          chapter metadata from source. Defaults to false.
+        example: true
+        in: query
+        name: manga_has_no_chapters
+        type: boolean
       - description: Manga data
         in: body
         name: manga

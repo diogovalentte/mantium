@@ -26,9 +26,9 @@ var mangasTestTable = []mangaTestType{
 			CoverImgResized: true,
 			LastUploadChapter: &manga.Chapter{
 				Chapter:   "108",
-				Name:      "End",
-				URL:       "https://mangadex.org/chapter/5fff451c-cbe1-4456-9ef5-4e3c3e41dc26",
-				UpdatedAt: time.Date(2018, 4, 7, 7, 35, 8, 0, time.UTC),
+				Name:      "Finis",
+				URL:       "https://mangadex.org/chapter/8a01e405-220c-4cd2-85f4-cca579c15984",
+				UpdatedAt: time.Date(2024, 5, 30, 20, 17, 33, 0, time.UTC),
 				Type:      1,
 			},
 		},
@@ -45,7 +45,7 @@ var mangasTestTable = []mangaTestType{
 				Chapter:   "327",
 				Name:      "The Man Named Tadoki",
 				URL:       "https://mangadex.org/chapter/0754c218-0240-4752-a688-5e7d9bc74b55",
-				UpdatedAt: time.Date(2018, 3, 19, 2, 20, 43, 0, time.UTC), // in the site it's 01-19-2016 (maybe it uses JS or it have to wait a bit to update)
+				UpdatedAt: time.Date(2018, 3, 19, 2, 20, 43, 0, time.UTC),
 				Type:      1,
 			},
 		},
@@ -79,7 +79,7 @@ func TestGetMangaMetadata(t *testing.T) {
 			expected.LastUploadChapter.UpdatedAt = expected.LastUploadChapter.UpdatedAt.In(time.Local)
 			mangaURL := test.url
 
-			actualManga, err := source.GetMangaMetadata(mangaURL)
+			actualManga, err := source.GetMangaMetadata(mangaURL, false)
 			if err != nil {
 				t.Fatalf("error while getting manga: %v", err)
 			}
@@ -102,7 +102,7 @@ func TestGetMangaMetadata(t *testing.T) {
 				t.Fatalf("Error while replacing manga URL ID: %v", err)
 			}
 
-			_, err = source.GetMangaMetadata(mangaURL)
+			_, err = source.GetMangaMetadata(mangaURL, false)
 			if err != nil {
 				if util.ErrorContains(err, "Non-200 status code -> (404)") {
 					continue

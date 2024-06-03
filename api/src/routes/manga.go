@@ -49,6 +49,7 @@ func MangaRoutes(group *gin.RouterGroup) {
 // @Description Gets a manga metadata from source and inserts in the database.
 // @Accept json
 // @Produce json
+// @Param manga_has_no_chapters query bool false "If true, assumes the manga has no chapters and sets the last released chapter to null without even checking if the manga really doesn't have released chapters. If false, gets the manga's last released chapter metadata from source. It doesn't do anything with the last read chapter. Defaults to false." Example(true).
 // @Param manga body AddMangaRequest true "Manga data"
 // @Success 200 {object} responseMessage
 // @Router /manga [post]
@@ -61,7 +62,20 @@ func AddManga(c *gin.Context) {
 		return
 	}
 
-	mangaAdd, err := sources.GetMangaMetadata(requestData.URL)
+	var mangaHasNoChapters bool
+	queryMangaHasNoChapters := c.Query("manga_has_no_chapters")
+	if queryMangaHasNoChapters != "" {
+		switch queryMangaHasNoChapters {
+		case "true":
+			mangaHasNoChapters = true
+		case "false":
+		default:
+			c.JSON(http.StatusBadRequest, gin.H{"message": "manga_has_no_chapters must be a boolean like true or false"})
+			return
+		}
+	}
+
+	mangaAdd, err := sources.GetMangaMetadata(requestData.URL, !mangaHasNoChapters)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -69,14 +83,15 @@ func AddManga(c *gin.Context) {
 
 	mangaAdd.Status = manga.Status(requestData.Status)
 
-	// Last read chapter is not optional
-	mangaAdd.LastReadChapter, err = sources.GetChapterMetadata(requestData.URL, requestData.LastReadChapter, requestData.LastReadChapterURL)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
+	if requestData.LastReadChapter != "" || requestData.LastReadChapterURL != "" {
+		mangaAdd.LastReadChapter, err = sources.GetChapterMetadata(requestData.URL, requestData.LastReadChapter, requestData.LastReadChapterURL)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		mangaAdd.LastReadChapter.Type = 2
+		mangaAdd.LastReadChapter.UpdatedAt = currentTime.Truncate(time.Second)
 	}
-	mangaAdd.LastReadChapter.Type = 2
-	mangaAdd.LastReadChapter.UpdatedAt = currentTime.Truncate(time.Second)
 
 	_, err = mangaAdd.InsertIntoDB()
 	if err != nil {
@@ -84,18 +99,18 @@ func AddManga(c *gin.Context) {
 		return
 	}
 
-	dashboard.UpdateDashboard()
-
 	if config.GlobalConfigs.Kaizoku.Valid {
 		kaizoku := kaizoku.Kaizoku{}
 		kaizoku.Init()
 		err = kaizoku.AddManga(mangaAdd)
 		if err != nil {
-			err = util.AddErrorContext(err, "Manga added to DB, but error while adding it to Kaizoku")
+			err = util.AddErrorContext(err, "manga added to DB, but error while adding it to Kaizoku")
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
 	}
+
+	dashboard.UpdateDashboard()
 
 	c.JSON(http.StatusOK, gin.H{"message": "Manga added successfully"})
 }
@@ -670,6 +685,12 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 		return
 	}
 
+	var requestData UpdateMangaChapterRequest
+	if err := c.ShouldBindJSON(&requestData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid JSON fields, refer to the API documentation"})
+		return
+	}
+
 	mangaUpdate, err := manga.GetMangaDB(mangaID, mangaURL)
 	if err != nil {
 		if strings.Contains(err.Error(), "manga not found in DB") {
@@ -677,12 +698,6 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-
-	var requestData UpdateMangaChapterRequest
-	if err := c.ShouldBindJSON(&requestData); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid JSON fields, refer to the API documentation"})
 		return
 	}
 
@@ -806,7 +821,7 @@ func UpdateMangaCoverImg(c *gin.Context) {
 	} else if getCoverImgFromSource == "true" {
 		var updatedManga *manga.Manga
 		for i := 0; i < retries; i++ {
-			updatedManga, err = sources.GetMangaMetadata(mangaToUpdate.URL)
+			updatedManga, err = sources.GetMangaMetadata(mangaToUpdate.URL, true)
 			if err != nil {
 				if i == retries-1 {
 					c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -856,8 +871,12 @@ func UpdateMangasMetadata(c *gin.Context) {
 	retries := 3
 	retryInterval := 3 * time.Second
 	for _, mangaToUpdate := range mangas {
+		mangaToUpdateHasLastReleasedChapter := true
+		if mangaToUpdate.LastUploadChapter == nil {
+			mangaToUpdateHasLastReleasedChapter = false
+		}
 		for i := 0; i < retries; i++ {
-			updatedManga, err := sources.GetMangaMetadata(mangaToUpdate.URL)
+			updatedManga, err := sources.GetMangaMetadata(mangaToUpdate.URL, !mangaToUpdateHasLastReleasedChapter)
 			if err != nil {
 				if i == retries-1 {
 					logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error getting manga metadata, will continue with the next manga...")
@@ -869,7 +888,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 			}
 			updatedManga.Status = 1
 
-			if mangaToUpdate.LastUploadChapter.Chapter != updatedManga.LastUploadChapter.Chapter || (!mangaToUpdate.CoverImgFixed && (mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg))) || mangaToUpdate.Name != updatedManga.Name {
+			if (mangaToUpdateHasLastReleasedChapter && mangaToUpdate.LastUploadChapter.Chapter != updatedManga.LastUploadChapter.Chapter) || (!mangaToUpdate.CoverImgFixed && (mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg))) || mangaToUpdate.Name != updatedManga.Name {
 				newMetadata = true
 				updatedManga.CoverImgFixed = mangaToUpdate.CoverImgFixed
 				err = manga.UpdateMangaMetadataDB(updatedManga)
@@ -881,7 +900,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 
 				// Notify only if the manga's status is 1 (reading) or 2 (completed)
 				if notify && (mangaToUpdate.Status == 1 || mangaToUpdate.Status == 2) {
-					if mangaToUpdate.LastUploadChapter.Chapter != updatedManga.LastUploadChapter.Chapter {
+					if mangaToUpdateHasLastReleasedChapter && mangaToUpdate.LastUploadChapter.Chapter != updatedManga.LastUploadChapter.Chapter {
 						for j := 0; j < retries; j++ {
 							err = NotifyMangaLastUploadChapterUpdate(mangaToUpdate, updatedManga)
 							if err != nil {

@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/diogovalentte/mantium/api/src/errors"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
@@ -138,7 +139,7 @@ func TestGetLastChapterMetadata(t *testing.T) {
 
 			actualChapter, err := source.GetLastChapterMetadata(mangaURL)
 			if err != nil {
-				if !util.ErrorContains(err, "No chapter found") {
+				if !util.ErrorContains(err, errors.ErrLastReleasedChapterNotFound.Error()) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			} else {

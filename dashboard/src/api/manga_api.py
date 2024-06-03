@@ -32,7 +32,15 @@ class MangaAPIClient:
             "status": manga_status,
             "last_read_chapter": last_read_chapter,
             "last_read_chapter_url": last_read_chapter_url,
+            "manga_has_no_chapters": False,
         }
+
+        if last_read_chapter == "":
+            del request_body["last_read_chapter"]
+        if last_read_chapter_url == "":
+            del request_body["last_read_chapter_url"]
+        if last_read_chapter == "" and last_read_chapter_url == "":
+            request_body["manga_has_no_chapters"] = True
 
         res = requests.post(url, json=request_body)
 
@@ -65,13 +73,26 @@ class MangaAPIClient:
         manga = res.json().get("manga")
         manga["CoverImg"] = bytes(manga["CoverImg"], "utf-8")
 
-        manga["LastUploadChapter"]["UpdatedAt"] = self.get_updated_at_datetime(
-            manga["LastUploadChapter"]["UpdatedAt"]
-        )
+        if manga["LastUploadChapter"] is not None:
+            manga["LastUploadChapter"]["UpdatedAt"] = self.get_updated_at_datetime(
+                manga["LastUploadChapter"]["UpdatedAt"]
+            )
+        else:
+            manga["LastUploadChapter"] = {
+                "Chapter": "",
+                "UpdatedAt": datetime(1970, 1, 1),
+                "URL": manga["URL"],
+            }
         if manga["LastReadChapter"] is not None:
             manga["LastReadChapter"]["UpdatedAt"] = self.get_updated_at_datetime(
                 manga["LastReadChapter"]["UpdatedAt"]
             )
+        else:
+            manga["LastReadChapter"] = {
+                "Chapter": "",
+                "UpdatedAt": datetime(1970, 1, 1),
+                "URL": manga["URL"],
+            }
 
         return manga
 
@@ -96,13 +117,26 @@ class MangaAPIClient:
         for manga in mangas:
             manga["CoverImg"] = bytes(manga["CoverImg"], "utf-8")
 
-            manga["LastUploadChapter"]["UpdatedAt"] = self.get_updated_at_datetime(
-                manga["LastUploadChapter"]["UpdatedAt"]
-            )
+            if manga["LastUploadChapter"] is not None:
+                manga["LastUploadChapter"]["UpdatedAt"] = self.get_updated_at_datetime(
+                    manga["LastUploadChapter"]["UpdatedAt"]
+                )
+            else:
+                manga["LastUploadChapter"] = {
+                    "Chapter": "",
+                    "UpdatedAt": datetime(1970, 1, 1),
+                    "URL": manga["URL"],
+                }
             if manga["LastReadChapter"] is not None:
                 manga["LastReadChapter"]["UpdatedAt"] = self.get_updated_at_datetime(
                     manga["LastReadChapter"]["UpdatedAt"]
                 )
+            else:
+                manga["LastReadChapter"] = {
+                    "Chapter": "",
+                    "UpdatedAt": datetime(1970, 1, 1),
+                    "URL": manga["URL"],
+                }
 
         return mangas
 
@@ -220,7 +254,10 @@ class MangaAPIClient:
                 res.text,
             )
 
-        return res.json().get("chapters")
+        chapters = res.json().get("chapters")
+        if chapters is None:
+            return []
+        return chapters
 
     def get_updated_at_datetime(self, updated_at: str) -> datetime:
         updated_at = self.remove_nano_from_datetime(updated_at)

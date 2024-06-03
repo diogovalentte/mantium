@@ -503,9 +503,11 @@ func updateMangaMetadata(m *Manga, tx *sql.Tx) error {
 		return err
 	}
 
-	err = upsertMangaChapter(m, m.LastUploadChapter, tx)
-	if err != nil {
-		return err
+	if m.LastUploadChapter == nil {
+		err = upsertMangaChapter(m, m.LastUploadChapter, tx)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = updateMangaName(m, m.Name, tx)
@@ -755,8 +757,12 @@ func FilterUnreadChapterMangas(mangas []*Manga) []*Manga {
 	unreadChapterMangas := []*Manga{}
 
 	for _, manga := range mangas {
-		if manga.LastUploadChapter.Chapter != manga.LastReadChapter.Chapter {
+		if manga.LastUploadChapter != nil && manga.LastReadChapter == nil {
 			unreadChapterMangas = append(unreadChapterMangas, manga)
+		} else if manga.LastUploadChapter != nil && manga.LastReadChapter != nil {
+			if manga.LastUploadChapter.Chapter != manga.LastReadChapter.Chapter {
+				unreadChapterMangas = append(unreadChapterMangas, manga)
+			}
 		}
 	}
 
@@ -767,6 +773,12 @@ func FilterUnreadChapterMangas(mangas []*Manga) []*Manga {
 // by their last upload chapter updated at property, desc
 func SortMangasByLastUploadChapterUpdatedAt(mangas []*Manga) {
 	sort.Slice(mangas, func(i, j int) bool {
+		if mangas[i].LastUploadChapter == nil {
+			return false
+		}
+		if mangas[j].LastUploadChapter == nil {
+			return true
+		}
 		return mangas[i].LastUploadChapter.UpdatedAt.After(mangas[j].LastUploadChapter.UpdatedAt)
 	})
 }

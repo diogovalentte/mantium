@@ -1,5 +1,6 @@
 import base64
 import logging
+from datetime import datetime
 from io import BytesIO
 from typing import Any
 
@@ -268,10 +269,19 @@ class MainDashboard:
 
         chapter = chapter_tag_content.format(
             manga["LastUploadChapter"]["URL"],
-            f'Ch. {manga["LastUploadChapter"]["Chapter"]}',
+            f'Ch. {manga["LastUploadChapter"]["Chapter"]}'
+            if manga["LastUploadChapter"]["Chapter"] != ""
+            else "N/A",
         )
-        upload_date = manga["LastUploadChapter"]["UpdatedAt"]
-        relative_upload_date = get_relative_time(upload_date)
+        upload_date = (
+            manga["LastUploadChapter"]["UpdatedAt"]
+            if manga["LastUploadChapter"]["UpdatedAt"] != datetime(1970, 1, 1)
+            else "N/A"
+        )
+        if upload_date != "N/A":
+            relative_upload_date = get_relative_time(upload_date)
+        else:
+            relative_upload_date = upload_date
 
         tagger(
             "<strong>Last Released Chapter:</strong>",
@@ -284,16 +294,21 @@ class MainDashboard:
             unsafe_allow_html=True,
         )
 
-        chapter = f"""<snap style="text-decoration: none; color: {self.chapter_link_tag_text_color}">N/A</span>"""
-        read_date = "N/A"
-        relative_read_date = "N/A"
-        if manga["LastReadChapter"] is not None:
-            chapter = chapter_tag_content.format(
-                manga["LastReadChapter"]["URL"],
-                f'Ch. {manga["LastReadChapter"]["Chapter"]}',
-            )
-            read_date = manga["LastReadChapter"]["UpdatedAt"]
+        chapter = chapter_tag_content.format(
+            manga["LastReadChapter"]["URL"],
+            f'Ch. {manga["LastReadChapter"]["Chapter"]}'
+            if manga["LastReadChapter"]["Chapter"] != ""
+            else "N/A",
+        )
+        read_date = (
+            manga["LastReadChapter"]["UpdatedAt"]
+            if manga["LastReadChapter"]["UpdatedAt"] != datetime(1970, 1, 1)
+            else "N/A"
+        )
+        if read_date != "N/A":
             relative_read_date = get_relative_time(read_date)
+        else:
+            relative_read_date = read_date
 
         tagger(
             "<strong>Last Read Chapter:</strong>",
@@ -380,19 +395,22 @@ class MainDashboard:
                 key="update_manga_form_status",
             )
 
-            try:
-                last_read_chapter_idx = (
-                    list(
-                        map(
-                            lambda chapter: chapter["Chapter"],
-                            ss["update_manga_chapter_options"],
-                        )
-                    ).index(manga["LastReadChapter"]["Chapter"])
-                    if manga["LastReadChapter"] is not None
-                    else 0
-                )
-            except ValueError as e:
-                logger.exception(e)
+            if manga["LastReadChapter"]["Chapter"] != "":
+                try:
+                    last_read_chapter_idx = (
+                        list(
+                            map(
+                                lambda chapter: chapter["Chapter"],
+                                ss["update_manga_chapter_options"],
+                            )
+                        ).index(manga["LastReadChapter"]["Chapter"])
+                        if manga["LastReadChapter"] is not None
+                        else 0
+                    )
+                except ValueError as e:
+                    logger.exception(e)
+                    last_read_chapter_idx = 0
+            else:
                 last_read_chapter_idx = 0
             st.selectbox(
                 "Last Read Chapter",
@@ -440,7 +458,7 @@ class MainDashboard:
                         self.api_client.update_manga_status(status, manga["ID"])
 
                     chapter = ss.update_manga_form_chapter
-                    if (
+                    if chapter is not None and (
                         manga["LastReadChapter"] is None
                         or chapter != manga["LastReadChapter"]["Chapter"]
                     ):
@@ -518,7 +536,10 @@ class MainDashboard:
 
         @st.cache_data(show_spinner=False, max_entries=1, ttl=600)
         def get_manga_chapters(url: str):
-            return self.api_client.get_manga_chapters(-1, url)
+            chapters = self.api_client.get_manga_chapters(-1, url)
+            if chapters is None:
+                return []
+            return chapters
 
         if st.button("Get Chapters", use_container_width=True):
             ss["manga_add_warning_message"] = ""
@@ -558,15 +579,21 @@ class MainDashboard:
                 "Last Read Chapter",
                 options=ss.get("add_manga_chapter_options", []),
                 key="add_manga_form_chapter",
-                format_func=lambda chapter: f"Ch. {chapter['Chapter']} --- {get_relative_time(self.api_client.get_updated_at_datetime(chapter['UpdatedAt']))}",
+                format_func=lambda chapter: f"Ch. {chapter['Chapter']} --- {get_relative_time(self.api_client.get_updated_at_datetime(chapter['UpdatedAt']))}"
+                if chapter is not None
+                else "N/A",
             )
 
             def add_manga_callback():
                 ss["add_manga_manga_to_add"] = {
                     "manga_url": ss.add_manga_form_url,
                     "status": ss.add_manga_form_status,
-                    "chapter": ss.add_manga_form_chapter["Chapter"],
-                    "chapter_url": ss.add_manga_form_chapter["URL"],
+                    "chapter": ss.add_manga_form_chapter["Chapter"]
+                    if ss.add_manga_form_chapter is not None
+                    else "",
+                    "chapter_url": ss.add_manga_form_chapter["URL"]
+                    if ss.add_manga_form_chapter is not None
+                    else "",
                 }
                 ss.add_manga_form_url = ""
                 del ss["add_manga_chapter_options"]
@@ -595,6 +622,7 @@ class MainDashboard:
                         )
                         if kaizoku_error in str(e):
                             if "MangaHub source is not implemented" in str(e):
+                                logger.warning(e)
                                 ss[
                                     "manga_add_warning_message"
                                 ] = f"{kaizoku_error}: MangaHub source is not implemented in Kaizoku"
@@ -602,6 +630,7 @@ class MainDashboard:
                                 "Cannot find manga. Maybe there is no Anilist page for this manga (Kaizoku can't add mangas that don't have one)"
                                 in str(e)
                             ):
+                                logger.warning(e)
                                 ss[
                                     "manga_add_warning_message"
                                 ] = f"{kaizoku_error}: Cannot find manga. Maybe there is no Anilist page for this manga (Kaizoku can't add mangas that don't have one)"

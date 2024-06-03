@@ -7,12 +7,13 @@ import (
 
 	"github.com/gocolly/colly/v2"
 
+	"github.com/diogovalentte/mantium/api/src/errors"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // GetMangaMetadata scrapes the manga page and return the manga data
-func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
+func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError bool) (*manga.Manga, error) {
 	s.resetCollector()
 
 	errorContext := "Error while getting manga metadata"
@@ -56,14 +57,14 @@ func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 			return
 		}
 		isFirstUL = false
-		lastChapter.URL = e.Attr("href")
+
+		chapterURL := e.Attr("href")
 
 		chapterStr := e.DOM.Find("span._3D1SJ").Text()
 		chapter := strings.TrimSpace(strings.Replace(chapterStr, "#", "", -1))
-		lastChapter.Chapter = chapter
 
 		chapterName := e.DOM.Find("span._2IG5P").Text()
-		lastChapter.Name = strings.TrimSpace(strings.Replace(chapterName, "- ", "", -1))
+		chapterName = strings.TrimSpace(strings.Replace(chapterName, "- ", "", -1))
 
 		uploadedAt := e.DOM.Find("small.UovLc").Text()
 		uploadedTime, err := getMangaUploadedTime(uploadedAt)
@@ -71,7 +72,14 @@ func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 			sharedErr = err
 			return
 		}
-		lastChapter.UpdatedAt = uploadedTime
+
+		mangaReturn.LastUploadChapter = &manga.Chapter{
+			URL:       chapterURL,
+			Chapter:   chapter,
+			Name:      chapterName,
+			Type:      1,
+			UpdatedAt: uploadedTime,
+		}
 	})
 
 	err := s.c.Visit(mangaURL)
@@ -83,6 +91,10 @@ func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 	}
 	if sharedErr != nil {
 		return nil, util.AddErrorContext(sharedErr, errorContext)
+	}
+
+	if mangaReturn.LastUploadChapter == nil && !ignoreGetLastChapterError {
+		return nil, util.AddErrorContext(errors.ErrLastReleasedChapterNotFound, errorContext)
 	}
 
 	// get cover image

@@ -168,6 +168,13 @@ const docTemplate = `{
                 "summary": "Add manga",
                 "parameters": [
                     {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "If true, assumes the manga has no chapters and sets the last read and released chapters to null without even checking if the manga really doesn't have released chapters. If false, gets the manga's last released chapter metadata from source. Defaults to false.",
+                        "name": "manga_has_no_chapters",
+                        "in": "query"
+                    },
+                    {
                         "description": "Manga data",
                         "name": "manga",
                         "in": "body",

@@ -6,12 +6,13 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/diogovalentte/mantium/api/src/errors"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // GetMangaMetadata returns the metadata of a manga given its URL
-func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
+func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError bool) (*manga.Manga, error) {
 	s.checkClient()
 
 	errorContext := "Error while getting manga metadata"
@@ -50,10 +51,13 @@ func (s *Source) GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 
 	lastUploadChapter, err := s.GetLastChapterMetadata(mangaURL)
 	if err != nil {
-		return nil, util.AddErrorContext(err, errorContext)
+		if !(ignoreGetLastChapterError && util.ErrorContains(err, errors.ErrLastReleasedChapterNotFound.Message)) {
+			return nil, util.AddErrorContext(err, errorContext)
+		}
+	} else {
+		lastUploadChapter.Type = 1
+		mangaReturn.LastUploadChapter = lastUploadChapter
 	}
-	lastUploadChapter.Type = 1
-	mangaReturn.LastUploadChapter = lastUploadChapter
 
 	// Get cover img
 	var coverFileName string

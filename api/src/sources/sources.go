@@ -25,7 +25,8 @@ var sources = map[string]Source{
 // Source is the interface for a manga source
 type Source interface {
 	// GetMangaMetadata returns a manga
-	GetMangaMetadata(mangaURL string) (*manga.Manga, error)
+	// ignoreGetLastChapterError is used to ignore the error when getting the last chapter of a manga by setting the last released chapter to nil. Use for mangas that don't have chapters.
+	GetMangaMetadata(mangaURL string, ignoreGetLastChapterError bool) (*manga.Manga, error)
 	// GetChapterMetadata returns a chapter by its chapter or URL
 	GetChapterMetadata(mangaURL string, chapter string, chapterURL string) (*manga.Chapter, error)
 	// GetLastChapterMetadata returns the last uploaded chapter in the source
@@ -61,7 +62,7 @@ func GetSources() map[string]Source {
 }
 
 // GetMangaMetadata gets the metadata of a manga using a source
-func GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
+func GetMangaMetadata(mangaURL string, ignoreGetLastChapterError bool) (*manga.Manga, error) {
 	contextError := "Error while getting metadata of manga with URL '%s' from source"
 
 	domain, err := getDomain(mangaURL)
@@ -75,7 +76,7 @@ func GetMangaMetadata(mangaURL string) (*manga.Manga, error) {
 	}
 	contextError = fmt.Sprintf("(%s) %s", domain, contextError)
 
-	manga, err := getManga(mangaURL, source)
+	manga, err := getManga(mangaURL, source, ignoreGetLastChapterError)
 	if err != nil {
 		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, mangaURL))
 	}
@@ -142,8 +143,8 @@ func getDomain(urlString string) (string, error) {
 	return parsedURL.Hostname(), nil
 }
 
-func getManga(mangaURL string, source Source) (*manga.Manga, error) {
-	return source.GetMangaMetadata(mangaURL)
+func getManga(mangaURL string, source Source, ignoreGetLastChapterError bool) (*manga.Manga, error) {
+	return source.GetMangaMetadata(mangaURL, ignoreGetLastChapterError)
 }
 
 func getChapter(mangaURL string, chapter string, chapterURL string, source Source) (*manga.Chapter, error) {
