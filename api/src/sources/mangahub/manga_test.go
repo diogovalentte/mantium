@@ -22,7 +22,7 @@ var mangasTestTable = []mangaTestType{
 			URL:             "https://mangahub.io/manga/death-note_119",
 			CoverImgURL:     "https://thumb.mghcdn.com/mn/death-note.jpg",
 			CoverImgResized: true,
-			LastUploadChapter: &manga.Chapter{
+			LastReleasedChapter: &manga.Chapter{
 				Chapter:   "112",
 				Name:      "Chapter 112",
 				URL:       "https://mangahub.io/chapter/death-note_119/chapter-112",
@@ -39,7 +39,7 @@ var mangasTestTable = []mangaTestType{
 			URL:             "https://mangahub.io/manga/vagabond_119",
 			CoverImgURL:     "https://thumb.mghcdn.com/mn/vagabond.jpg",
 			CoverImgResized: true,
-			LastUploadChapter: &manga.Chapter{
+			LastReleasedChapter: &manga.Chapter{
 				Chapter:   "327",
 				Name:      "The Man Named Tadaoki",
 				URL:       "https://mangahub.io/chapter/vagabond_119/chapter-327",
@@ -56,7 +56,7 @@ var mangasTestTable = []mangaTestType{
 			URL:             "https://mangahub.io/manga/mob-psycho-100",
 			CoverImgURL:     "https://thumb.mghcdn.com/mn/mob-psycho-100.jpg",
 			CoverImgResized: false,
-			LastUploadChapter: &manga.Chapter{
+			LastReleasedChapter: &manga.Chapter{
 				Chapter:   "101",
 				Name:      "101[END]",
 				URL:       "https://mangahub.io/chapter/mob-psycho-100/chapter-101",

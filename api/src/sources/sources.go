@@ -29,7 +29,7 @@ type Source interface {
 	GetMangaMetadata(mangaURL string, ignoreGetLastChapterError bool) (*manga.Manga, error)
 	// GetChapterMetadata returns a chapter by its chapter or URL
 	GetChapterMetadata(mangaURL string, chapter string, chapterURL string) (*manga.Chapter, error)
-	// GetLastChapterMetadata returns the last uploaded chapter in the source
+	// GetLastChapterMetadata returns the last released chapter in the source
 	GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 	// GetChaptersMetadata returns all chapters of a manga
 	GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error)

@@ -22,7 +22,7 @@ var mangasTestTable = []mangaTestType{
 			URL:             "https://comick.io/comic/death-note",
 			CoverImgURL:     "https://meo.comick.pictures/a0yXD.jpg",
 			CoverImgResized: true,
-			LastUploadChapter: &manga.Chapter{
+			LastReleasedChapter: &manga.Chapter{
 				Chapter:   "110",
 				Name:      "Ch. 110",
 				URL:       "https://comick.io/comic/death-note/0MvzG",
@@ -39,7 +39,7 @@ var mangasTestTable = []mangaTestType{
 			URL:             "https://comick.io/comic/00-vagabond",
 			CoverImgURL:     "https://meo.comick.pictures/marne.jpg",
 			CoverImgResized: true,
-			LastUploadChapter: &manga.Chapter{
+			LastReleasedChapter: &manga.Chapter{
 				Chapter:   "327",
 				Name:      "The Man Named Tadoki",
 				URL:       "https://comick.io/comic/00-vagabond/ADgKl",
@@ -56,7 +56,7 @@ var mangasTestTable = []mangaTestType{
 			URL:             "https://comick.io/comic/mob-psycho-100",
 			CoverImgURL:     "https://meo.comick.pictures/NR1xz.jpg",
 			CoverImgResized: true,
-			LastUploadChapter: &manga.Chapter{
+			LastReleasedChapter: &manga.Chapter{
 				Chapter:   "101",
 				Name:      "101",
 				URL:       "https://comick.io/comic/mob-psycho-100/Ro7Lw",
@@ -74,7 +74,7 @@ func TestGetMangaMetadata(t *testing.T) {
 	t.Run("should get the metadata from multiple mangas", func(t *testing.T) {
 		for _, test := range mangasTestTable {
 			expected := test.expected
-			expected.LastUploadChapter.UpdatedAt = expected.LastUploadChapter.UpdatedAt.In(time.Local)
+			expected.LastReleasedChapter.UpdatedAt = expected.LastReleasedChapter.UpdatedAt.In(time.Local)
 			mangaURL := test.url
 
 			actualManga, err := source.GetMangaMetadata(mangaURL, false)

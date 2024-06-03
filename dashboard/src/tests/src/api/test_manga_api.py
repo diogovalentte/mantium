@@ -1,7 +1,6 @@
 from datetime import datetime
 
 import pytest
-
 from src.api.manga_api import MangaAPIClient
 
 test_mangas = {

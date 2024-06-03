@@ -358,24 +358,24 @@ func strContains(s1, s2 string) bool {
 	return strings.Contains(s1, s2)
 }
 
-func TestNotifyMangaLastUploadChapterUpdate(t *testing.T) {
-	t.Run("Notify manga last upload chapter update", func(t *testing.T) {
+func TestNotifyMangaLastReleasedChapterUpdate(t *testing.T) {
+	t.Run("Notify manga last released chapter update", func(t *testing.T) {
 		oldManga := &manga.Manga{
 			Name: "One Piece",
-			LastUploadChapter: &manga.Chapter{
+			LastReleasedChapter: &manga.Chapter{
 				Chapter: "1000",
 				URL:     "https://mangahub.io/chapter/one-piece_142/chapter-1000",
 			},
 		}
 		newManga := &manga.Manga{
 			Name: "One Piece",
-			LastUploadChapter: &manga.Chapter{
+			LastReleasedChapter: &manga.Chapter{
 				Chapter: "1001",
 				URL:     "https://mangahub.io/chapter/one-piece_142/chapter-1001",
 			},
 		}
 
-		err := routes.NotifyMangaLastUploadChapterUpdate(oldManga, newManga)
+		err := routes.NotifyMangaLastReleasedChapterUpdate(oldManga, newManga)
 		if err != nil {
 			t.Fatal(err)
 		}

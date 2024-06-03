@@ -73,12 +73,12 @@ class MangaAPIClient:
         manga = res.json().get("manga")
         manga["CoverImg"] = bytes(manga["CoverImg"], "utf-8")
 
-        if manga["LastUploadChapter"] is not None:
-            manga["LastUploadChapter"]["UpdatedAt"] = self.get_updated_at_datetime(
-                manga["LastUploadChapter"]["UpdatedAt"]
+        if manga["LastReleasedChapter"] is not None:
+            manga["LastReleasedChapter"]["UpdatedAt"] = self.get_updated_at_datetime(
+                manga["LastReleasedChapter"]["UpdatedAt"]
             )
         else:
-            manga["LastUploadChapter"] = {
+            manga["LastReleasedChapter"] = {
                 "Chapter": "",
                 "UpdatedAt": datetime(1970, 1, 1),
                 "URL": manga["URL"],
@@ -117,12 +117,14 @@ class MangaAPIClient:
         for manga in mangas:
             manga["CoverImg"] = bytes(manga["CoverImg"], "utf-8")
 
-            if manga["LastUploadChapter"] is not None:
-                manga["LastUploadChapter"]["UpdatedAt"] = self.get_updated_at_datetime(
-                    manga["LastUploadChapter"]["UpdatedAt"]
+            if manga["LastReleasedChapter"] is not None:
+                manga["LastReleasedChapter"][
+                    "UpdatedAt"
+                ] = self.get_updated_at_datetime(
+                    manga["LastReleasedChapter"]["UpdatedAt"]
                 )
             else:
-                manga["LastUploadChapter"] = {
+                manga["LastReleasedChapter"] = {
                     "Chapter": "",
                     "UpdatedAt": datetime(1970, 1, 1),
                     "URL": manga["URL"],
@@ -281,16 +283,16 @@ class MangaAPIClient:
             if manga["LastReadChapter"] is not None:
                 if (
                     manga["LastReadChapter"]["Chapter"]
-                    != manga["LastUploadChapter"]["Chapter"]
+                    != manga["LastReleasedChapter"]["Chapter"]
                 ):
-                    return (0, -manga["LastUploadChapter"]["UpdatedAt"].timestamp())
+                    return (0, -manga["LastReleasedChapter"]["UpdatedAt"].timestamp())
                 else:
-                    return (1, -manga["LastUploadChapter"]["UpdatedAt"].timestamp())
+                    return (1, -manga["LastReleasedChapter"]["UpdatedAt"].timestamp())
             else:
-                return (0, -manga["LastUploadChapter"]["UpdatedAt"].timestamp())
+                return (0, -manga["LastReleasedChapter"]["UpdatedAt"].timestamp())
 
         def chapters_released_sorting(manga: dict[str, Any]) -> float:
-            chapter = manga["LastUploadChapter"]["Chapter"]
+            chapter = manga["LastReleasedChapter"]["Chapter"]
             if chapter.isdigit():
                 return float(chapter)
             else:
@@ -309,14 +311,13 @@ class MangaAPIClient:
             )
         elif sort_option == "Released Chapter Date":
             mangas.sort(
-                key=lambda manga: manga["LastUploadChapter"]["UpdatedAt"],
+                key=lambda manga: manga["LastReleasedChapter"]["UpdatedAt"],
                 reverse=not reverse,
             )
         elif sort_option == "Name":
             mangas.sort(key=lambda manga: manga["Name"], reverse=reverse)
         elif sort_option == "Chapters Released":
             mangas.sort(
-                # key=lambda manga: float(manga["LastUploadChapter"]["Chapter"]),
                 key=chapters_released_sorting,
                 reverse=not reverse,
             )

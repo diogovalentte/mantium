@@ -44,15 +44,15 @@ type Manga struct {
 	// PreferredGroup is the preferred group that translates (and more) the manga
 	// Not all sources have multiple groups
 	PreferredGroup string
-	// LastUploadChapter is the last chapter uploaded to the source
-	LastUploadChapter *Chapter
+	// LastReleasedChapter is the last chapter released by the source
+	LastReleasedChapter *Chapter
 	// LastReadChapter is the last chapter read by the user
 	LastReadChapter *Chapter
 }
 
 func (m Manga) String() string {
-	return fmt.Sprintf("Manga{ID: %d, Source: %s, URL: %s, Name: %s, Status: %d, CoverImg: []byte, CoverImgResized: %v, CoverImgURL: %s, CoverImgFixed: %v, PreferredGroup: %s, LastUploadChapter: %s, LastReadChapter: %s}",
-		m.ID, m.Source, m.URL, m.Name, m.Status, m.CoverImgResized, m.CoverImgURL, m.CoverImgFixed, m.PreferredGroup, m.LastUploadChapter, m.LastReadChapter)
+	return fmt.Sprintf("Manga{ID: %d, Source: %s, URL: %s, Name: %s, Status: %d, CoverImg: []byte, CoverImgResized: %v, CoverImgURL: %s, CoverImgFixed: %v, PreferredGroup: %s, LastReleasedChapter: %s, LastReadChapter: %s}",
+		m.ID, m.Source, m.URL, m.Name, m.Status, m.CoverImgResized, m.CoverImgURL, m.CoverImgFixed, m.PreferredGroup, m.LastReleasedChapter, m.LastReadChapter)
 }
 
 // InsertIntoDB saves the manga into the database
@@ -106,18 +106,18 @@ func insertMangaIntoDB(m *Manga, tx *sql.Tx) (ID, error) {
 		return -1, err
 	}
 
-	if m.LastUploadChapter != nil {
-		chapterID, err := insertChapterDB(m.LastUploadChapter, mangaID, tx)
+	if m.LastReleasedChapter != nil {
+		chapterID, err := insertChapterDB(m.LastReleasedChapter, mangaID, tx)
 		if err != nil {
 			if err.Error() == `pq: duplicate key value violates unique constraint "chapters_pkey"` {
-				return -1, fmt.Errorf("last upload chapter of the manga you're trying to add already exists in DB")
+				return -1, fmt.Errorf("last released chapter of the manga you're trying to add already exists in DB")
 			}
 			return -1, err
 		}
 
 		_, err = tx.Exec(`
             UPDATE mangas
-            SET last_upload_chapter = $1
+            SET last_released_chapter = $1
             WHERE id = $2;
         `, chapterID, mangaID)
 		if err != nil {
@@ -143,7 +143,7 @@ func insertMangaIntoDB(m *Manga, tx *sql.Tx) (ID, error) {
 		}
 	}
 
-	// if the manga has chapters, also update the last_upload_chapter and last_read_chapter
+	// if the manga has chapters, also update the last_released_chapter and last_read_chapter
 	return mangaID, nil
 }
 
@@ -291,7 +291,7 @@ func updateMangaStatusDB(m *Manga, status Status, tx *sql.Tx) error {
 	return nil
 }
 
-// UpsertChapterInDB updates the last read/upload chapter in the database
+// UpsertChapterInDB updates the last read/released chapter in the database
 // The chapter.Type field must be set
 func (m *Manga) UpsertChapterInDB(chapter *Chapter) error {
 	contextError := "Error upserting chapter '%s' to manga '%s' in DB"
@@ -317,7 +317,7 @@ func (m *Manga) UpsertChapterInDB(chapter *Chapter) error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, chapter, m), err)
 	}
-	m.LastUploadChapter = chapter
+	m.LastReleasedChapter = chapter
 
 	return nil
 }
@@ -466,7 +466,7 @@ func updateMangaCoverImg(m *Manga, coverImg []byte, coverImgResized bool, coverI
 }
 
 // UpdateMangaMetadataDB updates the manga metadata in the database.
-// It updates: the last upload chapter (and its metadata), the manga name and cover image.
+// It updates: the last released chapter (and its metadata), the manga name and cover image.
 // The manga argument should have the ID or URL set to identify which manga to update.
 // The other fields of the manga will be the new values for the manga in the database.
 func UpdateMangaMetadataDB(m *Manga) error {
@@ -503,8 +503,8 @@ func updateMangaMetadata(m *Manga, tx *sql.Tx) error {
 		return err
 	}
 
-	if m.LastUploadChapter == nil {
-		err = upsertMangaChapter(m, m.LastUploadChapter, tx)
+	if m.LastReleasedChapter == nil {
+		err = upsertMangaChapter(m, m.LastReleasedChapter, tx)
 		if err != nil {
 			return err
 		}
@@ -551,31 +551,31 @@ func GetMangaDB(mangaID ID, mangaURL string) (*Manga, error) {
 }
 
 func getMangaFromDB(m *Manga, db *sql.DB) error {
-	var lastUploadChapterID sql.NullInt64
+	var lastReleasedChapterID sql.NullInt64
 	var lastReadChapterID sql.NullInt64
 	if m.ID > 0 {
 		query := `
             SELECT
-                id, source, url, name, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group, last_upload_chapter, last_read_chapter
+                id, source, url, name, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group, last_released_chapter, last_read_chapter
             FROM
                 mangas
             WHERE
                 id = $1;
         `
-		err := db.QueryRow(query, m.ID).Scan(&m.ID, &m.Source, &m.URL, &m.Name, &m.Status, &m.CoverImg, &m.CoverImgResized, &m.CoverImgURL, &m.CoverImgFixed, &m.PreferredGroup, &lastUploadChapterID, &lastReadChapterID)
+		err := db.QueryRow(query, m.ID).Scan(&m.ID, &m.Source, &m.URL, &m.Name, &m.Status, &m.CoverImg, &m.CoverImgResized, &m.CoverImgURL, &m.CoverImgFixed, &m.PreferredGroup, &lastReleasedChapterID, &lastReadChapterID)
 		if err != nil {
 			return err
 		}
 	} else if m.URL != "" {
 		query := `
             SELECT
-                id, source, url, name, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group, last_upload_chapter, last_read_chapter
+                id, source, url, name, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group, last_released_chapter, last_read_chapter
             FROM
                 mangas
             WHERE
                 url = $1;
         `
-		err := db.QueryRow(query, m.URL).Scan(&m.ID, &m.Source, &m.URL, &m.Name, &m.Status, &m.CoverImg, &m.CoverImgResized, &m.CoverImgURL, &m.CoverImgFixed, &m.PreferredGroup, &lastUploadChapterID, &lastReadChapterID)
+		err := db.QueryRow(query, m.URL).Scan(&m.ID, &m.Source, &m.URL, &m.Name, &m.Status, &m.CoverImg, &m.CoverImgResized, &m.CoverImgURL, &m.CoverImgFixed, &m.PreferredGroup, &lastReleasedChapterID, &lastReadChapterID)
 		if err != nil {
 			return err
 		}
@@ -583,12 +583,12 @@ func getMangaFromDB(m *Manga, db *sql.DB) error {
 		return fmt.Errorf("Manga doesn't have an ID or URL")
 	}
 
-	if lastUploadChapterID.Valid && lastUploadChapterID.Int64 != 0 {
-		chapter, err := getChapterDB(int(lastUploadChapterID.Int64), db)
+	if lastReleasedChapterID.Valid && lastReleasedChapterID.Int64 != 0 {
+		chapter, err := getChapterDB(int(lastReleasedChapterID.Int64), db)
 		if err != nil {
 			return err
 		}
-		m.LastUploadChapter = chapter
+		m.LastReleasedChapter = chapter
 	}
 	if lastReadChapterID.Valid && lastReadChapterID.Int64 != 0 {
 		chapter, err := getChapterDB(int(lastReadChapterID.Int64), db)
@@ -662,7 +662,7 @@ func GetMangasDB() ([]*Manga, error) {
 func getMangasFromDB(db *sql.DB) ([]*Manga, error) {
 	query := `
         SELECT
-            id, source, url, name, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group, last_upload_chapter, last_read_chapter
+            id, source, url, name, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group, last_released_chapter, last_read_chapter
         FROM
             mangas;
     `
@@ -675,19 +675,19 @@ func getMangasFromDB(db *sql.DB) ([]*Manga, error) {
 	var mangas []*Manga
 	for rows.Next() {
 		var manga Manga
-		var lastUploadChapterID sql.NullInt64
+		var lastReleasedChapterID sql.NullInt64
 		var lastReadChapterID sql.NullInt64
-		err = rows.Scan(&manga.ID, &manga.Source, &manga.URL, &manga.Name, &manga.Status, &manga.CoverImg, &manga.CoverImgResized, &manga.CoverImgURL, &manga.CoverImgFixed, &manga.PreferredGroup, &lastUploadChapterID, &lastReadChapterID)
+		err = rows.Scan(&manga.ID, &manga.Source, &manga.URL, &manga.Name, &manga.Status, &manga.CoverImg, &manga.CoverImgResized, &manga.CoverImgURL, &manga.CoverImgFixed, &manga.PreferredGroup, &lastReleasedChapterID, &lastReadChapterID)
 		if err != nil {
 			return nil, err
 		}
 
-		if lastUploadChapterID.Valid && lastUploadChapterID.Int64 != 0 {
-			chapter, err := getChapterDB(int(lastUploadChapterID.Int64), db)
+		if lastReleasedChapterID.Valid && lastReleasedChapterID.Int64 != 0 {
+			chapter, err := getChapterDB(int(lastReleasedChapterID.Int64), db)
 			if err != nil {
 				return nil, err
 			}
-			manga.LastUploadChapter = chapter
+			manga.LastReleasedChapter = chapter
 		}
 		if lastReadChapterID.Valid && lastReadChapterID.Int64 != 0 {
 			chapter, err := getChapterDB(int(lastReadChapterID.Int64), db)
@@ -726,10 +726,10 @@ func validateManga(m *Manga) error {
 		return util.AddErrorContext(contextError, fmt.Errorf("Manga name is empty"))
 	}
 
-	if m.LastUploadChapter != nil {
-		err := validateChapter(m.LastUploadChapter)
+	if m.LastReleasedChapter != nil {
+		err := validateChapter(m.LastReleasedChapter)
 		if err != nil {
-			return util.AddErrorContext(contextError+" last upload chapter", err)
+			return util.AddErrorContext(contextError+" last released chapter", err)
 		}
 	}
 	if m.LastReadChapter != nil {
@@ -751,16 +751,16 @@ func validateStatus(status Status) error {
 }
 
 // FilterUnreadChapterMangas filters a list of mangas to return
-// mangas where the last upload chapter is different from the
+// mangas where the last released chapter is different from the
 // last read chapter
 func FilterUnreadChapterMangas(mangas []*Manga) []*Manga {
 	unreadChapterMangas := []*Manga{}
 
 	for _, manga := range mangas {
-		if manga.LastUploadChapter != nil && manga.LastReadChapter == nil {
+		if manga.LastReleasedChapter != nil && manga.LastReadChapter == nil {
 			unreadChapterMangas = append(unreadChapterMangas, manga)
-		} else if manga.LastUploadChapter != nil && manga.LastReadChapter != nil {
-			if manga.LastUploadChapter.Chapter != manga.LastReadChapter.Chapter {
+		} else if manga.LastReleasedChapter != nil && manga.LastReadChapter != nil {
+			if manga.LastReleasedChapter.Chapter != manga.LastReadChapter.Chapter {
 				unreadChapterMangas = append(unreadChapterMangas, manga)
 			}
 		}
@@ -769,16 +769,16 @@ func FilterUnreadChapterMangas(mangas []*Manga) []*Manga {
 	return unreadChapterMangas
 }
 
-// SortMangasByLastUploadChapterUpdatedAt sorts a list of mangas
-// by their last upload chapter updated at property, desc
-func SortMangasByLastUploadChapterUpdatedAt(mangas []*Manga) {
+// SortMangasByLastReleasedChapterUpdatedAt sorts a list of mangas
+// by their last released chapter updated at property, desc
+func SortMangasByLastReleasedChapterUpdatedAt(mangas []*Manga) {
 	sort.Slice(mangas, func(i, j int) bool {
-		if mangas[i].LastUploadChapter == nil {
+		if mangas[i].LastReleasedChapter == nil {
 			return false
 		}
-		if mangas[j].LastUploadChapter == nil {
+		if mangas[j].LastReleasedChapter == nil {
 			return true
 		}
-		return mangas[i].LastUploadChapter.UpdatedAt.After(mangas[j].LastUploadChapter.UpdatedAt)
+		return mangas[i].LastReleasedChapter.UpdatedAt.After(mangas[j].LastReleasedChapter.UpdatedAt)
 	})
 }

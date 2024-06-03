@@ -61,13 +61,13 @@ func (s *Source) GetChapterMetadataByChapter(mangaURL string, chapter string) (*
 		chapterName := e.DOM.Find("span._2IG5P").Text()
 		chapterReturn.Name = strings.TrimSpace(strings.Replace(chapterName, "- ", "", -1))
 
-		uploadedAt := e.DOM.Find("small.UovLc").Text()
-		uploadedTime, err := getMangaUploadedTime(uploadedAt)
+		releasedAt := e.DOM.Find("small.UovLc").Text()
+		releaseTime, err := getMangaReleaseTime(releasedAt)
 		if err != nil {
 			sharedErr = err
 			return
 		}
-		chapterReturn.UpdatedAt = uploadedTime
+		chapterReturn.UpdatedAt = releaseTime
 	})
 
 	err := s.c.Visit(mangaURL)
@@ -110,13 +110,13 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 		chapterName := e.DOM.Find("span._2IG5P").Text()
 		chapterReturn.Name = strings.TrimSpace(strings.Replace(chapterName, "- ", "", -1))
 
-		uploadedAt := e.DOM.Find("small.UovLc").Text()
-		uploadedTime, err := getMangaUploadedTime(uploadedAt)
+		releaseddAt := e.DOM.Find("small.UovLc").Text()
+		releaseTime, err := getMangaReleaseTime(releaseddAt)
 		if err != nil {
 			sharedErr = err
 			return
 		}
-		chapterReturn.UpdatedAt = uploadedTime
+		chapterReturn.UpdatedAt = releaseTime
 	})
 
 	err := s.c.Visit(mangaURL)
@@ -153,13 +153,13 @@ func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) 
 		chapterName := e.DOM.Find("span._2IG5P").Text()
 		chapterReturn.Name = strings.TrimSpace(strings.Replace(chapterName, "- ", "", -1))
 
-		uploadedAt := e.DOM.Find("small.UovLc").Text()
-		uploadedTime, err := getMangaUploadedTime(uploadedAt)
+		releasedAt := e.DOM.Find("small.UovLc").Text()
+		releaseTime, err := getMangaReleaseTime(releasedAt)
 		if err != nil {
 			sharedErr = err
 			return
 		}
-		chapterReturn.UpdatedAt = uploadedTime
+		chapterReturn.UpdatedAt = releaseTime
 
 		chapters = append(chapters, chapterReturn)
 	})

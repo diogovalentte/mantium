@@ -29,7 +29,7 @@ definitions:
         type: integer
       updatedAt:
         description: |-
-          UpdatedAt is the time when the chapter was uploaded or updated (read).
+          UpdatedAt is the time when the chapter was released or updated (read).
           Should truncate at the second.
           The timezone should be the default/system timezone.
         type: string
@@ -61,10 +61,10 @@ definitions:
         allOf:
         - $ref: '#/definitions/manga.Chapter'
         description: LastReadChapter is the last chapter read by the user
-      lastUploadChapter:
+      lastReleasedChapter:
         allOf:
         - $ref: '#/definitions/manga.Chapter'
-        description: LastUploadChapter is the last chapter uploaded to the source
+        description: LastReleasedChapter is the last chapter released by the source
       name:
         description: Name is the name of the manga
         type: string
@@ -250,9 +250,10 @@ paths:
       description: Gets a manga metadata from source and inserts in the database.
       parameters:
       - description: If true, assumes the manga has no chapters and sets the last
-          read and released chapters to null without even checking if the manga really
-          doesn't have released chapters. If false, gets the manga's last released
-          chapter metadata from source. Defaults to false.
+          released chapter to null without even checking if the manga really doesn't
+          have released chapters. If false, gets the manga's last released chapter
+          metadata from source. It doesn't do anything with the last read chapter.
+          Defaults to false.
         example: true
         in: query
         name: manga_has_no_chapters
@@ -341,8 +342,8 @@ paths:
     patch:
       description: Updates a manga last read chapter in the database. If both `chapter`
         and `chapter_url` are empty strings in the body, set the last read chapter
-        to the last upload chapter in the database. You must provide either the manga
-        ID or the manga URL.
+        to the last released chapter in the database. You must provide either the
+        manga ID or the manga URL.
       parameters:
       - description: Manga ID
         example: 1
@@ -435,7 +436,7 @@ paths:
   /mangas/iframe:
     get:
       description: Returns an iFrame with mangas. Only mangas with unread chapters,
-        and status reading or completed. Sort by last upload chapter date. Designed
+        and status reading or completed. Sort by last released chapter date. Designed
         to be used with [Homarr](https://github.com/ajnart/homarr).
       parameters:
       - description: API URL used by your browser. Used for the button that updates
@@ -470,7 +471,7 @@ paths:
       description: Get the mangas metadata from the sources and update them in the
         database.
       parameters:
-      - description: Notify if a new chapter was upload for the manga (only of mangas
+      - description: Notify if a new chapter was released for the manga (only of mangas
           with status reading or completed).
         in: query
         name: notify

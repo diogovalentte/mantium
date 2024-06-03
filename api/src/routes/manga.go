@@ -207,7 +207,7 @@ func GetMangas(c *gin.Context) {
 }
 
 // @Summary Mangas iFrame
-// @Description Returns an iFrame with mangas. Only mangas with unread chapters, and status reading or completed. Sort by last upload chapter date. Designed to be used with [Homarr](https://github.com/ajnart/homarr).
+// @Description Returns an iFrame with mangas. Only mangas with unread chapters, and status reading or completed. Sort by last released chapter date. Designed to be used with [Homarr](https://github.com/ajnart/homarr).
 // @Success 200 {string} string "HTML content"
 // @Produce html
 // @Param api_url query string true "API URL used by your browser. Used for the button that updates the last read chater, as your browser needs to send a request to the API to update the chapter." Example(https://sub.domain.com)
@@ -254,7 +254,7 @@ func GetMangasiFrame(c *gin.Context) {
 			mangas = append(mangas, manga)
 		}
 	}
-	manga.SortMangasByLastUploadChapterUpdatedAt(mangas)
+	manga.SortMangasByLastReleasedChapterUpdatedAt(mangas)
 
 	if limit >= 0 && limit < len(mangas) {
 		mangas = mangas[:limit]
@@ -369,7 +369,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
             text-decoration: underline;
         }
 
-        .last-upload-chapter-label {
+        .last-released-chapter-label {
             color: rgb(101, 206, 230);
         }
 
@@ -519,10 +519,10 @@ BACKGROUND-ERROR-HTML
         <div class="new-chapter-container">
             <a href="{{ .LastReadChapter.URL }}" class="chapter-label last-read-chapter-label" target="_blank">{{ .LastReadChapter.Chapter }}</a>
                 <span class="chapter-label chapter-gt-label"> &lt; </span>
-            <a href="{{ .LastUploadChapter.URL }}" class="chapter-label last-upload-chapter-label" target="_blank">{{ .LastUploadChapter.Chapter }}</a>
+            <a href="{{ .LastReleasedChapter.URL }}" class="chapter-label last-released-chapter-label" target="_blank">{{ .LastReleasedChapter.Chapter }}</a>
 
             <div>
-                <button id="manga-{{ .ID }}" onclick="setLastReadChapter('{{ .ID }}', {{ .LastUploadChapter.Chapter }})" class="set-last-read-button" onmouseenter="this.style.cursor='pointer';">Set last read</button>
+                <button id="manga-{{ .ID }}" onclick="setLastReadChapter('{{ .ID }}', {{ .LastReleasedChapter.Chapter }})" class="set-last-read-button" onmouseenter="this.style.cursor='pointer';">Set last read</button>
             </div>
         </div>
 
@@ -667,7 +667,7 @@ type UpdateMangaStatusRequest struct {
 }
 
 // @Summary Update manga last read chapter
-// @Description Updates a manga last read chapter in the database. If both `chapter` and `chapter_url` are empty strings in the body, set the last read chapter to the last upload chapter in the database. You must provide either the manga ID or the manga URL.
+// @Description Updates a manga last read chapter in the database. If both `chapter` and `chapter_url` are empty strings in the body, set the last read chapter to the last released chapter in the database. You must provide either the manga ID or the manga URL.
 // @Produce json
 // @Param id query int false "Manga ID" Example(1)
 // @Param url query string false "Manga URL" Example("https://mangadex.org/title/1/one-piece")
@@ -703,7 +703,7 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 
 	var chapter *manga.Chapter
 	if requestData.Chapter == "" || requestData.ChapterURL == "" {
-		chapter = mangaUpdate.LastUploadChapter
+		chapter = mangaUpdate.LastReleasedChapter
 	} else {
 		chapter, err = sources.GetChapterMetadata(mangaUpdate.URL, requestData.Chapter, requestData.ChapterURL)
 		if err != nil {
@@ -849,7 +849,7 @@ func UpdateMangaCoverImg(c *gin.Context) {
 // @Summary Update mangas metadata
 // @Description Get the mangas metadata from the sources and update them in the database.
 // @Produce json
-// @Param notify query string false "Notify if a new chapter was upload for the manga (only of mangas with status reading or completed)."
+// @Param notify query string false "Notify if a new chapter was released for the manga (only of mangas with status reading or completed)."
 // @Success 200 {object} responseMessage
 // @Router /mangas/metadata [patch]
 func UpdateMangasMetadata(c *gin.Context) {
@@ -872,7 +872,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 	retryInterval := 3 * time.Second
 	for _, mangaToUpdate := range mangas {
 		mangaToUpdateHasLastReleasedChapter := true
-		if mangaToUpdate.LastUploadChapter == nil {
+		if mangaToUpdate.LastReleasedChapter == nil {
 			mangaToUpdateHasLastReleasedChapter = false
 		}
 		for i := 0; i < retries; i++ {
@@ -888,7 +888,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 			}
 			updatedManga.Status = 1
 
-			if (mangaToUpdateHasLastReleasedChapter && mangaToUpdate.LastUploadChapter.Chapter != updatedManga.LastUploadChapter.Chapter) || (!mangaToUpdate.CoverImgFixed && (mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg))) || mangaToUpdate.Name != updatedManga.Name {
+			if (mangaToUpdateHasLastReleasedChapter && mangaToUpdate.LastReleasedChapter.Chapter != updatedManga.LastReleasedChapter.Chapter) || (!mangaToUpdate.CoverImgFixed && (mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg))) || mangaToUpdate.Name != updatedManga.Name {
 				newMetadata = true
 				updatedManga.CoverImgFixed = mangaToUpdate.CoverImgFixed
 				err = manga.UpdateMangaMetadataDB(updatedManga)
@@ -900,9 +900,9 @@ func UpdateMangasMetadata(c *gin.Context) {
 
 				// Notify only if the manga's status is 1 (reading) or 2 (completed)
 				if notify && (mangaToUpdate.Status == 1 || mangaToUpdate.Status == 2) {
-					if mangaToUpdateHasLastReleasedChapter && mangaToUpdate.LastUploadChapter.Chapter != updatedManga.LastUploadChapter.Chapter {
+					if mangaToUpdateHasLastReleasedChapter && mangaToUpdate.LastReleasedChapter.Chapter != updatedManga.LastReleasedChapter.Chapter {
 						for j := 0; j < retries; j++ {
-							err = NotifyMangaLastUploadChapterUpdate(mangaToUpdate, updatedManga)
+							err = NotifyMangaLastReleasedChapterUpdate(mangaToUpdate, updatedManga)
 							if err != nil {
 								if j == retries-1 {
 									logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg(fmt.Sprintf("Manga metadata updated in DB, but error while notifying: %s.\nWill continue with the next manga...", err.Error()))
@@ -1162,14 +1162,14 @@ func getMangaIDAndURL(mangaIDStr string, mangaURL string) (manga.ID, string, err
 	return mangaID, mangaURL, nil
 }
 
-// NotifyMangaLastUploadChapterUpdate notifies a manga last upload chapter update
-func NotifyMangaLastUploadChapterUpdate(oldManga *manga.Manga, newManga *manga.Manga) error {
+// NotifyMangaLastReleasedChapterUpdate notifies a manga last released chapter update
+func NotifyMangaLastReleasedChapterUpdate(oldManga *manga.Manga, newManga *manga.Manga) error {
 	publisher, err := notifications.GetNtfyPublisher()
 	if err != nil {
 		return err
 	}
 
-	chapterLink, err := url.Parse(newManga.LastUploadChapter.URL)
+	chapterLink, err := url.Parse(newManga.LastReleasedChapter.URL)
 	if err != nil {
 		return err
 	}
@@ -1177,7 +1177,7 @@ func NotifyMangaLastUploadChapterUpdate(oldManga *manga.Manga, newManga *manga.M
 	msg := &gotfy.Message{
 		Topic:   publisher.Topic,
 		Title:   fmt.Sprintf("New chapter of manga: %s", newManga.Name),
-		Message: fmt.Sprintf("Last chapter: %s\nNew chapter: %s", oldManga.LastUploadChapter.Chapter, newManga.LastUploadChapter.Chapter),
+		Message: fmt.Sprintf("Last chapter: %s\nNew chapter: %s", oldManga.LastReleasedChapter.Chapter, newManga.LastReleasedChapter.Chapter),
 		Actions: []gotfy.ActionButton{
 			&gotfy.ViewAction{
 				Label: "Open Chapter",

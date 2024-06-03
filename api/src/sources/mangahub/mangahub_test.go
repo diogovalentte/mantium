@@ -5,13 +5,13 @@ import (
 	"time"
 )
 
-type uploadTimeTestType struct {
+type releaseTimeTestType struct {
 	arg      string
 	expected time.Time
 	sub      time.Duration
 }
 
-var absUploadTimeTestTable = []uploadTimeTestType{
+var absReleaseTimeTestTable = []releaseTimeTestType{
 	{
 		arg:      "01-18-2023",
 		expected: time.Date(2023, 1, 18, 0, 0, 0, 0, time.UTC),
@@ -22,10 +22,10 @@ var absUploadTimeTestTable = []uploadTimeTestType{
 	},
 }
 
-// relativeUploadTimeTestTable is a table of test cases for getMangaUploadedTime
+// relativeReleaseTimeTestTable is a table of test cases for getMangaReleaseTime
 // function. Each test case should test the function with a relative time string
 // where the relative time is expected to be greater than one day ago.
-var relativeUploadTimeTestTable = []uploadTimeTestType{
+var relativeReleaseTimeTestTable = []releaseTimeTestType{
 	{
 		arg: "Yesterday",
 		sub: 24 * time.Hour,
@@ -44,10 +44,10 @@ var relativeUploadTimeTestTable = []uploadTimeTestType{
 	},
 }
 
-// relativeHourTestTable is a table of test cases for getMangaUploadedTime
+// relativeHourTestTable is a table of test cases for getMangaReleaseTime
 // function. Each test case should test the function with a relative time string
 // where the relative time is expected to be less than one day ago.
-var relativeHourTestTable = []uploadTimeTestType{
+var relativeHourTestTable = []releaseTimeTestType{
 	{
 		arg: "just now",
 		sub: 0 * time.Hour,
@@ -66,12 +66,12 @@ var relativeHourTestTable = []uploadTimeTestType{
 	},
 }
 
-func TestGetMangaUploadedTime(t *testing.T) {
+func TestGetMangaReleaseTime(t *testing.T) {
 	t.Run("should return a time.Time from absolute time args", func(t *testing.T) {
-		for _, test := range absUploadTimeTestTable {
-			actual, err := getMangaUploadedTime(test.arg)
+		for _, test := range absReleaseTimeTestTable {
+			actual, err := getMangaReleaseTime(test.arg)
 			if err != nil {
-				t.Fatalf("error while getting manga uploaded time: %v", err)
+				t.Fatalf("error while getting manga release time: %v", err)
 			}
 			if actual != test.expected {
 				t.Fatalf("expected %v, got %v", test.expected, actual)
@@ -79,10 +79,10 @@ func TestGetMangaUploadedTime(t *testing.T) {
 		}
 	})
 	t.Run("should return a time.Time from relative time args where expected is greater than one day ago", func(t *testing.T) {
-		for _, test := range relativeUploadTimeTestTable {
-			actual, err := getMangaUploadedTime(test.arg)
+		for _, test := range relativeReleaseTimeTestTable {
+			actual, err := getMangaReleaseTime(test.arg)
 			if err != nil {
-				t.Fatalf("error while getting manga uploaded time: %v", err)
+				t.Fatalf("error while getting manga release time: %v", err)
 			}
 
 			expectedDate := time.Now().Add(test.sub * -1)
@@ -94,9 +94,9 @@ func TestGetMangaUploadedTime(t *testing.T) {
 	})
 	t.Run("should return a time.Time from relative time args where expected is less than one day ago", func(t *testing.T) {
 		for _, test := range relativeHourTestTable {
-			actual, err := getMangaUploadedTime(test.arg)
+			actual, err := getMangaReleaseTime(test.arg)
 			if err != nil {
-				t.Fatalf("error while getting manga uploaded time: %v", err)
+				t.Fatalf("error while getting manga release time: %v", err)
 			}
 
 			expectedDate := time.Now().Add(test.sub * -1)

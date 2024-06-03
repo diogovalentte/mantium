@@ -179,7 +179,8 @@ class MainDashboard:
 
     def show_manga(self, manga: dict[str, Any]):
         unread = (
-            manga["LastReadChapter"]["Chapter"] != manga["LastUploadChapter"]["Chapter"]
+            manga["LastReadChapter"]["Chapter"]
+            != manga["LastReleasedChapter"]["Chapter"]
         )
 
         # Try to make the title fit in the container the best way
@@ -268,20 +269,20 @@ class MainDashboard:
         """
 
         chapter = chapter_tag_content.format(
-            manga["LastUploadChapter"]["URL"],
-            f'Ch. {manga["LastUploadChapter"]["Chapter"]}'
-            if manga["LastUploadChapter"]["Chapter"] != ""
+            manga["LastReleasedChapter"]["URL"],
+            f'Ch. {manga["LastReleasedChapter"]["Chapter"]}'
+            if manga["LastReleasedChapter"]["Chapter"] != ""
             else "N/A",
         )
-        upload_date = (
-            manga["LastUploadChapter"]["UpdatedAt"]
-            if manga["LastUploadChapter"]["UpdatedAt"] != datetime(1970, 1, 1)
+        release_date = (
+            manga["LastReleasedChapter"]["UpdatedAt"]
+            if manga["LastReleasedChapter"]["UpdatedAt"] != datetime(1970, 1, 1)
             else "N/A"
         )
-        if upload_date != "N/A":
-            relative_upload_date = get_relative_time(upload_date)
+        if release_date != "N/A":
+            relative_release_date = get_relative_time(release_date)
         else:
-            relative_upload_date = upload_date
+            relative_release_date = release_date
 
         tagger(
             "<strong>Last Released Chapter:</strong>",
@@ -290,7 +291,7 @@ class MainDashboard:
             "float: right;",
         )
         st.caption(
-            f'**Release Date**: <span style="float: right;" title="{upload_date}">{relative_upload_date}</span>',
+            f'**Release Date**: <span style="float: right;" title="{release_date}">{relative_release_date}</span>',
             unsafe_allow_html=True,
         )
 
@@ -327,7 +328,7 @@ class MainDashboard:
             def set_last_read():
                 if (
                     manga.get("LastReadChapter", {}).get("Chapter")
-                    != manga["LastUploadChapter"]["Chapter"]
+                    != manga["LastReleasedChapter"]["Chapter"]
                 ):
                     self.api_client.update_manga_last_read_chapter(
                         manga["ID"],

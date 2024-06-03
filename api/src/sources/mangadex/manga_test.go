@@ -24,7 +24,7 @@ var mangasTestTable = []mangaTestType{
 			URL:             "https://mangadex.org/title/75ee72ab-c6bf-4b87-badd-de839156934c/death-note",
 			CoverImgURL:     "https://uploads.mangadex.org/covers/75ee72ab-c6bf-4b87-badd-de839156934c/d6555598-8202-477d-acde-303202cb3475.jpg",
 			CoverImgResized: true,
-			LastUploadChapter: &manga.Chapter{
+			LastReleasedChapter: &manga.Chapter{
 				Chapter:   "108",
 				Name:      "Finis",
 				URL:       "https://mangadex.org/chapter/8a01e405-220c-4cd2-85f4-cca579c15984",
@@ -41,7 +41,7 @@ var mangasTestTable = []mangaTestType{
 			URL:             "https://mangadex.org/title/d1a9fdeb-f713-407f-960c-8326b586e6fd/vagabond",
 			CoverImgURL:     "https://uploads.mangadex.org/covers/d1a9fdeb-f713-407f-960c-8326b586e6fd/05f8dcb4-8ea1-48db-a0b1-3a8fbf695e5a.jpg",
 			CoverImgResized: true,
-			LastUploadChapter: &manga.Chapter{
+			LastReleasedChapter: &manga.Chapter{
 				Chapter:   "327",
 				Name:      "The Man Named Tadoki",
 				URL:       "https://mangadex.org/chapter/0754c218-0240-4752-a688-5e7d9bc74b55",
@@ -58,7 +58,7 @@ var mangasTestTable = []mangaTestType{
 			URL:             "https://mangadex.org/title/736a2bf0-f875-4b52-a7b4-e8c40505b68a/mob-psycho-100",
 			CoverImgURL:     "https://uploads.mangadex.org/covers/736a2bf0-f875-4b52-a7b4-e8c40505b68a/7f07f02e-39ba-4e38-a01d-6f74652013fa.jpg",
 			CoverImgResized: true,
-			LastUploadChapter: &manga.Chapter{
+			LastReleasedChapter: &manga.Chapter{
 				Chapter:   "101",
 				Name:      "101",
 				URL:       "https://mangadex.org/chapter/c8ba4080-2cb0-466e-9a17-02fe12782f70",
@@ -76,7 +76,7 @@ func TestGetMangaMetadata(t *testing.T) {
 	t.Run("should get the  metadata from multiple mangas", func(t *testing.T) {
 		for _, test := range mangasTestTable {
 			expected := test.expected
-			expected.LastUploadChapter.UpdatedAt = expected.LastUploadChapter.UpdatedAt.In(time.Local)
+			expected.LastReleasedChapter.UpdatedAt = expected.LastReleasedChapter.UpdatedAt.In(time.Local)
 			mangaURL := test.url
 
 			actualManga, err := source.GetMangaMetadata(mangaURL, false)

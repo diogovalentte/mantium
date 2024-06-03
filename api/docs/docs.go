@@ -170,7 +170,7 @@ const docTemplate = `{
                     {
                         "type": "boolean",
                         "example": true,
-                        "description": "If true, assumes the manga has no chapters and sets the last read and released chapters to null without even checking if the manga really doesn't have released chapters. If false, gets the manga's last released chapter metadata from source. Defaults to false.",
+                        "description": "If true, assumes the manga has no chapters and sets the last released chapter to null without even checking if the manga really doesn't have released chapters. If false, gets the manga's last released chapter metadata from source. It doesn't do anything with the last read chapter. Defaults to false.",
                         "name": "manga_has_no_chapters",
                         "in": "query"
                     },
@@ -316,7 +316,7 @@ const docTemplate = `{
         },
         "/manga/last_read_chapter": {
             "patch": {
-                "description": "Updates a manga last read chapter in the database. If both ` + "`" + `chapter` + "`" + ` and ` + "`" + `chapter_url` + "`" + ` are empty strings in the body, set the last read chapter to the last upload chapter in the database. You must provide either the manga ID or the manga URL.",
+                "description": "Updates a manga last read chapter in the database. If both ` + "`" + `chapter` + "`" + ` and ` + "`" + `chapter_url` + "`" + ` are empty strings in the body, set the last read chapter to the last released chapter in the database. You must provide either the manga ID or the manga URL.",
                 "produces": [
                     "application/json"
                 ],
@@ -449,7 +449,7 @@ const docTemplate = `{
         },
         "/mangas/iframe": {
             "get": {
-                "description": "Returns an iFrame with mangas. Only mangas with unread chapters, and status reading or completed. Sort by last upload chapter date. Designed to be used with [Homarr](https://github.com/ajnart/homarr).",
+                "description": "Returns an iFrame with mangas. Only mangas with unread chapters, and status reading or completed. Sort by last released chapter date. Designed to be used with [Homarr](https://github.com/ajnart/homarr).",
                 "produces": [
                     "text/html"
                 ],
@@ -498,7 +498,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Notify if a new chapter was upload for the manga (only of mangas with status reading or completed).",
+                        "description": "Notify if a new chapter was released for the manga (only of mangas with status reading or completed).",
                         "name": "notify",
                         "in": "query"
                     }
@@ -556,7 +556,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "updatedAt": {
-                    "description": "UpdatedAt is the time when the chapter was uploaded or updated (read).\nShould truncate at the second.\nThe timezone should be the default/system timezone.",
+                    "description": "UpdatedAt is the time when the chapter was released or updated (read).\nShould truncate at the second.\nThe timezone should be the default/system timezone.",
                     "type": "string"
                 },
                 "url": {
@@ -598,8 +598,8 @@ const docTemplate = `{
                         }
                     ]
                 },
-                "lastUploadChapter": {
-                    "description": "LastUploadChapter is the last chapter uploaded to the source",
+                "lastReleasedChapter": {
+                    "description": "LastReleasedChapter is the last chapter released by the source",
                     "allOf": [
                         {
                             "$ref": "#/definitions/manga.Chapter"

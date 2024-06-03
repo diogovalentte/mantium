@@ -10,7 +10,7 @@ import (
 
 type (
 	// Type is the type of the chapter, it can be:
-	// 0: "upload" - the chapter was uploaded, it's representing a chapter that was uploaded to (scraped from) a source
+	// 0: "release" - the chapter was released, it's representing a chapter that was released by (or scraped from) a source
 	// 1: "read" - the chapter was read, it's representing a chapter that was read by the user
 	Type int
 )
@@ -24,7 +24,7 @@ type Chapter struct {
 	Chapter string
 	// Name is the name of the chapter
 	Name string
-	// UpdatedAt is the time when the chapter was uploaded or updated (read).
+	// UpdatedAt is the time when the chapter was released or updated (read).
 	// Should truncate at the second.
 	// The timezone should be the default/system timezone.
 	UpdatedAt time.Time
@@ -85,7 +85,7 @@ func getChapterDB(id int, db *sql.DB) (*Chapter, error) {
 	return &chapter, nil
 }
 
-// upsertMangaChapter updates the last upload or last read chapter of a manga
+// upsertMangaChapter updates the last released or last read chapter of a manga
 // if the manga doesn't exist in the database, it will be inserted
 func upsertMangaChapter(m *Manga, chapter *Chapter, tx *sql.Tx) error {
 	contextError := "Error upserting manga chapter in the database"
@@ -126,7 +126,7 @@ func upsertMangaChapter(m *Manga, chapter *Chapter, tx *sql.Tx) error {
 	if chapter.Type == 1 {
 		query = `
             UPDATE mangas
-            SET last_upload_chapter = $1
+            SET last_released_chapter = $1
             WHERE id = $2;
         `
 	} else {
@@ -169,7 +169,7 @@ func validateChapter(c *Chapter) error {
 		return util.AddErrorContext(contextError, fmt.Errorf("Chapter name is empty"))
 	}
 	if c.Type != 1 && c.Type != 2 {
-		return util.AddErrorContext(contextError, fmt.Errorf("Chapter type should be 1 (last upload) or 2 (last read), instead it's %d", c.Type))
+		return util.AddErrorContext(contextError, fmt.Errorf("Chapter type should be 1 (last release) or 2 (last read), instead it's %d", c.Type))
 	}
 
 	return nil

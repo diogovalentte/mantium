@@ -25,7 +25,7 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 	lastChapter := &manga.Chapter{
 		Type: 1,
 	}
-	mangaReturn.LastUploadChapter = lastChapter
+	mangaReturn.LastReleasedChapter = lastChapter
 
 	var sharedErr error
 
@@ -50,7 +50,7 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 		mangaReturn.CoverImgURL = e.Attr("src")
 	})
 
-	// last upload chapter
+	// last released chapter
 	isFirstUL := true
 	s.c.OnHTML("ul.MWqeC:first-of-type > li:first-child a._3pfyN", func(e *colly.HTMLElement) {
 		if !isFirstUL {
@@ -66,19 +66,19 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 		chapterName := e.DOM.Find("span._2IG5P").Text()
 		chapterName = strings.TrimSpace(strings.Replace(chapterName, "- ", "", -1))
 
-		uploadedAt := e.DOM.Find("small.UovLc").Text()
-		uploadedTime, err := getMangaUploadedTime(uploadedAt)
+		releasedAt := e.DOM.Find("small.UovLc").Text()
+		releaseTime, err := getMangaReleaseTime(releasedAt)
 		if err != nil {
 			sharedErr = err
 			return
 		}
 
-		mangaReturn.LastUploadChapter = &manga.Chapter{
+		mangaReturn.LastReleasedChapter = &manga.Chapter{
 			URL:       chapterURL,
 			Chapter:   chapter,
 			Name:      chapterName,
 			Type:      1,
-			UpdatedAt: uploadedTime,
+			UpdatedAt: releaseTime,
 		}
 	})
 
@@ -93,7 +93,7 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 		return nil, util.AddErrorContext(errorContext, sharedErr)
 	}
 
-	if mangaReturn.LastUploadChapter == nil && !ignoreGetLastChapterError {
+	if mangaReturn.LastReleasedChapter == nil && !ignoreGetLastChapterError {
 		return nil, util.AddErrorContext(errorContext, errors.ErrLastReleasedChapterNotFound)
 	}
 

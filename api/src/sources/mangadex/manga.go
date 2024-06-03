@@ -49,14 +49,14 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 		}
 	}
 
-	lastUploadChapter, err := s.GetLastChapterMetadata(mangaURL)
+	lastReleasedChapter, err := s.GetLastChapterMetadata(mangaURL)
 	if err != nil {
 		if !(ignoreGetLastChapterError && util.ErrorContains(err, errors.ErrLastReleasedChapterNotFound.Message)) {
 			return nil, util.AddErrorContext(errorContext, err)
 		}
 	} else {
-		lastUploadChapter.Type = 1
-		mangaReturn.LastUploadChapter = lastUploadChapter
+		lastReleasedChapter.Type = 1
+		mangaReturn.LastReleasedChapter = lastReleasedChapter
 	}
 
 	// Get cover img

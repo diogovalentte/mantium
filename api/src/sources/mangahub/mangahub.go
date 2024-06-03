@@ -119,10 +119,10 @@ func (s *Source) getCoverImg(url string, retries int, retryInterval time.Duratio
 	return img, resized, nil
 }
 
-// getMangaUploadedTime parses the time string from the mangahub site.
+// getMangaReleaseTime parses the time string from the mangahub site.
 // The returned time is in timezone local.
-func getMangaUploadedTime(timeString string) (time.Time, error) {
-	errorContext := "Error while parsing upload time '%s'"
+func getMangaReleaseTime(timeString string) (time.Time, error) {
+	errorContext := "Error while parsing release time '%s'"
 
 	layout := "01-02-2006"
 	parsedTime, err := time.Parse(layout, timeString)

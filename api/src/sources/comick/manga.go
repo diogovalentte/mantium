@@ -36,14 +36,14 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 
 	mangaReturn.Name = comic.Title
 
-	lastUploadChapter, err := s.GetLastChapterMetadata(mangaURL)
+	lastReleasedChapter, err := s.GetLastChapterMetadata(mangaURL)
 	if err != nil {
 		if !(ignoreGetLastChapterError && util.ErrorContains(err, errors.ErrLastReleasedChapterNotFound.Message)) {
 			return nil, util.AddErrorContext(errorContext, err)
 		}
 	} else {
-		lastUploadChapter.Type = 1
-		mangaReturn.LastUploadChapter = lastUploadChapter
+		lastReleasedChapter.Type = 1
+		mangaReturn.LastReleasedChapter = lastReleasedChapter
 	}
 
 	// Get cover img
@@ -77,7 +77,7 @@ type getMangaAPIResponse struct {
 type comic struct {
 	Title       string    `json:"title"`
 	ID          int       `json:"id"`
-	LastChapter float32   `json:"last_chapter"` // It seems to be the last english translated chapter uploaded
+	LastChapter float32   `json:"last_chapter"` // It seems to be the last english translated chapter released
 	MDCovers    []mdCover `json:"md_covers"`
 	HID         string    `json:"hid"`
 }
