@@ -421,6 +421,14 @@ class MainDashboard:
                 key="update_manga_form_chapter",
             )
 
+            if (
+                ss.get("update_manga_chapter_options") is not None
+                and len(ss.get("update_manga_chapter_options", [])) < 1
+            ):
+                st.warning(
+                    "Manga has no released chapters. You still can update the other fields."
+                )
+
             with st.popover(
                 "Update Cover Image",
                 help="Update the cover image of the manga",
@@ -553,12 +561,12 @@ class MainDashboard:
             except APIException as e:
                 resp_text = str(e.response_text)
                 if (
-                    "Error while getting source: Source '" in str(resp_text)
+                    "error while getting source: Source '" in resp_text.lower()
                     and "not found" in resp_text
                 ):
                     st.warning("No source site for this manga")
                 elif (
-                    "Manga doesn't have an ID or URL" in resp_text
+                    "manga doesn't have and ID or URL" in resp_text.lower()
                     or "invalid URI for request" in resp_text
                 ):
                     st.warning("Invalid URL")
@@ -584,6 +592,12 @@ class MainDashboard:
                 if chapter is not None
                 else "N/A",
             )
+
+            if (
+                ss.get("add_manga_chapter_options") is not None
+                and len(ss.get("add_manga_chapter_options", [])) < 1
+            ):
+                st.warning("Manga has no released chapters. You still can add it.")
 
             def add_manga_callback():
                 ss["add_manga_manga_to_add"] = {
@@ -619,17 +633,17 @@ class MainDashboard:
                         )
                     except APIException as e:
                         kaizoku_error = (
-                            "Manga added to DB, but error while adding it to Kaizoku"
+                            "manga added to db, but error while adding it to kaizoku"
                         )
                         if kaizoku_error in str(e):
-                            if "MangaHub source is not implemented" in str(e):
+                            if "mangahub source is not implemented" in str(e).lower():
                                 logger.warning(e)
                                 ss[
                                     "manga_add_warning_message"
                                 ] = f"{kaizoku_error}: MangaHub source is not implemented in Kaizoku"
                             elif (
-                                "Cannot find manga. Maybe there is no Anilist page for this manga (Kaizoku can't add mangas that don't have one)"
-                                in str(e)
+                                "cannot find the manga. maybe there is no anilist page for this manga (kaizoku can't add mangas that don't have one)"
+                                in str(e).lower()
                             ):
                                 logger.warning(e)
                                 ss[
