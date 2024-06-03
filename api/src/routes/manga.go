@@ -703,7 +703,7 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 	}
 
 	var chapter *manga.Chapter
-	if requestData.Chapter == "" || requestData.ChapterURL == "" {
+	if requestData.Chapter == "" && requestData.ChapterURL == "" {
 		chapter = mangaUpdate.LastReleasedChapter
 	} else {
 		chapter, err = sources.GetChapterMetadata(mangaUpdate.URL, requestData.Chapter, requestData.ChapterURL)
