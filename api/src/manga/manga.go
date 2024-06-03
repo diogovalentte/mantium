@@ -542,7 +542,7 @@ func GetMangaDB(mangaID ID, mangaURL string) (*Manga, error) {
 	err = getMangaFromDB(&mangaGet, db)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, util.AddErrorContext(fmt.Errorf("Manga not found in DB"), contextError)
+			return nil, util.AddErrorContext(fmt.Errorf("Manga not found in DB"), fmt.Sprintf(contextError, mangaID, mangaURL))
 		}
 		return nil, util.AddErrorContext(err, fmt.Sprintf(contextError, mangaID, mangaURL))
 	}
