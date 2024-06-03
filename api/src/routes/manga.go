@@ -107,6 +107,7 @@ func AddManga(c *gin.Context) {
 		if err != nil {
 			err = util.AddErrorContext("manga added to DB, but error while adding it to Kaizoku", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			dashboard.UpdateDashboard()
 			return
 		}
 	}

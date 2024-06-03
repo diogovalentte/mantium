@@ -633,22 +633,19 @@ class MainDashboard:
                         )
                     except APIException as e:
                         kaizoku_error = (
-                            "manga added to db, but error while adding it to kaizoku"
+                            "Manga added to DB, but error while adding it to Kaizoku"
                         )
-                        if kaizoku_error in str(e):
+                        if kaizoku_error.lower() in str(e).lower():
                             if "mangahub source is not implemented" in str(e).lower():
                                 logger.warning(e)
                                 ss[
                                     "manga_add_warning_message"
                                 ] = f"{kaizoku_error}: MangaHub source is not implemented in Kaizoku"
-                            elif (
-                                "cannot find the manga. maybe there is no anilist page for this manga (kaizoku can't add mangas that don't have one)"
-                                in str(e).lower()
-                            ):
+                            elif "cannot find the manga" in str(e).lower():
                                 logger.warning(e)
                                 ss[
                                     "manga_add_warning_message"
-                                ] = f"{kaizoku_error}: Cannot find manga. Maybe there is no Anilist page for this manga (Kaizoku can't add mangas that don't have one)"
+                                ] = f"{kaizoku_error}: Cannot find the manga. Maybe there is no Anilist page for this manga (Kaizoku can't add mangas that don't have one.)"
                             else:
                                 logger.exception(e)
                                 ss[
