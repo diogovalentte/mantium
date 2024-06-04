@@ -504,7 +504,7 @@ func updateMangaMetadata(m *Manga, tx *sql.Tx) error {
 		return err
 	}
 
-	if m.LastReleasedChapter == nil {
+	if m.LastReleasedChapter != nil {
 		err = upsertMangaChapter(m, m.LastReleasedChapter, tx)
 		if err != nil {
 			return err

@@ -871,12 +871,8 @@ func UpdateMangasMetadata(c *gin.Context) {
 	retries := 3
 	retryInterval := 3 * time.Second
 	for _, mangaToUpdate := range mangas {
-		mangaToUpdateHasLastReleasedChapter := true
-		if mangaToUpdate.LastReleasedChapter == nil {
-			mangaToUpdateHasLastReleasedChapter = false
-		}
 		for i := 0; i < retries; i++ {
-			updatedManga, err := sources.GetMangaMetadata(mangaToUpdate.URL, !mangaToUpdateHasLastReleasedChapter)
+			updatedManga, err := sources.GetMangaMetadata(mangaToUpdate.URL, mangaToUpdate.LastReleasedChapter == nil)
 			if err != nil {
 				if i == retries-1 {
 					logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error getting manga metadata, will continue with the next manga...")
@@ -888,7 +884,9 @@ func UpdateMangasMetadata(c *gin.Context) {
 			}
 			updatedManga.Status = 1
 
-			if (mangaToUpdateHasLastReleasedChapter && mangaToUpdate.LastReleasedChapter.Chapter != updatedManga.LastReleasedChapter.Chapter) || (!mangaToUpdate.CoverImgFixed && (mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg))) || mangaToUpdate.Name != updatedManga.Name {
+			mangaHasNewReleasedChapter := isNewChapterDifferentFromOld(mangaToUpdate.LastReleasedChapter, updatedManga.LastReleasedChapter)
+
+			if mangaHasNewReleasedChapter || (!mangaToUpdate.CoverImgFixed && (mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg))) || mangaToUpdate.Name != updatedManga.Name {
 				newMetadata = true
 				updatedManga.CoverImgFixed = mangaToUpdate.CoverImgFixed
 				err = manga.UpdateMangaMetadataDB(updatedManga)
@@ -900,7 +898,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 
 				// Notify only if the manga's status is 1 (reading) or 2 (completed)
 				if notify && (mangaToUpdate.Status == 1 || mangaToUpdate.Status == 2) {
-					if mangaToUpdateHasLastReleasedChapter && mangaToUpdate.LastReleasedChapter.Chapter != updatedManga.LastReleasedChapter.Chapter {
+					if mangaHasNewReleasedChapter {
 						for j := 0; j < retries; j++ {
 							err = NotifyMangaLastReleasedChapterUpdate(mangaToUpdate, updatedManga)
 							if err != nil {
@@ -1169,6 +1167,15 @@ func NotifyMangaLastReleasedChapterUpdate(oldManga *manga.Manga, newManga *manga
 		return err
 	}
 
+	title := fmt.Sprintf("Mantium - New chapter of manga: %s", newManga.Name)
+
+	var message string
+	if oldManga.LastReleasedChapter != nil {
+		message = fmt.Sprintf("New chapter: %s\nLast chapter: %s", newManga.LastReleasedChapter.Chapter, oldManga.LastReleasedChapter.Chapter)
+	} else {
+		message = fmt.Sprintf("New chapter: %s\nLast chapter: N/A", newManga.LastReleasedChapter.Chapter)
+	}
+
 	chapterLink, err := url.Parse(newManga.LastReleasedChapter.URL)
 	if err != nil {
 		return err
@@ -1176,8 +1183,8 @@ func NotifyMangaLastReleasedChapterUpdate(oldManga *manga.Manga, newManga *manga
 
 	msg := &gotfy.Message{
 		Topic:   publisher.Topic,
-		Title:   fmt.Sprintf("New chapter of manga: %s", newManga.Name),
-		Message: fmt.Sprintf("Last chapter: %s\nNew chapter: %s", oldManga.LastReleasedChapter.Chapter, newManga.LastReleasedChapter.Chapter),
+		Title:   title,
+		Message: message,
 		Actions: []gotfy.ActionButton{
 			&gotfy.ViewAction{
 				Label: "Open Chapter",
@@ -1195,4 +1202,15 @@ func NotifyMangaLastReleasedChapterUpdate(oldManga *manga.Manga, newManga *manga
 	}
 
 	return nil
+}
+
+func isNewChapterDifferentFromOld(oldChapter *manga.Chapter, newChapter *manga.Chapter) bool {
+	if oldChapter == nil && newChapter != nil {
+		return true
+	}
+	if oldChapter != nil && newChapter != nil && oldChapter.Chapter != newChapter.Chapter {
+		return true
+	}
+
+	return false
 }
