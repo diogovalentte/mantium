@@ -429,7 +429,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
     </style>
 
     <script>
-      function setLastReadChapter(mangaId, chapter) {
+      function setLastReadChapter(mangaId) {
         try {
             var xhr = new XMLHttpRequest();
             var url = 'API-URL/v1/manga/last_read_chapter?id=' + encodeURIComponent(mangaId);
@@ -451,9 +451,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
               handleSetLastReadChapterError(mangaId)
             };
 
-            var body = {
-                chapter: chapter
-            };
+            var body = {};
 
             xhr.send(JSON.stringify(body));
         } catch (error) {
@@ -524,7 +522,7 @@ BACKGROUND-ERROR-HTML
             <a href="{{ .LastReleasedChapter.URL }}" class="chapter-label last-released-chapter-label" target="_blank">{{ .LastReleasedChapter.Chapter }}</a>
 
             <div>
-                <button id="manga-{{ .ID }}" onclick="setLastReadChapter('{{ .ID }}', {{ .LastReleasedChapter.Chapter }})" class="set-last-read-button" onmouseenter="this.style.cursor='pointer';">Set last read</button>
+                <button id="manga-{{ .ID }}" onclick="setLastReadChapter('{{ .ID }}')" class="set-last-read-button" onmouseenter="this.style.cursor='pointer';">Set last read</button>
             </div>
         </div>
 
@@ -729,8 +727,8 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 
 // UpdateMangaChapterRequest is the request body for updating a manga chapter
 type UpdateMangaChapterRequest struct {
-	Chapter    string `json:"chapter"`
-	ChapterURL string `json:"chapter_url"`
+	Chapter    string `json:"chapter,omitempty"`
+	ChapterURL string `json:"chapter_url,omitempty"`
 }
 
 // @Summary Update manga cover image

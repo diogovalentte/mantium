@@ -238,9 +238,27 @@ func TestUpdateManga(t *testing.T) {
 			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
 		}
 	})
-	t.Run("Update the last read chapter of an existing manga", func(t *testing.T) {
+	t.Run("Update the last read chapter of an existing manga to a specific chapter", func(t *testing.T) {
 		test := mangasRequestsTestTable["valid manga with read chapter"]
-		body, err := json.Marshal(routes.UpdateMangaChapterRequest{Chapter: "14"})
+		body, err := json.Marshal(routes.UpdateMangaChapterRequest{Chapter: "14"}) // not all sources allows to get a chapter metadata using its chapter number/name
+		if err != nil {
+			t.Fatal(err)
+		}
+		var resMap map[string]string
+		err = requestHelper(http.MethodPatch, fmt.Sprintf("/v1/manga/last_read_chapter?url=%s", test.URL), bytes.NewBuffer(body), &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["message"]
+		expected := "Manga last read chapter updated successfully"
+		if actual != expected {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
+		}
+	})
+	t.Run("Update the last read chapter of an existing manga to the last release chapter", func(t *testing.T) {
+		test := mangasRequestsTestTable["valid manga with read chapter"]
+		body, err := json.Marshal(map[string]string{}) // request needs to have a body, but it can be empty
 		if err != nil {
 			t.Fatal(err)
 		}
