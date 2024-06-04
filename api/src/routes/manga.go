@@ -517,9 +517,17 @@ BACKGROUND-ERROR-HTML
         </div>
 
         <div class="new-chapter-container">
-            <a href="{{ .LastReadChapter.URL }}" class="chapter-label last-read-chapter-label" target="_blank">{{ .LastReadChapter.Chapter }}</a>
-                <span class="chapter-label chapter-gt-label"> &lt; </span>
-            <a href="{{ .LastReleasedChapter.URL }}" class="chapter-label last-released-chapter-label" target="_blank">{{ .LastReleasedChapter.Chapter }}</a>
+            {{ if .LastReadChapter }}
+                <a href="{{ .LastReadChapter.URL }}" class="chapter-label last-read-chapter-label" target="_blank">{{ .LastReadChapter.Chapter }}</a>
+            {{ else }}
+                <a href="{{ .URL }}" class="chapter-label last-read-chapter-label" target="_blank">N/A</a>
+            {{ end }}
+            <span class="chapter-label chapter-gt-label"> &lt; </span>
+            {{ if .LastReleasedChapter }}
+                <a href="{{ .LastReleasedChapter.URL }}" class="chapter-label last-released-chapter-label" target="_blank">{{ .LastReleasedChapter.Chapter }}</a>
+            {{ else }}
+                <a href="{{ .URL }}" class="chapter-label last-released-chapter-label" target="_blank">N/A</a>
+            {{ end }}
 
             <div>
                 <button id="manga-{{ .ID }}" onclick="setLastReadChapter('{{ .ID }}')" class="set-last-read-button" onmouseenter="this.style.cursor='pointer';">Set last read</button>
