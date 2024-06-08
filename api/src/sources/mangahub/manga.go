@@ -38,7 +38,7 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 		name := e.Text
 		smallTagValue := e.DOM.Find("small").Text()
 		aTagValue := e.DOM.Find("a").Text()
-		name = strings.Replace(name, smallTagValue, "", -1)
+		name = strings.ReplaceAll(name, smallTagValue, "")
 		name = util.RemoveLastOccurrence(name, aTagValue)
 
 		mangaReturn.Name = name
@@ -60,10 +60,10 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 		chapterURL := e.Attr("href")
 
 		chapterStr := e.DOM.Find("span._3D1SJ").Text()
-		chapter := strings.TrimSpace(strings.Replace(chapterStr, "#", "", -1))
+		chapter := strings.TrimSpace(strings.ReplaceAll(chapterStr, "#", ""))
 
 		chapterName := e.DOM.Find("span._2IG5P").Text()
-		chapterName = strings.TrimSpace(strings.Replace(chapterName, "- ", "", -1))
+		chapterName = strings.TrimSpace(strings.ReplaceAll(chapterName, "- ", ""))
 
 		releasedAt := e.DOM.Find("small.UovLc").Text()
 		releaseTime, err := getMangaReleaseTime(releasedAt)

@@ -134,27 +134,27 @@ func (k *Kaizoku) AddManga(manga *manga.Manga) error {
 	return nil
 }
 
-func (k *Kaizoku) RemoveManga(mangaId int, removeFiles bool) error {
+func (k *Kaizoku) RemoveManga(mangaID int, removeFiles bool) error {
 	errorContext := "(kaizoku) error while removing manga with id '%d' (removeFiles: %v)"
 
-	reqBody := fmt.Sprintf(`{"0":{"json":{"id": %d, "shouldRemoveFiles": %v}}}`, mangaId, removeFiles)
+	reqBody := fmt.Sprintf(`{"0":{"json":{"id": %d, "shouldRemoveFiles": %v}}}`, mangaID, removeFiles)
 
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
-		return util.AddErrorContext(util.AddErrorContext(fmt.Sprintf(errorContext, mangaId, removeFiles), fmt.Errorf("error while marshalling request body")).Error(), err)
+		return util.AddErrorContext(util.AddErrorContext(fmt.Sprintf(errorContext, mangaID, removeFiles), fmt.Errorf("error while marshalling request body")).Error(), err)
 	}
 
 	url := fmt.Sprintf("%s/api/trpc/manga.remove?batch=1", k.Address)
 	resp, err := k.baseRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(errorContext, mangaId, removeFiles), err)
+		return util.AddErrorContext(fmt.Sprintf(errorContext, mangaID, removeFiles), err)
 	}
 	defer resp.Body.Close()
 
 	// It returns 500 when the manga is removed with success (weird)
 	if resp.StatusCode != http.StatusInternalServerError && resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return util.AddErrorContext(fmt.Sprintf(errorContext, mangaId, removeFiles), fmt.Errorf("non-200/500 status code -> (%d). Body: %s", resp.StatusCode, string(body)))
+		return util.AddErrorContext(fmt.Sprintf(errorContext, mangaID, removeFiles), fmt.Errorf("non-200/500 status code -> (%d). Body: %s", resp.StatusCode, string(body)))
 	}
 
 	return nil
@@ -163,7 +163,7 @@ func (k *Kaizoku) RemoveManga(mangaId int, removeFiles bool) error {
 func (k *Kaizoku) CheckOutOfSyncChapters() error {
 	errorContext := "(kaizoku) error while checking out of sync chapters"
 
-	reqBody := fmt.Sprintf(`{"0":{"json":{"id": null}}}`)
+	reqBody := `{"0":{"json":{"id": null}}}`
 
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
@@ -179,7 +179,7 @@ func (k *Kaizoku) CheckOutOfSyncChapters() error {
 	err = validateResponse(resp)
 	if err != nil {
 		if util.ErrorContains(err, "There is another active job running. Please wait until it finishes") {
-			return util.AddErrorContext(errorContext, fmt.Errorf("there is another active job running."))
+			return util.AddErrorContext(errorContext, fmt.Errorf("there is another active job running"))
 		}
 		return util.AddErrorContext(errorContext, err)
 	}
@@ -190,7 +190,7 @@ func (k *Kaizoku) CheckOutOfSyncChapters() error {
 func (k *Kaizoku) FixOutOfSyncChapters() error {
 	errorContext := "(kaizoku) error while fixing out of sync chapters"
 
-	reqBody := fmt.Sprintf(`{"0":{"json":{"id": null}}}`)
+	reqBody := `{"0":{"json":{"id": null}}}`
 
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
@@ -206,7 +206,7 @@ func (k *Kaizoku) FixOutOfSyncChapters() error {
 	err = validateResponse(resp)
 	if err != nil {
 		if util.ErrorContains(err, "There is another active job running. Please wait until it finishes") {
-			return util.AddErrorContext(errorContext, fmt.Errorf("ehere is another active job running."))
+			return util.AddErrorContext(errorContext, fmt.Errorf("there is another active job running"))
 		}
 		return util.AddErrorContext(errorContext, err)
 	}

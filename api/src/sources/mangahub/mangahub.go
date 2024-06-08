@@ -56,21 +56,21 @@ func getMangaReleaseTime(timeString string) (time.Time, error) {
 	parsedTime, err := time.Parse(layout, timeString)
 	if err != nil {
 		patternsToCheck := map[string]func(string) (time.Time, error){
-			"just now": func(timeString string) (time.Time, error) {
+			"just now": func(_ string) (time.Time, error) {
 				return time.Now(), nil
 			},
-			"less than an hour": func(timeString string) (time.Time, error) {
+			"less than an hour": func(_ string) (time.Time, error) {
 				subHalfHour := time.Duration(30) * time.Minute
 				releaseDate := time.Now().Add(subHalfHour * -1)
 				return releaseDate, nil
 			},
-			"1 hour ago": func(timeString string) (time.Time, error) {
+			"1 hour ago": func(_ string) (time.Time, error) {
 				subOneHour := time.Duration(1) * time.Hour
 				releaseDate := time.Now().Add(subOneHour * -1)
 				return releaseDate, nil
 			},
 			"hours ago": func(timeString string) (time.Time, error) {
-				hours, err := strconv.Atoi(strings.TrimSpace(strings.Replace(timeString, "hours ago", "", -1)))
+				hours, err := strconv.Atoi(strings.TrimSpace(strings.ReplaceAll(timeString, "hours ago", "")))
 				if err != nil {
 					return time.Time{}, util.AddErrorContext(fmt.Sprintf(errorContext, timeString), err)
 				}
@@ -83,7 +83,7 @@ func getMangaReleaseTime(timeString string) (time.Time, error) {
 				return time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 0, 0, 0, 0, yesterday.Location()), nil
 			},
 			"days ago": func(timeString string) (time.Time, error) {
-				days, err := strconv.Atoi(strings.TrimSpace(strings.Replace(timeString, "days ago", "", -1)))
+				days, err := strconv.Atoi(strings.TrimSpace(strings.ReplaceAll(timeString, "days ago", "")))
 				if err != nil {
 					return time.Time{}, util.AddErrorContext(fmt.Sprintf(errorContext, timeString), err)
 				}
@@ -91,13 +91,13 @@ func getMangaReleaseTime(timeString string) (time.Time, error) {
 				releaseDate := time.Now().Add(subDays * -1)
 				return time.Date(releaseDate.Year(), releaseDate.Month(), releaseDate.Day(), 0, 0, 0, 0, releaseDate.Location()), nil
 			},
-			"1 week ago": func(timeString string) (time.Time, error) {
+			"1 week ago": func(_ string) (time.Time, error) {
 				subOneWeek := time.Duration(1) * time.Hour * 24 * 7
 				releaseDate := time.Now().Add(subOneWeek * -1)
 				return time.Date(releaseDate.Year(), releaseDate.Month(), releaseDate.Day(), 0, 0, 0, 0, releaseDate.Location()), nil
 			},
-			"weeks ago": func(timeString string) (time.Time, error) {
-				weeks, err := strconv.Atoi(strings.TrimSpace(strings.Replace(timeString, "weeks ago", "", -1)))
+			"weeks ago": func(_ string) (time.Time, error) {
+				weeks, err := strconv.Atoi(strings.TrimSpace(strings.ReplaceAll(timeString, "weeks ago", "")))
 				if err != nil {
 					return time.Time{}, util.AddErrorContext(fmt.Sprintf(errorContext, timeString), err)
 				}

@@ -51,7 +51,7 @@ func (s *Source) GetChapterMetadataByChapter(mangaURL string, chapter string) (*
 	chapterFound := false
 	s.c.OnHTML("ul.MWqeC:first-of-type > li a._3pfyN", func(e *colly.HTMLElement) {
 		chapterStr := e.DOM.Find("span._3D1SJ").Text()
-		scrapedChapter := strings.TrimSpace(strings.Replace(chapterStr, "#", "", -1))
+		scrapedChapter := strings.TrimSpace(strings.ReplaceAll(chapterStr, "#", ""))
 		if scrapedChapter != chapter {
 			return
 		}
@@ -60,7 +60,7 @@ func (s *Source) GetChapterMetadataByChapter(mangaURL string, chapter string) (*
 		chapterReturn.URL = e.Attr("href")
 
 		chapterName := e.DOM.Find("span._2IG5P").Text()
-		chapterReturn.Name = strings.TrimSpace(strings.Replace(chapterName, "- ", "", -1))
+		chapterReturn.Name = strings.TrimSpace(strings.ReplaceAll(chapterName, "- ", ""))
 
 		releasedAt := e.DOM.Find("small.UovLc").Text()
 		releaseTime, err := getMangaReleaseTime(releasedAt)
@@ -105,11 +105,11 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 		chapterReturn.URL = e.Attr("href")
 
 		chapterStr := e.DOM.Find("span._3D1SJ").Text()
-		chapter := strings.TrimSpace(strings.Replace(chapterStr, "#", "", -1))
+		chapter := strings.TrimSpace(strings.ReplaceAll(chapterStr, "#", ""))
 		chapterReturn.Chapter = chapter
 
 		chapterName := e.DOM.Find("span._2IG5P").Text()
-		chapterReturn.Name = strings.TrimSpace(strings.Replace(chapterName, "- ", "", -1))
+		chapterReturn.Name = strings.TrimSpace(strings.ReplaceAll(chapterName, "- ", ""))
 
 		releaseddAt := e.DOM.Find("small.UovLc").Text()
 		releaseTime, err := getMangaReleaseTime(releaseddAt)
@@ -148,11 +148,11 @@ func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) 
 		chapterReturn.URL = e.Attr("href")
 
 		chapterStr := e.DOM.Find("span._3D1SJ").Text()
-		chapter := strings.TrimSpace(strings.Replace(chapterStr, "#", "", -1))
+		chapter := strings.TrimSpace(strings.ReplaceAll(chapterStr, "#", ""))
 		chapterReturn.Chapter = chapter
 
 		chapterName := e.DOM.Find("span._2IG5P").Text()
-		chapterReturn.Name = strings.TrimSpace(strings.Replace(chapterName, "- ", "", -1))
+		chapterReturn.Name = strings.TrimSpace(strings.ReplaceAll(chapterName, "- ", ""))
 
 		releasedAt := e.DOM.Find("small.UovLc").Text()
 		releaseTime, err := getMangaReleaseTime(releasedAt)
