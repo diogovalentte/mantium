@@ -21,11 +21,6 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 	mangaReturn.Source = "mangahub.io"
 	mangaReturn.URL = mangaURL
 
-	lastChapter := &manga.Chapter{
-		Type: 1,
-	}
-	mangaReturn.LastReleasedChapter = lastChapter
-
 	var sharedErr error
 
 	// manga name
