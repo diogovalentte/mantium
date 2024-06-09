@@ -18,7 +18,7 @@ var mangasTestTable = []mangaTestType{
 	{
 		expected: &manga.Manga{
 			Name:   "Witch Watch",
-			Source: "mangaplus",
+			Source: sourceName,
 			URL:    "https://mangaplus.shueisha.co.jp/titles/100145",
 		},
 		url: "https://mangaplus.shueisha.co.jp/titles/100145",
@@ -26,7 +26,7 @@ var mangasTestTable = []mangaTestType{
 	{
 		expected: &manga.Manga{
 			Name:   "Dandadan",
-			Source: "mangaplus",
+			Source: sourceName,
 			URL:    "https://mangaplus.shueisha.co.jp/titles/100171",
 		},
 		url: "https://mangaplus.shueisha.co.jp/titles/100171",
@@ -34,7 +34,7 @@ var mangasTestTable = []mangaTestType{
 	{
 		expected: &manga.Manga{
 			Name:   "2.5 Dimensional Seduction",
-			Source: "mangaplus",
+			Source: sourceName,
 			URL:    "https://mangaplus.shueisha.co.jp/titles/100282",
 		},
 		url: "https://mangaplus.shueisha.co.jp/titles/100282",

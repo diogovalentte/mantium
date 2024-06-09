@@ -32,7 +32,7 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 	}
 
 	mangaReturn := &manga.Manga{}
-	mangaReturn.Source = "mangaplus"
+	mangaReturn.Source = sourceName
 	mangaReturn.URL = mangaURL
 
 	titleView := response.GetSuccess().GetTitleDetailView()

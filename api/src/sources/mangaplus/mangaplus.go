@@ -6,6 +6,7 @@ type Source struct {
 }
 
 var (
+	sourceName      = "mangaplus.shueisha.co.jp"
 	baseSiteURL     = "https://mangaplus.shueisha.co.jp"
 	baseAPIURL      = "https://jumpg-webapi.tokyo-cdn.com/api"
 	mangaplusClient = NewMangaPlusClient()
