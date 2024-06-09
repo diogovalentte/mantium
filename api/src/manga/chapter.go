@@ -11,8 +11,8 @@ import (
 
 type (
 	// Type is the type of the chapter, it can be:
-	// 0: "release" - the chapter was released, it's representing a chapter that was released by (or scraped from) a source
-	// 1: "read" - the chapter was read, it's representing a chapter that was read by the user
+	// 1: "release" - the chapter was released, it's representing a chapter that was released by (or scraped from) a source
+	// 2: "read" - the chapter was read, it's representing a chapter that was read by the user
 	Type int
 )
 
