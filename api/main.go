@@ -88,13 +88,15 @@ func setUpdateMangasMetadataPeriodicallyJob(log *zerolog.Logger) {
 					log.Error().Msgf("Request response: %v", res)
 
 					if res != nil {
+						var respMessage string
 						body, err := io.ReadAll(res.Body)
 						if err != nil {
-							log.Error().Msgf("Error while getting the response body: %s", err)
+							respMessage = fmt.Sprintf("Error while reading response body: %s", err)
+						} else {
+							respMessage = fmt.Sprintf("Request response text: %s", string(body))
 						}
-						respMessage := fmt.Sprintf("Request response text: %s", string(body))
-						dashboard.SetLastBackgroundError(fmt.Sprintf("%s\n%s", errMessage, respMessage))
 						log.Error().Msgf(respMessage)
+						dashboard.SetLastBackgroundError(fmt.Sprintf("%s\n%s", errMessage, respMessage))
 					} else {
 						dashboard.SetLastBackgroundError(fmt.Sprintf("%s\n%s", errMessage, "No response to get the body"))
 					}

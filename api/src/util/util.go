@@ -218,9 +218,7 @@ func RequestUpdateMangasMetadata(notify bool) (*http.Response, error) {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		defer resp.Body.Close()
-		body, _ := io.ReadAll(resp.Body)
-		return resp, AddErrorContext(fmt.Sprintf(contextErrror, notify), fmt.Errorf("non-200 status code -> (%d). Body", resp.StatusCode, string(body)))
+		return resp, AddErrorContext(fmt.Sprintf(contextErrror, notify), fmt.Errorf("non-200 status code -> (%d)", resp.StatusCode))
 	}
 
 	return resp, nil
