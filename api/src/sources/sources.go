@@ -11,6 +11,7 @@ import (
 	"github.com/diogovalentte/mantium/api/src/sources/comick"
 	"github.com/diogovalentte/mantium/api/src/sources/mangadex"
 	"github.com/diogovalentte/mantium/api/src/sources/mangahub"
+	"github.com/diogovalentte/mantium/api/src/sources/mangaplus"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
@@ -20,6 +21,7 @@ var sources = map[string]Source{
 	"mangahub.io":  &mangahub.Source{},
 	"mangadex.org": &mangadex.Source{},
 	"comick.io":    &comick.Source{},
+	"mangaplus":    &mangaplus.Source{},
 }
 
 // Source is the interface for a manga source

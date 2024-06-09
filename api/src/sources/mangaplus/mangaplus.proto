@@ -1,0 +1,106 @@
+syntax = "proto3";
+
+package mangaplus;
+
+option go_package = "proto/proto";
+
+enum Language {
+  ENGLISH = 0;
+  SPANISH = 1;
+  FRENCH = 2;
+  INDONESIAN = 3;
+  PORTUGUESE = 4;
+  RUSSIAN = 5;
+  THAI = 6;
+}
+
+enum UpdateTiming {
+    NOT_REGULARLY = 0;
+    MONDAY = 1;
+    TUESDAY = 2;
+    WEDNESDAY =3;
+    THURSDAY = 4;
+    FRIDAY = 5;
+    SATURDAY = 6;
+    SUNDAY = 7;
+    DAY = 8;
+}
+
+message Chapter {
+  uint32 titleId = 1;
+  uint32 chapterId = 2;
+  string titleName = 3;
+  string chapterSubTitle = 4;
+  string thumbnailUrl = 5;
+  uint32 startTimeStamp = 6;
+  uint32 endTimeStamp = 7;
+  bool alreadyViewed = 8;
+  bool isVerticalOnly = 9;
+}
+
+message Title {
+  uint32 titleId = 1;
+  string titleName = 2;
+  string author = 3;
+  string imagePortrait = 4;
+  string imageLandscape = 5;
+  uint32 viewCount = 6;
+  Language language = 7;
+}
+
+message Response {
+  SuccessResult success = 1;
+  ErrorResult error = 2;
+}
+
+message ErrorResult {
+  message Item {
+    string code = 1;
+    string message = 2;
+    message Button {
+      string action = 1;
+    }
+    Button button = 5;
+    Language language = 6;
+  }
+  Item default = 2;
+  Item display = 3;
+  repeated Item allLanguage = 5;
+}
+
+message SuccessResult {
+  bool isFeaturedUpdated = 1;
+  TitleDetailView titleDetailView = 8;
+}
+
+message TitleDetailView {
+  Title title = 1;
+  string titleImageUrl = 2;
+  string overview = 3;
+  string backgroundImageUrl = 4;
+  uint32 nextTimeStamp = 5;
+  UpdateTiming updateTiming = 6;
+  string viewingPeriodDescription = 7;
+  string nonAppearanceInfo = 8;
+//   repeated Chapter firstChapterList = 9;
+//   repeated Chapter lastChapterList = 10;
+  repeated Title recommendedTitleList = 12;
+  bool isSimulReleased = 14;
+  bool isSubscribed = 15;
+  enum Rating {
+      ALLAGE = 0;
+      TEEN = 1;
+      TEENPLUS = 2;
+      MATURE = 3;
+  }
+  Rating rating = 16;
+  bool chaptersDescending = 17;
+  uint32 numberOfViews = 18;
+  message Chapters {
+    uint32 count = 1;
+    repeated Chapter firstChapterList = 2;
+    repeated Chapter chapterList = 3;
+    repeated Chapter lastChapterList = 4;
+  }
+  repeated Chapters chapters = 28;
+}
