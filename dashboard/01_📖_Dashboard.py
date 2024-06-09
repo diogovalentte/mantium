@@ -398,19 +398,18 @@ class MainDashboard:
 
             if manga["LastReadChapter"]["Chapter"] != "":
                 try:
-                    last_read_chapter_idx = (
-                        list(
-                            map(
-                                lambda chapter: chapter["Chapter"],
-                                ss["update_manga_chapter_options"],
-                            )
-                        ).index(manga["LastReadChapter"]["Chapter"])
-                        if manga["LastReadChapter"] is not None
-                        else 0
-                    )
+                    last_read_chapter_idx = list(
+                        map(
+                            lambda chapter: chapter["Chapter"],
+                            ss["update_manga_chapter_options"],
+                        )
+                    ).index(manga["LastReadChapter"]["Chapter"])
                 except ValueError as e:
+                    st.warning(
+                        "Last read chapter not found in the manga chapters. Select it again."
+                    )
                     logger.exception(e)
-                    last_read_chapter_idx = 0
+                    last_read_chapter_idx = None
             else:
                 last_read_chapter_idx = 0
             st.selectbox(
@@ -559,15 +558,15 @@ class MainDashboard:
                         ss.add_manga_form_url
                     )
             except APIException as e:
-                resp_text = str(e.response_text)
+                resp_text = str(e.response_text).lower()
                 if (
-                    "error while getting source: Source '" in resp_text.lower()
+                    "error while getting source: source '" in resp_text
                     and "not found" in resp_text
                 ):
                     st.warning("No source site for this manga")
                 elif (
-                    "manga doesn't have and ID or URL" in resp_text.lower()
-                    or "invalid URI for request" in resp_text
+                    "manga doesn't have and id or url" in resp_text
+                    or "invalid uri for request" in resp_text
                 ):
                     st.warning("Invalid URL")
                 else:
@@ -638,19 +637,19 @@ class MainDashboard:
                         if kaizoku_error.lower() in str(e).lower():
                             if "mangahub source is not implemented" in str(e).lower():
                                 logger.warning(e)
-                                ss[
-                                    "manga_add_warning_message"
-                                ] = f"{kaizoku_error}: MangaHub source is not implemented in Kaizoku"
+                                ss["manga_add_warning_message"] = (
+                                    f"{kaizoku_error}: MangaHub source is not implemented in Kaizoku"
+                                )
                             elif "cannot find the manga" in str(e).lower():
                                 logger.warning(e)
-                                ss[
-                                    "manga_add_warning_message"
-                                ] = f"{kaizoku_error}: Cannot find the manga. Maybe there is no Anilist page for this manga (Kaizoku can't add mangas that don't have one.)"
+                                ss["manga_add_warning_message"] = (
+                                    f"{kaizoku_error}: Cannot find the manga. Maybe there is no Anilist page for this manga (Kaizoku can't add mangas that don't have one.)"
+                                )
                             else:
                                 logger.exception(e)
-                                ss[
-                                    "manga_add_warning_message"
-                                ] = f"{kaizoku_error}, check the dashboard logs."
+                                ss["manga_add_warning_message"] = (
+                                    f"{kaizoku_error}, check the dashboard logs."
+                                )
                             st.rerun()
                         else:
                             logger.exception(e)
