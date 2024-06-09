@@ -2,7 +2,7 @@
 
 Mantium is a dashboard for tracking mangas from multiple source sites, like [Mangadex](https://mangadex.org) and [ComicK](https://comick.io). This project doesn't download the chapter images, it downloads the manga metadata (name, URL, cover, etc.) and chapter metadata (number, name, URL), and shows them in the dashboard, where you manage the mangas you're tracking.
 
-- This project currently can track mangas on [Mangadex](https://mangadex.org), [ComicK](https://comick.io), and [MangaHub](https://mangahub.io).
+- This project currently can track mangas on [Manga Plus](https://mangaplus.shueisha.co.jp), [Mangadex](https://mangadex.org), [ComicK](https://comick.io), and [MangaHub](https://mangahub.io).
 
 The basic workflow is:
 
@@ -68,14 +68,14 @@ docker compose up -d
 
 The steps are at the bottom of this README.
 
-# IMPORTANT!
+# Notes:
 
-- The dashboard and the API don't have any authentication system, so anyone who can access the dashboard and the API can do whatever they want. You can add an authentication portal like [Authelia](https://github.com/authelia/authelia) or [Authentik](https://github.com/goauthentik/authentik) in front of the dashboard to protect it and don't expose the API at all.
-  - If you want to use the iFrame returned by the API, you can also put an authentication portal in front of it, if the API and dashboard containers are in the same Docker network. The dashboard will communicate with the API using the API's container name.
+### This project doesn't have any authentication system
 
-# Commom problems:
+The dashboard and the API don't have any authentication system, so anyone who can access the dashboard or the API can do whatever they want. You can add an authentication portal like [Authelia](https://github.com/authelia/authelia) or [Authentik](https://github.com/goauthentik/authentik) in front of the dashboard to protect it and don't expose the API at all.
+- If you want to use the iFrame returned by the API, you can still put an authentication portal in front of the API if the API and dashboard containers are in the same Docker network. The dashboard will communicate with the API using the API's container name.
 
-### A manga is removed from the source site or its URL changes
+### What to do when a manga is removed from the source site or its URL changes
 
 If a manga is removed from the source site (_like Mangedex_) or its URL changes, the API will not be able to track it, as it saves the manga URL on the database when you add the manga in the dashboard and continues to use this URL forever. If this happens, the dashboard/API logs will show an error like this:
 
@@ -83,11 +83,14 @@ If a manga is removed from the source site (_like Mangedex_) or its URL changes,
 {"message":"(comick.io) Error while getting manga with URL 'https://comick.io/comic/witch-hat-atelier' chapters from source: Error while getting chapters metadata: Error while making 'GET' request: Non-200 status code -\u003e (404). Body: {\"statusCode\":404,\"message\":\"Not Found\"}"}
 ```
 
-To fix this, you need to delete the manga and add it again from another source site or use its new URL.
+To fix this, delete the manga and add it again from another source site or use its new URL.
 
-### Other errors
+### Source site URL changes
 
-Sometimes the URL of a source site or its API changes or the dashboard can't connect to the API. In these cases, open an issue describing what you tried to do that resulted in an error, the error message if it shows, and the dashboard/API logs at the time.
+Sometimes the URL of a source site changes (_like comick.fun to comick.io_). In this case, you can open an issue if a new release with the updated URL is unavailable.
+
+### Manga Plus source
+The Manga Plus site and API make available only the first and last chapters of the mangas, so, when you're updating the last chapter you read, most chapters of the manga will not show. I recommend you to read the manga in the other source sites and when you get to the last chapter, you remove the manga and add it again from the Manga Plus source.
 
 # Running manually
 
