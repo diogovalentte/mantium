@@ -63,6 +63,7 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 		}
 	} else {
 		mangaReturn.LastReleasedChapter = chapters[len(chapters)-1]
+		mangaReturn.LastReleasedChapter.Type = 1
 	}
 
 	coverImg, resized, err := util.GetImageFromURL(mangaReturn.CoverImgURL, 3, 1*time.Second)
