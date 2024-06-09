@@ -97,6 +97,7 @@ func setUpdateMangasMetadataPeriodicallyJob(log *zerolog.Logger) {
 						}
 						log.Error().Msgf(respMessage)
 						dashboard.SetLastBackgroundError(fmt.Sprintf("%s\n%s", errMessage, respMessage))
+						res.Body.Close() // cannot be defer because it's an infinite loop
 					} else {
 						dashboard.SetLastBackgroundError(fmt.Sprintf("%s\n%s", errMessage, "No response to get the body"))
 					}
