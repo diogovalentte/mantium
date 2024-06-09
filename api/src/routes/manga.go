@@ -103,7 +103,7 @@ func AddManga(c *gin.Context) {
 	if config.GlobalConfigs.Kaizoku.Valid {
 		kaizoku := kaizoku.Kaizoku{}
 		kaizoku.Init()
-		err = kaizoku.AddManga(mangaAdd)
+		err = kaizoku.AddManga(mangaAdd, config.GlobalConfigs.Kaizoku.TryOtherSources)
 		if err != nil {
 			err = util.AddErrorContext("manga added to DB, but error while adding it to Kaizoku", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -1128,7 +1128,7 @@ func AddMangasToKaizoku(c *gin.Context) {
 				continue
 			}
 		}
-		err = kaizoku.AddManga(dbManga)
+		err = kaizoku.AddManga(dbManga, config.GlobalConfigs.Kaizoku.TryOtherSources)
 		if err != nil {
 			logger.Error().Err(err).Str("manga_url", dbManga.URL).Msg("error adding manga to Kaizoku, will continue with the next manga...")
 			lastError = err

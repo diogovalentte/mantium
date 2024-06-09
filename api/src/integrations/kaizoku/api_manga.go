@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/diogovalentte/mantium/api/src/manga"
+	"github.com/diogovalentte/mantium/api/src/sources"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
@@ -101,34 +102,59 @@ func (k *Kaizoku) GetManga(mangaName string) (*Manga, error) {
 	return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaName), fmt.Errorf("manga not found in Kaizoku"))
 }
 
-func (k *Kaizoku) AddManga(manga *manga.Manga) error {
-	errorContext := "(kaizoku) error while adding manga '%s'"
+func (k *Kaizoku) AddManga(manga *manga.Manga, tryOtherSources bool) error {
+	errorContext := "(kaizoku) error while adding manga '%s' / '%s'"
 
+	var err error
+	var originalError error
+	isFirstSource := true
+	for source := range sources.GetSources() {
+		err = k.addMangaToKaizoku(manga)
+		if isFirstSource {
+			originalError = err
+			isFirstSource = false
+		}
+		if err != nil {
+			if tryOtherSources {
+				manga.Source = source
+				continue
+			}
+		}
+		break
+	}
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(errorContext, manga.Name, manga.URL), originalError)
+	}
+
+	return nil
+}
+
+func (k *Kaizoku) addMangaToKaizoku(manga *manga.Manga) error {
 	mangaTitle := manga.Name
 	mangaInterval := k.DefaultInterval
 	mangaSource, err := k.getKaizokuSource(manga.Source)
 	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(errorContext, manga), err)
+		return err
 	}
 	reqBody := fmt.Sprintf(`{"0":{"json":{"title":"%s","source":"%s","interval":"%s"}}}`, mangaTitle, mangaSource, mangaInterval)
 
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
-		return util.AddErrorContext(util.AddErrorContext(fmt.Sprintf(errorContext, manga), fmt.Errorf("error while marshalling request body")).Error(), err)
+		return fmt.Errorf("error while marshalling request body: %s", err)
 	}
 
 	url := fmt.Sprintf("%s/api/trpc/manga.add?batch=1", k.Address)
 	resp, err := k.baseRequest(http.MethodPost, url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(errorContext, manga), err)
+		return err
 	}
 	defer resp.Body.Close()
 	err = validateResponse(resp)
 	if err != nil {
 		if util.ErrorContains(err, fmt.Sprintf("Cannot find the %s.", mangaTitle)) {
-			return util.AddErrorContext(fmt.Sprintf(errorContext, manga), fmt.Errorf("cannot find the manga. Maybe there is no Anilist page for this manga (Kaizoku can't add mangas that don't have one): Kaizoku API error: %s", err.Error()))
+			return fmt.Errorf("cannot find the manga. Maybe there is no Anilist page for this manga (Kaizoku can't add mangas that don't have one): Kaizoku API error: %s", err.Error())
 		}
-		return util.AddErrorContext(fmt.Sprintf(errorContext, manga), err)
+		return nil
 	}
 
 	return nil

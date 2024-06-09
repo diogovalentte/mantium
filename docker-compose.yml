@@ -19,7 +19,7 @@ services:
     volumes:
       - ./configs:/app/api/configs
     environment:
-      - TZ=${TZ:-UTC} # uses UTC if not specified
+      - TZ=${TZ:-UTC}
       - POSTGRES_HOST=mantium-db
       - POSTGRES_PORT=${POSTGRES_PORT:-5432}
       - POSTGRES_DB=${POSTGRES_DB:-postgres}
@@ -33,13 +33,14 @@ services:
       - NTFY_TOPIC=${NTFY_TOPIC}
       - NTFY_TOKEN=${NTFY_TOKEN}
 
+      - KAIZOKU_ADDRESS=${KAIZOKU_ADDRESS}
+      - KAIZOKU_DEFAULT_INTERVAL=${KAIZOKU_DEFAULT_INTERVAL}
+      - KAIZOKU_WAIT_UNTIL_EMPTY_QUEUES_TIMEOUT_MINUTES=${KAIZOKU_WAIT_UNTIL_EMPTY_QUEUES_TIMEOUT_MINUTES}
+      - KAIZOKU_TRY_OTHER_SOURCES=${KAIZOKU_TRY_OTHER_SOURCES}
+
       - UPDATE_MANGAS_PERIODICALLY=${UPDATE_MANGAS_PERIODICALLY:-false}
       - UPDATE_MANGAS_PERIODICALLY_NOTIFY=${UPDATE_MANGAS_PERIODICALLY_NOTIFY:-false}
       - UPDATE_MANGAS_PERIODICALLY_MINUTES=${UPDATE_MANGAS_PERIODICALLY_MINUTES:-30}
-
-      - KAIZOKU_ADDRESS=${KAIZOKU_ADDRESS:-}
-      - KAIZOKU_DEFAULT_INTERVAL=${KAIZOKU_DEFAULT_INTERVAL:-never}
-      - KAIZOKU_WAIT_UNTIL_EMPTY_QUEUES_TIMEOUT_MINUTES=${KAIZOKU_WAIT_UNTIL_EMPTY_QUEUES_TIMEOUT_MINUTES:-5}
     logging:
       driver: "json-file"
       options:
@@ -56,7 +57,7 @@ services:
     container_name: mantium-dashboard
     image: ghcr.io/diogovalentte/mantium-dashboard:latest
     environment:
-      - TZ=${TZ:-UTC} # uses UTC if not specified
+      - TZ=${TZ:-UTC}
       - DASHBOARD_PORT=${DASHBOARD_PORT:-8501}
       - API_ADDRESS=${API_ADDRESS:-http://mantium-api:8080}
     logging:

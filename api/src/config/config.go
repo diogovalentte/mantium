@@ -72,6 +72,7 @@ type KaizokuConfigs struct {
 	Address                     string
 	DefaultInterval             string
 	WaitUntilEmptyQueuesTimeout time.Duration
+	TryOtherSources             bool
 }
 
 // SetConfigs sets the configurations based on a .env file if provided or using environment variables.
@@ -119,6 +120,17 @@ func SetConfigs(filePath string) error {
 			GlobalConfigs.Kaizoku.WaitUntilEmptyQueuesTimeout = time.Duration(waitUntilEmptyQueuesTimeout) * time.Minute
 		} else {
 			GlobalConfigs.Kaizoku.WaitUntilEmptyQueuesTimeout = 5 * time.Minute
+		}
+
+		tryOtherSources := os.Getenv("KAIZOKU_TRY_OTHER_SOURCES")
+		if tryOtherSources != "" {
+			switch tryOtherSources {
+			case "true":
+				GlobalConfigs.Kaizoku.TryOtherSources = true
+			case "false":
+			default:
+				return fmt.Errorf("error parsing KAIZOKU_TRY_OTHER_SOURCES '%s': must be 'true' or 'false'", tryOtherSources)
+			}
 		}
 
 		GlobalConfigs.Kaizoku.Valid = true
