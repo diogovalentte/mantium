@@ -640,6 +640,13 @@ class MainDashboard:
                                 ss["manga_add_warning_message"] = (
                                     f"{kaizoku_error}: MangaHub source is not implemented in Kaizoku"
                                 )
+                            elif (
+                                "manga plus source is not implemented" in str(e).lower()
+                            ):
+                                logger.warning(e)
+                                ss["manga_add_warning_message"] = (
+                                    f"{kaizoku_error}: Manga Plus source is not implemented in Kaizoku"
+                                )
                             elif "cannot find the manga" in str(e).lower():
                                 logger.warning(e)
                                 ss["manga_add_warning_message"] = (
