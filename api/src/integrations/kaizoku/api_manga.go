@@ -105,16 +105,12 @@ func (k *Kaizoku) GetManga(mangaName string) (*Manga, error) {
 func (k *Kaizoku) AddManga(manga *manga.Manga, tryOtherSources bool) error {
 	errorContext := "(kaizoku) error while adding manga '%s' / '%s'"
 
-	var err error
-	var originalError error
-	isFirstSource := true
+	var lastError error
+	var errors []error
 	for source := range sources.GetSources() {
-		err = k.addMangaToKaizoku(manga)
-		if isFirstSource {
-			originalError = err
-			isFirstSource = false
-		}
-		if err != nil {
+		lastError = k.addMangaToKaizoku(manga)
+		if lastError != nil {
+			errors = append(errors, fmt.Errorf("error with source '%s': %s", source, lastError))
 			if tryOtherSources {
 				manga.Source = source
 				continue
@@ -122,8 +118,11 @@ func (k *Kaizoku) AddManga(manga *manga.Manga, tryOtherSources bool) error {
 		}
 		break
 	}
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(errorContext, manga.Name, manga.URL), originalError)
+	if lastError != nil {
+		if len(errors) == 1 {
+			return util.AddErrorContext(fmt.Sprintf(errorContext, manga.Name, manga.URL), errors[0])
+		}
+		return util.AddErrorContext(fmt.Sprintf(errorContext, manga.Name, manga.URL), fmt.Errorf("error with all sources: %s", errors))
 	}
 
 	return nil
