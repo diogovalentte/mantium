@@ -631,32 +631,14 @@ class MainDashboard:
                             ss["add_manga_manga_to_add"]["chapter_url"],
                         )
                     except APIException as e:
-                        kaizoku_error = (
-                            "Manga added to DB, but error while adding it to Kaizoku"
-                        )
-                        if kaizoku_error.lower() in str(e).lower():
-                            if "mangahub source is not implemented" in str(e).lower():
-                                logger.warning(e)
-                                ss["manga_add_warning_message"] = (
-                                    f"{kaizoku_error}: MangaHub source is not implemented in Kaizoku"
-                                )
-                            elif (
-                                "manga plus source is not implemented" in str(e).lower()
-                            ):
-                                logger.warning(e)
-                                ss["manga_add_warning_message"] = (
-                                    f"{kaizoku_error}: Manga Plus source is not implemented in Kaizoku"
-                                )
-                            elif "cannot find the manga" in str(e).lower():
-                                logger.warning(e)
-                                ss["manga_add_warning_message"] = (
-                                    f"{kaizoku_error}: Cannot find the manga. Maybe there is no Anilist page for this manga (Kaizoku can't add mangas that don't have one.)"
-                                )
-                            else:
-                                logger.exception(e)
-                                ss["manga_add_warning_message"] = (
-                                    f"{kaizoku_error}, check the dashboard logs."
-                                )
+                        if (
+                            "Manga added to DB, but error while adding it to Kaizoku".lower()
+                            in str(e).lower()
+                        ):
+                            logger.exception(e)
+                            ss["manga_add_warning_message"] = (
+                                "Manga added to DB, but couldn't add it to Kaizoku. Check the dashboard logs."
+                            )
                             st.rerun()
                         else:
                             logger.exception(e)
