@@ -70,7 +70,7 @@ func TestAddManga(t *testing.T) {
 
 	t.Run("Test add manga", func(t *testing.T) {
 		for _, testManga := range mangasTest {
-			err := k.AddManga(testManga)
+			err := k.AddManga(testManga, false)
 			if err != nil {
 				t.Fatalf("error while adding manga: %v", err)
 			}
@@ -79,7 +79,7 @@ func TestAddManga(t *testing.T) {
 	t.Run("Test add manga with invalid source", func(t *testing.T) {
 		for _, testManga := range mangasTest {
 			testManga.Source = "invalid"
-			err := k.AddManga(testManga)
+			err := k.AddManga(testManga, false)
 			if err != nil {
 				if !util.ErrorContains(err, "unknown source") {
 					t.Fatalf("unknown error while adding manga: %v", err)
@@ -92,7 +92,7 @@ func TestAddManga(t *testing.T) {
 	t.Run("Test add manga with invalid name", func(t *testing.T) {
 		for _, testManga := range mangasTest {
 			testManga.Name = "invalid12345"
-			err := k.AddManga(testManga)
+			err := k.AddManga(testManga, false)
 			if err != nil {
 				if !util.ErrorContains(err, fmt.Sprintf("Cannot find the %s.", testManga.Name)) {
 					t.Fatalf("unknown error while adding manga: %v", err)
