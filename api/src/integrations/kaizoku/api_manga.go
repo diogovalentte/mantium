@@ -110,7 +110,7 @@ func (k *Kaizoku) AddManga(manga *manga.Manga, tryOtherSources bool) error {
 	for source := range sources.GetSources() {
 		lastError = k.addMangaToKaizoku(manga)
 		if lastError != nil {
-			errors = append(errors, fmt.Errorf("error with source '%s': %s", source, lastError))
+			errors = append(errors, fmt.Errorf("error with source '%s': %s", manga.Source, lastError))
 			if tryOtherSources {
 				manga.Source = source
 				continue
@@ -267,6 +267,8 @@ func (k *Kaizoku) getKaizokuSource(source string) (string, error) {
 	case "mangadex.org":
 		returnSource = "MangaDex"
 	case "comick.xyz":
+		returnSource = "ComicK"
+	case "comick.io":
 		returnSource = "ComicK"
 	case "mangahub.io":
 		return "", util.AddErrorContext(errorContext, fmt.Errorf("MangaHub source is not implemented"))

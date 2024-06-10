@@ -18,9 +18,9 @@ import (
 // sources is a map of all sources
 var sources = map[string]Source{
 	// default sources
-	"mangahub.io":              &mangahub.Source{},
 	"mangadex.org":             &mangadex.Source{},
 	"comick.io":                &comick.Source{},
+	"mangahub.io":              &mangahub.Source{},
 	"mangaplus.shueisha.co.jp": &mangaplus.Source{},
 }
 
