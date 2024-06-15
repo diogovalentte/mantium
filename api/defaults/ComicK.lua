@@ -17,7 +17,7 @@ ApiBase = "https://api.comick.fun"
 ImageBase = "https://meo.comick.pictures"
 Limit = 50
 Lang = "en" -- Language: en = english, fr = french, etc.
-Order = 1   -- Chapter Order: 0 = descending, 1 = ascending
+Order = 0   -- Chapter Order: 0 = descending, 1 = ascending
 --- END VARIABLES ---
 
 ----- MAIN -----
@@ -68,6 +68,7 @@ function MangaChapters(mangaURL)
     local num_chapters = result_body["total"]
     local num_pages = math.ceil(num_chapters / Limit)
 
+    local occurence = {}
     for j = 1, num_pages do
         request = Http.request("GET", request_url .. "&page=" .. j)
         result = Client:do_request(request)
@@ -79,42 +80,51 @@ function MangaChapters(mangaURL)
             if num == nil then
                 num = 0
             end
+            if not occurence[num] then
+                occurence[num] = true
 
-            local volume = tostring(val["vol"])
-            if volume ~= "nil" then
-                volume = "Vol." .. volume
-            else
-                volume = ""
-            end
-            local title = val["title"]
-            local chap = "Chapter " .. tostring(num)
-            local group_name = val["group_name"]
-
-            if title then
-                chap = chap .. ": " .. tostring(title)
-            end
-
-            if group_name then
-                chap = chap .. " ["
-                for key, group in pairs(group_name) do
-                    if key ~= 1 then
-                        chap = chap .. ", "
-                    end
-
-                    chap = chap .. tostring(group)
+                local volume = tostring(val["vol"])
+                if volume ~= "nil" then
+                    volume = "Vol." .. volume
+                else
+                    volume = ""
                 end
-                chap = chap .. "]"
+                local title = val["title"]
+                local chap = "Chapter " .. tostring(num)
+                local group_name = val["group_name"]
+
+                if title then
+                    chap = chap .. ": " .. tostring(title)
+                end
+
+                if group_name then
+                    chap = chap .. " ["
+                    for key, group in pairs(group_name) do
+                        if key ~= 1 then
+                            chap = chap .. ", "
+                        end
+
+                        chap = chap .. tostring(group)
+                    end
+                    chap = chap .. "]"
+                end
+
+                local link = ApiBase .. "/chapter/" .. tostring(hid)
+                local chapter = { url = link, name = chap, volume = volume }
+
+                chapters[i] = chapter
+                i = i + 1
             end
-
-            local link = ApiBase .. "/chapter/" .. tostring(hid)
-            local chapter = { url = link, name = chap, volume = volume }
-
-            chapters[i] = chapter
-            i = i + 1
         end
     end
 
-    return chapters
+    local reserved = {}
+    local itemCount = #chapters
+    for k = itemCount, 1, -1 do
+        table.insert(reserved, chapters[k])
+    end
+
+    return reserved
 end
 
 --- Gets the list of all pages of a chapter.

@@ -8,7 +8,9 @@ You can enable the [Kaizoku](https://github.com/oae/kaizoku) integration using e
 
 ### Mangal sources
 Kaizoku uses [Mangal](https://github.com/metafates/mangal) under the hood to download the chapters. Mangal can only download from configured sources, like the built-in Mangadex source.
-- There is no built-in source for ComicK, but you can add a custom one. Download the Lua script `api/defaults/ComicK.lua` in this repository and add it to the folder `/config/.config/mangal/sources` of your Kaizoku Docker container and restart it.
+- There is no built-in source for ComicK, but you can add a custom one. Download the Lua script `api/defaults/ComicK.lua` in this repository, add it to the folder `/config/.config/mangal/sources` of your Kaizoku Docker container, and restart it.
+  - This source downloads only unique chapters. For example, if group A uploads chapter 110 of a manga and then group B uploads the same chapter, this source will download the chapter from group B instead of downloading both chapters.
+    - There is also the file `api/defaults/MangaDex.lua` file in this repo. It's an alternative to the Kaizoku MangaDex source where the only difference is that it also downloads only unique chapters. If you want to use it, delete the source file `MangaDex.lua` in your Kaizoku container and add the one in this repository.
 - Some sources don't have a built-in or custom source, the integration will not work with mangas tracked in them. These sources are Manga Plus and MangaHub.
 - If you set the environment variable `KAIZOKU_TRY_OTHER_SOURCES` to true, the application will try to add the manga to Kaizoku using other sources if the original source fails instead of just returning an error.
   - For example, if you set it to true and try to add a manga from Manga Plus, Mantium will try to add the manga from other sources, like the Mangadex built-in source. This way, you can track the manga from Manga Plus and still have Kaizoku downloading the chapters.
