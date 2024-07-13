@@ -186,7 +186,7 @@ class MainDashboard:
             cols_list (list): A list of streamlit.columns.
             mangas (dict): A list of mangas.
         """
-        manga_container_height = 723
+        manga_container_height = 705
         if ss.get("status_filter", 1) == 0:
             manga_container_height = 763
         col_index = 0
@@ -229,6 +229,10 @@ class MainDashboard:
                     white-space: nowrap !important;
                     overflow: hidden !important;
                     text-overflow: ellipsis !important;
+                }
+
+                h1.manga_header {
+                    padding: 0px 0px 1rem;
                 }
 
                 a.manga_header {
