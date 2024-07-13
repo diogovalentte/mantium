@@ -37,7 +37,8 @@ function SearchManga(query)
     local request = Http.request(
         "GET",
         ApiBase
-        .. "/manga?limit=100&offset=0&order[relevance]=desc&availableTranslatedLanguage[]=en&title="
+        ..
+        "/manga?limit=100&offset=0&order[relevance]=desc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&availableTranslatedLanguage[]=en&title="
         .. HttpUtil.query_escape(query)
     )
     local result = Client:do_request(request)
