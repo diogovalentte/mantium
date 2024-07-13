@@ -80,7 +80,11 @@ function MangaChapters(mangaURL)
     local mangaId = splitResult[#splitResult]
     local request = Http.request(
         "GET",
-        ApiBase .. "/manga/" .. mangaId .. "/feed?translatedLanguage[]=en&limit=500&offset=0&order[chapter]=asc"
+        ApiBase
+        .. "/manga/"
+        .. mangaId
+        ..
+        "/feed?contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&translatedLanguage[]=en&limit=500&offset=0&order[chapter]=asc"
     )
     local result = Client:do_request(request)
     local result_body = Json.decode(result["body"])

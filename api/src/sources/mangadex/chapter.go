@@ -111,7 +111,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 	}
 
 	// URL gets the last chapter of the manga
-	mangaAPIURL := fmt.Sprintf("%s/manga/%s/feed?translatedLanguage[]=en&order[chapter]=desc&limit=1&offset=0", baseAPIURL, mangaID)
+	mangaAPIURL := fmt.Sprintf("%s/manga/%s/feed?contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&translatedLanguage[]=en&order[chapter]=desc&limit=1&offset=0", baseAPIURL, mangaID)
 	var feedAPIResp getMangaFeedAPIResponse
 	_, err = s.client.Request(context.Background(), "GET", mangaAPIURL, nil, &feedAPIResp)
 	if err != nil {
@@ -206,7 +206,7 @@ func generateMangaFeed(s *Source, mangaURL string, chaptersChan chan<- *manga.Ch
 	totalChapters := 1
 
 	for totalChapters >= requestOffset {
-		mangaAPIURL := fmt.Sprintf("%s/manga/%s/feed?translatedLanguage[]=en&order[chapter]=desc&limit=%d&offset=%d", baseAPIURL, mangaID, requestLimit, requestOffset)
+		mangaAPIURL := fmt.Sprintf("%s/manga/%s/feed?contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&translatedLanguage[]=en&order[chapter]=desc&limit=%d&offset=%d", baseAPIURL, mangaID, requestLimit, requestOffset)
 		var feedAPIResp getMangaFeedAPIResponse
 		_, err = s.client.Request(context.Background(), "GET", mangaAPIURL, nil, &feedAPIResp)
 		if err != nil {
