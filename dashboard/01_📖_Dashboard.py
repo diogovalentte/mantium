@@ -105,14 +105,36 @@ class MainDashboard:
                     logger.error(
                         f"Background error: {last_background_error['message']}"
                     )
-                    st.error("Check the dashboard and API logs for more information.")
                     st.info(f"Time: {last_background_error['time']}")
-                    st.button(
-                        "Delete Error",
-                        use_container_width=True,
-                        help="Delete the last background error",
-                        on_click=self.api_client.delete_last_background_error,
+
+                    @st.experimental_dialog(
+                        "Last Background Error Message", width="large"
                     )
+                    def show_error_message_dialog():
+                        st.write(last_background_error["message"])
+
+                    if st.button(
+                        "See error",
+                        type="primary",
+                        help="See error message",
+                        use_container_width=True,
+                    ):
+                        show_error_message_dialog()
+                    with stylable_container(
+                        key="highlight_manga_delete_button",
+                        css_styles="""
+                            button {
+                                background-color: red;
+                                color: white;
+                            }
+                        """,
+                    ):
+                        st.button(
+                            "Delete Error",
+                            use_container_width=True,
+                            help="Delete the last background error",
+                            on_click=self.api_client.delete_last_background_error,
+                        )
                 st.divider()
 
             st.text_input("Search", key="search_manga")
