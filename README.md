@@ -1,14 +1,14 @@
 # Mantium
 
-Mantium is a dashboard for tracking mangas from multiple source sites, like [Mangadex](https://mangadex.org) and [ComicK](https://comick.io). This project doesn't download the chapter images, it downloads the manga metadata (name, URL, cover, etc.) and chapter metadata (number, name, URL), and shows them in the dashboard, where you manage the mangas you're tracking.
+Mantium is a dashboard for tracking mangas from multiple source sites, like [Mangadex](https://mangadex.org) and [ComicK](https://comick.io). This project doesn't download the chapter images, it downloads the manga metadata (name, URL, cover, etc.) and chapter metadata (number, name, URL), to show in the dashboard, where you manage the mangas you're tracking.
 
-- This project currently can track mangas on [Manga Plus](https://mangaplus.shueisha.co.jp), [Mangadex](https://mangadex.org), [ComicK](https://comick.io), and [MangaHub](https://mangahub.io).
+- This project currently can track mangas on [Manga Plus](https://mangaplus.shueisha.co.jp), [MangaDex](https://mangadex.org), [ComicK](https://comick.io), and [MangaHub](https://mangahub.io).
 
 The basic workflow is:
 
 1. You find an interesting manga on a site.
 2. Add it to Mantium, set its status (reading, dropped, etc.), and the last chapter you read. Now you see the manga in the dashboard.
-3. You configure Mantium to periodically (like every 30 minutes) get the metadata of all your mangas from the source sites, like new cover images or the newly released chapter. You also configure it to notify you when a new chapter is released.
+3. You configure Mantium to periodically (like every 30 minutes) check for new chapters. You also configure it to notify you when a new chapter is released.
 4. After getting notified that a new chapter has been released, you read it and set in Mantium that the last chapter you read is the last released chapter.
 5. That's how you track a manga in Mantium.
 
@@ -26,31 +26,44 @@ The dashboard shows you the mangas you're tracking and is where you interact wit
 
 - On the sidebar, you can:
   - Search for a manga using its name, filter the mangas by status (_reading, completed, dropped, on hold, plan to read, all_), order the mangas by name, last chapter read, last chapter upload, number of chapters, and unread (_shows unread mangas first, ordering by last upload chapter_), and reverse the sort.
-  - You can add a manga to the dashboard using the manga URL. You also have to set the manga status and the last chapter you read.
-  - When you click the button to highlight a manga, it shows a form to update the manga status or last read chapter or delete the manga.
+  - You can add a manga to the dashboard using the manga URL. You also set the manga status and the last chapter you read.
+  - When you click the button to highlight a manga, it shows a form to update the manga status, last read chapter, set a custom manga cover, or delete it.
   - Set some configs, like the number of columns in the dashboard.
 
 # iFrame
 
-The API has an endpoint that returns an HTML code to be used as iFrame. It's a minimalist version of the dashboard, showing only mangas with unread chapters with status reading or completed.
+The Mantium API has an endpoint that returns an iFrame. It's a minimalist version of the dashboard, showing only mangas with unread chapters with status reading or completed. You can add it to a dashboard, for example.
 
 - **Note**: check the API docs to see which query arguments the iFrame endpoint needs.
 
 ![image](https://github.com/diogovalentte/mantium/assets/49578155/e88d85f2-0109-444a-b225-878a5db01400)
 
-When you add an iFrame widget in your Homarr dashboard, it's **>your<** web browser that fetches the HTML content from the API and shows it to you, not Homarr. So your browser needs to be able to access the API, that's how an iFrame works.
+When you add an iFrame widget in your dashboard, it's **>your<** web browser that fetches the iFrame from the API and shows it to you, not the dashboard. So your browser needs to be able to access the API, that's how an iFrame works.
 
 - **Examples**:
-  - If you run the API on your server, you need to add your server IP address + port in the Homarr widget, and you need to make sure your browser can access this IP + port.
-  - If you're accessing Homarr or another dashboard with a domain and using HTTPS (like `https://dash.domain.com`), you also need to access this API with a domain and use HTTPS (like `https://mantium-api.domain.com`) to add the iFrame to Homarr. If you try to use HTTP with your HTTPS, your browser will block the iFrame.
+  - If you run the API on your server, add your server IP address + port in the dashboard and make sure your browser can access this IP + port.
+  - If you're accessing Homarr or another dashboard with a domain and using HTTPS (like `https://dash.domain.com`), you also need to access this API with a domain and use HTTPS (like `https://mantium-api.domain.com`) to add the iFrame to your dashboard. If you try to use HTTP with your HTTPS, your browser will block the iFrame.
+
+# Check manga updates and notify
+You can set Mantium to get metadata of the manga you're tracking from the source sites. If the manga cover image or name changes, Mantium will update its store data. If a chapter is released, Mantium will update the manga's last released chapter. You can set when Mantium will check for updates, like every 30 minutes.
+
+You can set Mantium to notify you in a [Ntfy](https://github.com/binwiederhier/ntfy) topic when a manga with the status "reading" or "completed" has a newly released chapter.
+
+- If an error occurs in the background while updating the mangas metadata or notifying, a warning will appear in the dashboard and iframe. The error will also be printed to the API and dashboard container, and you can click to see the error in the dashboard.
 
 # Kaizoku integration
 
 More about it [here](https://github.com/diogovalentte/mantium/blob/main/kaizoku-integration.md).
 
+# API
+
+When you interact with the dashboard, it requests the API to execute things, like adding, updating, and deleting a manga from Mantium. The API is where your mangas are managed and tracked internally, it gets the mangas metadata from the source sites and stores them on the database.
+
+After starting the API, you can find the API docs under the path `/v1/swagger/index.html`, like `http://192.168.1.44/v1/swagger/index.html` or `https://sub.domain.com/v1/swagger/index.html`, depending on how you access the API.
+
 # Running
 
-By default, the API will be available on port `8080` and the dashboard on port `8501`. They're not accessible by other machines. To access the API and the dashboard in other machines, you need to run them behind a reverse proxy or run the containers in [host network mode](https://docs.docker.com/network/drivers/host/).
+By default, the API will be available on port `8080` and the dashboard on port `8501`, and they're not accessible by other machines. To access the API and dashboard in other machines, you run the containers in [host network mode](https://docs.docker.com/network/drivers/host/) or behind a reverse proxy.
 
 - For convenience, you can change the API and dashboard ports using the environment variables `API_PORT` and `DASHBOARD_PORT`.
 
@@ -87,10 +100,10 @@ To fix this, delete the manga and add it again from another source site or use i
 
 ### Source site URL changes
 
-Sometimes the URL of a source site changes (_like comick.fun to comick.io_). In this case, you can open an issue if a new release with the updated URL is unavailable.
+Sometimes the URL of a source site changes (_like comick.fun to comick.io_). In this case, please open an issue if a new release with the updated URL is not released yet.
 
 ### Manga Plus source
-The Manga Plus site and API make available only the first and last chapters of the mangas, so, when you're updating the last chapter you read, most chapters of the manga will not show. I recommend you to read the manga in the other source sites and when you get to the last chapter, you remove the manga and add it again from the Manga Plus source.
+Only the first and last chapters are available on the Manga Plus site, so most chapters do not show on Mantium. I recommend reading the manga in the other source sites and when you get to the last chapter, remove the manga and add it again from the Manga Plus source.
 
 # Running manually
 
@@ -125,13 +138,3 @@ streamlit run 01_📖_Dashboard.py
 ```
 
 6. Access the dashboard on `http://localhost:8501`
-
-# API
-
-The API is where your mangas are managed and tracked, it gets the mangas metadata from the sites and stores them on the database.
-
-After starting the API, you can find the API docs under the path `/v1/swagger/index.html`, like `http://192.168.1.44/v1/swagger/index.html` or `https://sub.domain.com/v1/swagger/index.html`, depending on how you access the API.
-
-You can set the API to automatically update the metadata (last upload chapter, cover image, etc.) of all your mangas periodically. You can also get notified when a new chapter of a manga with the status _reading or completed_ is released in [Ntfy](https://github.com/binwiederhier/ntfy).
-
-- If an error occurs in the background while updating the mangas metadata, the dashboard and iframe will show this error.
