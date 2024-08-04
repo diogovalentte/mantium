@@ -280,7 +280,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="referrer" content="no-referrer"> <!-- If not set, can't load Mangedex images when behind a domain or reverse proxy -->
     <script src="https://kit.fontawesome.com/3f763b063a.js" crossorigin="anonymous"></script>
-    <meta name="color-scheme" content="MANGAS-CONTAINER-BACKGROUND-COLOR">
+    <meta name="color-scheme" content="{{ .Theme }}">
     <title>Mantium</title>
     <style>
         body {
@@ -397,6 +397,29 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
             filter: brightness(0.9)
         }
 
+        .delete-background-error-container {
+            display: inline-block;
+            padding: 8px 0px;
+            margin: 20px 10px;
+            background-color: transparent;
+            border-radius: 5px;
+            width: 162px;
+            text-align: center;
+        }
+
+        #delete-background-error-button {
+            color: red;
+            background-color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgb(4, 201, 183);
+            font-weight: bold;
+        }
+
+        button#delete-background-error-button:hover {
+            filter: brightness(0.9)
+        }
+
         .info-label {
             text-decoration: none;
             font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
@@ -415,7 +438,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
         }
 
         ::-webkit-scrollbar-thumb {
-            background-color: SCROLLBAR-THUMB-BACKGROUND-COLOR;
+            background-color: {{ .ScrollbarThumbBackgroundColor }};
             border-radius: 2.3px;
         }
 
@@ -424,7 +447,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
         }
 
         ::-webkit-scrollbar-track:hover {
-            background-color: SCROLLBAR-TRACK-BACKGROUND-COLOR;
+            background-color: {{ .ScrollbarTrackBackgroundColor }};
         }
     </style>
 
@@ -432,7 +455,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
       function setLastReadChapter(mangaId) {
         try {
             var xhr = new XMLHttpRequest();
-            var url = 'API-URL/v1/manga/last_read_chapter?id=' + encodeURIComponent(mangaId);
+            var url = '{{ .APIURL }}/v1/manga/last_read_chapter?id=' + encodeURIComponent(mangaId);
             xhr.open('PATCH', url, true);
             xhr.setRequestHeader('Content-Type', 'application/json');
 
@@ -466,6 +489,40 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
         button.style.backgroundColor = "red";
         button.style.borderColor = "red";
       }
+
+      function deleteBackgroundError() {
+        try {
+            var xhr = new XMLHttpRequest();
+            var url = '{{ .APIURL }}/v1/dashboard/last_background_error';
+            xhr.open('DELETE', url, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+
+            xhr.onload = function () {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                console.log('Request to delete background error finished with success:', xhr.responseText);
+                location.reload();
+              } else {
+                console.log('Request to delete background error failed:', xhr.responseText);
+                handleDeleteBackgroundError()
+              }
+            };
+
+            xhr.onerror = function () {
+              console.log('Request to delete background error failed:', xhr.responseText);
+              handleDeleteBackgroundError()
+            };
+
+            xhr.send();
+        } catch (error) {
+            console.log('Request to delete background error failed:', xhr.responseText);
+            handleDeleteBackgroundError()
+        }
+      }
+
+      function handleDeleteBackgroundError() {
+        var button = document.getElementById('delete-background-error-button');
+        button.textContent = "! ERROR !";
+      }
     </script>
 
     <script>
@@ -473,7 +530,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
 
         async function fetchData() {
             try {
-                var url = 'API-URL/v1/dashboard/last_update';
+                var url = '{{ .APIURL }}/v1/dashboard/last_update';
                 const response = await fetch(url);
                 const data = await response.json();
 
@@ -500,8 +557,21 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error
 
   </head>
 <body>
-BACKGROUND-ERROR-HTML
-{{range .}}
+{{ if .ShowBackgroundError }}
+<div class="mangas-container" style="background-color: red;">
+    <div class="text-wrap" style="margin-left: 20px;">
+        <span class="manga-name">An error occured in the background.</span>
+
+        <div>
+            <span style="margin-right: 7px;" class="info-label"><i class="fa-solid fa-calendar-days"></i> {{ .BackgroundErrorTime.Format "2006-01-02 15:04:05" }}</span>
+        </div>
+    </div>
+    <div class="delete-background-error-container">
+        <button id="delete-background-error-button" onclick="deleteBackgroundError()" onmouseenter="this.style.cursor='pointer';">Delete Error</button>
+    </div>
+</div>
+{{ end }}
+{{range .Mangas }}
     <div class="mangas-container">
 
     <div style="background-image: url('data:image/jpeg;base64,{{ encodeImage .CoverImg }}');" class="background-image"></div>
@@ -547,28 +617,17 @@ BACKGROUND-ERROR-HTML
 		scrollbarTrackBackgroundColor = "rgba(37, 40, 53, 1)"
 	}
 
-	html = strings.Replace(html, "API-URL", apiURL, -1)
-	html = strings.Replace(html, "MANGAS-CONTAINER-BACKGROUND-COLOR", theme, -1)
-	html = strings.Replace(html, "SCROLLBAR-THUMB-BACKGROUND-COLOR", scrollbarThumbBackgroundColor, -1)
-	html = strings.Replace(html, "SCROLLBAR-TRACK-BACKGROUND-COLOR", scrollbarTrackBackgroundColor, -1)
-
+	templateData := iframeTemplateData{
+		Mangas:                        mangas,
+		Theme:                         theme,
+		APIURL:                        apiURL,
+		ScrollbarThumbBackgroundColor: scrollbarThumbBackgroundColor,
+		ScrollbarTrackBackgroundColor: scrollbarTrackBackgroundColor,
+	}
 	lastBackgroundError := dashboard.GetLastBackgroundError()
 	if lastBackgroundError.Message != "" {
-		backgroundErrorHTML := `
-<div class="mangas-container" style="background-color: red;">
-    <div class="text-wrap" style="margin-left: 20px;">
-        <span class="manga-name">An error occured in the background. Check the dashboard and API logs.</span>
-
-        <div>
-            <span style="margin-right: 7px;" class="info-label"><i class="fa-solid fa-calendar-days"></i> ERROR-TIME</span>
-        </div>
-    </div>
-</div>
-        `
-		backgroundErrorHTML = strings.Replace(backgroundErrorHTML, "ERROR-TIME", lastBackgroundError.Time.Format("2006-01-02 15:04:05"), -1)
-		html = strings.Replace(html, "BACKGROUND-ERROR-HTML", backgroundErrorHTML, -1)
-	} else {
-		html = strings.Replace(html, "BACKGROUND-ERROR-HTML", "", -1)
+		templateData.ShowBackgroundError = true
+		templateData.BackgroundErrorTime = lastBackgroundError.Time
 	}
 
 	encodeImageF := template.FuncMap{"encodeImage": func(bytes []byte) string {
@@ -578,12 +637,22 @@ BACKGROUND-ERROR-HTML
 	tmpl := template.Must(template.New("mangas").Funcs(encodeImageF).Parse(html))
 
 	var buf bytes.Buffer
-	err := tmpl.Execute(&buf, mangas)
+	err := tmpl.Execute(&buf, templateData)
 	if err != nil {
 		return []byte{}, err
 	}
 
 	return buf.Bytes(), nil
+}
+
+type iframeTemplateData struct {
+	Mangas                        []*manga.Manga
+	Theme                         string
+	APIURL                        string
+	ScrollbarThumbBackgroundColor string
+	ScrollbarTrackBackgroundColor string
+	ShowBackgroundError           bool
+	BackgroundErrorTime           time.Time
 }
 
 // @Summary Get manga chapters
