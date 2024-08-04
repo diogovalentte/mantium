@@ -437,7 +437,7 @@ class MainDashboard:
                     st.warning(
                         "Last read chapter not found in the manga chapters. Select it again."
                     )
-                    logger.exception(e)
+                    logger.warning(e)
                     last_read_chapter_idx = None
             else:
                 last_read_chapter_idx = 0
@@ -528,8 +528,8 @@ class MainDashboard:
                         )
                 except APIException as e:
                     logger.exception(e)
-                    st.error("Error while updating manga. Check the dashboard logs.")
-                    st.stop()
+                    ss["manga_updated_error"] = True
+                    st.rerun()
                 else:
                     ss["manga_updated_success"] = True
                     st.rerun()
@@ -563,6 +563,8 @@ class MainDashboard:
 
         if ss.get("manga_updated_success", False):
             st.success("Manga updated successfully")
+        elif ss.get("manga_updated_error", False):
+            st.error("Error while updating manga.")
 
     def show_add_manga_form(self):
         st.text_input(
@@ -579,8 +581,9 @@ class MainDashboard:
             return chapters
 
         if st.button("Get Chapters", use_container_width=True):
+            ss["manga_add_success_message"] = False
             ss["manga_add_warning_message"] = ""
-            ss["manga_add_success_message"] = ""
+            ss["manga_add_error_message"] = ""
             try:
                 with st.spinner("Getting manga chapters..."):
                     ss["add_manga_chapter_options"] = get_manga_chapters(
@@ -599,7 +602,8 @@ class MainDashboard:
                 ):
                     st.warning("Invalid URL")
                 else:
-                    raise e
+                    logger.exception(e)
+                    st.error("Error while getting manga chapters.")
 
         with st.form(key="add_manga_form", border=False, clear_on_submit=True):
             st.selectbox(
@@ -666,23 +670,23 @@ class MainDashboard:
                         ):
                             logger.exception(e)
                             ss["manga_add_warning_message"] = (
-                                "Manga added to DB, but couldn't add it to Kaizoku. Check the dashboard logs."
+                                "Manga added to DB, but couldn't add it to Kaizoku."
                             )
                             st.rerun()
                         else:
                             logger.exception(e)
-                            st.error(
-                                "Error while adding manga. Check the dashboard logs."
-                            )
-                            st.stop()
+                            ss["manga_add_error_message"] = "Error while adding manga."
+                            st.rerun()
                     else:
-                        ss["manga_add_success_message"] = "Manga added successfully"
+                        ss["manga_add_success_message"] = True
                         st.rerun()
 
-        if ss.get("manga_add_warning_message", "") != "":
+        if ss.get("manga_add_success_message", False):
+            st.success("Manga added successfully")
+        elif ss.get("manga_add_warning_message", "") != "":
             st.warning(ss["manga_add_warning_message"])
-        elif ss.get("manga_add_success_message", "") != "":
-            st.success(ss["manga_add_success_message"])
+        elif ss.get("manga_add_error_message", "") != "":
+            st.warning(ss["manga_add_error_message"])
 
     def show_configs(self):
         def update_configs_callback():
