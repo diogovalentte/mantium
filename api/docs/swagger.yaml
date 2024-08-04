@@ -458,6 +458,12 @@ paths:
         in: query
         name: limit
         type: integer
+      - description: If true, shows a warning in the iFrame if an error occurred in
+          the background. Defaults to true.
+        example: true
+        in: query
+        name: showBackgroundErrorWarning
+        type: boolean
       produces:
       - text/html
       responses:

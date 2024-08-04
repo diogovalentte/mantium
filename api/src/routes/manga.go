@@ -215,6 +215,7 @@ func GetMangas(c *gin.Context) {
 // @Param api_url query string true "API URL used by your browser. Used for the button that updates the last read chater, as your browser needs to send a request to the API to update the chapter." Example(https://sub.domain.com)
 // @Param theme query string false "Homarr theme, defaults to light. If it's different from your Homarr theme, the background turns white" Example(light)
 // @Param limit query int false "Limits the number of items in the iFrame." Example(5)
+// @Param showBackgroundErrorWarning query bool false "If true, shows a warning in the iFrame if an error occurred in the background. Defaults to true." Example(true)
 // @Router /mangas/iframe [get]
 func GetMangasiFrame(c *gin.Context) {
 	queryLimit := c.Query("limit")
@@ -244,6 +245,18 @@ func GetMangasiFrame(c *gin.Context) {
 		return
 	}
 
+	var showBackgroundErrorWarning bool
+	showBackgroundErrorWarningStr := c.Query("showBackgroundErrorWarning")
+	if showBackgroundErrorWarningStr == "" {
+		showBackgroundErrorWarning = true
+	} else {
+		showBackgroundErrorWarning, err = strconv.ParseBool(showBackgroundErrorWarningStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "showBackgroundErrorWarning must be a boolean"})
+			return
+		}
+	}
+
 	allMangas, err := manga.GetMangasDB()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -262,7 +275,7 @@ func GetMangasiFrame(c *gin.Context) {
 		mangas = mangas[:limit]
 	}
 
-	html, err := getMangasiFrame(mangas, theme, apiURL)
+	html, err := getMangasiFrame(mangas, theme, apiURL, showBackgroundErrorWarning)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -271,7 +284,7 @@ func GetMangasiFrame(c *gin.Context) {
 	c.Data(http.StatusOK, "text/html", []byte(html))
 }
 
-func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string) ([]byte, error) {
+func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackgroundErrorWarning bool) ([]byte, error) {
 	html := `
 <!doctype html>
 <html lang="en">

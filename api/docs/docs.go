@@ -476,6 +476,13 @@ const docTemplate = `{
                         "description": "Limits the number of items in the iFrame.",
                         "name": "limit",
                         "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "If true, shows a warning in the iFrame if an error occurred in the background. Defaults to true.",
+                        "name": "showBackgroundErrorWarning",
+                        "in": "query"
                     }
                 ],
                 "responses": {
