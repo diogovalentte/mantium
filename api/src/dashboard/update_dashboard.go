@@ -49,7 +49,8 @@ func GetLastUpdateDashboard() time.Time {
 // restart and can be updated.
 type Configs struct {
 	Dashboard struct {
-		Columns int `json:"columns"`
+		Columns                    int  `json:"columns"`
+		ShowBackgroundErrorWarning bool `json:"showBackgroundErrorWarning"`
 	} `json:"dashboard"`
 }
 

@@ -14,6 +14,8 @@ definitions:
         properties:
           columns:
             type: integer
+          showBackgroundErrorWarning:
+            type: boolean
         type: object
     type: object
   manga.Chapter:
@@ -142,8 +144,11 @@ paths:
         example: 5
         in: query
         name: columns
-        required: true
         type: integer
+      - description: Show the last background error warning in the dashboard.
+        in: query
+        name: showBackgroundErrorWarning
+        type: boolean
       produces:
       - application/json
       responses:

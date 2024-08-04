@@ -45,8 +45,13 @@ const docTemplate = `{
                         "example": 5,
                         "description": "New number of columns.",
                         "name": "columns",
-                        "in": "query",
-                        "required": true
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Show the last background error warning in the dashboard.",
+                        "name": "showBackgroundErrorWarning",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -543,6 +548,9 @@ const docTemplate = `{
                     "properties": {
                         "columns": {
                             "type": "integer"
+                        },
+                        "showBackgroundErrorWarning": {
+                            "type": "boolean"
                         }
                     }
                 }

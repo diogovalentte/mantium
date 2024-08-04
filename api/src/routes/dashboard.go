@@ -54,20 +54,10 @@ func GetLastUpdate(c *gin.Context) {
 // @Description Update the dashboard columns in the configs.json file.
 // @Success 200 {object} responseMessage
 // @Produce json
-// @Param columns query int true "New number of columns." Example(5)
+// @Param columns query int false "New number of columns." Example(5)
+// @Param showBackgroundErrorWarning query bool false "Show the last background error warning in the dashboard."
 // @Router /dashboard/configs/columns [patch]
 func UpdateDashboardColumns(c *gin.Context) {
-	columnsStr := c.Query("columns")
-	if columnsStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "missing 'columns' parameter"})
-		return
-	}
-	columns, err := strconv.Atoi(columnsStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "failed to convert 'columns' parameter into number"})
-		return
-	}
-
 	configsFilePath := config.GlobalConfigs.ConfigsFilePath
 
 	configs, err := dashboard.GetConfigsFromFile(configsFilePath)
@@ -76,7 +66,26 @@ func UpdateDashboardColumns(c *gin.Context) {
 		return
 	}
 
-	configs.Dashboard.Columns = columns
+	columnsStr := c.Query("columns")
+	if columnsStr != "" {
+		columns, err := strconv.Atoi(columnsStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "columns must be an integer"})
+			return
+		}
+		configs.Dashboard.Columns = columns
+	}
+
+	var showBackgroundErrorWarning bool
+	showBackgroundErrorWarningStr := c.Query("showBackgroundErrorWarning")
+	if showBackgroundErrorWarningStr != "" {
+		showBackgroundErrorWarning, err = strconv.ParseBool(showBackgroundErrorWarningStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "showBackgroundErrorWarning must be a boolean"})
+			return
+		}
+		configs.Dashboard.ShowBackgroundErrorWarning = showBackgroundErrorWarning
+	}
 
 	updatedConfigs, err := json.MarshalIndent(configs, "", "  ")
 	if err != nil {

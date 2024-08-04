@@ -99,43 +99,46 @@ class MainDashboard:
 
     def sidebar(self) -> None:
         with st.sidebar:
-            last_background_error = self.api_client.get_last_background_error()
-            if last_background_error["message"] != "":
-                with st.expander("An error occurred in the background!", expanded=True):
-                    logger.error(
-                        f"Background error: {last_background_error['message']}"
-                    )
-                    st.info(f"Time: {last_background_error['time']}")
-
-                    @st.experimental_dialog(
-                        "Last Background Error Message", width="large"
-                    )
-                    def show_error_message_dialog():
-                        st.write(last_background_error["message"])
-
-                    if st.button(
-                        "See error",
-                        type="primary",
-                        help="See error message",
-                        use_container_width=True,
+            if ss["configs_show_background_error_warning"]:
+                last_background_error = self.api_client.get_last_background_error()
+                if last_background_error["message"] != "":
+                    with st.expander(
+                        "An error occurred in the background!", expanded=True
                     ):
-                        show_error_message_dialog()
-                    with stylable_container(
-                        key="highlight_manga_delete_button",
-                        css_styles="""
-                            button {
-                                background-color: red;
-                                color: white;
-                            }
-                        """,
-                    ):
-                        st.button(
-                            "Delete Error",
-                            use_container_width=True,
-                            help="Delete the last background error",
-                            on_click=self.api_client.delete_last_background_error,
+                        logger.error(
+                            f"Background error: {last_background_error['message']}"
                         )
-                st.divider()
+                        st.info(f"Time: {last_background_error['time']}")
+
+                        @st.experimental_dialog(
+                            "Last Background Error Message", width="large"
+                        )
+                        def show_error_message_dialog():
+                            st.write(last_background_error["message"])
+
+                        if st.button(
+                            "See error",
+                            type="primary",
+                            help="See error message",
+                            use_container_width=True,
+                        ):
+                            show_error_message_dialog()
+                        with stylable_container(
+                            key="highlight_manga_delete_button",
+                            css_styles="""
+                                button {
+                                    background-color: red;
+                                    color: white;
+                                }
+                            """,
+                        ):
+                            st.button(
+                                "Delete Error",
+                                use_container_width=True,
+                                help="Delete the last background error",
+                                on_click=self.api_client.delete_last_background_error,
+                            )
+                    st.divider()
 
             st.text_input("Search", key="search_manga")
 
@@ -684,9 +687,14 @@ class MainDashboard:
     def show_configs(self):
         def update_configs_callback():
             self.api_client.update_dashboard_configs_columns(
-                ss.configs_select_columns_number
+                ss.configs_select_columns_number,
+                ss.configs_select_show_background_error_warning,
             )
             ss["configs_columns_number"] = ss.configs_select_columns_number
+            ss["configs_show_background_error_warning"] = (
+                ss.configs_select_show_background_error_warning
+            )
+            ss["configs_updated_success"] = True
 
         with st.popover(
             "Configs",
@@ -702,12 +710,22 @@ class MainDashboard:
                     key="configs_select_columns_number",
                 )
 
+                st.checkbox(
+                    "Show background error warning",
+                    value=ss["configs_show_background_error_warning"],
+                    key="configs_select_show_background_error_warning",
+                    help="Show a warning in the sidebar if there is a background error",
+                )
+
                 st.form_submit_button(
-                    "Update",
+                    "Save",
                     type="primary",
                     on_click=update_configs_callback,
                     use_container_width=True,
                 )
+
+            if ss.get("configs_updated_success", False):
+                st.success("Configs updated successfully")
 
     def check_dashboard_error(self):
         if ss.get(ss_dashboard_error_key, False):
@@ -718,8 +736,15 @@ class MainDashboard:
 
 
 def main(api_client):
-    if "configs_columns_number" not in ss:
-        ss["configs_columns_number"] = api_client.get_dashboard_configs()["columns"]
+    if (
+        "configs_columns_number" not in ss
+        or "configs_show_background_error_warning" not in ss
+    ):
+        configs = api_client.get_dashboard_configs()
+        ss["configs_columns_number"] = configs["columns"]
+        ss["configs_show_background_error_warning"] = configs[
+            "showBackgroundErrorWarning"
+        ]
 
     streamlit_general_changes = """
         <style>

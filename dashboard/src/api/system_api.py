@@ -73,21 +73,28 @@ class DashboardAPIClient:
 
         return res.json()["configs"]
 
-    def update_dashboard_configs_columns(self, columns: int):
+    def update_dashboard_configs_columns(
+        self, columns: int, show_background_error_warning: bool
+    ):
         """Update the columns in the dashboard configs.
 
         Args:
             columns (int): New columns number.
+            show_background_error_warning (bool): If the background error warning should be shown.
         """
         url = (
-            self.base_api_url + "/v1/dashboard/configs/columns?columns=" + str(columns)
+            self.base_api_url
+            + "/v1/dashboard/configs/columns?columns="
+            + str(columns)
+            + "&showBackgroundErrorWarning="
+            + str(show_background_error_warning)
         )
 
         res = requests.patch(url)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
-                "error while updating the dashboard columns in the API",
+                "error while updating the dashboard configs",
                 url,
                 "PATCH",
                 res.status_code,
