@@ -29,7 +29,10 @@ func init() {
 	logLevel, _ := zerolog.ParseLevel(strconv.Itoa(logLevelInt))
 	log := util.GetLogger(logLevel)
 
-	setDefaultConfigsFile(log)
+	err := dashboard.SetDefaultConfigsFile()
+	if err != nil {
+		panic(err)
+	}
 
 	log.Info().Msg("Trying to connect to DB...")
 	_db, err := db.OpenConn()
@@ -109,36 +112,4 @@ func setUpdateMangasMetadataPeriodicallyJob(log *zerolog.Logger) {
 	} else {
 		log.Info().Msg("Not updating mangas metadata periodically")
 	}
-}
-
-// setDefaultConfigsFile copies the default configs file
-// to the default configs path if it doesn't exist.
-func setDefaultConfigsFile(log *zerolog.Logger) {
-	configsFilePath := config.GlobalConfigs.ConfigsFilePath
-	if _, err := os.Stat(configsFilePath); os.IsNotExist(err) {
-		log.Info().Msg("Creating default configs file...")
-
-		err := copyDefaultConfigsFile(config.GlobalConfigs.DefaultConfigsFilePath, configsFilePath)
-		if err != nil {
-			log.Error().Msgf("Error creating default configs file: %s", err)
-		}
-	} else {
-		log.Info().Msg("Found configs file")
-	}
-}
-
-// copyDefaultConfigsFile copies a file and set the copy with
-// permissions 0664.
-func copyDefaultConfigsFile(srcPath, dstPath string) error {
-	srcFile, err := os.ReadFile(srcPath)
-	if err != nil {
-		return err
-	}
-
-	err = os.WriteFile(dstPath, srcFile, 0o644)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }

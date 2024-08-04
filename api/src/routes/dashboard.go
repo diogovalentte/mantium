@@ -30,7 +30,8 @@ func DashboardRoutes(group *gin.RouterGroup) {
 // @Produce json
 // @Router /dashboard/configs [get]
 func GetDashboardConfigs(c *gin.Context) {
-	configs, err := dashboard.GetConfigsFromFile(config.GlobalConfigs.ConfigsFilePath)
+	var configs dashboard.Configs
+	err := dashboard.GetConfigsFromFile(&configs)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("error while loading configs file: %s", err.Error())})
 		return
@@ -58,9 +59,8 @@ func GetLastUpdate(c *gin.Context) {
 // @Param showBackgroundErrorWarning query bool false "Show the last background error warning in the dashboard."
 // @Router /dashboard/configs/columns [patch]
 func UpdateDashboardColumns(c *gin.Context) {
-	configsFilePath := config.GlobalConfigs.ConfigsFilePath
-
-	configs, err := dashboard.GetConfigsFromFile(configsFilePath)
+	var configs dashboard.Configs
+	err := dashboard.GetConfigsFromFile(&configs)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("error while loading configs file: %s", err.Error())})
 		return
@@ -93,7 +93,7 @@ func UpdateDashboardColumns(c *gin.Context) {
 		return
 	}
 
-	err = os.WriteFile(configsFilePath, updatedConfigs, 0o644)
+	err = os.WriteFile(config.GlobalConfigs.ConfigsFilePath, updatedConfigs, 0o644)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("error while updating configs file: %s", err.Error())})
 		return
