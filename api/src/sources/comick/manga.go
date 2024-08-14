@@ -57,18 +57,24 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 			break
 		}
 	}
-	if coverFileName == "" {
-		return nil, util.AddErrorContext(errorContext, fmt.Errorf("cover image not found"))
-	}
-	coverURL := fmt.Sprintf("%s/%s", baseUploadsURL, coverFileName)
-	mangaReturn.CoverImgURL = coverURL
+	if coverFileName != "" {
+		coverURL := fmt.Sprintf("%s/%s", baseUploadsURL, coverFileName)
+		mangaReturn.CoverImgURL = coverURL
 
-	coverImg, resized, err := util.GetImageFromURL(coverURL, 3, 1*time.Second)
-	if err != nil {
-		return nil, util.AddErrorContext(errorContext, err)
+		coverImg, resized, err := util.GetImageFromURL(coverURL, 3, 1*time.Second)
+		if err != nil {
+			return nil, util.AddErrorContext(errorContext, err)
+		}
+		mangaReturn.CoverImgResized = resized
+		mangaReturn.CoverImg = coverImg
+	} else {
+		mangaReturn.CoverImg, err = util.GetDefaultCoverImg()
+		if err != nil {
+			return nil, util.AddErrorContext(errorContext, err)
+		}
+		mangaReturn.CoverImgURL = ""
+		mangaReturn.CoverImgResized = true
 	}
-	mangaReturn.CoverImgResized = resized
-	mangaReturn.CoverImg = coverImg
 
 	return mangaReturn, nil
 }

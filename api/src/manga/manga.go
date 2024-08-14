@@ -726,6 +726,9 @@ func validateManga(m *Manga) error {
 	if m.Name == "" {
 		return util.AddErrorContext(contextError, fmt.Errorf("manga name is empty"))
 	}
+	if m.CoverImg == nil {
+		return util.AddErrorContext(contextError, fmt.Errorf("manga cover image is nil"))
+	}
 
 	if m.LastReleasedChapter != nil {
 		err := validateChapter(m.LastReleasedChapter)

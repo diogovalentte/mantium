@@ -274,7 +274,7 @@ class MainDashboard:
                 img = img.resize((250, 355))
             st.image(img)
         elif manga["CoverImgURL"] != "":
-            st.image(manga["CoverImgURL"])
+            st.image(manga["CoverImgURL"], width=250)
         # Hide the "View fullscreen" button from the image
         hide_img_fs = """
         <style>

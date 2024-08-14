@@ -66,21 +66,31 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 	var coverFileName string
 	for _, relationship := range mangaAPIResp.Data.Relationships {
 		if relationship.Type == "cover_art" {
-			coverFileName = relationship.Attributes["fileName"].(string)
+			attCoverFileName, ok := relationship.Attributes["fileName"]
+			if ok {
+				coverFileName = attCoverFileName.(string)
+				break
+			}
 		}
 	}
-	if coverFileName == "" {
-		return nil, util.AddErrorContext(errorContext, fmt.Errorf("cover image not found"))
-	}
-	coverURL := fmt.Sprintf("%s/covers/%s/%s", baseUploadsURL, mangadexMangaID, coverFileName)
-	mangaReturn.CoverImgURL = coverURL
+	if coverFileName != "" {
+		coverURL := fmt.Sprintf("%s/covers/%s/%s", baseUploadsURL, mangadexMangaID, coverFileName)
+		mangaReturn.CoverImgURL = coverURL
 
-	coverImg, resized, err := util.GetImageFromURL(coverURL, 3, 1*time.Second)
-	if err != nil {
-		return nil, util.AddErrorContext(errorContext, err)
+		coverImg, resized, err := util.GetImageFromURL(coverURL, 3, 1*time.Second)
+		if err != nil {
+			return nil, util.AddErrorContext(errorContext, err)
+		}
+		mangaReturn.CoverImgResized = resized
+		mangaReturn.CoverImg = coverImg
+	} else {
+		mangaReturn.CoverImg, err = util.GetDefaultCoverImg()
+		if err != nil {
+			return nil, util.AddErrorContext(errorContext, err)
+		}
+		mangaReturn.CoverImgURL = ""
+		mangaReturn.CoverImgResized = true
 	}
-	mangaReturn.CoverImgResized = resized
-	mangaReturn.CoverImg = coverImg
 
 	return mangaReturn, nil
 }

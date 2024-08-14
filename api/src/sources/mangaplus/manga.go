@@ -49,9 +49,6 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 			mangaReturn.CoverImgURL = titleView.GetTitleImageUrl()
 			if mangaReturn.CoverImgURL == "" {
 				mangaReturn.CoverImgURL = titleView.GetBackgroundImageUrl()
-				if mangaReturn.CoverImgURL == "" {
-					return nil, util.AddErrorContext(errorContext, fmt.Errorf("manga cover image URL not found"))
-				}
 			}
 		}
 	}
@@ -66,12 +63,21 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 		mangaReturn.LastReleasedChapter.Type = 1
 	}
 
-	coverImg, resized, err := util.GetImageFromURL(mangaReturn.CoverImgURL, 3, 1*time.Second)
-	if err != nil {
-		return nil, util.AddErrorContext(errorContext, err)
+	if mangaReturn.CoverImgURL != "" {
+		coverImg, resized, err := util.GetImageFromURL(mangaReturn.CoverImgURL, 3, 1*time.Second)
+		if err != nil {
+			return nil, util.AddErrorContext(errorContext, err)
+		}
+		mangaReturn.CoverImgResized = resized
+		mangaReturn.CoverImg = coverImg
+	} else {
+		mangaReturn.CoverImg, err = util.GetDefaultCoverImg()
+		if err != nil {
+			return nil, util.AddErrorContext(errorContext, err)
+		}
+		mangaReturn.CoverImgURL = ""
+		mangaReturn.CoverImgResized = true
 	}
-	mangaReturn.CoverImgResized = resized
-	mangaReturn.CoverImg = coverImg
 
 	return mangaReturn, nil
 }

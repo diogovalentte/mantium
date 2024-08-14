@@ -27,9 +27,9 @@ var mangasTestTable = []mangaTestType{
 			CoverImgResized: true,
 			LastReleasedChapter: &manga.Chapter{
 				Chapter:   "108",
-				Name:      "Finis",
-				URL:       "https://mangadex.org/chapter/8a01e405-220c-4cd2-85f4-cca579c15984",
-				UpdatedAt: time.Date(2024, 5, 30, 20, 17, 33, 0, time.UTC),
+				Name:      "End",
+				URL:       "https://mangadex.org/chapter/5fff451c-cbe1-4456-9ef5-4e3c3e41dc26",
+				UpdatedAt: time.Date(2018, 4, 7, 7, 35, 8, 0, time.UTC),
 				Type:      1,
 			},
 		},

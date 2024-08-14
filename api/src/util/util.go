@@ -172,6 +172,18 @@ func ResizeImage(imgBytes []byte, width, height uint) ([]byte, error) {
 	return resizedBuf.Bytes(), nil
 }
 
+// GetDefaultCoverImg returns the default cover image with the right size
+func GetDefaultCoverImg() ([]byte, error) {
+	contextError := "error getting default cover image from file"
+
+	img, err := os.ReadFile("defaults/default_cover_img.jpg")
+	if err != nil {
+		return nil, AddErrorContext(contextError, err)
+	}
+
+	return img, nil
+}
+
 // IsImageValid checks if an image is valid by decoding it
 func IsImageValid(imgBytes []byte) bool {
 	_, _, err := image.DecodeConfig(bytes.NewReader(imgBytes))
