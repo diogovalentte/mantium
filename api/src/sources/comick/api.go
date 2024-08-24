@@ -1,6 +1,7 @@
 package comick
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -62,9 +63,8 @@ func (c *Client) Request(method, url string, reqBody io.Reader, retBody interfac
 	}
 
 	if retBody != nil {
-		defer resp.Body.Close()
-		if err = json.NewDecoder(resp.Body).Decode(retBody); err != nil {
-			body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
+		if err = json.NewDecoder(bytes.NewReader(body)).Decode(retBody); err != nil {
 			return nil, util.AddErrorContext(fmt.Sprintf(errorContext, method), fmt.Errorf("error decoding request body response into '%s'. Body: %s", reflect.TypeOf(retBody).Name(), string(body)))
 		}
 	}

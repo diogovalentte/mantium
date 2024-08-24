@@ -1,6 +1,7 @@
 package mangadex
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -62,8 +63,8 @@ func (c *Client) Request(ctx context.Context, method, url string, reqBody io.Rea
 
 	if retBody != nil {
 		defer resp.Body.Close()
-		if err = json.NewDecoder(resp.Body).Decode(retBody); err != nil {
-			body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
+		if err = json.NewDecoder(bytes.NewReader(body)).Decode(retBody); err != nil {
 			return nil, util.AddErrorContext(errorContext, fmt.Errorf("error decoding request body response into '%s'. Body: %s", reflect.TypeOf(retBody).Name(), string(body)))
 		}
 	}
