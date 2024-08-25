@@ -4,10 +4,6 @@
 // The site and API URL can change without any warning!!! Because of that, the site and API URLs need to be updated manually!
 package comick
 
-import (
-	"github.com/gocolly/colly/v2"
-)
-
 var (
 	baseSiteURL    = "https://comick.io"
 	baseAPIURL     = "https://api.comick.fun"
@@ -18,7 +14,6 @@ var (
 // Source is the implementation of the manga.Source interface for the Comick source
 type Source struct {
 	client *Client
-	col    *colly.Collector
 }
 
 func (s *Source) checkClient() {
