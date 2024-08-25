@@ -245,11 +245,9 @@ func GetMangasiFrame(c *gin.Context) {
 		return
 	}
 
-	var showBackgroundErrorWarning bool
+	showBackgroundErrorWarning := true
 	showBackgroundErrorWarningStr := c.Query("showBackgroundErrorWarning")
-	if showBackgroundErrorWarningStr == "" {
-		showBackgroundErrorWarning = true
-	} else {
+	if showBackgroundErrorWarningStr != "" {
 		showBackgroundErrorWarning, err = strconv.ParseBool(showBackgroundErrorWarningStr)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "showBackgroundErrorWarning must be a boolean"})
@@ -638,7 +636,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
 		ScrollbarTrackBackgroundColor: scrollbarTrackBackgroundColor,
 	}
 	lastBackgroundError := dashboard.GetLastBackgroundError()
-	if lastBackgroundError.Message != "" {
+	if lastBackgroundError.Message != "" && showBackgroundErrorWarning {
 		templateData.ShowBackgroundError = true
 		templateData.BackgroundErrorTime = lastBackgroundError.Time
 	}
