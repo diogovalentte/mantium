@@ -109,6 +109,25 @@ func TestGetMangaMetadata(t *testing.T) {
 	})
 }
 
+func TestSearch(t *testing.T) {
+	source := Source{}
+
+	t.Run("Should get the metadata from multiple mangas", func(t *testing.T) {
+		for _, test := range mangasTestTable {
+			mangaName := test.expected.Name
+
+			results, err := source.Search(mangaName)
+			if err != nil {
+				t.Fatalf("error while getting manga: %v", err)
+			}
+
+			if len(results) == 0 {
+				t.Fatalf("expected results to be different than 0")
+			}
+		}
+	})
+}
+
 var getMangaIDTestTable = []string{
 	"https://comick.io/comic/00-jujutsu-kaisen/",
 	"https://comick.io/comic/00-jujutsu-kaisen",

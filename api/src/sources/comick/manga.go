@@ -3,10 +3,12 @@ package comick
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/manga"
+	"github.com/diogovalentte/mantium/api/src/sources/models"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
@@ -84,15 +86,51 @@ type getMangaAPIResponse struct {
 }
 
 type comic struct {
-	Title       string    `json:"title"`
-	ID          int       `json:"id"`
-	LastChapter float32   `json:"last_chapter"` // It seems to be the last english translated chapter released
-	MDCovers    []mdCover `json:"md_covers"`
 	HID         string    `json:"hid"`
+	Title       string    `json:"title"`
+	Description string    `json:"desc"`
+	MDCovers    []mdCover `json:"md_covers"`
+	LastChapter float32   `json:"last_chapter"` // It seems to be the last english translated chapter released
+	ID          int       `json:"id"`
+	Year        int       `json:"year"`
+	Status      int       `json:"status"`
 }
 
 type mdCover struct {
 	B2Key string `json:"b2key"`
+}
+
+func (s *Source) Search(term string) ([]*models.MangaSearchResult, error) {
+	s.checkClient()
+
+	errorContext := "error while searching manga"
+
+	term = strings.ReplaceAll(term, " ", "+")
+	searchURL := fmt.Sprintf("%s/v1.0/search?q=%s&type=comic&page=1&limit=20&sort=view&showall=true", baseAPIURL, term)
+	var searchAPIResp []*comic
+	_, err := s.client.Request("GET", searchURL, nil, &searchAPIResp)
+	if err != nil {
+		return nil, util.AddErrorContext(errorContext, err)
+	}
+
+	mangaSearchResults := make([]*models.MangaSearchResult, 0, len(searchAPIResp))
+	for _, comic := range searchAPIResp {
+		mangaSearchResult := &models.MangaSearchResult{}
+		mangaSearchResult.Source = "comick.xyz"
+		mangaSearchResult.URL = fmt.Sprintf("%s/comic/%s", baseSiteURL, comic.HID)
+		mangaSearchResult.Description = comic.Description
+		mangaSearchResult.Year = comic.Year
+		mangaSearchResult.Name = comic.Title
+		mangaSearchResult.Status = getMangaStatus(comic.Status)
+		if len(comic.MDCovers) == 0 {
+			mangaSearchResult.CoverURL = ""
+		} else {
+			mangaSearchResult.CoverURL = fmt.Sprintf("%s/%s", baseUploadsURL, comic.MDCovers[0].B2Key)
+		}
+		mangaSearchResults = append(mangaSearchResults, mangaSearchResult)
+	}
+
+	return mangaSearchResults, nil
 }
 
 // getMangaHID returns the HID of a manga given its URL.
@@ -101,10 +139,6 @@ func (s *Source) getMangaHID(mangaURL string) (string, error) {
 	s.checkClient()
 
 	errorContext := "error while getting manga HID"
-
-	mangaReturn := &manga.Manga{}
-	mangaReturn.Source = "comick.xyz"
-	mangaReturn.URL = mangaURL
 
 	mangaSlug, err := getMangaSlug(mangaURL)
 	if err != nil {
@@ -141,4 +175,19 @@ func getMangaSlug(mangaURL string) (string, error) {
 	}
 
 	return matches[1], nil
+}
+
+func getMangaStatus(status int) string {
+	switch status {
+	case 1:
+		return "Ongoing"
+	case 2:
+		return "Completed"
+	case 3:
+		return "Cancelled"
+	case 4:
+		return "Hiatus"
+	default:
+		return "Unknown"
+	}
 }
