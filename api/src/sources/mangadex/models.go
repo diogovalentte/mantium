@@ -6,18 +6,35 @@ import (
 )
 
 type genericRelationship struct {
+	Attributes map[string]interface{} `json:"attributes"`
 	ID         string                 `json:"id"`
 	Type       string                 `json:"type"`
-	Attributes map[string]interface{} `json:"attributes"`
 }
 
 type localisedStrings map[string]string
 
+func (ls localisedStrings) get() string {
+	if val, ok := ls["en"]; ok {
+		return val
+	}
+	if val, ok := ls["ja"]; ok {
+		return val
+	}
+	if val, ok := ls["ja-ro"]; ok {
+		return val
+	}
+	for _, val := range ls {
+		return val
+	}
+
+	return ""
+}
+
 type tag struct {
+	Relationships []genericRelationship `json:"relationships"`
 	ID            string                `json:"id"`
 	Type          string                `json:"type"`
 	Attributes    tagAttributes         `json:"attributes"`
-	Relationships []genericRelationship `json:"relationships"`
 }
 
 type tagAttributes struct {
@@ -51,32 +68,19 @@ func (er *ErrorResponse) GetErrors() string {
 type Error struct {
 	ID string `json:"id"`
 
-	Status int    `json:"status"`
 	Title  string `json:"title"`
 	Detail string `json:"detail"`
+	Status int    `json:"status"`
 }
 
 type mangaAttributes struct {
-	Title                          localisedStrings   `json:"title"`
-	AltTitles                      []localisedStrings `json:"altTitles"`
-	Description                    localisedStrings   `json:"description"`
-	IsLocked                       bool               `json:"isLocked"`
-	Links                          localisedStrings   `json:"links"`
-	OriginalLanguage               string             `json:"originalLanguage"`
-	LastVolume                     string             `json:"lastVolume"`
-	LastChapter                    string             `json:"lastChapter"`
-	PublicationDemographic         string             `json:"publicationDemographic"`
-	Status                         string             `json:"status"`
-	Year                           int                `json:"year"`
-	ContentRating                  string             `json:"contentRating"`
-	Tags                           []tag              `json:"tags"`
-	State                          string             `json:"state"`
-	ChapterNumbersResetOnNewVolume bool               `json:"chapterNumbersResetOnNewVolume"`
-	CreatedAt                      string             `json:"createdAt"`
-	UpdatedAt                      string             `json:"updatedAt"`
-	Version                        int                `json:"version"`
-	AvailableTranslatedLanguages   []string           `json:"availableTranslatedLanguages"`
-	LatestUploadedChapter          string             `json:"latestUploadedChapter"`
+	Title       localisedStrings   `json:"title"`
+	Description localisedStrings   `json:"description"`
+	Links       localisedStrings   `json:"links"`
+	LastChapter string             `json:"lastChapter"`
+	Status      string             `json:"status"`
+	AltTitles   []localisedStrings `json:"altTitles"`
+	Year        int                `json:"year"`
 }
 
 type coverAttributes map[string]interface{}
@@ -95,13 +99,13 @@ type chapterAttributes struct {
 	Title              string `json:"title"`
 	Volume             string `json:"volume"`
 	Chapter            string `json:"chapter"`
-	Pages              int    `json:"pages"`
 	TranslatedLanguage string `json:"translatedLanguage"`
 	Uploader           string `json:"uploader"`
 	ExternalURL        string `json:"externalURL"`
-	Version            int    `json:"version"`
 	CreatedAt          string `json:"createdAt"`
 	UpdatedAt          string `json:"updatedAt"`
 	PublishAt          string `json:"publishAt"`
 	ReadableAt         string `json:"readableAt"`
+	Pages              int    `json:"pages"`
+	Version            int    `json:"version"`
 }

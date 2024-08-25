@@ -74,7 +74,7 @@ var mangasTestTable = []mangaTestType{
 func TestGetMangaMetadata(t *testing.T) {
 	source := Source{}
 
-	t.Run("Should get the  metadata from multiple mangas", func(t *testing.T) {
+	t.Run("Should get the metadata from multiple mangas", func(t *testing.T) {
 		for _, test := range mangasTestTable {
 			expected := test.expected
 			expected.LastReleasedChapter.UpdatedAt = expected.LastReleasedChapter.UpdatedAt.In(time.Local)
@@ -97,7 +97,6 @@ func TestGetMangaMetadata(t *testing.T) {
 	})
 	t.Run("Should not get the metadata from multiple mangas", func(t *testing.T) {
 		for _, test := range mangasTestTable {
-			mangaURL := test.url
 			mangaURL, err := replaceURLID(test.url, "00000000-0000-0000-0000-000000000000")
 			if err != nil {
 				t.Fatalf("error while replacing manga URL ID: %v", err)
@@ -111,6 +110,25 @@ func TestGetMangaMetadata(t *testing.T) {
 				t.Fatalf("expected error, got %s", err)
 			}
 			t.Fatalf("expected error, got nil")
+		}
+	})
+}
+
+func TestSearch(t *testing.T) {
+	source := Source{}
+
+	t.Run("Should get the metadata from multiple mangas", func(t *testing.T) {
+		for _, test := range mangasTestTable {
+			mangaName := test.expected.Name
+
+			results, err := source.Search(mangaName)
+			if err != nil {
+				t.Fatalf("error while getting manga: %v", err)
+			}
+
+			if len(results) == 0 {
+				t.Fatalf("expected results to be different than 0")
+			}
 		}
 	})
 }

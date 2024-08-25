@@ -12,11 +12,12 @@ import (
 	"github.com/diogovalentte/mantium/api/src/sources/mangadex"
 	"github.com/diogovalentte/mantium/api/src/sources/mangahub"
 	"github.com/diogovalentte/mantium/api/src/sources/mangaplus"
+	"github.com/diogovalentte/mantium/api/src/sources/models"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // sources is a map of all sources
-var sources = map[string]Source{
+var sources = map[string]models.Source{
 	// default sources
 	"mangadex.org":             &mangadex.Source{},
 	"comick.io":                &comick.Source{},
@@ -24,21 +25,8 @@ var sources = map[string]Source{
 	"mangaplus.shueisha.co.jp": &mangaplus.Source{},
 }
 
-// Source is the interface for a manga source
-type Source interface {
-	// GetMangaMetadata returns a manga
-	// ignoreGetLastChapterError is used to ignore the error when getting the last chapter of a manga by setting the last released chapter to nil. Use for mangas that don't have chapters.
-	GetMangaMetadata(mangaURL string, ignoreGetLastChapterError bool) (*manga.Manga, error)
-	// GetChapterMetadata returns a chapter by its chapter or URL
-	GetChapterMetadata(mangaURL string, chapter string, chapterURL string) (*manga.Chapter, error)
-	// GetLastChapterMetadata returns the last released chapter in the source
-	GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
-	// GetChaptersMetadata returns all chapters of a manga
-	GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error)
-}
-
 // RegisterSource registers a new source
-func RegisterSource(domain string, source Source) {
+func RegisterSource(domain string, source models.Source) {
 	sources[domain] = source
 }
 
@@ -48,7 +36,7 @@ func DeleteSource(domain string) {
 }
 
 // GetSource returns a source
-func GetSource(domain string) (Source, error) {
+func GetSource(domain string) (models.Source, error) {
 	contextError := "error while getting source"
 
 	value, ok := sources[domain]
@@ -59,7 +47,7 @@ func GetSource(domain string) (Source, error) {
 }
 
 // GetSources returns all sources
-func GetSources() map[string]Source {
+func GetSources() map[string]models.Source {
 	return sources
 }
 
@@ -145,14 +133,14 @@ func getDomain(urlString string) (string, error) {
 	return parsedURL.Hostname(), nil
 }
 
-func getManga(mangaURL string, source Source, ignoreGetLastChapterError bool) (*manga.Manga, error) {
+func getManga(mangaURL string, source models.Source, ignoreGetLastChapterError bool) (*manga.Manga, error) {
 	return source.GetMangaMetadata(mangaURL, ignoreGetLastChapterError)
 }
 
-func getChapter(mangaURL string, chapter string, chapterURL string, source Source) (*manga.Chapter, error) {
+func getChapter(mangaURL string, chapter string, chapterURL string, source models.Source) (*manga.Chapter, error) {
 	return source.GetChapterMetadata(mangaURL, chapter, chapterURL)
 }
 
-func getChapters(mangaURL string, source Source) ([]*manga.Chapter, error) {
+func getChapters(mangaURL string, source models.Source) ([]*manga.Chapter, error) {
 	return source.GetChaptersMetadata(mangaURL)
 }

@@ -1,13 +1,14 @@
 package mangadex
 
 import (
-	"context"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/manga"
+	"github.com/diogovalentte/mantium/api/src/sources/models"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
@@ -28,7 +29,7 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 
 	mangaAPIURL := fmt.Sprintf("%s/manga/%s?includes[]=cover_art", baseAPIURL, mangadexMangaID)
 	var mangaAPIResp getMangaAPIResponse
-	_, err = s.client.Request(context.Background(), "GET", mangaAPIURL, nil, &mangaAPIResp)
+	_, err = s.client.Request("GET", mangaAPIURL, nil, &mangaAPIResp)
 	if err != nil {
 		if util.ErrorContains(err, "non-200 status code -> (404)") {
 			return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
@@ -101,9 +102,76 @@ type getMangaAPIResponse struct {
 	Data     struct {
 		ID            string                `json:"id"`
 		Type          string                `json:"type"`
-		Attributes    mangaAttributes       `json:"attributes"`
 		Relationships []genericRelationship `json:"relationships"`
+		Attributes    mangaAttributes       `json:"attributes"`
 	}
+}
+
+func (s *Source) Search(term string) ([]*models.MangaSearchResult, error) {
+	s.checkClient()
+
+	errorContext := "error while searching manga"
+
+	term = strings.ReplaceAll(term, " ", "+")
+	searchURL := fmt.Sprintf("%s/manga?title=%s&includes[]=cover_art&limit=100&offset=0&order[relevance]=desc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic", baseAPIURL, term)
+	var searchAPIResp searchMangaAPIResponse
+	_, err := s.client.Request("GET", searchURL, nil, &searchAPIResp)
+	if err != nil {
+		return nil, util.AddErrorContext(errorContext, err)
+	}
+
+	mangaSearchResults := make([]*models.MangaSearchResult, 0, len(searchAPIResp.Data))
+	for _, mangaData := range searchAPIResp.Data {
+		mangaSearchResult := &models.MangaSearchResult{}
+		mangaSearchResult.Source = "mangadex.org"
+		mangaSearchResult.URL = fmt.Sprintf("%s/title/%s", baseSiteURL, mangaData.ID)
+		mangaSearchResult.Description = mangaData.Attributes.Description.get()
+		mangaSearchResult.Status = mangaData.Attributes.Status
+		mangaSearchResult.Year = mangaData.Attributes.Year
+
+		mangaSearchResult.Name = mangaData.Attributes.Title.get()
+		if mangaSearchResult.Name == "" {
+			if len(mangaData.Attributes.AltTitles) > 0 {
+				mangaSearchResult.Name = mangaData.Attributes.AltTitles[0].get()
+			} else {
+				return nil, util.AddErrorContext(errorContext, fmt.Errorf("manga name not found"))
+			}
+		}
+
+		var coverFileName string
+		for _, relationship := range mangaData.Relationships {
+			if relationship.Type == "cover_art" {
+				attCoverFileName, ok := relationship.Attributes["fileName"]
+				if ok {
+					coverFileName = attCoverFileName.(string)
+					break
+				}
+			}
+		}
+		if coverFileName != "" {
+			coverURL := fmt.Sprintf("%s/covers/%s/%s", baseUploadsURL, mangaData.ID, coverFileName)
+			mangaSearchResult.CoverURL = coverURL
+		} else {
+			mangaSearchResult.CoverURL = ""
+		}
+		mangaSearchResults = append(mangaSearchResults, mangaSearchResult)
+	}
+
+	return mangaSearchResults, nil
+}
+
+type searchMangaAPIResponse struct {
+	Result   string `json:"result"`
+	Response string `json:"response"`
+	Data     []*struct {
+		ID            string                `json:"id"`
+		Type          string                `json:"type"`
+		Relationships []genericRelationship `json:"relationships"`
+		Attributes    mangaAttributes       `json:"attributes"`
+	}
+	Limit  int
+	Offset int
+	Total  int
 }
 
 // getMangaID returns the ID of a manga given its URL

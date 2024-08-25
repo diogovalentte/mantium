@@ -1,7 +1,6 @@
 package mangadex
 
 import (
-	"context"
 	"fmt"
 	"regexp"
 
@@ -48,7 +47,7 @@ func (s *Source) getChapterMetadataByURL(chapterURL string) (*manga.Chapter, err
 
 	chapterAPIURL := fmt.Sprintf("%s/chapter/%s", baseAPIURL, chapterID)
 	var chapterAPIResp getChapterAPIResponse
-	_, err = s.client.Request(context.Background(), "GET", chapterAPIURL, nil, &chapterAPIResp)
+	_, err = s.client.Request("GET", chapterAPIURL, nil, &chapterAPIResp)
 	if err != nil {
 		if util.ErrorContains(err, "non-200 status code -> (404)") {
 			return nil, errordefs.ErrChapterNotFound
@@ -113,7 +112,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 	// URL gets the last chapter of the manga
 	mangaAPIURL := fmt.Sprintf("%s/manga/%s/feed?contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&translatedLanguage[]=en&order[chapter]=desc&limit=1&offset=0", baseAPIURL, mangaID)
 	var feedAPIResp getMangaFeedAPIResponse
-	_, err = s.client.Request(context.Background(), "GET", mangaAPIURL, nil, &feedAPIResp)
+	_, err = s.client.Request("GET", mangaAPIURL, nil, &feedAPIResp)
 	if err != nil {
 		if util.ErrorContains(err, "non-200 status code -> (404)") {
 			return nil, errordefs.ErrChapterNotFound
@@ -208,7 +207,7 @@ func generateMangaFeed(s *Source, mangaURL string, chaptersChan chan<- *manga.Ch
 	for totalChapters >= requestOffset {
 		mangaAPIURL := fmt.Sprintf("%s/manga/%s/feed?contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&translatedLanguage[]=en&order[chapter]=desc&limit=%d&offset=%d", baseAPIURL, mangaID, requestLimit, requestOffset)
 		var feedAPIResp getMangaFeedAPIResponse
-		_, err = s.client.Request(context.Background(), "GET", mangaAPIURL, nil, &feedAPIResp)
+		_, err = s.client.Request("GET", mangaAPIURL, nil, &feedAPIResp)
 		if err != nil {
 			if util.ErrorContains(err, "non-200 status code -> (404)") {
 				err = util.AddErrorContext(err.Error(), errordefs.ErrMangaNotFound)

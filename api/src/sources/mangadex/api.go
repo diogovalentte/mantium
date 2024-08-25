@@ -2,7 +2,6 @@ package mangadex
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -34,10 +33,10 @@ func NewMangadexClient() *Client {
 }
 
 // Request is a helper function to make a request to the Mangadex API
-func (c *Client) Request(ctx context.Context, method, url string, reqBody io.Reader, retBody interface{}) (*http.Response, error) {
+func (c *Client) Request(method, url string, reqBody io.Reader, retBody interface{}) (*http.Response, error) {
 	errorContext := "error while making '%s' request"
 
-	req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
+	req, err := http.NewRequest(method, url, reqBody)
 	if err != nil {
 		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, method), err)
 	}
