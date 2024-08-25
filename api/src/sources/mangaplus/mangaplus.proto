@@ -71,6 +71,7 @@ message ErrorResult {
 message SuccessResult {
   bool isFeaturedUpdated = 1;
   TitleDetailView titleDetailView = 8;
+  AllTitlesViewV2 allTitlesViewV2 = 25;
 }
 
 message TitleDetailView {
@@ -103,4 +104,14 @@ message TitleDetailView {
     repeated Chapter lastChapterList = 4;
   }
   repeated Chapters chapters = 28;
+}
+
+
+message AllTitlesViewV2 {
+  repeated AllTitlesGroup allTitlesGroup = 1;
+}
+
+message AllTitlesGroup {
+  string theTitle = 1;
+  repeated Title titles = 2;
 }

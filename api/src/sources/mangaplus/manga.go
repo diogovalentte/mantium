@@ -11,6 +11,7 @@ import (
 
 	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/manga"
+	"github.com/diogovalentte/mantium/api/src/sources/models"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
@@ -80,6 +81,37 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 	}
 
 	return mangaReturn, nil
+}
+
+func (s *Source) Search(term string) ([]*models.MangaSearchResult, error) {
+	s.checkClient()
+
+	errorContext := "error while searching manga"
+
+	_, response, err := s.client.Request(fmt.Sprintf("%s/title_list/allV2", baseAPIURL))
+	if err != nil {
+		if util.ErrorContains(err, "non-200 status code -> (404)") {
+			return nil, errordefs.ErrMangaNotFound
+		}
+		return nil, util.AddErrorContext(errorContext, err)
+	}
+
+	titlesGroup := response.GetSuccess().GetAllTitlesViewV2().GetAllTitlesGroup()
+	mangaSearchResults := make([]*models.MangaSearchResult, 0, len(titlesGroup))
+	for _, titleGroup := range titlesGroup {
+		title := titleGroup.GetTitles()[0]
+		titleName := title.GetTitleName()
+		if strings.Contains(strings.ToLower(titleName), strings.ToLower(term)) {
+			mangaSearchResults = append(mangaSearchResults, &models.MangaSearchResult{
+				Source:   sourceName,
+				URL:      fmt.Sprintf("%s/titles/%d", baseSiteURL, title.GetTitleId()),
+				Name:     titleName,
+				CoverURL: title.GetImagePortrait(),
+			})
+		}
+	}
+
+	return mangaSearchResults, nil
 }
 
 func getChaptersFromAPIList(titleViewChapters []*TitleDetailView_Chapters) []*manga.Chapter {
