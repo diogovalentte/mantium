@@ -13,6 +13,8 @@ type Source interface {
 	GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 	// GetChaptersMetadata returns all chapters of a manga
 	GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error)
+	// Search searches for a manga by its name.
+	Search(term string) ([]*MangaSearchResult, error)
 }
 
 type MangaSearchResult struct {
