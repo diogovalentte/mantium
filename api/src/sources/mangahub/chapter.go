@@ -2,9 +2,9 @@ package mangahub
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
-
-	"github.com/gocolly/colly/v2"
+	"time"
 
 	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/manga"
@@ -42,93 +42,107 @@ func (s *Source) GetChapterMetadataByURL(_ string) (*manga.Chapter, error) {
 
 // GetChapterMetadataByChapter scrapes the manga page and return the chapter by its chapter
 func (s *Source) GetChapterMetadataByChapter(mangaURL string, chapter string) (*manga.Chapter, error) {
-	s.resetCollector()
-	chapterReturn := &manga.Chapter{
-		Chapter: chapter,
-	}
-	var sharedErr error
+	s.checkClient()
 
-	chapterFound := false
-	s.c.OnHTML("ul.MWqeC:first-of-type > li a._3pfyN", func(e *colly.HTMLElement) {
-		chapterStr := e.DOM.Find("span._3D1SJ").Text()
-		scrapedChapter := strings.TrimSpace(strings.ReplaceAll(chapterStr, "#", ""))
-		if scrapedChapter != chapter {
-			return
-		}
-		chapterFound = true
-
-		chapterReturn.URL = e.Attr("href")
-
-		chapterName := e.DOM.Find("span._2IG5P").Text()
-		chapterReturn.Name = strings.TrimSpace(strings.ReplaceAll(chapterName, "- ", ""))
-
-		releasedAt := e.DOM.Find("small.UovLc").Text()
-		releaseTime, err := getMangaReleaseTime(releasedAt)
-		if err != nil {
-			sharedErr = err
-			return
-		}
-		chapterReturn.UpdatedAt = releaseTime
-	})
-
-	err := s.c.Visit(mangaURL)
+	mangaSlug, err := getMangaSlug(mangaURL)
 	if err != nil {
-		if err.Error() == "Not Found" {
-			return nil, errordefs.ErrMangaNotFound
+		return nil, err
+	}
+
+	chapterReturn := &manga.Chapter{}
+
+	query := `
+        {"query":"{chapter(x:m01,slug:\"MANGA-SLUG\",number:CHAPTER-NUMBER){number,title,slug,date,manga{slug}}}"}
+    `
+	query = strings.ReplaceAll(query, "MANGA-SLUG", mangaSlug)
+	query = strings.ReplaceAll(query, "CHAPTER-NUMBER", chapter)
+	payload := strings.NewReader(query)
+
+	var mangaAPIResp getChapterAPIResponse
+	_, err = s.client.Request("POST", baseAPIURL, payload, &mangaAPIResp)
+	if err != nil {
+		if util.ErrorContains(err, "non-200 status code -> (404)") {
+			return nil, errordefs.ErrChapterNotFound
 		}
 		return nil, err
 	}
-	if sharedErr != nil {
-		return nil, sharedErr
+
+	if len(mangaAPIResp.Errors) > 0 {
+		switch mangaAPIResp.Errors[0].Message {
+		case "Cannot read properties of undefined (reading 'mangaID')":
+			return nil, errordefs.ErrMangaNotFound
+		case "Cannot convert undefined or null to object":
+			return nil, errordefs.ErrChapterNotFound
+		default:
+			return nil, fmt.Errorf("error while getting chapter from response: %s", mangaAPIResp.Errors[0].Message)
+		}
 	}
-	if !chapterFound {
-		return nil, errordefs.ErrChapterNotFound
+
+	chapterReturn, err = getChapterFromResponse(&mangaAPIResp.Data.Chapter, mangaSlug)
+	if err != nil {
+		return nil, err
 	}
 
 	return chapterReturn, nil
 }
 
+type getChapterAPIResponse struct {
+	Errors []struct {
+		Message string `json:"message"`
+	} `json:"errors"`
+	Data struct {
+		Chapter getMangaAPIChapter `json:"chapter"`
+	} `json:"data"`
+}
+
+type getMangaAPIChapter struct {
+	Number float64 `json:"number"`
+	Title  string  `json:"title"`
+	Slug   string  `json:"slug"`
+	Date   string  `json:"date"`
+	Manga  struct {
+		Slug string `json:"slug"`
+	} `json:"manga"`
+}
+
 // GetLastChapterMetadata scrapes the manga page and return the latest chapter
 func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error) {
-	s.resetCollector()
+	s.checkClient()
 
 	errorContext := "error while getting last chapter metadata"
-	chapterReturn := &manga.Chapter{}
-	var sharedErr error
 
-	isFirstUL := true
-	s.c.OnHTML("ul.MWqeC:first-of-type > li:first-child a._3pfyN", func(e *colly.HTMLElement) {
-		if !isFirstUL {
-			return
-		}
-		isFirstUL = false
-		chapterReturn.URL = e.Attr("href")
-
-		chapterStr := e.DOM.Find("span._3D1SJ").Text()
-		chapter := strings.TrimSpace(strings.ReplaceAll(chapterStr, "#", ""))
-		chapterReturn.Chapter = chapter
-
-		chapterName := e.DOM.Find("span._2IG5P").Text()
-		chapterReturn.Name = strings.TrimSpace(strings.ReplaceAll(chapterName, "- ", ""))
-
-		releaseddAt := e.DOM.Find("small.UovLc").Text()
-		releaseTime, err := getMangaReleaseTime(releaseddAt)
-		if err != nil {
-			sharedErr = err
-			return
-		}
-		chapterReturn.UpdatedAt = releaseTime
-	})
-
-	err := s.c.Visit(mangaURL)
+	mangaSlug, err := getMangaSlug(mangaURL)
 	if err != nil {
-		if err.Error() == "Not Found" {
+		return nil, util.AddErrorContext(errorContext, err)
+	}
+
+	query := `
+        {"query":"{manga(x:m01,slug:\"MANGA-SLUG\"){latestChapter}}"}
+    `
+	query = strings.ReplaceAll(query, "MANGA-SLUG", mangaSlug)
+	payload := strings.NewReader(query)
+
+	var mangaAPIResp getMangaAPIResponse
+	_, err = s.client.Request("POST", baseAPIURL, payload, &mangaAPIResp)
+	if err != nil {
+		if util.ErrorContains(err, "non-200 status code -> (404)") {
 			return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
 		}
 		return nil, util.AddErrorContext(errorContext, err)
 	}
-	if sharedErr != nil {
-		return nil, util.AddErrorContext(errorContext, sharedErr)
+
+	if len(mangaAPIResp.Errors) > 0 {
+		switch mangaAPIResp.Errors[0].Message {
+		case "Cannot read properties of undefined (reading 'mangaID')":
+			return nil, errordefs.ErrMangaNotFound
+		default:
+			return nil, fmt.Errorf("error while getting chapter from response: %s", mangaAPIResp.Errors[0].Message)
+		}
+	}
+
+	chapterReturn, err := s.GetChapterMetadataByChapter(mangaURL, strconv.FormatFloat(mangaAPIResp.Data.Manga.LastestChapter, 'f', -1, 64))
+	if err != nil {
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	return chapterReturn, nil
@@ -136,45 +150,76 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 
 // GetChaptersMetadata scrapes the manga page and return the chapters
 func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) {
-	s.resetCollector()
+	s.checkClient()
 
 	errorContext := "error while getting chapters metadata"
-	chapters := []*manga.Chapter{}
-	var sharedErr error
 
-	s.c.OnHTML("li._287KE a._3pfyN", func(e *colly.HTMLElement) {
-		chapterReturn := &manga.Chapter{}
-
-		chapterReturn.URL = e.Attr("href")
-
-		chapterStr := e.DOM.Find("span._3D1SJ").Text()
-		chapter := strings.TrimSpace(strings.ReplaceAll(chapterStr, "#", ""))
-		chapterReturn.Chapter = chapter
-
-		chapterName := e.DOM.Find("span._2IG5P").Text()
-		chapterReturn.Name = strings.TrimSpace(strings.ReplaceAll(chapterName, "- ", ""))
-
-		releasedAt := e.DOM.Find("small.UovLc").Text()
-		releaseTime, err := getMangaReleaseTime(releasedAt)
-		if err != nil {
-			sharedErr = err
-			return
-		}
-		chapterReturn.UpdatedAt = releaseTime
-
-		chapters = append(chapters, chapterReturn)
-	})
-
-	err := s.c.Visit(mangaURL)
+	mangaSlug, err := getMangaSlug(mangaURL)
 	if err != nil {
-		if err.Error() == "Not Found" {
+		return nil, util.AddErrorContext(errorContext, err)
+	}
+
+	query := `
+        {"query":"{manga(x:m01,slug:\"MANGA-SLUG\"){chapters{number,title,date}}}"}
+    `
+	query = strings.ReplaceAll(query, "MANGA-SLUG", mangaSlug)
+	payload := strings.NewReader(query)
+
+	var mangaAPIResp getMangaAPIResponse
+	_, err = s.client.Request("POST", baseAPIURL, payload, &mangaAPIResp)
+	if err != nil {
+		if util.ErrorContains(err, "non-200 status code -> (404)") {
 			return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
 		}
 		return nil, util.AddErrorContext(errorContext, err)
 	}
-	if sharedErr != nil {
-		return nil, util.AddErrorContext(errorContext, sharedErr)
+
+	if len(mangaAPIResp.Errors) > 0 {
+		switch mangaAPIResp.Errors[0].Message {
+		case "Cannot read properties of undefined (reading 'mangaID')":
+			return nil, errordefs.ErrMangaNotFound
+		default:
+			return nil, fmt.Errorf("error while getting chapter from response: %s", mangaAPIResp.Errors[0].Message)
+		}
+	}
+
+	chapters := make([]*manga.Chapter, 0, len(mangaAPIResp.Data.Manga.Chapters))
+	for _, chapter := range mangaAPIResp.Data.Manga.Chapters {
+		chapterReturn, err := getChapterFromResponse(chapter, mangaSlug)
+		if err != nil {
+			return nil, util.AddErrorContext(errorContext, err)
+		}
+		chapters = append(chapters, chapterReturn)
 	}
 
 	return chapters, nil
+}
+
+func getChapterFromResponse(chapter *getMangaAPIChapter, mangaSlug string) (*manga.Chapter, error) {
+	errorContext := "error while getting chapter from response"
+	layout := time.RFC3339
+	updatedAt, err := time.Parse(layout, chapter.Date)
+	if err != nil {
+		return nil, util.AddErrorContext(errorContext, err)
+	}
+
+	number := strconv.FormatFloat(chapter.Number, 'f', -1, 64)
+	slug := chapter.Slug
+	if slug == "" {
+		slug = "chapter-" + number
+	}
+	title := chapter.Title
+	if title == "" {
+		// MangaHub uses the manga name + number when the chapter title is empty.
+		// But we'll use this instead.
+		title = "Chapter " + number
+	}
+	chapterReturn := &manga.Chapter{
+		URL:       baseSiteURL + "/chapter/" + mangaSlug + "/" + slug,
+		Chapter:   number,
+		Name:      title,
+		UpdatedAt: updatedAt,
+	}
+
+	return chapterReturn, nil
 }

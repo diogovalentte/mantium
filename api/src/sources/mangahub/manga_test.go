@@ -27,7 +27,7 @@ var mangasTestTable = []mangaTestType{
 				Chapter:   "112",
 				Name:      "Chapter 112",
 				URL:       "https://mangahub.io/chapter/death-note_119/chapter-112",
-				UpdatedAt: time.Date(2018, 6, 16, 0, 0, 0, 0, time.UTC),
+				UpdatedAt: time.Date(2018, 6, 16, 5, 30, 12, 0, time.UTC),
 				Type:      1,
 			},
 		},
@@ -43,7 +43,7 @@ var mangasTestTable = []mangaTestType{
 			LastReleasedChapter: &manga.Chapter{
 				Chapter:   "327",
 				Name:      "The Man Named Tadaoki",
-				URL:       "https://mangahub.io/chapter/vagabond_119/chapter-327",
+				URL:       "https://mangahub.io/chapter/vagabond_119/the-man-named-tadaoki",
 				UpdatedAt: time.Date(2016, 1, 20, 0, 0, 0, 0, time.UTC), // in the site it's 01-19-2016 (maybe it uses JS or it have to wait a bit to update)
 				Type:      1,
 			},
@@ -60,8 +60,8 @@ var mangasTestTable = []mangaTestType{
 			LastReleasedChapter: &manga.Chapter{
 				Chapter:   "101",
 				Name:      "101[END]",
-				URL:       "https://mangahub.io/chapter/mob-psycho-100/chapter-101",
-				UpdatedAt: time.Date(2018, 4, 26, 0, 0, 0, 0, time.UTC),
+				URL:       "https://mangahub.io/chapter/mob-psycho-100/101-end",
+				UpdatedAt: time.Date(2018, 4, 26, 3, 57, 50, 0, time.UTC),
 				Type:      1,
 			},
 		},
