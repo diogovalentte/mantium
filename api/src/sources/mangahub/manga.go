@@ -9,6 +9,7 @@ import (
 
 	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/manga"
+	"github.com/diogovalentte/mantium/api/src/sources/models"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
@@ -28,9 +29,9 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 	mangaReturn.URL = mangaURL
 
 	query := `
-        {"query":"{manga(x:m01,slug:\"MANGA-SLUG\"){title,image,latestChapter}}"}
+        {"query":"{manga(x:m01,slug:\"%s\"){title,image,latestChapter}}"}
     `
-	query = strings.ReplaceAll(query, "MANGA-SLUG", mangaSlug)
+	query = fmt.Sprintf(query, mangaSlug)
 	payload := strings.NewReader(query)
 
 	var mangaAPIResp getMangaAPIResponse
@@ -96,6 +97,65 @@ type getMangaAPIResponse struct {
 			LastestChapter float64               `json:"latestChapter"`
 			Chapters       []*getMangaAPIChapter `json:"chapters"`
 		} `json:"manga"`
+	} `json:"data"`
+}
+
+func (s *Source) Search(term string) ([]*models.MangaSearchResult, error) {
+	s.checkClient()
+
+	errorContext := "error while getting manga metadata"
+
+	query := `
+        {"query":"{search(x:m01,q:\"%s\",mod:POPULAR,limit:20,offset:0,count:true){rows{title,slug,image,latestChapter,status},count}}"}
+    `
+	query = fmt.Sprintf(query, term)
+	payload := strings.NewReader(query)
+
+	var searchAPIResp searchAPIResponse
+	_, err := s.client.Request("POST", baseAPIURL, payload, &searchAPIResp)
+	if err != nil {
+		return nil, util.AddErrorContext(errorContext, err)
+	}
+
+	if len(searchAPIResp.Errors) > 0 {
+		return nil, fmt.Errorf("error while getting manga from response: %s", searchAPIResp.Errors[0].Message)
+	}
+
+	mangaSearchResults := make([]*models.MangaSearchResult, 0, len(searchAPIResp.Data.Search.Rows))
+	for _, row := range searchAPIResp.Data.Search.Rows {
+		mangaSearchResult := &models.MangaSearchResult{
+			Source: "mangahub.io",
+			URL:    baseSiteURL + "/manga/" + row.Slug,
+			Name:   row.Title,
+			Status: row.Status,
+		}
+		mangaSearchResult.CoverURL = baseUploadsURL + "/" + row.Image
+		if row.Image != "" {
+			mangaSearchResult.CoverURL = baseUploadsURL + "/" + row.Image
+		} else {
+			mangaSearchResult.CoverURL = ""
+		}
+		mangaSearchResults = append(mangaSearchResults, mangaSearchResult)
+	}
+
+	return mangaSearchResults, nil
+}
+
+type searchAPIResponse struct {
+	Errors []struct {
+		Message string `json:"message"`
+	} `json:"errors"`
+	Data struct {
+		Search struct {
+			Rows []struct {
+				Title          string                `json:"title"`
+				Image          string                `json:"image"`
+				Slug           string                `json:"slug"`
+				Status         string                `json:"status"`
+				Chapters       []*getMangaAPIChapter `json:"chapters"`
+				LastestChapter float64               `json:"latestChapter"`
+			} `json:"rows"`
+		} `json:"search"`
 	} `json:"data"`
 }
 
