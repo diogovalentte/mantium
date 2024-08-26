@@ -118,10 +118,10 @@ class MangaAPIClient:
             manga["CoverImg"] = bytes(manga["CoverImg"], "utf-8")
 
             if manga["LastReleasedChapter"] is not None:
-                manga["LastReleasedChapter"][
-                    "UpdatedAt"
-                ] = self.get_updated_at_datetime(
-                    manga["LastReleasedChapter"]["UpdatedAt"]
+                manga["LastReleasedChapter"]["UpdatedAt"] = (
+                    self.get_updated_at_datetime(
+                        manga["LastReleasedChapter"]["UpdatedAt"]
+                    )
                 )
             else:
                 manga["LastReleasedChapter"] = {
@@ -260,6 +260,27 @@ class MangaAPIClient:
         if chapters is None:
             return []
         return chapters
+
+    def search_manga(self, term: str, source_site_url: str) -> dict[str, str]:
+        url = self.base_url + "/search"
+
+        request_body = {
+            "q": term,
+            "source_url": source_site_url,
+        }
+
+        res = requests.post(url, json=request_body)
+
+        if res.status_code not in self.acceptable_status_codes:
+            raise APIException(
+                "error while searching manga",
+                url,
+                "POST",
+                res.status_code,
+                res.text,
+            )
+
+        return res.json()["mangas"]
 
     def get_updated_at_datetime(self, updated_at: str) -> datetime:
         updated_at = self.remove_nano_from_datetime(updated_at)

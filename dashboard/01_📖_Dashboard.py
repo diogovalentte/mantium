@@ -171,7 +171,34 @@ class MainDashboard:
             highlight_manga_container = st.empty()
 
             with st.expander("Add Manga"):
-                self.show_add_manga_form()
+                if st.button(
+                    "Search by Name", type="primary", use_container_width=True
+                ):
+                    ss["manga_add_success_message"] = False
+                    ss["manga_add_warning_message"] = ""
+                    ss["manga_add_error_message"] = ""
+
+                    @st.experimental_dialog("Search Manga", width="large")
+                    def show_add_manga_form_dialog():
+                        self.show_add_manga_form_search()
+
+                    show_add_manga_form_dialog()
+                if st.button("Add using URL", type="primary", use_container_width=True):
+                    ss["manga_add_success_message"] = False
+                    ss["manga_add_warning_message"] = ""
+                    ss["manga_add_error_message"] = ""
+
+                    @st.experimental_dialog("Add Manga Using URL")
+                    def show_add_manga_form_dialog():
+                        self.show_add_manga_form_url()
+
+                    show_add_manga_form_dialog()
+                if ss.get("manga_add_success_message", False):
+                    st.success("Manga added successfully")
+                elif ss.get("manga_add_warning_message", "") != "":
+                    st.warning(ss["manga_add_warning_message"])
+                elif ss.get("manga_add_error_message", "") != "":
+                    st.warning(ss["manga_add_error_message"])
 
             st.divider()
             self.show_configs()
@@ -400,10 +427,6 @@ class MainDashboard:
             unsafe_allow_html=True,
         )
 
-        @st.cache_data(show_spinner=False, max_entries=1, ttl=600)
-        def get_manga_chapters(id, url: str):
-            return self.api_client.get_manga_chapters(id, url)
-
         with st.spinner("Getting manga chapters..."):
             try:
                 ss["update_manga_chapter_options"] = get_manga_chapters(
@@ -566,28 +589,208 @@ class MainDashboard:
         elif ss.get("manga_updated_error", False):
             st.error("Error while updating manga.")
 
-    def show_add_manga_form(self):
+    def show_add_manga_form_search(self):
+        container = st.empty()
+        if ss.get("add_manga_search_selected_manga", None) is not None:
+            with container:
+                try:
+                    with st.spinner("Getting manga chapters..."):
+                        ss["add_manga_chapter_options"] = get_manga_chapters(
+                            -1, ss["add_manga_search_selected_manga"]["URL"]
+                        )
+                except APIException as e:
+                    resp_text = str(e.response_text).lower()
+                    if (
+                        "error while getting source: source '" in resp_text
+                        and "not found" in resp_text
+                    ):
+                        st.warning("No source site for this manga")
+                    elif (
+                        "manga doesn't have and id or url" in resp_text
+                        or "invalid uri for request" in resp_text
+                    ):
+                        st.warning("Invalid URL")
+                    else:
+                        logger.exception(e)
+                        st.error("Error while getting manga chapters.")
+
+                self.show_add_manga_form(ss["add_manga_search_selected_manga"]["URL"])
+
+            def on_click():
+                ss["add_manga_search_selected_manga"] = None
+
+            st.button("Back", use_container_width=True, on_click=on_click)
+        else:
+            with container:
+                mangadex_tab, comick_tab, mangaplus_tab, mangahub_tab = st.tabs(
+                    ["Mangadex", "Comick", "Mangaplus", "Mangahub"]
+                )
+                with mangadex_tab:
+                    self.show_search_manga_term_form("https://mangadex.org")
+                with comick_tab:
+                    self.show_search_manga_term_form("https://comick.io")
+                with mangaplus_tab:
+                    self.show_search_manga_term_form("https://mangaplus.shueisha.co.jp")
+                with mangahub_tab:
+                    self.show_search_manga_term_form("https://mangahub.io")
+
+    def show_search_manga_term_form(self, source_site_url: str):
+        term = st.text_input(
+            "Term to Search",
+            key=f"search_manga_{source_site_url.split('//')[1].split('.')[0]}",
+        )
+        if term != "":
+            with st.spinner("Searching..."):
+                results = self.api_client.search_manga(term, source_site_url)
+
+            if len(results) == 0:
+                st.warning("No results found.")
+            else:
+                self.show_search_result_mangas(st.columns(2), results)
+
+    def show_search_result_mangas(self, cols_list: list, mangas: list[dict[str, Any]]):
+        """Show search result mangas in the cols_list columns.
+
+        Args:
+            cols_list (list): A list of streamlit.columns.
+            mangas (dict): A list of search result mangas.
+        """
+        manga_container_height = 682
+        col_index = 0
+        for manga in mangas:
+            if col_index == len(cols_list):
+                col_index = 0
+            with cols_list[col_index]:
+                with st.container(border=True, height=manga_container_height):
+                    with centered_container("center_container"):
+                        self.show_search_result_manga(manga)
+            col_index += 1
+
+    def show_search_result_manga(self, manga: dict[str, Any]):
+        # Try to make the title fit in the container the best way
+        # Also try to make the containers the same size
+        default_title_font_size = 36
+        title_len = len(manga["Name"])
+        if title_len < 15:
+            font_size = default_title_font_size
+            margin = 0
+        elif title_len < 30:
+            font_size = 20
+            margin = (default_title_font_size - font_size) / 2 + 1.6
+        else:
+            font_size = 15
+            margin = (default_title_font_size - font_size) / 2 + 1.6
+        improve_headers = """
+            <style>
+                /* Hide the header link button */
+                h1.manga_header > div > a {
+                    display: none !important;
+                }
+                /* Add ellipsis (...) if the manga name is to long */
+                h1.manga_header {
+                    white-space: nowrap !important;
+                    overflow: hidden !important;
+                    text-overflow: ellipsis !important;
+                }
+
+                h1.manga_header {
+                    padding: 0px 0px 1rem;
+                }
+
+                a.manga_header {
+                    text-decoration: none;
+                    color: inherit;
+                }
+                a.manga_header:hover {
+                    color: #04c9b7;
+                }
+            </style>
+        """
+        st.markdown(improve_headers, unsafe_allow_html=True)
+        st.markdown(
+            f"""<h1
+                class="manga_header" style='text-align: center; margin-top: {margin}px; margin-bottom: {margin}px; font-size: {font_size}px;'>
+                    <a class="manga_header" href="{manga["URL"]}" target="_blank">{manga["Name"]}</a>
+                </h1>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        if manga["CoverURL"] != "":
+            # st.image(manga["CoverURL"], width=250)
+            st.markdown(
+                f"""<img src="{manga["CoverURL"]}" width="250" height="365"/>""",
+                unsafe_allow_html=True,
+            )
+        # Hide the "View fullscreen" button from the image
+        hide_img_fs = """
+        <style>
+            button[title="View fullscreen"]{
+                display: none !important;
+            }
+        </style>
+        """
+        st.markdown(hide_img_fs, unsafe_allow_html=True)
+
+        tag_content_format = f"""
+            <span style="color: {self.chapter_link_tag_text_color}">{{}}</span>
+        """
+
+        status = tag_content_format.format(
+            manga["Status"].capitalize() if manga["Status"] != "" else "N/A",
+        )
+        tagger(
+            "<strong>Status:</strong>",
+            status,
+            self.chapter_link_tag_background_color,
+            "float: right;",
+        )
+
+        year = tag_content_format.format(
+            manga["Year"] if manga["Year"] not in ("", "0", 0) else "N/A",
+        )
+        tagger(
+            "<strong>Year:</strong>",
+            year,
+            self.chapter_link_tag_background_color,
+            "float: right;",
+        )
+
+        last_chapter = tag_content_format.format(
+            manga["LastChapter"] if manga["LastChapter"] not in ("", "0") else "N/A",
+        )
+        tagger(
+            "<strong>Last Chapter:</strong>",
+            last_chapter,
+            self.chapter_link_tag_background_color,
+            "float: right;",
+        )
+
+        st.caption(manga["Description"])
+
+        def on_click():
+            ss["add_manga_search_selected_manga"] = manga
+
+        st.button(
+            "Select",
+            type="primary",
+            use_container_width=True,
+            on_click=on_click,
+            key=f"add_manga_search_select_button_{manga['URL']}",
+        )
+
+    def show_add_manga_form_url(self):
         st.text_input(
             "Manga URL",
             placeholder="https://mangahub.io/manga/one-piece",
             key="add_manga_form_url",
         )
 
-        @st.cache_data(show_spinner=False, max_entries=1, ttl=600)
-        def get_manga_chapters(url: str):
-            chapters = self.api_client.get_manga_chapters(-1, url)
-            if chapters is None:
-                return []
-            return chapters
-
         if st.button("Get Chapters", use_container_width=True):
-            ss["manga_add_success_message"] = False
-            ss["manga_add_warning_message"] = ""
-            ss["manga_add_error_message"] = ""
             try:
                 with st.spinner("Getting manga chapters..."):
                     ss["add_manga_chapter_options"] = get_manga_chapters(
-                        ss.add_manga_form_url
+                        -1, ss.add_manga_form_url
                     )
             except APIException as e:
                 resp_text = str(e.response_text).lower()
@@ -605,6 +808,9 @@ class MainDashboard:
                     logger.exception(e)
                     st.error("Error while getting manga chapters.")
 
+        self.show_add_manga_form(ss.add_manga_form_url)
+
+    def show_add_manga_form(self, manga_url: str):
         with st.form(key="add_manga_form", border=False, clear_on_submit=True):
             st.selectbox(
                 "Status",
@@ -633,7 +839,7 @@ class MainDashboard:
 
             def add_manga_callback():
                 ss["add_manga_manga_to_add"] = {
-                    "manga_url": ss.add_manga_form_url,
+                    "manga_url": manga_url,
                     "status": ss.add_manga_form_status,
                     "chapter": ss.add_manga_form_chapter["Chapter"]
                     if ss.add_manga_form_chapter is not None
@@ -656,37 +862,34 @@ class MainDashboard:
                         "Provide a manga URL and select the last read chapter first"
                     )
                 else:
-                    try:
-                        self.api_client.add_manga(
-                            ss["add_manga_manga_to_add"]["manga_url"],
-                            ss["add_manga_manga_to_add"]["status"],
-                            ss["add_manga_manga_to_add"]["chapter"],
-                            ss["add_manga_manga_to_add"]["chapter_url"],
-                        )
-                    except APIException as e:
-                        if (
-                            "Manga added to DB, but error while adding it to Kaizoku".lower()
-                            in str(e).lower()
-                        ):
-                            logger.exception(e)
-                            ss["manga_add_warning_message"] = (
-                                "Manga added to DB, but couldn't add it to Kaizoku."
+                    with st.spinner("Adding manga..."):
+                        ss["add_manga_search_selected_manga"] = None
+                        try:
+                            self.api_client.add_manga(
+                                ss["add_manga_manga_to_add"]["manga_url"],
+                                ss["add_manga_manga_to_add"]["status"],
+                                ss["add_manga_manga_to_add"]["chapter"],
+                                ss["add_manga_manga_to_add"]["chapter_url"],
                             )
-                            st.rerun()
+                        except APIException as e:
+                            if (
+                                "Manga added to DB, but error while adding it to Kaizoku".lower()
+                                in str(e).lower()
+                            ):
+                                logger.exception(e)
+                                ss["manga_add_warning_message"] = (
+                                    "Manga added to DB, but couldn't add it to Kaizoku."
+                                )
+                                st.rerun()
+                            else:
+                                logger.exception(e)
+                                ss["manga_add_error_message"] = (
+                                    "Error while adding manga."
+                                )
+                                st.rerun()
                         else:
-                            logger.exception(e)
-                            ss["manga_add_error_message"] = "Error while adding manga."
+                            ss["manga_add_success_message"] = True
                             st.rerun()
-                    else:
-                        ss["manga_add_success_message"] = True
-                        st.rerun()
-
-        if ss.get("manga_add_success_message", False):
-            st.success("Manga added successfully")
-        elif ss.get("manga_add_warning_message", "") != "":
-            st.warning(ss["manga_add_warning_message"])
-        elif ss.get("manga_add_error_message", "") != "":
-            st.warning(ss["manga_add_error_message"])
 
     def show_configs(self):
         def update_configs_callback():
@@ -774,6 +977,14 @@ def main(api_client):
 if __name__ == "__main__":
     api_client = get_api_client()
     api_client.check_health()
+
+    @st.cache_data(show_spinner=False, max_entries=1, ttl=600)
+    def get_manga_chapters(id: int, url: str):
+        chapters = api_client.get_manga_chapters(id, url)
+        if chapters is None:
+            return []
+        return chapters
+
     try:
         main(api_client)
     except Exception as e:
