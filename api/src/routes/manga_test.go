@@ -16,6 +16,7 @@ import (
 	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/routes"
+	"github.com/diogovalentte/mantium/api/src/sources/models"
 )
 
 func setup() error {
@@ -104,6 +105,45 @@ func TestAddManga(t *testing.T) {
 		expected := errordefs.ErrChapterNotFound.Error()
 		if !strContains(actual, expected) {
 			t.Fatalf(`expected actual message "%s" to contain expected message "%s"`, actual, expected)
+		}
+	})
+}
+
+var mangaSearchRequestsTestTable = []routes.SearchMangaRequest{
+	{
+		Term:      "Death Note",
+		SourceURL: "https://mangadex.org",
+	},
+	{
+		Term:      "Blue Box",
+		SourceURL: "https://comick.io",
+	},
+	{
+		Term:      "one piece",
+		SourceURL: "https://mangahub.io",
+	},
+	{
+		Term:      "dandadan",
+		SourceURL: "https://mangaplus.shueisha.co.jp",
+	},
+}
+
+func TestSearchMangas(t *testing.T) {
+	t.Run("Search a manga", func(t *testing.T) {
+		for _, test := range mangaSearchRequestsTestTable {
+			body, err := json.Marshal(test)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var resMap map[string][]*models.MangaSearchResult
+			err = requestHelper(http.MethodPost, "/v1/manga/search", bytes.NewBuffer(body), &resMap)
+			if err != nil {
+				t.Fatal(err)
+			}
+			actual := resMap["mangas"]
+			if len(actual) < 1 {
+				t.Fatalf(`expected at least 1 manga, got %d`, len(actual))
+			}
 		}
 	})
 }

@@ -26,12 +26,14 @@ import (
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/notifications"
 	"github.com/diogovalentte/mantium/api/src/sources"
+	"github.com/diogovalentte/mantium/api/src/sources/models"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // MangaRoutes sets the manga routes
 func MangaRoutes(group *gin.RouterGroup) {
 	{
+		group.POST("/manga/search", SearchManga)
 		group.POST("/manga", AddManga)
 		group.DELETE("/manga", DeleteManga)
 		group.GET("/manga", GetManga)
@@ -44,6 +46,36 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.PATCH("/mangas/metadata", UpdateMangasMetadata)
 		group.POST("/mangas/add_to_kaizoku", AddMangasToKaizoku)
 	}
+}
+
+// @Summary Search manga
+// @Description Searches a manga in the source. You must provide the source site URL like "https://mangadex.org" and the search query.
+// @Accept json
+// @Produce json
+// @Param manga body SearchMangaRequest true "Search data"
+// @Success 200 {object} map[string][]models.MangaSearchResult "{"mangas": [mangaSearchResultObj]}"
+// @Router /manga/search [post]
+func SearchManga(c *gin.Context) {
+	var requestData SearchMangaRequest
+	if err := c.ShouldBindJSON(&requestData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid JSON fields, refer to the API documentation"})
+		return
+	}
+
+	mangas, err := sources.SearchManga(requestData.Term, requestData.SourceURL)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	resMap := map[string][]*models.MangaSearchResult{"mangas": mangas}
+	c.JSON(http.StatusOK, resMap)
+}
+
+// SearchMangaRequest is the request body for the SearchManga route
+type SearchMangaRequest struct {
+	SourceURL string `json:"source_url" binding:"required,http_url"`
+	Term      string `json:"q" binding:"required"`
 }
 
 // @Summary Add manga

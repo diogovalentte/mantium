@@ -85,6 +85,25 @@ definitions:
         description: URL is the URL of the manga
         type: string
     type: object
+  models.MangaSearchResult:
+    properties:
+      coverURL:
+        type: string
+      description:
+        type: string
+      lastChapter:
+        type: string
+      name:
+        type: string
+      source:
+        type: string
+      status:
+        type: string
+      url:
+        type: string
+      year:
+        type: integer
+    type: object
   routes.AddMangaRequest:
     properties:
       last_read_chapter:
@@ -100,6 +119,16 @@ definitions:
     required:
     - status
     - url
+    type: object
+  routes.SearchMangaRequest:
+    properties:
+      q:
+        type: string
+      source_url:
+        type: string
+    required:
+    - q
+    - source_url
     type: object
   routes.UpdateMangaChapterRequest:
     properties:
@@ -374,6 +403,31 @@ paths:
           schema:
             $ref: '#/definitions/routes.responseMessage'
       summary: Update manga last read chapter
+  /manga/search:
+    post:
+      consumes:
+      - application/json
+      description: Searches a manga in the source. You must provide the source site
+        URL like "https://mangadex.org" and the search query.
+      parameters:
+      - description: Search data
+        in: body
+        name: manga
+        required: true
+        schema:
+          $ref: '#/definitions/routes.SearchMangaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"mangas": [mangaSearchResultObj]}'
+          schema:
+            additionalProperties:
+              items:
+                $ref: '#/definitions/models.MangaSearchResult'
+              type: array
+            type: object
+      summary: Search manga
   /manga/status:
     patch:
       description: Updates a manga status in the database. You must provide either

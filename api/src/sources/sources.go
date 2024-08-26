@@ -74,6 +74,29 @@ func GetMangaMetadata(mangaURL string, ignoreGetLastChapterError bool) (*manga.M
 	return manga, nil
 }
 
+// SearchManga searches for a manga using a source
+func SearchManga(term, sourceSiteURL string) ([]*models.MangaSearchResult, error) {
+	contextError := "error while searching '%s' in '%s'"
+
+	domain, err := getDomain(sourceSiteURL)
+	if err != nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, term, sourceSiteURL), err)
+	}
+
+	source, err := GetSource(domain)
+	if err != nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, term, sourceSiteURL), err)
+	}
+	contextError = fmt.Sprintf("(%s) %s", domain, contextError)
+
+	results, err := searchManga(term, source)
+	if err != nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, term, sourceSiteURL), err)
+	}
+
+	return results, nil
+}
+
 // GetChapterMetadata gets the metadata of a chapter using a source.
 // Each source has its own way to get the chapter. Some can't get the chapter by its URL/chapter,
 // so they get the chapter by the chapter chapter/URL.
@@ -135,6 +158,10 @@ func getDomain(urlString string) (string, error) {
 
 func getManga(mangaURL string, source models.Source, ignoreGetLastChapterError bool) (*manga.Manga, error) {
 	return source.GetMangaMetadata(mangaURL, ignoreGetLastChapterError)
+}
+
+func searchManga(term string, source models.Source) ([]*models.MangaSearchResult, error) {
+	return source.Search(term)
 }
 
 func getChapter(mangaURL string, chapter string, chapterURL string, source models.Source) (*manga.Chapter, error) {

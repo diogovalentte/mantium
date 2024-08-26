@@ -361,6 +361,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/manga/search": {
+            "post": {
+                "description": "Searches a manga in the source. You must provide the source site URL like \"https://mangadex.org\" and the search query.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Search manga",
+                "parameters": [
+                    {
+                        "description": "Search data",
+                        "name": "manga",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.SearchMangaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"mangas\": [mangaSearchResultObj]}",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/models.MangaSearchResult"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/manga/status": {
             "patch": {
                 "description": "Updates a manga status in the database. You must provide either the manga ID or the manga URL.",
@@ -642,6 +679,35 @@ const docTemplate = `{
                 }
             }
         },
+        "models.MangaSearchResult": {
+            "type": "object",
+            "properties": {
+                "coverURL": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "lastChapter": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "source": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                },
+                "year": {
+                    "type": "integer"
+                }
+            }
+        },
         "routes.AddMangaRequest": {
             "type": "object",
             "required": [
@@ -661,6 +727,21 @@ const docTemplate = `{
                     "minimum": 0
                 },
                 "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "routes.SearchMangaRequest": {
+            "type": "object",
+            "required": [
+                "q",
+                "source_url"
+            ],
+            "properties": {
+                "q": {
+                    "type": "string"
+                },
+                "source_url": {
                     "type": "string"
                 }
             }
