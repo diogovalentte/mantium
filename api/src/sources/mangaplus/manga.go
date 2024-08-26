@@ -103,10 +103,11 @@ func (s *Source) Search(term string) ([]*models.MangaSearchResult, error) {
 		titleName := title.GetTitleName()
 		if strings.Contains(strings.ToLower(titleName), strings.ToLower(term)) {
 			mangaSearchResults = append(mangaSearchResults, &models.MangaSearchResult{
-				Source:   sourceName,
-				URL:      fmt.Sprintf("%s/titles/%d", baseSiteURL, title.GetTitleId()),
-				Name:     titleName,
-				CoverURL: title.GetImagePortrait(),
+				Source:      sourceName,
+				URL:         fmt.Sprintf("%s/titles/%d", baseSiteURL, title.GetTitleId()),
+				Name:        titleName,
+				CoverURL:    title.GetImagePortrait(),
+				LastChapter: "N/A",
 			})
 		}
 	}

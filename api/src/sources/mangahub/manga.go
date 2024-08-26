@@ -124,10 +124,11 @@ func (s *Source) Search(term string) ([]*models.MangaSearchResult, error) {
 	mangaSearchResults := make([]*models.MangaSearchResult, 0, len(searchAPIResp.Data.Search.Rows))
 	for _, row := range searchAPIResp.Data.Search.Rows {
 		mangaSearchResult := &models.MangaSearchResult{
-			Source: "mangahub.io",
-			URL:    baseSiteURL + "/manga/" + row.Slug,
-			Name:   row.Title,
-			Status: row.Status,
+			Source:      "mangahub.io",
+			URL:         baseSiteURL + "/manga/" + row.Slug,
+			Name:        row.Title,
+			Status:      row.Status,
+			LastChapter: strconv.FormatFloat(row.LastestChapter, 'f', -1, 64),
 		}
 		mangaSearchResult.CoverURL = baseUploadsURL + "/" + row.Image
 		if row.Image != "" {

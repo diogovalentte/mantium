@@ -128,6 +128,10 @@ func (s *Source) Search(term string) ([]*models.MangaSearchResult, error) {
 		mangaSearchResult.Description = mangaData.Attributes.Description.get()
 		mangaSearchResult.Status = mangaData.Attributes.Status
 		mangaSearchResult.Year = mangaData.Attributes.Year
+		mangaSearchResult.LastChapter = mangaData.Attributes.LastChapter
+		if mangaSearchResult.LastChapter == "0" || mangaSearchResult.LastChapter == "" {
+			mangaSearchResult.LastChapter = "N/A"
+		}
 
 		mangaSearchResult.Name = mangaData.Attributes.Title.get()
 		if mangaSearchResult.Name == "" {

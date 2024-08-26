@@ -3,6 +3,7 @@ package comick
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -90,7 +91,7 @@ type comic struct {
 	Title       string    `json:"title"`
 	Description string    `json:"desc"`
 	MDCovers    []mdCover `json:"md_covers"`
-	LastChapter float32   `json:"last_chapter"` // It seems to be the last english translated chapter released
+	LastChapter float64   `json:"last_chapter"` // It seems to be the last english translated chapter released
 	ID          int       `json:"id"`
 	Year        int       `json:"year"`
 	Status      int       `json:"status"`
@@ -121,6 +122,10 @@ func (s *Source) Search(term string) ([]*models.MangaSearchResult, error) {
 		mangaSearchResult.Description = comic.Description
 		mangaSearchResult.Year = comic.Year
 		mangaSearchResult.Name = comic.Title
+		mangaSearchResult.LastChapter = strconv.FormatFloat(comic.LastChapter, 'f', -1, 64)
+		if mangaSearchResult.LastChapter == "0" || mangaSearchResult.LastChapter == "" {
+			mangaSearchResult.LastChapter = "N/A"
+		}
 		mangaSearchResult.Status = getMangaStatus(comic.Status)
 		if len(comic.MDCovers) == 0 {
 			mangaSearchResult.CoverURL = ""

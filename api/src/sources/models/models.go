@@ -24,5 +24,6 @@ type MangaSearchResult struct {
 	CoverURL    string
 	Description string
 	Status      string
+	LastChapter string
 	Year        int
 }
