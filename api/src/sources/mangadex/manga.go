@@ -113,7 +113,7 @@ func (s *Source) Search(term string) ([]*models.MangaSearchResult, error) {
 	errorContext := "error while searching manga"
 
 	term = strings.ReplaceAll(term, " ", "+")
-	searchURL := fmt.Sprintf("%s/manga?title=%s&includes[]=cover_art&limit=100&offset=0&order[relevance]=desc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic", baseAPIURL, term)
+	searchURL := fmt.Sprintf("%s/manga?title=%s&includes[]=cover_art&limit=%d&offset=0&order[relevance]=desc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic", baseAPIURL, term, models.DefaultSearchResultsLimit)
 	var searchAPIResp searchMangaAPIResponse
 	_, err := s.client.Request("GET", searchURL, nil, &searchAPIResp)
 	if err != nil {

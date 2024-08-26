@@ -98,7 +98,11 @@ func (s *Source) Search(term string) ([]*models.MangaSearchResult, error) {
 
 	titlesGroup := response.GetSuccess().GetAllTitlesViewV2().GetAllTitlesGroup()
 	mangaSearchResults := make([]*models.MangaSearchResult, 0, len(titlesGroup))
+	count := 0
 	for _, titleGroup := range titlesGroup {
+		if count > models.DefaultSearchResultsLimit {
+			break
+		}
 		title := titleGroup.GetTitles()[0]
 		titleName := title.GetTitleName()
 		if strings.Contains(strings.ToLower(titleName), strings.ToLower(term)) {

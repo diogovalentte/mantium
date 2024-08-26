@@ -27,3 +27,5 @@ type MangaSearchResult struct {
 	LastChapter string
 	Year        int
 }
+
+var DefaultSearchResultsLimit = 20
