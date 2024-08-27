@@ -8,8 +8,12 @@ import streamlit as st
 from PIL import Image
 from src.api.api_client import get_api_client
 from src.exceptions import APIException
-from src.util import (centered_container, fix_streamlit_index_html,
-                      get_relative_time, tagger)
+from src.util import (
+    centered_container,
+    fix_streamlit_index_html,
+    get_relative_time,
+    tagger,
+)
 from streamlit import session_state as ss
 from streamlit_extras.stylable_container import stylable_container
 
@@ -55,6 +59,8 @@ class MainDashboard:
     def show(self):
         self.check_dashboard_error()
 
+        self.sidebar()
+
         mangas = self.api_client.get_mangas()
         mangas = [
             manga
@@ -84,8 +90,6 @@ class MainDashboard:
         )
         self.show_mangas(st.columns(ss["configs_columns_number"]), mangas)
 
-        self.sidebar()
-
         if "system_last_update_time" not in ss:
             ss["system_last_update_time"] = self.api_client.check_for_updates()
 
@@ -100,46 +104,7 @@ class MainDashboard:
 
     def sidebar(self) -> None:
         with st.sidebar:
-            if ss["configs_show_background_error_warning"]:
-                last_background_error = self.api_client.get_last_background_error()
-                if last_background_error["message"] != "":
-                    with st.expander(
-                        "An error occurred in the background!", expanded=True
-                    ):
-                        logger.error(
-                            f"Background error: {last_background_error['message']}"
-                        )
-                        st.info(f"Time: {last_background_error['time']}")
-
-                        @st.experimental_dialog(
-                            "Last Background Error Message", width="large"
-                        )
-                        def show_error_message_dialog():
-                            st.write(last_background_error["message"])
-
-                        if st.button(
-                            "See error",
-                            type="primary",
-                            help="See error message",
-                            use_container_width=True,
-                        ):
-                            show_error_message_dialog()
-                        with stylable_container(
-                            key="highlight_manga_delete_button",
-                            css_styles="""
-                                button {
-                                    background-color: red;
-                                    color: white;
-                                }
-                            """,
-                        ):
-                            st.button(
-                                "Delete Error",
-                                use_container_width=True,
-                                help="Delete the last background error",
-                                on_click=self.api_client.delete_last_background_error,
-                            )
-                    st.divider()
+            self.show_background_error()
 
             st.text_input("Search", key="search_manga")
 
@@ -173,7 +138,9 @@ class MainDashboard:
 
             with st.expander("Add Manga"):
                 if st.button(
-                    "Search by Name", type="primary", use_container_width=True
+                    "Search by Name",
+                    type="primary",
+                    use_container_width=True,
                 ):
                     ss["manga_add_success_message"] = False
                     ss["manga_add_warning_message"] = ""
@@ -184,6 +151,7 @@ class MainDashboard:
                         self.show_add_manga_form_search()
 
                     show_add_manga_form_dialog()
+
                 if st.button("Add using URL", type="primary", use_container_width=True):
                     ss["manga_add_success_message"] = False
                     ss["manga_add_warning_message"] = ""
@@ -209,6 +177,46 @@ class MainDashboard:
                 with highlight_manga_container:
                     with st.container(border=True):
                         self.show_highlighted_manga(manga_to_highlight)
+
+    def show_background_error(self):
+        if ss["configs_show_background_error_warning"]:
+            last_background_error = self.api_client.get_last_background_error()
+            if last_background_error["message"] != "":
+                with st.expander("An error occurred in the background!", expanded=True):
+                    logger.error(
+                        f"Background error: {last_background_error['message']}"
+                    )
+                    st.info(f"Time: {last_background_error['time']}")
+
+                    @st.experimental_dialog(
+                        "Last Background Error Message", width="large"
+                    )
+                    def show_error_message_dialog():
+                        st.write(last_background_error["message"])
+
+                    if st.button(
+                        "See error",
+                        type="primary",
+                        help="See error message",
+                        use_container_width=True,
+                    ):
+                        show_error_message_dialog()
+                    with stylable_container(
+                        key="highlight_manga_delete_button",
+                        css_styles="""
+                            button {
+                                background-color: red;
+                                color: white;
+                            }
+                        """,
+                    ):
+                        st.button(
+                            "Delete Error",
+                            use_container_width=True,
+                            help="Delete the last background error",
+                            on_click=self.api_client.delete_last_background_error,
+                        )
+                st.divider()
 
     def show_mangas(self, cols_list: list, mangas: list[dict[str, Any]]):
         """Show mangas in the cols_list columns.
@@ -648,6 +656,9 @@ class MainDashboard:
                 st.warning("No results found.")
             else:
                 self.show_search_result_mangas(st.columns(2), results)
+                st.info(
+                    "Did not find the manga you were looking for? Try another source site or using the URL directly."
+                )
 
     def show_search_result_mangas(self, cols_list: list, mangas: list[dict[str, Any]]):
         """Show search result mangas in the cols_list columns.
