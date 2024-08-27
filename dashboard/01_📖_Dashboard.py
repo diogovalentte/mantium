@@ -8,7 +8,8 @@ import streamlit as st
 from PIL import Image
 from src.api.api_client import get_api_client
 from src.exceptions import APIException
-from src.util import centered_container, get_relative_time, tagger
+from src.util import (centered_container, fix_streamlit_index_html,
+                      get_relative_time, tagger)
 from streamlit import session_state as ss
 from streamlit_extras.stylable_container import stylable_container
 
@@ -975,6 +976,7 @@ def main(api_client):
 
 
 if __name__ == "__main__":
+    fix_streamlit_index_html()
     api_client = get_api_client()
     api_client.check_health()
 

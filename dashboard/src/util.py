@@ -1,6 +1,8 @@
+import pathlib
 from datetime import datetime
 
 import streamlit as st
+from bs4 import BeautifulSoup
 from streamlit_extras.stylable_container import stylable_container
 
 
@@ -65,3 +67,25 @@ def get_relative_time(past_date):
         return f"{total_hours} {'hour' if total_hours == 1 else 'hours'} ago"
     else:
         return "Just now"
+
+
+def fix_streamlit_index_html():
+    """Fixes the Streamlit index.html file to allow to load mangadex images."""
+    index_path = pathlib.Path(st.__file__).parent / "static" / "index.html"
+    soup = BeautifulSoup(index_path.read_text(), features="html.parser")
+
+    meta_tag = soup.find("meta", attrs={"name": "referrer", "content": "no-referrer"})
+    if meta_tag:
+        return
+
+    head = soup.head
+
+    meta_tag = soup.new_tag(
+        "meta", attrs={"name": "referrer", "content": "no-referrer"}
+    )
+
+    head.insert(1, meta_tag)
+
+    index_path.write_text(str(soup))
+
+    return
