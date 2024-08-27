@@ -225,15 +225,12 @@ class MainDashboard:
             cols_list (list): A list of streamlit.columns.
             mangas (dict): A list of mangas.
         """
-        manga_container_height = 705
-        if ss.get("status_filter", 1) == 0:
-            manga_container_height = 763
         col_index = 0
         for manga in mangas:
             if col_index == len(cols_list):
                 col_index = 0
             with cols_list[col_index]:
-                with st.container(border=True, height=manga_container_height):
+                with st.container(border=True):
                     with centered_container("center_container"):
                         self.show_manga(manga)
             col_index += 1
@@ -310,7 +307,10 @@ class MainDashboard:
                 img = img.resize((250, 355))
             st.image(img)
         elif manga["CoverImgURL"] != "":
-            st.image(manga["CoverImgURL"], width=250)
+            st.markdown(
+                f"""<img src="{manga["CoverURL"]}" width="250" height="355"/>""",
+                unsafe_allow_html=True,
+            )
         # Hide the "View fullscreen" button from the image
         hide_img_fs = """
         <style>
@@ -669,7 +669,7 @@ class MainDashboard:
             cols_list (list): A list of streamlit.columns.
             mangas (dict): A list of search result mangas.
         """
-        manga_container_height = 682
+        manga_container_height = 660
         col_index = 0
         for manga in mangas:
             if col_index == len(cols_list):
@@ -731,9 +731,8 @@ class MainDashboard:
         )
 
         if manga["CoverURL"] != "":
-            # st.image(manga["CoverURL"], width=250)
             st.markdown(
-                f"""<img src="{manga["CoverURL"]}" width="250" height="365"/>""",
+                f"""<img src="{manga["CoverURL"]}" width="250" height="355"/>""",
                 unsafe_allow_html=True,
             )
         # Hide the "View fullscreen" button from the image
