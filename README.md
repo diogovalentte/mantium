@@ -45,6 +45,7 @@ When you add an iFrame widget in your dashboard, it's **>your<** web browser tha
   - If you're accessing Homarr or another dashboard with a domain and using HTTPS (like `https://dash.domain.com`), you also need to access this API with a domain and use HTTPS (like `https://mantium-api.domain.com`) to add the iFrame to your dashboard. If you try to use HTTP with your HTTPS, your browser will block the iFrame.
 
 # Check manga updates and notify
+
 You can set Mantium to get metadata of the manga you're tracking from the source sites. If the manga cover image or name changes, Mantium will update its store data. If a chapter is released, Mantium will update the manga's last released chapter. You can set when Mantium will check for updates, like every 30 minutes.
 
 You can set Mantium to notify you in a [Ntfy](https://github.com/binwiederhier/ntfy) topic when a manga with the status "reading" or "completed" has a newly released chapter.
@@ -86,6 +87,7 @@ The steps are at the bottom of this README.
 ### This project doesn't have any authentication system
 
 The dashboard and the API don't have any authentication system, so anyone who can access the dashboard or the API can do whatever they want. You can add an authentication portal like [Authelia](https://github.com/authelia/authelia) or [Authentik](https://github.com/goauthentik/authentik) in front of the dashboard to protect it and don't expose the API at all.
+
 - If you want to use the iFrame returned by the API, you can still put an authentication portal in front of the API if the API and dashboard containers are in the same Docker network. The dashboard will communicate with the API using the API's container name.
 
 ### What to do when a manga is removed from the source site or its URL changes
@@ -103,21 +105,58 @@ To fix this, delete the manga and add it again from another source site or use i
 Sometimes the URL of a source site changes (_like comick.fun to comick.io_). In this case, please open an issue if a new release with the updated URL is not released yet.
 
 ### Manga Plus source
+
 Only the first and last chapters are available on the Manga Plus site, so most chapters do not show on Mantium. I recommend reading the manga in the other source sites and when you get to the last chapter, remove the manga and add it again from the Manga Plus source.
 
 # Running manually
 
-1. Export the environment variables in the `.env.example` file.
+## Database
+
+1. Create a `docker-compose.yml` file with the database service (`Docker` and `Docker Compose` are required):
+
+```yml
+services:
+  mantium-db:
+    container_name: mantium-db
+    image: postgres:16-alpine
+    volumes:
+      - ./data/postgres-vol:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - 5432:5432
+    restart: unless-stopped
+```
+
+2. Start the database container:
+
+```sh
+docker compose up -d
+```
 
 ## API
 
-2. Inside the `api/` folder, install the API dependencies:
+3. Export the API environment variables. The variables below are the only ones necessary to run the API, but more can be found in the `.env.example` file.
+
+```
+export POSTGRES_HOST=http://localhost
+export POSTGRES_PORT=5432
+export POSTGRES_DB=postgres
+export POSTGRES_USER=postgres
+export POSTGRES_PASSWORD=postgres
+export API_PORT=8080
+```
+
+4. Inside the `api/` folder, install the API dependencies:
 
 ```bash
 go mod download
 ```
 
-3. Start the API:
+5. Start the API:
 
 ```bash
 go run main.go
@@ -125,16 +164,22 @@ go run main.go
 
 ## Dashboard
 
-4. Inside the `dashboard/` folder, install the dashboard dependencies:
+6. Export the API address environment variable:
+
+```bash
+export API_ADDRESS=http://localhost:8080
+```
+
+7. Inside the `dashboard/` folder, install the dashboard dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-5. Start the dashboard:
+8. Start the dashboard:
 
 ```bash
 streamlit run 01_📖_Dashboard.py
 ```
 
-6. Access the dashboard on `http://localhost:8501`
+9. Access the dashboard on `http://localhost:8501`
