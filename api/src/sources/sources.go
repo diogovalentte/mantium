@@ -75,7 +75,7 @@ func GetMangaMetadata(mangaURL string, ignoreGetLastChapterError bool) (*manga.M
 }
 
 // SearchManga searches for a manga using a source
-func SearchManga(term, sourceSiteURL string) ([]*models.MangaSearchResult, error) {
+func SearchManga(term, sourceSiteURL string, limit int) ([]*models.MangaSearchResult, error) {
 	contextError := "error while searching '%s' in '%s'"
 
 	domain, err := getDomain(sourceSiteURL)
@@ -89,7 +89,7 @@ func SearchManga(term, sourceSiteURL string) ([]*models.MangaSearchResult, error
 	}
 	contextError = fmt.Sprintf("(%s) %s", domain, contextError)
 
-	results, err := searchManga(term, source)
+	results, err := searchManga(term, limit, source)
 	if err != nil {
 		return nil, util.AddErrorContext(fmt.Sprintf(contextError, term, sourceSiteURL), err)
 	}
@@ -160,8 +160,8 @@ func getManga(mangaURL string, source models.Source, ignoreGetLastChapterError b
 	return source.GetMangaMetadata(mangaURL, ignoreGetLastChapterError)
 }
 
-func searchManga(term string, source models.Source) ([]*models.MangaSearchResult, error) {
-	return source.Search(term)
+func searchManga(term string, limit int, source models.Source) ([]*models.MangaSearchResult, error) {
+	return source.Search(term, limit)
 }
 
 func getChapter(mangaURL string, chapter string, chapterURL string, source models.Source) (*manga.Chapter, error) {

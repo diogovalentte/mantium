@@ -117,13 +117,13 @@ func TestGetMangaMetadata(t *testing.T) {
 func TestSearch(t *testing.T) {
 	source := Source{}
 
-	t.Run("Should get the metadata from multiple mangas", func(t *testing.T) {
+	t.Run("Should search for multiple mangas", func(t *testing.T) {
 		for _, test := range mangasTestTable {
 			mangaName := test.expected.Name
 
-			results, err := source.Search(mangaName)
+			results, err := source.Search(mangaName, 20)
 			if err != nil {
-				t.Fatalf("error while getting manga: %v", err)
+				t.Fatalf("error while searching: %v", err)
 			}
 
 			if len(results) == 0 {

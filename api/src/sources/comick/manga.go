@@ -101,13 +101,13 @@ type mdCover struct {
 	B2Key string `json:"b2key"`
 }
 
-func (s *Source) Search(term string) ([]*models.MangaSearchResult, error) {
+func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, error) {
 	s.checkClient()
 
 	errorContext := "error while searching manga"
 
 	term = strings.ReplaceAll(term, " ", "+")
-	searchURL := fmt.Sprintf("%s/v1.0/search?q=%s&type=comic&page=1&limit=%d&sort=view&showall=true", baseAPIURL, term, models.DefaultSearchResultsLimit)
+	searchURL := fmt.Sprintf("%s/v1.0/search?q=%s&type=comic&page=1&limit=%d&sort=view&showall=true", baseAPIURL, term, limit)
 	var searchAPIResp []*comic
 	_, err := s.client.Request("GET", searchURL, nil, &searchAPIResp)
 	if err != nil {

@@ -261,11 +261,12 @@ class MangaAPIClient:
             return []
         return chapters
 
-    def search_manga(self, term: str, source_site_url: str) -> dict[str, str]:
+    def search_manga(self, term: str, limit: int, source_site_url: str) -> dict[str, str]:
         url = self.base_url + "/search"
 
         request_body = {
             "q": term,
+            "limit": limit,
             "source_url": source_site_url,
         }
 

@@ -73,21 +73,24 @@ class DashboardAPIClient:
 
         return res.json()["configs"]
 
-    def update_dashboard_configs_columns(
-        self, columns: int, show_background_error_warning: bool
+    def update_dashboard_configs(
+        self, columns: int, searchResultsLimit: int, show_background_error_warning: bool
     ):
-        """Update the columns in the dashboard configs.
+        """Update the dashboard configs.
 
         Args:
             columns (int): New columns number.
+            searchResultsLimit (int): New search results limit.
             show_background_error_warning (bool): If the background error warning should be shown.
         """
         url = (
             self.base_api_url
-            + "/v1/dashboard/configs/columns?columns="
+            + "/v1/dashboard/configs?columns="
             + str(columns)
             + "&showBackgroundErrorWarning="
             + str(show_background_error_warning)
+            + "&searchResultsLimit="
+            + str(searchResultsLimit)
         )
 
         res = requests.patch(url)

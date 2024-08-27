@@ -17,8 +17,8 @@ import (
 func DashboardRoutes(group *gin.RouterGroup) {
 	{
 		group.GET("/dashboard/configs", GetDashboardConfigs)
+		group.PATCH("/dashboard/configs", UpdateDashboardConfigs)
 		group.GET("/dashboard/last_update", GetLastUpdate)
-		group.PATCH("/dashboard/configs/columns", UpdateDashboardColumns)
 		group.GET("/dashboard/last_background_error", GetLastBackgroundError)
 		group.DELETE("/dashboard/last_background_error", DeleteLastBackgroundError)
 	}
@@ -57,8 +57,9 @@ func GetLastUpdate(c *gin.Context) {
 // @Produce json
 // @Param columns query int false "New number of columns." Example(5)
 // @Param showBackgroundErrorWarning query bool false "Show the last background error warning in the dashboard."
+// @Param searchResultsLimit query int false "How many result will be shown in the dashboard search form. It'll be used by all site sources. The maximum allowed limit value varies per source." Example(20)
 // @Router /dashboard/configs/columns [patch]
-func UpdateDashboardColumns(c *gin.Context) {
+func UpdateDashboardConfigs(c *gin.Context) {
 	var configs dashboard.Configs
 	err := dashboard.GetConfigsFromFile(&configs)
 	if err != nil {
@@ -74,6 +75,16 @@ func UpdateDashboardColumns(c *gin.Context) {
 			return
 		}
 		configs.Dashboard.Columns = columns
+	}
+
+	searchResultsLimitStr := c.Query("searchResultsLimit")
+	if searchResultsLimitStr != "" {
+		searchResultsLimit, err := strconv.Atoi(searchResultsLimitStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "columns must be an integer"})
+			return
+		}
+		configs.Dashboard.SearchResultsLimit = searchResultsLimit
 	}
 
 	var showBackgroundErrorWarning bool

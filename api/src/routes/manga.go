@@ -62,7 +62,10 @@ func SearchManga(c *gin.Context) {
 		return
 	}
 
-	mangas, err := sources.SearchManga(requestData.Term, requestData.SourceURL)
+    if requestData.Limit == 0 {
+        requestData.Limit = 20
+    }
+	mangas, err := sources.SearchManga(requestData.Term, requestData.SourceURL, requestData.Limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -76,6 +79,7 @@ func SearchManga(c *gin.Context) {
 type SearchMangaRequest struct {
 	SourceURL string `json:"source_url" binding:"required,http_url"`
 	Term      string `json:"q" binding:"required"`
+    Limit    int    `json:"limit"`
 }
 
 // @Summary Add manga

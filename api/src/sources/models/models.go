@@ -14,7 +14,7 @@ type Source interface {
 	// GetChaptersMetadata returns all chapters of a manga
 	GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error)
 	// Search searches for a manga by its name.
-	Search(term string) ([]*MangaSearchResult, error)
+	Search(term string, limit int) ([]*MangaSearchResult, error)
 }
 
 type MangaSearchResult struct {
@@ -27,5 +27,3 @@ type MangaSearchResult struct {
 	LastChapter string
 	Year        int
 }
-
-var DefaultSearchResultsLimit = 20

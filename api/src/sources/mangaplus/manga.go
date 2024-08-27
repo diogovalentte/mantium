@@ -83,7 +83,7 @@ func (s *Source) GetMangaMetadata(mangaURL string, ignoreGetLastChapterError boo
 	return mangaReturn, nil
 }
 
-func (s *Source) Search(term string) ([]*models.MangaSearchResult, error) {
+func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, error) {
 	s.checkClient()
 
 	errorContext := "error while searching manga"
@@ -100,7 +100,7 @@ func (s *Source) Search(term string) ([]*models.MangaSearchResult, error) {
 	mangaSearchResults := make([]*models.MangaSearchResult, 0, len(titlesGroup))
 	count := 0
 	for _, titleGroup := range titlesGroup {
-		if count > models.DefaultSearchResultsLimit {
+		if count >= limit {
 			break
 		}
 		title := titleGroup.GetTitles()[0]
@@ -113,6 +113,7 @@ func (s *Source) Search(term string) ([]*models.MangaSearchResult, error) {
 				CoverURL:    title.GetImagePortrait(),
 				LastChapter: "N/A",
 			})
+            count++
 		}
 	}
 

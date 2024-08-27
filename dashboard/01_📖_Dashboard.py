@@ -650,7 +650,9 @@ class MainDashboard:
         )
         if term != "":
             with st.spinner("Searching..."):
-                results = self.api_client.search_manga(term, source_site_url)
+                results = self.api_client.search_manga(
+                    term, ss["configs_search_results_limit"], source_site_url
+                )
 
             if len(results) == 0:
                 st.warning("No results found.")
@@ -905,14 +907,16 @@ class MainDashboard:
 
     def show_configs(self):
         def update_configs_callback():
-            self.api_client.update_dashboard_configs_columns(
+            self.api_client.update_dashboard_configs(
                 ss.configs_select_columns_number,
+                ss.configs_select_search_results_limit,
                 ss.configs_select_show_background_error_warning,
             )
             ss["configs_columns_number"] = ss.configs_select_columns_number
             ss["configs_show_background_error_warning"] = (
                 ss.configs_select_show_background_error_warning
             )
+            ss["configs_search_results_limit"] = ss.configs_select_search_results_limit
             ss["configs_updated_success"] = True
 
         with st.popover(
@@ -927,6 +931,14 @@ class MainDashboard:
                     max_value=10,
                     value=ss["configs_columns_number"],
                     key="configs_select_columns_number",
+                )
+
+                st.slider(
+                    "Search Results Limit:",
+                    min_value=1,
+                    max_value=50,
+                    value=ss["configs_search_results_limit"],
+                    key="configs_select_search_results_limit",
                 )
 
                 st.checkbox(
@@ -961,6 +973,7 @@ def main(api_client):
     ):
         configs = api_client.get_dashboard_configs()
         ss["configs_columns_number"] = configs["columns"]
+        ss["configs_search_results_limit"] = configs["searchResultsLimit"]
         ss["configs_show_background_error_warning"] = configs[
             "showBackgroundErrorWarning"
         ]

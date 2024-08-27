@@ -52,6 +52,7 @@ type Configs struct {
 	Dashboard struct {
 		Columns                    int  `json:"columns"`
 		ShowBackgroundErrorWarning bool `json:"showBackgroundErrorWarning"`
+        SearchResultsLimit         int  `json:"searchResultsLimit"`
 	} `json:"dashboard"`
 }
 
@@ -90,6 +91,10 @@ func SetDefaultConfigsFile() error {
 		_, ok = dashboard["showBackgroundErrorWarning"]
 		if !ok {
 			dashboard["showBackgroundErrorWarning"] = true
+		}
+		_, ok = dashboard["searchResultsLimit"]
+		if !ok {
+			dashboard["searchResultsLimit"] = 20
 		}
 
 		updatedConfigs, err := json.MarshalIndent(configs, "", "  ")

@@ -100,7 +100,7 @@ type getMangaAPIResponse struct {
 	} `json:"data"`
 }
 
-func (s *Source) Search(term string) ([]*models.MangaSearchResult, error) {
+func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, error) {
 	s.checkClient()
 
 	errorContext := "error while getting manga metadata"
@@ -108,7 +108,7 @@ func (s *Source) Search(term string) ([]*models.MangaSearchResult, error) {
 	query := `
         {"query":"{search(x:m01,q:\"%s\",mod:POPULAR,limit:%d,offset:0,count:true){rows{title,slug,image,latestChapter,status},count}}"}
     `
-	query = fmt.Sprintf(query, term, models.DefaultSearchResultsLimit)
+	query = fmt.Sprintf(query, term, limit)
 	payload := strings.NewReader(query)
 
 	var searchAPIResp searchAPIResponse
