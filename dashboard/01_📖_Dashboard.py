@@ -8,12 +8,8 @@ import streamlit as st
 from PIL import Image
 from src.api.api_client import get_api_client
 from src.exceptions import APIException
-from src.util import (
-    centered_container,
-    fix_streamlit_index_html,
-    get_relative_time,
-    tagger,
-)
+from src.util import (centered_container, fix_streamlit_index_html,
+                      get_relative_time, tagger)
 from streamlit import session_state as ss
 from streamlit_extras.stylable_container import stylable_container
 
@@ -509,7 +505,7 @@ class MainDashboard:
                 )
                 st.divider()
                 st.info(
-                    "If you manually changed the cover image and want to go back and let the application fetch the cover image from the source site, leave the URL field empty and don't upload a file, check the box below, and click the button to update the manga."
+                    "If you manually changed the cover image and want to go back and let the Mantium fetch the cover image from the source site, leave the URL field empty and don't upload a file, check the box below, and click the button to update the manga."
                 )
                 st.checkbox(
                     "Get cover image from source site.",
