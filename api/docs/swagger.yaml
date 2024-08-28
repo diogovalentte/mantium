@@ -14,6 +14,8 @@ definitions:
         properties:
           columns:
             type: integer
+          searchResultsLimit:
+            type: integer
           showBackgroundErrorWarning:
             type: boolean
         type: object
@@ -122,6 +124,8 @@ definitions:
     type: object
   routes.SearchMangaRequest:
     properties:
+      limit:
+        type: integer
       q:
         type: string
       source_url:
@@ -165,7 +169,6 @@ paths:
           schema:
             $ref: '#/definitions/dashboard.Configs'
       summary: Get the dashboard configs
-  /dashboard/configs/columns:
     patch:
       description: Update the dashboard columns in the configs.json file.
       parameters:
@@ -173,11 +176,21 @@ paths:
         example: 5
         in: query
         name: columns
+        required: true
         type: integer
       - description: Show the last background error warning in the dashboard.
         in: query
         name: showBackgroundErrorWarning
+        required: true
         type: boolean
+      - description: How many result will be shown in the dashboard search form. It'll
+          be used by all site sources. The maximum allowed limit value varies per
+          source.
+        example: 20
+        in: query
+        name: searchResultsLimit
+        required: true
+        type: integer
       produces:
       - application/json
       responses:

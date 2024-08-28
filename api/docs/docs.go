@@ -30,9 +30,7 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/dashboard/configs/columns": {
+            },
             "patch": {
                 "description": "Update the dashboard columns in the configs.json file.",
                 "produces": [
@@ -45,13 +43,23 @@ const docTemplate = `{
                         "example": 5,
                         "description": "New number of columns.",
                         "name": "columns",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
                     },
                     {
                         "type": "boolean",
                         "description": "Show the last background error warning in the dashboard.",
                         "name": "showBackgroundErrorWarning",
-                        "in": "query"
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "example": 20,
+                        "description": "How many result will be shown in the dashboard search form. It'll be used by all site sources. The maximum allowed limit value varies per source.",
+                        "name": "searchResultsLimit",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -586,6 +594,9 @@ const docTemplate = `{
                         "columns": {
                             "type": "integer"
                         },
+                        "searchResultsLimit": {
+                            "type": "integer"
+                        },
                         "showBackgroundErrorWarning": {
                             "type": "boolean"
                         }
@@ -738,6 +749,9 @@ const docTemplate = `{
                 "source_url"
             ],
             "properties": {
+                "limit": {
+                    "type": "integer"
+                },
                 "q": {
                     "type": "string"
                 },

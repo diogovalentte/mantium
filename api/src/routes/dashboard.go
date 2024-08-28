@@ -55,10 +55,10 @@ func GetLastUpdate(c *gin.Context) {
 // @Description Update the dashboard columns in the configs.json file.
 // @Success 200 {object} responseMessage
 // @Produce json
-// @Param columns query int false "New number of columns." Example(5)
-// @Param showBackgroundErrorWarning query bool false "Show the last background error warning in the dashboard."
-// @Param searchResultsLimit query int false "How many result will be shown in the dashboard search form. It'll be used by all site sources. The maximum allowed limit value varies per source." Example(20)
-// @Router /dashboard/configs/columns [patch]
+// @Param columns query int true "New number of columns." Example(5)
+// @Param showBackgroundErrorWarning query bool true "Show the last background error warning in the dashboard."
+// @Param searchResultsLimit query int true "How many result will be shown in the dashboard search form. It'll be used by all site sources. The maximum allowed limit value varies per source." Example(20)
+// @Router /dashboard/configs [patch]
 func UpdateDashboardConfigs(c *gin.Context) {
 	var configs dashboard.Configs
 	err := dashboard.GetConfigsFromFile(&configs)
