@@ -15,7 +15,8 @@ def get_api_client():
 
         api_address = os.environ.get("API_ADDRESS", "")
         if api_address == "":
-            raise ValueError("API_ADDRESS environment variable is not set")
+            api_address = "http://localhost:8080"
+        logger.info(f"API address: {api_address}")
 
         api_client = APIClient(api_address)  # The golang API docker service name
         st.session_state["api_client"] = api_client
