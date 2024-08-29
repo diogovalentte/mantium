@@ -406,6 +406,8 @@ class MainDashboard:
             def highlight_manga():
                 ss["manga_to_highlight"] = manga
                 ss["manga_updated_success"] = False
+                ss["manga_updated_error"] = False
+                ss["manga_update_warning_message"] = ""
 
             st.button(
                 "Highlight",
@@ -503,7 +505,7 @@ class MainDashboard:
                 )
                 st.divider()
                 st.info(
-                    "If you manually changed the cover image and want to go back and let the Mantium fetch the cover image from the source site, leave the URL field empty and don't upload a file, check the box below, and click the button to update the manga."
+                    "If you manually changed the cover image and want to go back and let the Mantium fetch the cover image from the source site, check the box below."
                 )
                 st.checkbox(
                     "Get cover image from source site.",
@@ -515,6 +517,9 @@ class MainDashboard:
                 use_container_width=True,
                 type="primary",
             ):
+                ss["manga_updated_success"] = False
+                ss["manga_updated_error"] = False
+                ss["manga_update_warning_message"] = ""
                 try:
                     status = ss.update_manga_form_status
                     if status != manga["Status"]:
@@ -533,31 +538,42 @@ class MainDashboard:
                         )
 
                     cover_url = ss.update_manga_form_cover_img_url
-                    cover_upload = ss.update_manga_form_cover_img_upload
+                    cover_upload = ss.update_manga_form_cover_img_upload.getvalue() if ss.update_manga_form_cover_img_upload else None
                     get_cover_img_from_source = (
                         ss.update_manga_form_get_cover_img_from_source
                     )
 
-                    if cover_url != "" or cover_upload is not None:
-                        self.api_client.update_manga_cover_img(
-                            manga["ID"],
-                            manga["URL"],
-                            cover_img_url=cover_url,
-                            cover_img=cover_upload.getvalue() if cover_upload else b"",
-                            get_cover_img_from_source=get_cover_img_from_source,
-                        )
-                    elif get_cover_img_from_source:
-                        self.api_client.update_manga_cover_img(
-                            manga["ID"],
-                            manga["URL"],
-                            get_cover_img_from_source=True,
-                        )
+                    values_count = sum([
+                        bool(cover_url),
+                        bool(cover_upload),
+                        get_cover_img_from_source,
+                    ])
+
+                    match values_count:
+                        case 0:
+                            pass
+                        case 1:
+                            if cover_url != "" or cover_upload is not None:
+                                self.api_client.update_manga_cover_img(
+                                    manga["ID"],
+                                    manga["URL"],
+                                    cover_img_url=cover_url,
+                                    cover_img=cover_upload if cover_upload else b"",
+                                )
+                            elif get_cover_img_from_source:
+                                self.api_client.update_manga_cover_img(
+                                    manga["ID"],
+                                    manga["URL"],
+                                    get_cover_img_from_source=get_cover_img_from_source,
+                                )
+                        case _:
+                            ss["manga_update_warning_message"] = "To update the cover image, provide either an URL, upload a file, or check the box to get the image from the source site. The other fields were updated successfully."
+                            st.rerun()
+                    ss["manga_updated_success"] = True
+                    st.rerun()
                 except APIException as e:
                     logger.exception(e)
                     ss["manga_updated_error"] = True
-                    st.rerun()
-                else:
-                    ss["manga_updated_success"] = True
                     st.rerun()
 
         def delete_manga_btn_callback():
@@ -591,6 +607,8 @@ class MainDashboard:
             st.success("Manga updated successfully")
         elif ss.get("manga_updated_error", False):
             st.error("Error while updating manga.")
+        if ss.get("manga_update_warning_message", "") != "":
+            st.warning(ss["manga_update_warning_message"])
 
     def show_add_manga_form_search(self):
         container = st.empty()

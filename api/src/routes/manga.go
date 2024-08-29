@@ -62,9 +62,9 @@ func SearchManga(c *gin.Context) {
 		return
 	}
 
-    if requestData.Limit == 0 {
-        requestData.Limit = 20
-    }
+	if requestData.Limit == 0 {
+		requestData.Limit = 20
+	}
 	mangas, err := sources.SearchManga(requestData.Term, requestData.SourceURL, requestData.Limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -79,7 +79,7 @@ func SearchManga(c *gin.Context) {
 type SearchMangaRequest struct {
 	SourceURL string `json:"source_url" binding:"required,http_url"`
 	Term      string `json:"q" binding:"required"`
-    Limit    int    `json:"limit"`
+	Limit     int    `json:"limit"`
 }
 
 // @Summary Add manga
@@ -856,13 +856,13 @@ type UpdateMangaChapterRequest struct {
 }
 
 // @Summary Update manga cover image
-// @Description Updates a manga cover image in the database. You must provide either the manga ID or the manga URL. By default, the cover image is fetched from the source site, but you can manually provide an image URL or upload a file. If you want the application to fetch the cover image from the source site, leave the URL field empty and don't upload a file and set the get_cover_img_from_source field to true.
+// @Description Updates a manga cover image in the database. You must provide either the manga ID or the manga URL. You must provide only one of the following: cover_img, cover_img_url, get_cover_img_from_source.
 // @Produce json
 // @Param id query int false "Manga ID" Example(1)
 // @Param url query string false "Manga URL" Example("https://mangadex.org/title/1/one-piece")
-// @Param cover_img formData file false "Manga cover image"
+// @Param cover_img formData file false "Manga cover image file"
 // @Param cover_img_url query string false "Manga cover image URL" Example("https://example.com/cover.jpg")
-// @Param get_cover_img_from_source query bool false "Manga status" Example(true)
+// @Param get_cover_img_from_source query bool false "Let Mantium fetch the cover image from the source site" Example(true)
 // @Success 200 {object} responseMessage
 // @Router /manga/cover_img [patch]
 func UpdateMangaCoverImg(c *gin.Context) {
@@ -870,6 +870,41 @@ func UpdateMangaCoverImg(c *gin.Context) {
 	mangaURL := c.Query("url")
 	coverImgURL := c.Query("cover_img_url")
 	getCoverImgFromSource := c.Query("get_cover_img_from_source")
+
+	var requestFile multipart.File
+	requestFile, _, err := c.Request.FormFile("cover_img")
+	if err != nil && err != http.ErrMissingFile {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	defer requestFile.Close()
+	coverImg, err := io.ReadAll(requestFile)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	var score int
+	if coverImgURL != "" {
+		score++
+	}
+	if getCoverImgFromSource != "" {
+		score++
+	}
+	if len(coverImg) != 0 {
+		score++
+	}
+
+	switch score {
+	case 0:
+		c.JSON(http.StatusBadRequest, gin.H{"message": "you must provide one of the following: cover_img, cover_img_url, get_cover_img_from_source"})
+		return
+	case 1:
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{"message": "you must provide only one of the following: cover_img, cover_img_url, get_cover_img_from_source"})
+		return
+	}
+
 	mangaID, mangaURL, err := getMangaIDAndURL(mangaIDStr, mangaURL)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
@@ -882,20 +917,6 @@ func UpdateMangaCoverImg(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
 			return
 		}
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-
-	var requestFile multipart.File
-	requestFile, _, err = c.Request.FormFile("cover_img")
-	if err != nil && err != http.ErrMissingFile {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-	defer requestFile.Close()
-
-	coverImg, err := io.ReadAll(requestFile)
-	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}

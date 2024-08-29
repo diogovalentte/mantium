@@ -346,12 +346,9 @@ paths:
       summary: Get manga chapters
   /manga/cover_img:
     patch:
-      description: Updates a manga cover image in the database. You must provide either
-        the manga ID or the manga URL. By default, the cover image is fetched from
-        the source site, but you can manually provide an image URL or upload a file.
-        If you want the application to fetch the cover image from the source site,
-        leave the URL field empty and don't upload a file and set the get_cover_img_from_source
-        field to true.
+      description: 'Updates a manga cover image in the database. You must provide
+        either the manga ID or the manga URL. You must provide only one of the following:
+        cover_img, cover_img_url, get_cover_img_from_source.'
       parameters:
       - description: Manga ID
         example: 1
@@ -363,7 +360,7 @@ paths:
         in: query
         name: url
         type: string
-      - description: Manga cover image
+      - description: Manga cover image file
         in: formData
         name: cover_img
         type: file
@@ -372,7 +369,7 @@ paths:
         in: query
         name: cover_img_url
         type: string
-      - description: Manga status
+      - description: Let Mantium fetch the cover image from the source site
         example: true
         in: query
         name: get_cover_img_from_source

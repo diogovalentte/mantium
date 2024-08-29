@@ -276,7 +276,7 @@ const docTemplate = `{
         },
         "/manga/cover_img": {
             "patch": {
-                "description": "Updates a manga cover image in the database. You must provide either the manga ID or the manga URL. By default, the cover image is fetched from the source site, but you can manually provide an image URL or upload a file. If you want the application to fetch the cover image from the source site, leave the URL field empty and don't upload a file and set the get_cover_img_from_source field to true.",
+                "description": "Updates a manga cover image in the database. You must provide either the manga ID or the manga URL. You must provide only one of the following: cover_img, cover_img_url, get_cover_img_from_source.",
                 "produces": [
                     "application/json"
                 ],
@@ -298,7 +298,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "file",
-                        "description": "Manga cover image",
+                        "description": "Manga cover image file",
                         "name": "cover_img",
                         "in": "formData"
                     },
@@ -312,7 +312,7 @@ const docTemplate = `{
                     {
                         "type": "boolean",
                         "example": true,
-                        "description": "Manga status",
+                        "description": "Let Mantium fetch the cover image from the source site",
                         "name": "get_cover_img_from_source",
                         "in": "query"
                     }
