@@ -26,8 +26,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger()
 
-ss_dashboard_error_key = "dashboard_error"
-
 
 class MainDashboard:
     def __init__(self, api_client):
@@ -228,10 +226,10 @@ class MainDashboard:
             with cols_list[col_index]:
                 with st.container(border=True):
                     with centered_container("center_container"):
-                        self.show_manga(manga)
+                        self.show_manga_dashboard(manga)
             col_index += 1
 
-    def show_manga(self, manga: dict[str, Any]):
+    def show_manga_dashboard(self, manga: dict[str, Any]):
         unread = (
             manga["LastReadChapter"]["Chapter"]
             != manga["LastReleasedChapter"]["Chapter"]
@@ -954,10 +952,10 @@ class MainDashboard:
                 st.success("Configs updated successfully")
 
     def check_dashboard_error(self):
-        if ss.get(ss_dashboard_error_key, False):
-            st.error("An error occurred. Please check the DASHBOARD logs.")
+        if ss.get("dashboard_error", False):
+            st.error("An unexcepted error occurred. Please check the DASHBOARD logs.")
             st.info("You can try to refresh the page.")
-            ss[ss_dashboard_error_key] = False
+            ss["dashboard_error"] = False
             st.stop()
 
 
@@ -1010,5 +1008,5 @@ if __name__ == "__main__":
         main(api_client)
     except Exception as e:
         logger.exception(e)
-        ss[ss_dashboard_error_key] = True
+        ss["dashboard_error"] = True
         st.rerun()
