@@ -183,9 +183,10 @@ func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) 
 		}
 	}
 
-	chapters := make([]*manga.Chapter, 0, len(mangaAPIResp.Data.Manga.Chapters))
-	for _, chapter := range mangaAPIResp.Data.Manga.Chapters {
-		chapterReturn, err := getChapterFromResponse(chapter, mangaSlug)
+	chaptersLen := len(mangaAPIResp.Data.Manga.Chapters)
+	chapters := make([]*manga.Chapter, 0, chaptersLen)
+	for i := chaptersLen - 1; i >= 0; i-- {
+		chapterReturn, err := getChapterFromResponse(mangaAPIResp.Data.Manga.Chapters[i], mangaSlug)
 		if err != nil {
 			return nil, util.AddErrorContext(errorContext, err)
 		}
