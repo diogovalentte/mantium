@@ -12,6 +12,7 @@ from src.util import (centered_container, fix_streamlit_index_html,
                       get_relative_time, tagger)
 from streamlit import session_state as ss
 from streamlit_extras.stylable_container import stylable_container
+from streamlit_javascript import st_javascript
 
 st.set_page_config(
     page_title="Mantium",
@@ -158,6 +159,15 @@ class MainDashboard:
                     ss["manga_add_success_message"] = False
                     ss["manga_add_warning_message"] = ""
                     ss["manga_add_error_message"] = ""
+                    if ss.get("add_manga_chapter_options", None) is not None:
+                        del ss["add_manga_chapter_options"]
+                    if ss.get("add_manga_search_selected_manga", None) is not None:
+                        del ss["add_manga_search_selected_manga"]
+                    ss["add_manga_search_results_mangadex"] = {}
+                    ss["add_manga_search_results_comick"] = {}
+                    ss["add_manga_search_results_mangaplus"] = {}
+                    ss["add_manga_search_results_mangahub"] = {}
+                    ss["add_manga_search_go_back_to_tab"] = 0
 
                     @st.experimental_dialog("Search Manga", width="large")
                     def show_add_manga_form_dialog():
@@ -169,6 +179,8 @@ class MainDashboard:
                     ss["manga_add_success_message"] = False
                     ss["manga_add_warning_message"] = ""
                     ss["manga_add_error_message"] = ""
+                    if ss.get("add_manga_chapter_options", None) is not None:
+                        del ss["add_manga_chapter_options"]
 
                     @st.experimental_dialog("Add Manga Using URL")
                     def show_add_manga_form_dialog():
@@ -624,6 +636,15 @@ class MainDashboard:
                 self.show_add_manga_form(ss["add_manga_search_selected_manga"]["URL"])
 
             def on_click():
+                match ss["add_manga_search_selected_manga"]["Source"]:
+                    case "mangadex.org":
+                        ss["add_manga_search_go_back_to_tab"] = 0
+                    case "comick.xyz":
+                        ss["add_manga_search_go_back_to_tab"] = 1
+                    case "mangaplus.shueisha.co.jp":
+                        ss["add_manga_search_go_back_to_tab"] = 2
+                    case "mangahub.io":
+                        ss["add_manga_search_go_back_to_tab"] = 3
                 ss["add_manga_search_selected_manga"] = None
 
             st.button("Back", use_container_width=True, on_click=on_click)
@@ -632,6 +653,7 @@ class MainDashboard:
                 mangadex_tab, comick_tab, mangaplus_tab, mangahub_tab = st.tabs(
                     ["Mangadex", "Comick", "Mangaplus", "Mangahub"]
                 )
+
                 with mangadex_tab:
                     self.show_search_manga_term_form("https://mangadex.org")
                 with comick_tab:
@@ -641,24 +663,46 @@ class MainDashboard:
                 with mangahub_tab:
                     self.show_search_manga_term_form("https://mangahub.io")
 
+            tab_index = ss["add_manga_search_go_back_to_tab"]
+            js = f"""window.parent.document.querySelectorAll('button[data-baseweb="tab"]')[{tab_index}].click();"""
+            st_javascript(js)
+            js = """window.parent.document.querySelectorAll('div:has(> iframe[title="streamlit_javascript.streamlit_javascript"])').forEach(div => div.style.display = 'none');"""
+            st_javascript(js)
+
     def show_search_manga_term_form(self, source_site_url: str):
+        search_results_key = (
+            f"add_manga_search_results_{source_site_url.split('//')[1].split('.')[0]}"
+        )
+        search_term_key = f"search_manga_{source_site_url.split('//')[1].split('.')[0]}"
+
         term = st.text_input(
             "Term to Search",
-            key=f"search_manga_{source_site_url.split('//')[1].split('.')[0]}",
+            value=ss[search_term_key]
+            if ss.get(search_term_key, "") != ""
+            else ss[search_results_key].get("term", ""),
+            key=search_term_key,
         )
-        if term != "":
+
+        if term == "":
+            ss[search_results_key]["term"] = term
+            return
+        elif ss[search_results_key].get("term", "") == term:
+            results = ss[search_results_key].get("results", [])
+        else:
             with st.spinner("Searching..."):
                 results = self.api_client.search_manga(
                     term, ss["configs_search_results_limit"], source_site_url
                 )
+                ss[search_results_key]["results"] = results
+            ss[search_results_key]["term"] = term
 
-            if len(results) == 0:
-                st.warning("No results found.")
-            else:
-                self.show_search_result_mangas(st.columns(2), results)
-                st.info(
-                    "Did not find the manga you were looking for? Try another source site or using the URL directly."
-                )
+        if len(results) == 0:
+            st.warning("No results found.")
+        else:
+            self.show_search_result_mangas(st.columns(2), results)
+            st.info(
+                "Did not find the manga you were looking for? Try another source site or using the URL directly."
+            )
 
     def show_search_result_mangas(self, cols_list: list, mangas: list[dict[str, Any]]):
         """Show search result mangas in the cols_list columns.
@@ -791,18 +835,16 @@ class MainDashboard:
         )
 
     def show_add_manga_form_url(self):
-        st.text_input(
+        manga_url = st.text_input(
             "Manga URL",
             placeholder="https://mangahub.io/manga/one-piece",
             key="add_manga_form_url",
         )
 
-        if st.button("Get Chapters", use_container_width=True):
+        if manga_url:
             try:
                 with st.spinner("Getting manga chapters..."):
-                    ss["add_manga_chapter_options"] = get_manga_chapters(
-                        -1, ss.add_manga_form_url
-                    )
+                    ss["add_manga_chapter_options"] = get_manga_chapters(-1, manga_url)
             except APIException as e:
                 resp_text = str(e.response_text).lower()
                 if (
