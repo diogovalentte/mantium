@@ -96,6 +96,27 @@ class MainDashboard:
 
         check_for_updates()
 
+        if (
+            ss.get("manga_updated_success_message", "") != ""
+            or ss.get("manga_updated_error_message", "") != ""
+            or ss.get("manga_update_warning_message", "") != ""
+        ):
+
+            @st.experimental_dialog("Update Manga")
+            def show_update_manga_dialog():
+                if ss.get("manga_updated_success_message", "") != "":
+                    st.success(ss["manga_updated_success_message"])
+                if ss.get("manga_updated_error_message", "") != "":
+                    st.error(ss["manga_updated_error_message"])
+                if ss.get("manga_update_warning_message", "") != "":
+                    st.warning(ss["manga_update_warning_message"])
+
+            show_update_manga_dialog()
+
+            ss["manga_updated_success_message"] = ""
+            ss["manga_updated_error"] = ""
+            ss["manga_update_warning_message"] = ""
+
     def sidebar(self) -> None:
         with st.sidebar:
             self.show_background_error()
@@ -127,8 +148,6 @@ class MainDashboard:
 
             st.toggle("Reverse Sort", key="mangas_sort_reverse")
             st.divider()
-
-            highlight_manga_container = st.empty()
 
             with st.expander("Add Manga"):
                 if st.button(
@@ -165,12 +184,6 @@ class MainDashboard:
 
             st.divider()
             self.show_configs()
-
-            manga_to_highlight = ss.get("manga_to_highlight", None)
-            if manga_to_highlight is not None:
-                with highlight_manga_container:
-                    with st.container(border=True):
-                        self.show_highlighted_manga(manga_to_highlight)
 
     def show_background_error(self):
         if ss["configs_show_background_error_warning"]:
@@ -402,36 +415,20 @@ class MainDashboard:
                 disabled=not unread,
             )
         with c2:
-
-            def highlight_manga():
-                ss["manga_to_highlight"] = manga
-                ss["manga_updated_success"] = False
-                ss["manga_updated_error"] = False
-                ss["manga_update_warning_message"] = ""
-
-            st.button(
+            if st.button(
                 "Highlight",
                 use_container_width=True,
                 type="primary",
                 key=f"highlight_{manga['ID']}",
-                on_click=highlight_manga,
-            )
+            ):
+
+                @st.experimental_dialog(manga["Name"])
+                def show_highlighted_manga_dialog():
+                    self.show_highlighted_manga(manga)
+
+                show_highlighted_manga_dialog()
 
     def show_highlighted_manga(self, manga: dict[str, Any]):
-        # Try to make the title fit in the container the best way
-        default_title_font_size = 36
-        title_len = len(manga["Name"])
-        if title_len < 15:
-            font_size = default_title_font_size
-        elif title_len < 30:
-            font_size = 20
-        else:
-            font_size = 15
-        st.markdown(
-            f"""<h1 style='text-align: center; font-size: {font_size}px;'>{manga["Name"]}</h1>""",
-            unsafe_allow_html=True,
-        )
-
         with st.spinner("Getting manga chapters..."):
             try:
                 ss["update_manga_chapter_options"] = get_manga_chapters(
@@ -485,10 +482,8 @@ class MainDashboard:
                     "Manga has no released chapters. You still can update the other fields."
                 )
 
-            with st.popover(
+            with st.expander(
                 "Update Cover Image",
-                help="Update the cover image of the manga",
-                use_container_width=True,
             ):
                 st.info(
                     "By default, the cover image is fetched from the source site, but you can manually provide an image URL or upload a file."
@@ -517,9 +512,6 @@ class MainDashboard:
                 use_container_width=True,
                 type="primary",
             ):
-                ss["manga_updated_success"] = False
-                ss["manga_updated_error"] = False
-                ss["manga_update_warning_message"] = ""
                 try:
                     status = ss.update_manga_form_status
                     if status != manga["Status"]:
@@ -528,7 +520,8 @@ class MainDashboard:
                     chapter = ss.update_manga_form_chapter
                     if chapter is not None and (
                         manga["LastReadChapter"] is None
-                        or chapter != manga["LastReadChapter"]["Chapter"]
+                        or chapter["URL"] != manga["LastReadChapter"]["URL"]
+                        or chapter["Chapter"] != manga["LastReadChapter"]["Chapter"]
                     ):
                         self.api_client.update_manga_last_read_chapter(
                             manga["ID"],
@@ -538,16 +531,22 @@ class MainDashboard:
                         )
 
                     cover_url = ss.update_manga_form_cover_img_url
-                    cover_upload = ss.update_manga_form_cover_img_upload.getvalue() if ss.update_manga_form_cover_img_upload else None
+                    cover_upload = (
+                        ss.update_manga_form_cover_img_upload.getvalue()
+                        if ss.update_manga_form_cover_img_upload
+                        else None
+                    )
                     get_cover_img_from_source = (
                         ss.update_manga_form_get_cover_img_from_source
                     )
 
-                    values_count = sum([
-                        bool(cover_url),
-                        bool(cover_upload),
-                        get_cover_img_from_source,
-                    ])
+                    values_count = sum(
+                        [
+                            bool(cover_url),
+                            bool(cover_upload),
+                            get_cover_img_from_source,
+                        ]
+                    )
 
                     match values_count:
                         case 0:
@@ -567,18 +566,19 @@ class MainDashboard:
                                     get_cover_img_from_source=get_cover_img_from_source,
                                 )
                         case _:
-                            ss["manga_update_warning_message"] = "To update the cover image, provide either an URL, upload a file, or check the box to get the image from the source site. The other fields were updated successfully."
+                            ss["manga_update_warning_message"] = (
+                                "To update the cover image, provide either an URL, upload a file, or check the box to get the image from the source site. The other fields were updated successfully."
+                            )
                             st.rerun()
-                    ss["manga_updated_success"] = True
+                    ss["manga_updated_success_message"] = "Manga updated successfully"
                     st.rerun()
                 except APIException as e:
                     logger.exception(e)
-                    ss["manga_updated_error"] = True
+                    ss["manga_updated_error"] = "Error while updating manga."
                     st.rerun()
 
         def delete_manga_btn_callback():
             self.api_client.delete_manga(manga["ID"])
-            ss["manga_to_highlight"] = None
 
         with stylable_container(
             key="highlight_manga_delete_button",
@@ -591,24 +591,10 @@ class MainDashboard:
         ):
             st.button(
                 "Delete Manga",
-                on_click=delete_manga_btn_callback,  # needs to have a callback to delete the ss["manga_to_highlight"]
+                on_click=delete_manga_btn_callback,
                 use_container_width=True,
                 key="delete_manga_btn",
             )
-
-        st.button(
-            "Close",
-            key="close_highlighted_manga",
-            on_click=lambda: ss.pop("manga_to_highlight"),
-            use_container_width=True,
-        )
-
-        if ss.get("manga_updated_success", False):
-            st.success("Manga updated successfully")
-        elif ss.get("manga_updated_error", False):
-            st.error("Error while updating manga.")
-        if ss.get("manga_update_warning_message", "") != "":
-            st.warning(ss["manga_update_warning_message"])
 
     def show_add_manga_form_search(self):
         container = st.empty()
@@ -1018,8 +1004,7 @@ if __name__ == "__main__":
     @st.cache_data(show_spinner=False, max_entries=1, ttl=600)
     def get_manga_chapters(id: int, url: str):
         chapters = api_client.get_manga_chapters(id, url)
-        if chapters is None:
-            return []
+
         return chapters
 
     try:
