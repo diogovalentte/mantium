@@ -1,5 +1,5 @@
-// Package notifications provides notification systems for the API
-package notifications
+// Package ntfy provides a wrapper around gotfy.Publisher to send messages to the Ntfy server
+package ntfy
 
 import (
 	"context"

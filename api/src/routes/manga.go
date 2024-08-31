@@ -23,9 +23,9 @@ import (
 	"github.com/diogovalentte/mantium/api/src/dashboard"
 	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/integrations/kaizoku"
+	"github.com/diogovalentte/mantium/api/src/integrations/ntfy"
 	"github.com/diogovalentte/mantium/api/src/integrations/tranga"
 	"github.com/diogovalentte/mantium/api/src/manga"
-	"github.com/diogovalentte/mantium/api/src/notifications"
 	"github.com/diogovalentte/mantium/api/src/sources"
 	"github.com/diogovalentte/mantium/api/src/sources/models"
 	"github.com/diogovalentte/mantium/api/src/util"
@@ -1283,7 +1283,7 @@ func getMangaIDAndURL(mangaIDStr string, mangaURL string) (manga.ID, string, err
 
 // NotifyMangaLastReleasedChapterUpdate notifies a manga last released chapter update
 func NotifyMangaLastReleasedChapterUpdate(oldManga *manga.Manga, newManga *manga.Manga) error {
-	publisher, err := notifications.GetNtfyPublisher()
+	publisher, err := ntfy.GetNtfyPublisher()
 	if err != nil {
 		return err
 	}
