@@ -497,6 +497,35 @@ const docTemplate = `{
                 }
             }
         },
+        "/mangas/add_to_tranga": {
+            "post": {
+                "description": "Add the mangas in the database to Tranga. If it fails to add a manga, it will continue with the next manga. This is a heavy operation depending on the number of mangas in the database. Currently, only MangaDex mangas can be added to Tranga, but it'll try all mangas anyway.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Add mangas to Tranga",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Filter which mangas to add by status. 1=reading, 2=completed, 3=on hold, 4=dropped, 5=plan to read. Example: status=1,2,3,5",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
         "/mangas/iframe": {
             "get": {
                 "description": "Returns an iFrame with mangas. Only mangas with unread chapters, and status reading or completed. Sort by last released chapter date. Designed to be used with [Homarr](https://github.com/ajnart/homarr).",

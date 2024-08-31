@@ -20,6 +20,7 @@ var GlobalConfigs = &Configs{
 	Ntfy:                     &NtfyConfigs{},
 	PeriodicallyUpdateMangas: &PeriodicallyUpdateMangasConfigs{},
 	Kaizoku:                  &KaizokuConfigs{},
+	Tranga:                   &TrangaConfigs{},
 	ConfigsFilePath:          "./configs/configs.json",
 	DefaultConfigsFilePath:   "./defaults/configs.json",
 }
@@ -31,6 +32,7 @@ type Configs struct {
 	Ntfy                     *NtfyConfigs
 	PeriodicallyUpdateMangas *PeriodicallyUpdateMangasConfigs
 	Kaizoku                  *KaizokuConfigs
+	Tranga                   *TrangaConfigs
 	// A file with configs that should be persisted
 	// Relative to main.go
 	ConfigsFilePath        string
@@ -68,11 +70,18 @@ type PeriodicallyUpdateMangasConfigs struct {
 
 // KaizokuConfigs is a struct that holds the configurations for the Kaizoku integration.
 type KaizokuConfigs struct {
-	Valid                       bool
 	Address                     string
 	DefaultInterval             string
 	WaitUntilEmptyQueuesTimeout time.Duration
 	TryOtherSources             bool
+	Valid                       bool
+}
+
+// TrangaConfigs is a struct that holds the configurations for the Tranga integration.
+type TrangaConfigs struct {
+	Address         string
+	DefaultInterval string
+	Valid           bool
 }
 
 // SetConfigs sets the configurations based on a .env file if provided or using environment variables.
@@ -134,6 +143,15 @@ func SetConfigs(filePath string) error {
 		}
 
 		GlobalConfigs.Kaizoku.Valid = true
+	}
+
+	GlobalConfigs.Tranga.Address = os.Getenv("TRANGA_ADDRESS")
+	GlobalConfigs.Tranga.DefaultInterval = os.Getenv("TRANGA_DEFAULT_INTERVAL")
+	if GlobalConfigs.Tranga.DefaultInterval == "" {
+		GlobalConfigs.Tranga.DefaultInterval = "03:00:00"
+	}
+	if GlobalConfigs.Tranga.Address != "" {
+		GlobalConfigs.Tranga.Valid = true
 	}
 
 	if os.Getenv("UPDATE_MANGAS_PERIODICALLY") == "true" {

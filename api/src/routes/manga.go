@@ -23,6 +23,7 @@ import (
 	"github.com/diogovalentte/mantium/api/src/dashboard"
 	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/integrations/kaizoku"
+	"github.com/diogovalentte/mantium/api/src/integrations/tranga"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/notifications"
 	"github.com/diogovalentte/mantium/api/src/sources"
@@ -45,6 +46,7 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.PATCH("/manga/cover_img", UpdateMangaCoverImg)
 		group.PATCH("/mangas/metadata", UpdateMangasMetadata)
 		group.POST("/mangas/add_to_kaizoku", AddMangasToKaizoku)
+		group.POST("/mangas/add_to_tranga", AddMangasToTranga)
 	}
 }
 
@@ -136,16 +138,34 @@ func AddManga(c *gin.Context) {
 		return
 	}
 
+	var integrationsErrors []error
 	if config.GlobalConfigs.Kaizoku.Valid {
 		kaizoku := kaizoku.Kaizoku{}
 		kaizoku.Init()
 		err = kaizoku.AddManga(mangaAdd, config.GlobalConfigs.Kaizoku.TryOtherSources)
 		if err != nil {
-			err = util.AddErrorContext("manga added to DB, but error while adding it to Kaizoku", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			dashboard.UpdateDashboard()
-			return
+			integrationsErrors = append(integrationsErrors, util.AddErrorContext("manga added to DB, but error while adding it to Kaizoku", err))
 		}
+	}
+
+	if config.GlobalConfigs.Tranga.Valid {
+		tranga := tranga.Tranga{}
+		tranga.Init()
+		err = tranga.AddManga(mangaAdd)
+		if err != nil {
+			integrationsErrors = append(integrationsErrors, util.AddErrorContext("manga added to DB, but error while adding it to Tranga", err))
+		}
+	}
+
+	if len(integrationsErrors) > 0 {
+		fullMsg := "manga added to DB, but error executing integrations: "
+		for _, err := range integrationsErrors {
+			zerolog.Ctx(c.Request.Context()).Error().Err(err).Msg("error while adding manga to integrations")
+			fullMsg += err.Error() + " "
+		}
+		dashboard.UpdateDashboard()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": fullMsg})
+		return
 	}
 
 	dashboard.UpdateDashboard()
@@ -156,9 +176,9 @@ func AddManga(c *gin.Context) {
 // AddMangaRequest is the request body for the AddManga route
 type AddMangaRequest struct {
 	URL                string `json:"url" binding:"required,http_url"`
-	Status             int    `json:"status" binding:"required,gte=0,lte=5"`
 	LastReadChapter    string `json:"last_read_chapter"`
 	LastReadChapterURL string `json:"last_read_chapter_url"`
+	Status             int    `json:"status" binding:"required,gte=0,lte=5"`
 }
 
 // @Summary Delete manga
@@ -1011,55 +1031,78 @@ func UpdateMangasMetadata(c *gin.Context) {
 	}
 
 	logger := util.GetLogger(zerolog.Level(config.GlobalConfigs.API.LogLevelInt))
-	var lastUpdateMetadataError error
+	errors := map[string][]string{
+		"manga_metadata": {},
+		"ntfy":           {},
+		"tranga":         {},
+		"kaizoku":        {},
+	}
 	var newMetadata bool
+	var trangaInt *tranga.Tranga = nil
+	if config.GlobalConfigs.Tranga.Valid {
+		trangaInt = &tranga.Tranga{}
+		trangaInt.Init()
+	}
 	retries := 3
 	retryInterval := 3 * time.Second
 	for _, mangaToUpdate := range mangas {
+		var updatedManga *manga.Manga
 		for i := 0; i < retries; i++ {
-			updatedManga, err := sources.GetMangaMetadata(mangaToUpdate.URL, mangaToUpdate.LastReleasedChapter == nil)
+			updatedManga, err = sources.GetMangaMetadata(mangaToUpdate.URL, mangaToUpdate.LastReleasedChapter == nil)
 			if err != nil {
-				if i == retries-1 {
-					logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error getting manga metadata, will continue with the next manga...")
-					lastUpdateMetadataError = err
-				}
-				logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msgf("Error getting manga metadata, retrying in %.2f seconds...", retryInterval.Seconds())
-				time.Sleep(retryInterval)
-				continue
-			}
-			updatedManga.Status = 1
-
-			mangaHasNewReleasedChapter := isNewChapterDifferentFromOld(mangaToUpdate.LastReleasedChapter, updatedManga.LastReleasedChapter)
-
-			if mangaHasNewReleasedChapter || (!mangaToUpdate.CoverImgFixed && (mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg))) || mangaToUpdate.Name != updatedManga.Name {
-				newMetadata = true
-				updatedManga.CoverImgFixed = mangaToUpdate.CoverImgFixed
-				err = manga.UpdateMangaMetadataDB(updatedManga)
-				if err != nil {
-					logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error saving manga new metadata to DB, will continue with the next manga...")
-					lastUpdateMetadataError = err
+				if i != retries-1 {
+					logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msgf("Error getting manga metadata, retrying in %.2f seconds...", retryInterval.Seconds())
+					time.Sleep(retryInterval)
 					continue
 				}
+			}
+			break
+		}
+		if updatedManga == nil {
+			logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error getting manga metadata, will continue with the next manga...")
+			errors["manga_metadata"] = append(errors["manga_metadata"], err.Error())
+			continue
+		}
+		updatedManga.Status = 1
 
-				// Notify only if the manga's status is 1 (reading) or 2 (completed)
-				if notify && (mangaToUpdate.Status == 1 || mangaToUpdate.Status == 2) {
-					if mangaHasNewReleasedChapter {
-						for j := 0; j < retries; j++ {
-							err = NotifyMangaLastReleasedChapterUpdate(mangaToUpdate, updatedManga)
-							if err != nil {
-								if j == retries-1 {
-									logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg(fmt.Sprintf("Manga metadata updated in DB, but error while notifying: %s.\nWill continue with the next manga...", err.Error()))
-									lastUpdateMetadataError = err
-								}
-								logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msgf("Manga metadata updated in DB, but error while notifying: %s.\nRetrying in %.2f seconds...", err.Error(), retryInterval.Seconds())
+		mangaHasNewReleasedChapter := isNewChapterDifferentFromOld(mangaToUpdate.LastReleasedChapter, updatedManga.LastReleasedChapter)
+		if mangaHasNewReleasedChapter || (!mangaToUpdate.CoverImgFixed && (mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg))) || mangaToUpdate.Name != updatedManga.Name {
+			newMetadata = true
+			updatedManga.CoverImgFixed = mangaToUpdate.CoverImgFixed
+			err = manga.UpdateMangaMetadataDB(updatedManga)
+			if err != nil {
+				logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error saving manga new metadata to DB, will continue with the next manga...")
+				errors["manga_metadata"] = append(errors["manga_metadata"], err.Error())
+				continue
+			}
+
+			// Notify only if the manga's status is 1 (reading) or 2 (completed)
+			if notify && (mangaToUpdate.Status == 1 || mangaToUpdate.Status == 2) {
+				if mangaHasNewReleasedChapter {
+					for j := 0; j < retries; j++ {
+						err = NotifyMangaLastReleasedChapterUpdate(mangaToUpdate, updatedManga)
+						if err != nil {
+							if j == retries-1 {
+								logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg(fmt.Sprintf("Manga metadata updated in DB, but error while notifying: %s.\nWill continue with the next manga...", err.Error()))
+								errors["ntfy"] = append(errors["ntfy"], err.Error())
+								break
 							}
-							break
+							logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msgf("Manga metadata updated in DB, but error while notifying: %s.\nRetrying in %.2f seconds...", err.Error(), retryInterval.Seconds())
+							continue
 						}
+						break
 					}
 				}
 			}
 
-			break
+			if trangaInt != nil {
+				err = trangaInt.StartJob(mangaToUpdate)
+				if err != nil {
+					logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Manga metadata updated in DB, but error starting job in Tranga.\nWill continue with the next manga...")
+					errors["tranga"] = append(errors["tranga"], err.Error())
+				}
+
+			}
 		}
 	}
 
@@ -1068,152 +1111,20 @@ func UpdateMangasMetadata(c *gin.Context) {
 	}
 
 	if config.GlobalConfigs.Kaizoku.Valid && newMetadata {
-		kaizoku := kaizoku.Kaizoku{}
-		kaizoku.Init()
-
-		waitUntilEmptyQueuesTimeout := config.GlobalConfigs.Kaizoku.WaitUntilEmptyQueuesTimeout
-		retryInterval := 5 * time.Second
-		maxRetries := 12
-
-		logger.Info().Msg("Adding job to check out of sync chapters to queue in Kaizoku...")
-		logger.Info().Msg("Waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku...")
-		err := waitUntilEmptyCheckFixOutOfSyncChaptersQueues(&kaizoku, waitUntilEmptyQueuesTimeout, retryInterval, logger)
+		err = KaizokuTriggerChaptersDownload(logger)
 		if err != nil {
-			if lastUpdateMetadataError != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
-				return
-			}
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-		err = retryKaizokuJob(kaizoku.CheckOutOfSyncChapters, maxRetries, retryInterval, logger, "Error adding job to check out of sync chapters to queue in Kaizoku")
-		if err != nil && !util.ErrorContains(err, "there is another active job running") {
-			if lastUpdateMetadataError != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
-				return
-			}
-			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext("error adding job to check out of sync chapters to queue in Kaizoku", err).Error()})
-			return
-		}
-
-		logger.Info().Msg("Adding job to fix out of sync chapters to queue in Kaizoku...")
-		logger.Info().Msg("Waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku...")
-		err = waitUntilEmptyCheckFixOutOfSyncChaptersQueues(&kaizoku, waitUntilEmptyQueuesTimeout, retryInterval, logger)
-		if err != nil {
-			if lastUpdateMetadataError != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
-				return
-			}
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-		err = retryKaizokuJob(kaizoku.FixOutOfSyncChapters, maxRetries, retryInterval, logger, "Error adding job to fix out of sync chapters to queue in Kaizoku")
-		if err != nil {
-			if lastUpdateMetadataError != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
-				return
-			}
-			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext("error adding job to fix out of sync chapters to queue in Kaizoku", err).Error()})
-			return
-		}
-
-		logger.Info().Msg("Adding job to retry failed to fix out of sync chapters to queue in Kaizoku...")
-		logger.Info().Msg("Waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku...")
-		err = waitUntilEmptyCheckFixOutOfSyncChaptersQueues(&kaizoku, waitUntilEmptyQueuesTimeout, retryInterval, logger)
-		if err != nil {
-			if lastUpdateMetadataError != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
-				return
-			}
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-		err = retryKaizokuJob(kaizoku.RetryFailedFixOutOfSyncChaptersQueueJobs, maxRetries, retryInterval, logger, "Error adding job to try failed to fix out of sync chapters to queue in Kaizoku")
-		if err != nil && !util.ErrorContains(err, "there is another active job running") {
-			if lastUpdateMetadataError != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
-				return
-			}
-			c.JSON(http.StatusInternalServerError, gin.H{"message": util.AddErrorContext("error adding job to try failed to fix out of sync chapters to queue in Kaizoku", err).Error()})
-			return
+			errors["kaizoku"] = append(errors["kaizoku"], err.Error())
 		}
 	}
 
-	if lastUpdateMetadataError != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("some errors occured while updating the mangas metadata, check the logs for more information. Last error: %s", lastUpdateMetadataError.Error())})
-		return
+	for _, errSlice := range errors {
+		if len(errSlice) > 0 {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "some errors occured while updating the mangas metadata, check the logs for more information", "errors": errors})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Mangas metadata updated successfully"})
-}
-
-func waitUntilEmptyCheckFixOutOfSyncChaptersQueues(kaizoku *kaizoku.Kaizoku, timeout time.Duration, retryInterval time.Duration, logger *zerolog.Logger) error {
-	result := make(chan error)
-	go func() {
-		for {
-			jobsCount, err := getCheckFixOutOfSyncChaptersActiveWaitingJobs(kaizoku)
-			if err != nil {
-				result <- err
-				return
-			}
-			logger.Debug().Msgf("Jobs in checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues: %d", jobsCount)
-			if jobsCount == 0 {
-				result <- nil
-				return
-			}
-			time.Sleep(retryInterval)
-		}
-	}()
-
-	select {
-	case <-time.After(timeout):
-		return fmt.Errorf("timeout while waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku. Current timeout is %s, maybe try to increase it?", timeout.String())
-	case err := <-result:
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func retryKaizokuJob(jobFunc func() error, maxRetries int, retryInterval time.Duration, logger *zerolog.Logger, errorMessage string) error {
-	var err error
-	for i := 0; i < maxRetries; i++ {
-		err = jobFunc()
-		if err == nil {
-			return nil
-		}
-
-		if util.ErrorContains(err, "there is another active job running") {
-			return err
-		}
-
-		logger.Error().Err(err).Msg(errorMessage)
-		if i < maxRetries-1 {
-			logger.Info().Msgf("Retrying in %s...", retryInterval)
-		}
-		time.Sleep(retryInterval)
-	}
-
-	return err
-}
-
-func getCheckFixOutOfSyncChaptersActiveWaitingJobs(kaizoku *kaizoku.Kaizoku) (int, error) {
-	queues, err := kaizoku.GetQueues()
-	if err != nil {
-		return 0, err
-	}
-
-	jobsCount := 0
-	for _, queue := range queues {
-		if queue.Name != "checkOutOfSyncChaptersQueue" && queue.Name != "fixOutOfSyncChaptersQueue" {
-			continue
-		}
-		jobsCount += queue.Counts.Active + queue.Counts.Waiting
-	}
-
-	return jobsCount, nil
 }
 
 // @Summary Add mangas to Kaizoku
@@ -1279,6 +1190,71 @@ func AddMangasToKaizoku(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Mangas added to Kaizoku successfully"})
+}
+
+// @Summary Add mangas to Tranga
+// @Description Add the mangas in the database to Tranga. If it fails to add a manga, it will continue with the next manga. This is a heavy operation depending on the number of mangas in the database. Currently, only MangaDex mangas can be added to Tranga, but it'll try all mangas anyway.
+// @Produce json
+// @Param status query []int false "Filter which mangas to add by status. 1=reading, 2=completed, 3=on hold, 4=dropped, 5=plan to read. Example: status=1,2,3,5" Example(1,2,3,5)
+// @Success 200 {object} responseMessage
+// @Router /mangas/add_to_tranga [post]
+func AddMangasToTranga(c *gin.Context) {
+	if !config.GlobalConfigs.Tranga.Valid {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "tranga is not configured in the API"})
+		return
+	}
+
+	statusFilterStr := c.Query("status")
+	var statusFilter []int
+	if statusFilterStr != "" {
+		statusStrings := strings.Split(statusFilterStr, ",")
+		for _, statusStr := range statusStrings {
+			status, err := strconv.Atoi(statusStr)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"message": "status must be a list of numbers"})
+				return
+			}
+			statusFilter = append(statusFilter, status)
+		}
+	}
+
+	mangas, err := manga.GetMangasDB()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	trangaInt := tranga.Tranga{}
+	trangaInt.Init()
+	logger := util.GetLogger(zerolog.Level(config.GlobalConfigs.API.LogLevelInt))
+	var errorSlice []string
+	for _, dbManga := range mangas {
+		if len(statusFilter) > 0 {
+			var found bool
+			for _, status := range statusFilter {
+				if dbManga.Status == manga.Status(status) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				continue
+			}
+		}
+		err = trangaInt.AddManga(dbManga)
+		if err != nil {
+			logger.Error().Err(err).Str("manga_url", dbManga.URL).Msg("error adding manga to Tranga, will continue with the next manga...")
+			errorSlice = append(errorSlice, err.Error())
+			continue
+		}
+	}
+
+	if len(errorSlice) > 0 {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "some errors occured while adding some mangas to Kaizoku, check the logs for more information", "errors": errorSlice})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Mangas added to Tranga successfully"})
 }
 
 func getMangaIDAndURL(mangaIDStr string, mangaURL string) (manga.ID, string, error) {
@@ -1358,4 +1334,117 @@ func isNewChapterDifferentFromOld(oldChapter *manga.Chapter, newChapter *manga.C
 	}
 
 	return false
+}
+
+func KaizokuTriggerChaptersDownload(logger *zerolog.Logger) error {
+	kaizoku := kaizoku.Kaizoku{}
+	kaizoku.Init()
+
+	waitUntilEmptyQueuesTimeout := config.GlobalConfigs.Kaizoku.WaitUntilEmptyQueuesTimeout
+	retryInterval := 5 * time.Second
+	maxRetries := 12
+
+	logger.Info().Msg("Adding job to check out of sync chapters to queue in Kaizoku...")
+	logger.Info().Msg("Waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku...")
+	err := waitUntilEmptyCheckFixOutOfSyncChaptersQueues(&kaizoku, waitUntilEmptyQueuesTimeout, retryInterval, logger)
+	if err != nil {
+		return err
+	}
+	err = retryKaizokuJob(kaizoku.CheckOutOfSyncChapters, maxRetries, retryInterval, logger, "Error adding job to check out of sync chapters to queue in Kaizoku")
+	if err != nil && !util.ErrorContains(err, "there is another active job running") {
+		return util.AddErrorContext("error adding job to check out of sync chapters to queue in Kaizoku", err)
+	}
+
+	logger.Info().Msg("Adding job to fix out of sync chapters to queue in Kaizoku...")
+	logger.Info().Msg("Waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku...")
+	err = waitUntilEmptyCheckFixOutOfSyncChaptersQueues(&kaizoku, waitUntilEmptyQueuesTimeout, retryInterval, logger)
+	if err != nil {
+		return err
+	}
+	err = retryKaizokuJob(kaizoku.FixOutOfSyncChapters, maxRetries, retryInterval, logger, "Error adding job to fix out of sync chapters to queue in Kaizoku")
+	if err != nil {
+		return util.AddErrorContext("error adding job to fix out of sync chapters to queue in Kaizoku", err)
+	}
+
+	logger.Info().Msg("Adding job to retry failed to fix out of sync chapters to queue in Kaizoku...")
+	logger.Info().Msg("Waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku...")
+	err = waitUntilEmptyCheckFixOutOfSyncChaptersQueues(&kaizoku, waitUntilEmptyQueuesTimeout, retryInterval, logger)
+	if err != nil {
+		return err
+	}
+	err = retryKaizokuJob(kaizoku.RetryFailedFixOutOfSyncChaptersQueueJobs, maxRetries, retryInterval, logger, "Error adding job to try failed to fix out of sync chapters to queue in Kaizoku")
+	if err != nil && !util.ErrorContains(err, "there is another active job running") {
+		return util.AddErrorContext("error adding job to try failed to fix out of sync chapters to queue in Kaizoku", err)
+	}
+
+	return nil
+}
+
+func waitUntilEmptyCheckFixOutOfSyncChaptersQueues(kaizoku *kaizoku.Kaizoku, timeout time.Duration, retryInterval time.Duration, logger *zerolog.Logger) error {
+	result := make(chan error)
+	go func() {
+		for {
+			jobsCount, err := getCheckFixOutOfSyncChaptersActiveWaitingJobs(kaizoku)
+			if err != nil {
+				result <- err
+				return
+			}
+			logger.Debug().Msgf("Jobs in checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues: %d", jobsCount)
+			if jobsCount == 0 {
+				result <- nil
+				return
+			}
+			time.Sleep(retryInterval)
+		}
+	}()
+
+	select {
+	case <-time.After(timeout):
+		return fmt.Errorf("timeout while waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku. Current timeout is %s, maybe try to increase it?", timeout.String())
+	case err := <-result:
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func retryKaizokuJob(jobFunc func() error, maxRetries int, retryInterval time.Duration, logger *zerolog.Logger, errorMessage string) error {
+	var err error
+	for i := 0; i < maxRetries; i++ {
+		err = jobFunc()
+		if err == nil {
+			return nil
+		}
+
+		if util.ErrorContains(err, "there is another active job running") {
+			return err
+		}
+
+		logger.Error().Err(err).Msg(errorMessage)
+		if i < maxRetries-1 {
+			logger.Info().Msgf("Retrying in %s...", retryInterval)
+		}
+		time.Sleep(retryInterval)
+	}
+
+	return err
+}
+
+func getCheckFixOutOfSyncChaptersActiveWaitingJobs(kaizoku *kaizoku.Kaizoku) (int, error) {
+	queues, err := kaizoku.GetQueues()
+	if err != nil {
+		return 0, err
+	}
+
+	jobsCount := 0
+	for _, queue := range queues {
+		if queue.Name != "checkOutOfSyncChaptersQueue" && queue.Name != "fixOutOfSyncChaptersQueue" {
+			continue
+		}
+		jobsCount += queue.Counts.Active + queue.Counts.Waiting
+	}
+
+	return jobsCount, nil
 }
