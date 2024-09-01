@@ -1,33 +1,35 @@
 # Mantium
 
+![image](https://github.com/diogovalentte/mantium/assets/49578155/69e5d417-e3c8-4a4e-9613-b47eff54ecce)
+
 Mantium is a dashboard for tracking mangas from multiple source sites, like [Mangadex](https://mangadex.org) and [ComicK](https://comick.io). This project doesn't download the chapter images, it downloads the manga metadata (name, URL, cover, etc.) and chapter metadata (number, name, URL), to show in the dashboard, where you manage the mangas you're tracking.
 
-- This project currently can track mangas on [Manga Plus](https://mangaplus.shueisha.co.jp), [MangaDex](https://mangadex.org), [ComicK](https://comick.io), and [MangaHub](https://mangahub.io).
+- Mantium currently can track mangas on [Manga Plus](https://mangaplus.shueisha.co.jp), [MangaDex](https://mangadex.org), [ComicK](https://comick.io), and [MangaHub](https://mangahub.io).
 
 The basic workflow is:
 
 1. You find an interesting manga on a site.
 2. Add it to Mantium, set its status (reading, dropped, etc.), and the last chapter you read. Now you see the manga in the dashboard.
-3. You configure Mantium to periodically (like every 30 minutes) check for new chapters. You also configure it to notify you when a new chapter is released.
+3. You configure Mantium to periodically check for new chapters (like every 30 minutes). You also configure it to notify you when a new chapter is released.
 4. After getting notified that a new chapter has been released, you read it and set in Mantium that the last chapter you read is the last released chapter.
-5. That's how you track a manga in Mantium.
-
-![image](https://github.com/diogovalentte/mantium/assets/49578155/69e5d417-e3c8-4a4e-9613-b47eff54ecce)
+5. Or, you can set the last read chapter to any released chapter from the manga.
+6. That's how you track a manga in Mantium.
 
 # Dashboard
 
 The dashboard shows you the mangas you're tracking and is where you interact with them.
 
-- In the main part, there are columns of the mangas you're tracking in cards:
+- In the main section, there are columns of the mangas you're tracking in cards:
 
 <p align="center">
   <img src="https://github.com/diogovalentte/mantium/assets/49578155/83cc24e4-31de-435b-9ea6-22a4aecb8c66">
 </p>
 
 - On the sidebar, you can:
-  - Search for a manga using its name, filter the mangas by status (_reading, completed, dropped, on hold, plan to read, all_), order the mangas by name, last chapter read, last chapter upload, number of chapters, and unread (_shows unread mangas first, ordering by last upload chapter_), and reverse the sort.
-  - You can add a manga to the dashboard using the manga URL. You also set the manga status and the last chapter you read.
-  - When you click the button to highlight a manga, it shows a form to update the manga status, last read chapter, set a custom manga cover, or delete it.
+  - Filter the mangas by name, and status (_reading, completed, dropped, on hold, plan to read, all_).
+  - Order the mangas by name, last chapter read, last chapter upload, number of chapters, and unread (_shows unread mangas first, ordering by last upload chapter_), and reverse the sort.
+  - Add a manga to the dashboard, as well as set the manga status and the last chapter you read.
+  - When you click the button to highlight a manga, it shows a form to update the manga status, last read chapter, set a custom cover image, or delete the manga from Mantium.
   - Set some configs, like the number of columns in the dashboard.
 
 # iFrame
@@ -46,15 +48,19 @@ When you add an iFrame widget in your dashboard, it's **>your<** web browser tha
 
 # Check manga updates and notify
 
-You can set Mantium to get metadata of the manga you're tracking from the source sites. If the manga cover image or name changes, Mantium will update its store data. If a chapter is released, Mantium will update the manga's last released chapter. You can set when Mantium will check for updates, like every 30 minutes.
+You can set Mantium to periodically get the metadata of the mangas you're tracking from their source sites (like every 30 minutes). If the manga metadata (like cover image, name changes, or last release chapter) changes from the the stored metadata, Mantium updates it.
 
-You can set Mantium to notify you in a [Ntfy](https://github.com/binwiederhier/ntfy) topic when a manga with the status "reading" or "completed" has a newly released chapter.
+You can also set Mantium to notify you when a manga with the status "reading" or "completed" has a newly released chapter.
 
-- If an error occurs in the background while updating the mangas metadata or notifying, a warning will appear in the dashboard and iframe. The error will also be printed to the API and dashboard container, and you can click to see the error in the dashboard.
+- If an error occurs in the background while updating the mangas metadata or notifying, a warning will appear in the dashboard and iframe. The error will also be printed to the API and dashboard container, and you can click to show the error in the dashboard.
 
-# Kaizoku integration
+# Integrations
 
-More about it [here](https://github.com/diogovalentte/mantium/blob/main/kaizoku-integration.md).
+Mantium has integrations, like:
+- [Kaizoku](https://github.com/oae/kaizoku) and [Tranga](https://github.com/C9Glax/tranga/tree/master).
+- [Ntfy](https://github.com/binwiederhier/ntfy).
+
+More about the integrations [here](https://github.com/diogovalentte/mantium/blob/main/kaizoku-integration.md).
 
 # API
 
@@ -84,7 +90,7 @@ The steps are at the bottom of this README.
 
 # Notes:
 
-### This project doesn't have any authentication system
+### Mantium doesn't have any authentication system
 
 The dashboard and the API don't have any authentication system, so anyone who can access the dashboard or the API can do whatever they want. You can add an authentication portal like [Authelia](https://github.com/authelia/authelia) or [Authentik](https://github.com/goauthentik/authentik) in front of the dashboard to protect it and don't expose the API at all.
 
