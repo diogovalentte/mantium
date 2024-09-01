@@ -156,7 +156,7 @@ class MainDashboard:
                     type="primary",
                     use_container_width=True,
                 ):
-                    ss["manga_add_success_message"] = False
+                    ss["manga_add_success_message"] = ""
                     ss["manga_add_warning_message"] = ""
                     ss["manga_add_error_message"] = ""
                     if ss.get("add_manga_chapter_options", None) is not None:
@@ -176,7 +176,7 @@ class MainDashboard:
                     show_add_manga_form_dialog()
 
                 if st.button("Add using URL", type="primary", use_container_width=True):
-                    ss["manga_add_success_message"] = False
+                    ss["manga_add_success_message"] = ""
                     ss["manga_add_warning_message"] = ""
                     ss["manga_add_error_message"] = ""
                     if ss.get("add_manga_chapter_options", None) is not None:
@@ -187,8 +187,8 @@ class MainDashboard:
                         self.show_add_manga_form_url()
 
                     show_add_manga_form_dialog()
-                if ss.get("manga_add_success_message", False):
-                    st.success("Manga added successfully")
+                if ss.get("manga_add_success_message", "") != "":
+                    st.success(ss["manga_add_success_message"])
                 elif ss.get("manga_add_warning_message", "") != "":
                     st.warning(ss["manga_add_warning_message"])
                 elif ss.get("manga_add_error_message", "") != "":
@@ -926,12 +926,12 @@ class MainDashboard:
                             )
                         except APIException as e:
                             if (
-                                "Manga added to DB, but error while adding it to Kaizoku".lower()
+                                "manga added to DB, but error executing integrations".lower()
                                 in str(e).lower()
                             ):
                                 logger.exception(e)
                                 ss["manga_add_warning_message"] = (
-                                    "Manga added to DB, but couldn't add it to Kaizoku."
+                                    "Manga added to DB, but couldn't add it to at least one integration."
                                 )
                                 st.rerun()
                             else:
@@ -941,7 +941,7 @@ class MainDashboard:
                                 )
                                 st.rerun()
                         else:
-                            ss["manga_add_success_message"] = True
+                            ss["manga_add_success_message"] = "Manga added successfully"
                             st.rerun()
 
     def show_configs(self):

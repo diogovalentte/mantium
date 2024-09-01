@@ -160,7 +160,7 @@ func AddManga(c *gin.Context) {
 	if len(integrationsErrors) > 0 {
 		fullMsg := "manga added to DB, but error executing integrations: "
 		for _, err := range integrationsErrors {
-			zerolog.Ctx(c.Request.Context()).Error().Err(err).Msg("error while adding manga to integrations")
+			zerolog.Ctx(c.Request.Context()).Error().Err(err).Msg("error while adding manga to at least one integration")
 			fullMsg += err.Error() + " "
 		}
 		dashboard.UpdateDashboard()
