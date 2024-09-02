@@ -145,6 +145,8 @@ class MainDashboard:
             def status_filter_callback():
                 self.status_filter_key = ss.status_filter
                 ss["show_more_manga"] = False
+                js = """window.parent.document.querySelector(".main").scrollTop = 0;"""
+                st_javascript(js)
 
             st.selectbox(
                 "Filter Status",
