@@ -122,7 +122,7 @@ class MainDashboard:
         ):
 
             @st.experimental_dialog("Update Manga")
-            def show_update_manga_dialog():
+            def show_update_manga_message():
                 if ss.get("manga_updated_success_message", "") != "":
                     st.success(ss["manga_updated_success_message"])
                 if ss.get("manga_updated_error_message", "") != "":
@@ -130,7 +130,7 @@ class MainDashboard:
                 if ss.get("manga_update_warning_message", "") != "":
                     st.warning(ss["manga_update_warning_message"])
 
-            show_update_manga_dialog()
+            show_update_manga_message()
 
             ss["manga_updated_success_message"] = ""
             ss["manga_updated_error"] = ""
@@ -611,7 +611,14 @@ class MainDashboard:
                     st.rerun()
 
         def delete_manga_btn_callback():
-            self.api_client.delete_manga(manga["ID"])
+            try:
+                self.api_client.delete_manga(manga["ID"])
+            except Exception as e:
+                logger.exception(e)
+                ss["manga_updated_error_message"] = "Error while deleting manga."
+                st.rerun()
+            else:
+                ss["manga_updated_success_message"] = "Manga deleted successfully"
 
         with stylable_container(
             key="highlight_manga_delete_button",
@@ -622,12 +629,13 @@ class MainDashboard:
                 }
             """,
         ):
-            st.button(
+            if st.button(
                 "Delete Manga",
                 on_click=delete_manga_btn_callback,
                 use_container_width=True,
                 key="delete_manga_btn",
-            )
+            ):
+                st.rerun()
 
     def show_add_manga_form_search(self):
         container = st.empty()
