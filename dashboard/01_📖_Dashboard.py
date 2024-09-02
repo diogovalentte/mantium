@@ -8,12 +8,8 @@ import streamlit as st
 from PIL import Image
 from src.api.api_client import get_api_client
 from src.exceptions import APIException
-from src.util import (
-    centered_container,
-    fix_streamlit_index_html,
-    get_relative_time,
-    tagger,
-)
+from src.util import (centered_container, fix_streamlit_index_html,
+                      get_relative_time, tagger)
 from streamlit import session_state as ss
 from streamlit_extras.stylable_container import stylable_container
 from streamlit_javascript import st_javascript
@@ -227,6 +223,7 @@ class MainDashboard:
                 ss["add_manga_search_results_comick"] = {}
                 ss["add_manga_search_results_mangaplus"] = {}
                 ss["add_manga_search_results_mangahub"] = {}
+                ss["add_manga_search_results_mangaupdates"] = {}
                 ss["add_manga_search_go_back_to_tab"] = 0
 
                 @st.experimental_dialog("Search Manga", width="large")
@@ -740,13 +737,21 @@ class MainDashboard:
                         ss["add_manga_search_go_back_to_tab"] = 2
                     case "mangahub.io":
                         ss["add_manga_search_go_back_to_tab"] = 3
+                    case "mangaupdates":
+                        ss["add_manga_search_go_back_to_tab"] = 4
                 ss["add_manga_search_selected_manga"] = None
 
             st.button("Back", use_container_width=True, on_click=on_click)
         else:
             with container:
-                mangadex_tab, comick_tab, mangaplus_tab, mangahub_tab = st.tabs(
-                    ["Mangadex", "Comick", "Mangaplus", "Mangahub"]
+                (
+                    mangadex_tab,
+                    comick_tab,
+                    mangaplus_tab,
+                    mangahub_tab,
+                    mangaupdates_tab,
+                ) = st.tabs(
+                    ["Mangadex", "Comick", "Mangaplus", "Mangahub", "MangaUpdates"]
                 )
 
                 with mangadex_tab:
@@ -757,6 +762,8 @@ class MainDashboard:
                     self.show_search_manga_term_form("https://mangaplus.shueisha.co.jp")
                 with mangahub_tab:
                     self.show_search_manga_term_form("https://mangahub.io")
+                with mangaupdates_tab:
+                    self.show_search_manga_term_form("https://mangaupdates.com")
 
             tab_index = ss["add_manga_search_go_back_to_tab"]
             js = f"""window.parent.document.querySelectorAll('button[data-baseweb="tab"]')[{tab_index}].click();"""
@@ -1041,9 +1048,7 @@ class MainDashboard:
                             st.rerun()
                         else:
                             logger.exception(e)
-                            ss["manga_add_error_message"] = (
-                                "Error while adding manga."
-                            )
+                            ss["manga_add_error_message"] = "Error while adding manga."
                     else:
                         ss["manga_add_success_message"] = "Manga added successfully"
                         ss["add_manga_search_selected_manga"] = None
@@ -1070,7 +1075,7 @@ class MainDashboard:
                     min_value=1,
                     max_value=50,
                     value=ss["configs_search_results_limit"],
-                    help="The maximum number of search results to show when searching for a manga to add to the dashboard",
+                    help="The maximum number of search results to show when searching for a manga to add to the dashboard. It doesn't work very well with MangaUpdates.",
                     key="configs_select_search_results_limit",
                 )
 

@@ -274,6 +274,8 @@ func (k *Kaizoku) getKaizokuSource(source string) (string, error) {
 		return "", util.AddErrorContext(errorContext, fmt.Errorf("MangaHub source is not implemented"))
 	case "mangaplus.shueisha.co.jp":
 		return "", util.AddErrorContext(errorContext, fmt.Errorf("Manga Plus source is not implemented"))
+	case "mangaupdates":
+		return "", util.AddErrorContext(errorContext, fmt.Errorf("MangaUpdates source is not implemented"))
 	default:
 		return "", util.AddErrorContext(errorContext, fmt.Errorf("unknown source"))
 	}

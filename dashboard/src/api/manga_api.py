@@ -22,18 +22,20 @@ class MangaAPIClient:
         self,
         manga_url: str,
         manga_status: int,
-        internal_id: str,
+        manga_internal_id: str,
         last_read_chapter: str,
         last_read_chapter_url: str,
+        last_read_chapter_internal_id: str,
     ) -> dict[str, str]:
         url = self.base_url
 
         request_body = {
             "url": manga_url,
             "status": manga_status,
-            "internal_id": internal_id,
+            "manga_internal_id": manga_internal_id,
             "last_read_chapter": last_read_chapter,
             "last_read_chapter_url": last_read_chapter_url,
+            "last_read_chapter_internal_id": last_read_chapter_internal_id,
             "manga_has_no_chapters": False,
         }
 
@@ -175,17 +177,21 @@ class MangaAPIClient:
         self,
         manga_id: int,
         manga_url: str,
-        internal_id: str,
+        manga_internal_id: str,
         chapter: str = "",
         chapter_url: str = "",
+        chapter_internal_id: str = "",
     ) -> dict[str, str]:
         path = "/last_read_chapter"
         url = f"{self.base_url}{path}"
-        url = f"{url}?id={manga_id}&url={manga_url}&internal_id={internal_id}"
+        url = (
+            f"{url}?id={manga_id}&url={manga_url}&manga_internal_id={manga_internal_id}"
+        )
 
         request_body = {
             "chapter": chapter,
             "chapter_url": chapter_url,
+            "chapter_internal_id": chapter_internal_id,
         }
 
         res = requests.patch(url, json=request_body)
@@ -205,14 +211,14 @@ class MangaAPIClient:
         self,
         manga_id: int,
         manga_url: str,
-        internal_id: str,
+        manga_internal_id: str,
         cover_img_url: str = "",
         cover_img: bytes = b"",
         get_cover_img_from_source: bool = False,
     ) -> dict[str, str]:
         path = "/cover_img"
         url = f"{self.base_url}{path}"
-        url = f"{url}?id={manga_id}&url={manga_url}&internal_id={internal_id}&{'&cover_img_url=%s' % cover_img_url if cover_img_url else ''}{f'&get_cover_img_from_source={str(get_cover_img_from_source).lower()}' if get_cover_img_from_source else ''}"
+        url = f"{url}?id={manga_id}&url={manga_url}&manga_internal_id={manga_internal_id}&{'&cover_img_url=%s' % cover_img_url if cover_img_url else ''}{f'&get_cover_img_from_source={str(get_cover_img_from_source).lower()}' if get_cover_img_from_source else ''}"
 
         res = requests.patch(url, files={"cover_img": cover_img})
 
@@ -245,11 +251,13 @@ class MangaAPIClient:
         return res.json()
 
     def get_manga_chapters(
-        self, manga_id: int = 0, manga_url: str = "", internal_id: str = ""
+        self, manga_id: int = 0, manga_url: str = "", manga_internal_id: str = ""
     ) -> list[dict]:
         path = "/chapters"
         url = f"{self.base_url}{path}"
-        url = f"{url}?id={manga_id}&url={manga_url}&internal_id={internal_id}"
+        url = (
+            f"{url}?id={manga_id}&url={manga_url}&manga_internal_id={manga_internal_id}"
+        )
 
         res = requests.get(url)
 

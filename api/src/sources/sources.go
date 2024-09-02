@@ -12,17 +12,18 @@ import (
 	"github.com/diogovalentte/mantium/api/src/sources/mangadex"
 	"github.com/diogovalentte/mantium/api/src/sources/mangahub"
 	"github.com/diogovalentte/mantium/api/src/sources/mangaplus"
+	"github.com/diogovalentte/mantium/api/src/sources/mangaupdates"
 	"github.com/diogovalentte/mantium/api/src/sources/models"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
-// sources is a map of all sources
 var sources = map[string]models.Source{
-	// default sources
 	"mangadex.org":             &mangadex.Source{},
 	"comick.io":                &comick.Source{},
 	"mangahub.io":              &mangahub.Source{},
 	"mangaplus.shueisha.co.jp": &mangaplus.Source{},
+	"www.mangaupdates.com":     &mangaupdates.Source{},
+	"mangaupdates.com":         &mangaupdates.Source{},
 }
 
 // RegisterSource registers a new source
@@ -101,11 +102,11 @@ func SearchManga(term, sourceSiteURL string, limit int) ([]*models.MangaSearchRe
 // Each source has its own way to get the chapter. Some can't get the chapter by its URL/chapter,
 // so they get the chapter by the chapter chapter/URL.
 func GetChapterMetadata(mangaURL, mangaInternalID, chapter, chapterURL, chapterInternalID string) (*manga.Chapter, error) {
-	contextError := "error while getting metadata of chapter with chapter '%s' and URL '%s' for manga with URL '%s' from source"
+	contextError := "error while getting metadata of chapter with manga URL '%s', internal ID '%s', chapter '%s', chapter URL '%s', chapter internal ID '%s'"
 
 	domain, err := getDomain(mangaURL)
 	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf(contextError, chapter, chapterURL, mangaURL), err)
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, mangaInternalID, chapter, chapterURL, chapterInternalID), err)
 	}
 
 	source, err := GetSource(domain)

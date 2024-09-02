@@ -85,7 +85,7 @@ func (s *Source) getChapterMetadataByChapter(mangaURL string, chapter string) (*
 	}
 
 	if len(chaptersAPIResp.Chapters) == 0 {
-		return nil, fmt.Errorf("Chapter not found")
+		return nil, fmt.Errorf("chapter not found")
 	}
 
 	chapterReturn, err := getChapterFromResp(chaptersAPIResp.Chapters[0], chapter, mangaURL)
