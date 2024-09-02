@@ -50,6 +50,7 @@ class MainDashboard:
         self.sort_option_index = 1
         self.chapter_link_tag_background_color = "rgb(219 233 254)"
         self.chapter_link_tag_text_color = "rgb(59 130 246)"
+        self.default_number_of_rows_to_show_first = 3
 
     def show(self):
         self.check_dashboard_error()
@@ -85,7 +86,7 @@ class MainDashboard:
         )
 
         columns_number = ss["configs_columns_number"]
-        max_number_to_show = columns_number * 3  # 3 = number of rows to show first
+        max_number_to_show = columns_number * self.default_number_of_rows_to_show_first
         can_load_more = False
         if len(mangas) > max_number_to_show:
             self.show_mangas(st.columns(columns_number), mangas[:max_number_to_show])
