@@ -235,6 +235,23 @@ class MainDashboard:
                     )
                     def show_error_message_dialog():
                         st.write(last_background_error["message"])
+                        with stylable_container(
+                            key="delete_background_error_button",
+                            css_styles="""
+                                button {
+                                    background-color: red;
+                                    color: white;
+                                }
+                            """,
+                        ):
+                            if st.button(
+                                "Delete Error",
+                                use_container_width=True,
+                                help="Delete the last background error",
+                                on_click=self.api_client.delete_last_background_error,
+                                key="delete_background_error_button_from_dialog",
+                            ):
+                                st.rerun()
 
                     if st.button(
                         "See error",
@@ -257,6 +274,7 @@ class MainDashboard:
                             use_container_width=True,
                             help="Delete the last background error",
                             on_click=self.api_client.delete_last_background_error,
+                            key="delete_background_error_button_from_expander",
                         )
                 st.divider()
 
