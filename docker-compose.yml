@@ -57,6 +57,7 @@ services:
     restart: unless-stopped
 
   mantium-dashboard:
+    # Don't use the "user: 1000:1000", it will cause permission issues
     container_name: mantium-dashboard
     image: ghcr.io/diogovalentte/mantium-dashboard:latest
     environment:
