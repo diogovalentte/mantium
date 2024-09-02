@@ -127,7 +127,7 @@ class MainDashboard:
 
             ss["manga_updated_success_message"] = ""
 
-        if (
+        elif (
             ss.get("manga_add_success_message", "") != ""
             or ss.get("manga_add_warning_message", "") != ""
         ):
@@ -143,6 +143,23 @@ class MainDashboard:
 
             ss["manga_add_success_message"] = ""
             ss["manga_add_warning_message"] = ""
+
+        elif (
+            ss.get("configs_update_success_message", "") != ""
+            or ss.get("configs_update_warning_message", "") != ""
+        ):
+
+            @st.experimental_dialog("Settings")
+            def show_settings_message():
+                if ss.get("configs_update_success_message", "") != "":
+                    st.success(ss["configs_update_success_message"])
+                if ss.get("configs_update_warning_message", "") != "":
+                    st.warning(ss["configs_update_warning_message"])
+
+            show_settings_message()
+
+            ss["configs_update_success_message"] = ""
+            ss["configs_update_warning_message"] = ""
 
     def sidebar(self) -> None:
         with st.sidebar:
@@ -179,20 +196,20 @@ class MainDashboard:
             st.toggle("Reverse Sort", key="mangas_sort_reverse")
             st.divider()
 
-            if not ss.get("show_add_manga_expander", False):
+            if not ss.get("show_more_sidebar_options", False):
 
                 def on_click():
-                    ss["show_add_manga_expander"] = True
+                    ss["show_more_sidebar_options"] = True
 
-                st.button("Add Manga", on_click=on_click, use_container_width=True)
+                st.button("More Options", on_click=on_click, use_container_width=True)
             else:
-                with st.expander("Add Manga", expanded=True):
+                with st.expander("More Options", expanded=True):
 
                     def on_search_click():
                         ss["show_add_manga_search_form"] = True
 
                     st.button(
-                        "Search by Name",
+                        "Add Manga by Searching",
                         type="primary",
                         use_container_width=True,
                         on_click=on_search_click,
@@ -202,14 +219,23 @@ class MainDashboard:
                         ss["show_add_manga_url_form"] = True
 
                     st.button(
-                        "Add using URL",
+                        "Add Manga Using URL",
                         type="primary",
                         use_container_width=True,
                         on_click=on_url_click,
                     )
 
-                ss["show_add_manga_expander"] = False
-                st.divider()
+                    def on_settings_click():
+                        ss["show_settings_form"] = True
+
+                    st.button(
+                        "Settings",
+                        type="primary",
+                        use_container_width=True,
+                        on_click=on_settings_click,
+                    )
+
+                ss["show_more_sidebar_options"] = False
 
             if ss.get("show_add_manga_search_form", False):
                 ss["manga_add_success_message"] = ""
@@ -247,7 +273,17 @@ class MainDashboard:
                 show_add_manga_form_dialog()
                 ss["show_add_manga_url_form"] = False
 
-            self.show_settings()
+            elif ss.get("show_settings_form", False):
+                ss["configs_update_success_message"] = ""
+                ss["configs_update_warning_message"] = ""
+                ss["configs_update_error_message"] = ""
+
+                @st.experimental_dialog("Settings")
+                def show_settings_dialog():
+                    self.show_settings()
+
+                show_settings_dialog()
+                ss["show_settings_form"] = False
 
     def show_background_error(self):
         if ss["configs_show_background_error_warning"]:
@@ -1059,67 +1095,59 @@ class MainDashboard:
             ss["manga_add_error_message"] = ""
 
     def show_settings(self):
-        @st.experimental_dialog("Settings")
-        def show_settings_dialog():
-            with st.form(key="configs_update_configs", border=False):
-                st.slider(
-                    "Columns:",
-                    min_value=1,
-                    max_value=10,
-                    value=ss["configs_columns_number"],
-                    key="configs_select_columns_number",
-                )
+        with st.form(key="configs_update_configs", border=False):
+            st.slider(
+                "Columns:",
+                min_value=1,
+                max_value=10,
+                value=ss["configs_columns_number"],
+                key="configs_select_columns_number",
+            )
 
-                st.slider(
-                    "Search Results Limit:",
-                    min_value=1,
-                    max_value=50,
-                    value=ss["configs_search_results_limit"],
-                    help="The maximum number of search results to show when searching for a manga to add to the dashboard. It doesn't work very well with MangaUpdates.",
-                    key="configs_select_search_results_limit",
-                )
+            st.slider(
+                "Search Results Limit:",
+                min_value=1,
+                max_value=50,
+                value=ss["configs_search_results_limit"],
+                help="The maximum number of search results to show when searching for a manga to add to the dashboard. It doesn't work very well with MangaUpdates.",
+                key="configs_select_search_results_limit",
+            )
 
-                st.checkbox(
-                    "Show background error warning",
-                    value=ss["configs_show_background_error_warning"],
-                    key="configs_select_show_background_error_warning",
-                    help="Show a warning in the sidebar if there is a background error",
-                )
+            st.checkbox(
+                "Show background error warning",
+                value=ss["configs_show_background_error_warning"],
+                key="configs_select_show_background_error_warning",
+                help="Show a warning in the sidebar if there is a background error",
+            )
 
-                if st.form_submit_button(
-                    "Save",
-                    type="primary",
-                    use_container_width=True,
-                ):
-                    try:
-                        self.api_client.update_dashboard_configs(
-                            ss.configs_select_columns_number,
-                            ss.configs_select_search_results_limit,
-                            ss.configs_select_show_background_error_warning,
-                        )
-                        ss["configs_columns_number"] = ss.configs_select_columns_number
-                        ss["configs_show_background_error_warning"] = (
-                            ss.configs_select_show_background_error_warning
-                        )
-                        ss["configs_search_results_limit"] = (
-                            ss.configs_select_search_results_limit
-                        )
-                        ss["configs_updated_success"] = True
-                        st.rerun()
-                    except Exception as e:
-                        logger.exception(e)
-                        st.error("Error while saving settings.")
+            if st.form_submit_button(
+                "Save",
+                type="primary",
+                use_container_width=True,
+            ):
+                try:
+                    self.api_client.update_dashboard_configs(
+                        ss.configs_select_columns_number,
+                        ss.configs_select_search_results_limit,
+                        ss.configs_select_show_background_error_warning,
+                    )
+                    ss["configs_columns_number"] = ss.configs_select_columns_number
+                    ss["configs_show_background_error_warning"] = (
+                        ss.configs_select_show_background_error_warning
+                    )
+                    ss["configs_search_results_limit"] = (
+                        ss.configs_select_search_results_limit
+                    )
+                    ss["configs_update_success_message"] = (
+                        "Settings saved successfully."
+                    )
+                    st.rerun()
+                except Exception as e:
+                    logger.exception(e)
+                    ss["configs_update_error_message"] = "Error while saving settings."
 
-        if st.button(
-            "Settings",
-            type="secondary",
-            help="Change the dashboard settings",
-            use_container_width=True,
-        ):
-            show_settings_dialog()
-
-        if ss.get("configs_updated_success", False):
-            st.success("Settings updated successfully")
+        if ss.get("configs_update_error_message", "") != "":
+            st.error(ss["configs_update_error_message"])
 
     def check_dashboard_error(self):
         if ss.get("dashboard_error", False):
