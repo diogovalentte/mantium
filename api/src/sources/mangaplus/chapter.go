@@ -13,10 +13,10 @@ var chapterURLBase = "https://mangaplus.shueisha.co.jp/viewer/"
 
 // GetChapterMetadata returns a chapter by its chapter or URL
 func (s *Source) GetChapterMetadata(mangaURL, _, chapter, chapterURL, _ string) (*manga.Chapter, error) {
-	errorContext := "error while getting metadata of chapter with chapter '%s' and URL '%s', and manga URL '%s'"
+	errorContext := "error while getting metadata of chapter"
 
 	if chapter == "" && chapterURL == "" {
-		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL), errordefs.ErrChapterDoesntHaveChapterAndURL)
+		return nil, util.AddErrorContext(errorContext, errordefs.ErrChapterDoesntHaveChapterAndURL)
 	}
 
 	returnChapter := &manga.Chapter{}
@@ -29,7 +29,7 @@ func (s *Source) GetChapterMetadata(mangaURL, _, chapter, chapterURL, _ string) 
 	}
 
 	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL), err)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	return returnChapter, nil
@@ -81,22 +81,24 @@ func cleanChapter(chapter string) string {
 func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, error) {
 	s.checkClient()
 
+	errorContext := "error while getting last chapter metadata of manga with URL '%s'"
+
 	mangaID, err := getMangaID(mangaURL)
 	if err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), err)
 	}
 	_, response, err := s.client.Request(fmt.Sprintf("%s/title_detailV3?title_id=%d", baseAPIURL, mangaID))
 	if err != nil {
 		if util.ErrorContains(err, "non-200 status code -> (404)") {
-			return nil, errordefs.ErrMangaNotFound
+			return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), errordefs.ErrMangaNotFound)
 		}
-		return nil, err
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), err)
 	}
 
 	titleChapters := response.GetSuccess().GetTitleDetailView().GetChapters()
 	chapters := getChaptersFromAPIList(titleChapters)
 	if len(chapters) == 0 {
-		return nil, errordefs.ErrChapterNotFound
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), errordefs.ErrChapterNotFound)
 	}
 
 	return chapters[len(chapters)-1], nil

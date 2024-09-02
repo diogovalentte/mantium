@@ -54,22 +54,22 @@ func GetSources() map[string]models.Source {
 
 // GetMangaMetadata gets the metadata of a manga using a source
 func GetMangaMetadata(mangaURL, internalID string, ignoreGetLastChapterError bool) (*manga.Manga, error) {
-	contextError := "error while getting metadata of manga with URL '%s' from source"
+	contextError := "error while getting metadata of manga with URL '%s' and internal ID '%s' from source"
 
 	domain, err := getDomain(mangaURL)
 	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL), err)
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, internalID), err)
 	}
 
 	source, err := GetSource(domain)
 	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL), err)
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, internalID), err)
 	}
 	contextError = fmt.Sprintf("(%s) %s", domain, contextError)
 
 	manga, err := getManga(mangaURL, internalID, source, ignoreGetLastChapterError)
 	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL), err)
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, internalID), err)
 	}
 
 	return manga, nil
@@ -125,22 +125,22 @@ func GetChapterMetadata(mangaURL, mangaInternalID, chapter, chapterURL, chapterI
 
 // GetMangaChapters gets the chapters of a manga using a source
 func GetMangaChapters(mangaURL, mangaInternalID string) ([]*manga.Chapter, error) {
-	contextError := "error while getting manga with URL '%s' chapters from source"
+	contextError := "error while getting chapters from manga with URL '%s' and internal ID '%s' from source"
 
 	domain, err := getDomain(mangaURL)
 	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL), err)
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, mangaInternalID), err)
 	}
 
 	source, err := GetSource(domain)
 	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL), err)
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, mangaInternalID), err)
 	}
 	contextError = fmt.Sprintf("(%s) %s", domain, contextError)
 
 	chapters, err := getChapters(mangaURL, mangaInternalID, source)
 	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL), err)
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, mangaInternalID), err)
 	}
 
 	return chapters, nil

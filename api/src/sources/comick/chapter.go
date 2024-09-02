@@ -11,10 +11,10 @@ import (
 
 // GetChapterMetadata returns a chapter by its chapter or URL
 func (s *Source) GetChapterMetadata(mangaURL, _, chapter, chapterURL, _ string) (*manga.Chapter, error) {
-	errorContext := "error while getting metadata of chapter with chapter '%s' and URL '%s', and manga URL '%s'"
+	errorContext := "error while getting metadata of chapter"
 
 	if chapter == "" && chapterURL == "" {
-		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL), errordefs.ErrChapterDoesntHaveChapterAndURL)
+		return nil, util.AddErrorContext(errorContext, errordefs.ErrChapterDoesntHaveChapterAndURL)
 	}
 
 	returnChapter := &manga.Chapter{}
@@ -28,7 +28,7 @@ func (s *Source) GetChapterMetadata(mangaURL, _, chapter, chapterURL, _ string) 
 	}
 
 	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL), err)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	return returnChapter, nil
@@ -100,27 +100,27 @@ func (s *Source) getChapterMetadataByChapter(mangaURL string, chapter string) (*
 func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, error) {
 	s.checkClient()
 
-	errorContext := "error while getting last chapter metadata"
+	errorContext := "error while getting last chapter metadata of manga with URL '%s'"
 
 	mangaHID, err := s.getMangaHID(mangaURL)
 	if err != nil {
-		return nil, util.AddErrorContext(errorContext, err)
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), err)
 	}
 
 	mangaAPIURL := fmt.Sprintf("%s/comic/%s/chapters?lang=en&limit=1", baseAPIURL, mangaHID) // default order is by chapter desc
 	var chaptersAPIResp getChaptersAPIResponse
 	_, err = s.client.Request("GET", mangaAPIURL, nil, &chaptersAPIResp)
 	if err != nil {
-		return nil, util.AddErrorContext(errorContext, err)
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), err)
 	}
 
 	if len(chaptersAPIResp.Chapters) == 0 {
-		return nil, util.AddErrorContext(errorContext, errordefs.ErrLastReleasedChapterNotFound)
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), errordefs.ErrLastReleasedChapterNotFound)
 	}
 
 	chapterReturn, err := getChapterFromResp(chaptersAPIResp.Chapters[0], chaptersAPIResp.Chapters[0].Chap, mangaURL)
 	if err != nil {
-		return nil, util.AddErrorContext(errorContext, err)
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), err)
 	}
 
 	return chapterReturn, nil

@@ -11,10 +11,10 @@ import (
 
 // GetChapterMetadata returns a chapter by its chapter or URL
 func (s *Source) GetChapterMetadata(mangaURL, _, chapter, chapterURL, _ string) (*manga.Chapter, error) {
-	errorContext := "error while getting metadata of chapter with chapter '%s' and URL '%s', and manga URL '%s'"
+	errorContext := "error while getting metadata of chapter"
 
 	if chapter == "" && chapterURL == "" {
-		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL), errordefs.ErrChapterDoesntHaveChapterAndURL)
+		return nil, util.AddErrorContext(errorContext, errordefs.ErrChapterDoesntHaveChapterAndURL)
 	}
 
 	returnChapter := &manga.Chapter{}
@@ -27,7 +27,7 @@ func (s *Source) GetChapterMetadata(mangaURL, _, chapter, chapterURL, _ string) 
 	}
 
 	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, chapter, chapterURL, mangaURL), err)
+		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	return returnChapter, nil
@@ -102,11 +102,11 @@ func (s *Source) getChapterMetadataByChapter(_ string, _ string) (*manga.Chapter
 func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, error) {
 	s.checkClient()
 
-	errorContext := "error while getting last chapter metadata"
+	errorContext := "error while getting last chapter metadata of manga with URL '%s'"
 
 	mangaID, err := getMangaID(mangaURL)
 	if err != nil {
-		return nil, util.AddErrorContext(errorContext, err)
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), err)
 	}
 
 	// URL gets the last chapter of the manga
@@ -115,13 +115,13 @@ func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, err
 	_, err = s.client.Request("GET", mangaAPIURL, nil, &feedAPIResp)
 	if err != nil {
 		if util.ErrorContains(err, "non-200 status code -> (404)") {
-			return nil, errordefs.ErrChapterNotFound
+			return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), errordefs.ErrChapterNotFound)
 		}
-		return nil, util.AddErrorContext(errorContext, err)
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), err)
 	}
 
 	if len(feedAPIResp.Data) == 0 {
-		return nil, util.AddErrorContext(errorContext, errordefs.ErrLastReleasedChapterNotFound)
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), errordefs.ErrLastReleasedChapterNotFound)
 	}
 
 	chapterReturn := &manga.Chapter{}
@@ -148,7 +148,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, err
 
 	chapterReturn.UpdatedAt, err = util.GetRFC3339Datetime(attributes.PublishAt)
 	if err != nil {
-		return nil, util.AddErrorContext(errorContext, err)
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), err)
 	}
 
 	return chapterReturn, nil

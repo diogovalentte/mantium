@@ -72,13 +72,13 @@ func (s *Source) GetChapterMetadata(mangaURL, mangaInternalID, chapter, _, chapt
 func (s *Source) GetLastChapterMetadata(mangaURL, mangaInternalID string) (*manga.Chapter, error) {
 	s.checkClient()
 
-	errorContext := "error while getting last chapter metadata"
+	errorContext := "error while getting last chapter metadata of manga with URL '%s' and internal ID '%s'"
 	var err error
 
 	if mangaInternalID == "" {
 		mangaInternalID, err = s.getMangaIDFromURL(mangaURL)
 		if err != nil {
-			return nil, util.AddErrorContext(errorContext, err)
+			return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL, mangaInternalID), err)
 		}
 	}
 
@@ -100,11 +100,11 @@ func (s *Source) GetLastChapterMetadata(mangaURL, mangaInternalID string) (*mang
 	select {
 	case <-done:
 		if returnChapter == nil {
-			return nil, util.AddErrorContext(errorContext, errordefs.ErrLastReleasedChapterNotFound)
+			return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL, mangaInternalID), errordefs.ErrLastReleasedChapterNotFound)
 		}
 		return returnChapter, nil
 	case err := <-errChan:
-		return nil, util.AddErrorContext(errorContext, err)
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL, mangaInternalID), err)
 	}
 }
 
