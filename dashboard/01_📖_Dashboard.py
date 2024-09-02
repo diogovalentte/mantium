@@ -83,7 +83,25 @@ class MainDashboard:
             ss.get("mangas_sort", self.sort_options[self.sort_option_index]),
             ss.get("mangas_sort_reverse", False),
         )
-        self.show_mangas(st.columns(ss["configs_columns_number"]), mangas)
+
+        columns_number = ss["configs_columns_number"]
+        max_number_to_show = columns_number * 3  # 3 = number of rows to show first
+        can_load_more = False
+        if len(mangas) > max_number_to_show:
+            self.show_mangas(st.columns(columns_number), mangas[:max_number_to_show])
+            can_load_more = True
+        else:
+            self.show_mangas(st.columns(columns_number), mangas)
+
+        def callback():
+            ss["show_more_manga"] = True
+
+        if not ss.get("show_more_manga", False) and can_load_more:
+            st.button(
+                "Show All", on_click=callback, use_container_width=True, type="primary"
+            )
+        if ss.get("show_more_manga", False) and can_load_more:
+            self.show_mangas(st.columns(columns_number), mangas[max_number_to_show:])
 
         if "system_last_update_time" not in ss:
             ss["system_last_update_time"] = self.api_client.check_for_updates()
@@ -126,6 +144,7 @@ class MainDashboard:
 
             def status_filter_callback():
                 self.status_filter_key = ss.status_filter
+                ss["show_more_manga"] = False
 
             st.selectbox(
                 "Filter Status",
@@ -251,10 +270,10 @@ class MainDashboard:
             with cols_list[col_index]:
                 with st.container(border=True):
                     with centered_container("center_container"):
-                        self.show_manga_dashboard(manga)
+                        self.show_manga(manga)
             col_index += 1
 
-    def show_manga_dashboard(self, manga: dict[str, Any]):
+    def show_manga(self, manga: dict[str, Any]):
         unread = (
             manga["LastReadChapter"]["Chapter"]
             != manga["LastReleasedChapter"]["Chapter"]
