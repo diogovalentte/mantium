@@ -195,7 +195,7 @@ class MainDashboard:
                     st.warning(ss["manga_add_error_message"])
 
             st.divider()
-            self.show_configs()
+            self.show_settings()
 
     def show_background_error(self):
         if ss["configs_show_background_error_warning"]:
@@ -944,25 +944,9 @@ class MainDashboard:
                             ss["manga_add_success_message"] = "Manga added successfully"
                             st.rerun()
 
-    def show_configs(self):
-        def update_configs_callback():
-            self.api_client.update_dashboard_configs(
-                ss.configs_select_columns_number,
-                ss.configs_select_search_results_limit,
-                ss.configs_select_show_background_error_warning,
-            )
-            ss["configs_columns_number"] = ss.configs_select_columns_number
-            ss["configs_show_background_error_warning"] = (
-                ss.configs_select_show_background_error_warning
-            )
-            ss["configs_search_results_limit"] = ss.configs_select_search_results_limit
-            ss["configs_updated_success"] = True
-
-        with st.popover(
-            "Configs",
-            help="Dashboard configs",
-            use_container_width=True,
-        ):
+    def show_settings(self):
+        @st.experimental_dialog("Settings")
+        def show_settings_dialog():
             with st.form(key="configs_update_configs", border=False):
                 st.slider(
                     "Columns:",
@@ -987,15 +971,40 @@ class MainDashboard:
                     help="Show a warning in the sidebar if there is a background error",
                 )
 
-                st.form_submit_button(
+                if st.form_submit_button(
                     "Save",
                     type="primary",
-                    on_click=update_configs_callback,
                     use_container_width=True,
-                )
+                ):
+                    try:
+                        self.api_client.update_dashboard_configs(
+                            ss.configs_select_columns_number,
+                            ss.configs_select_search_results_limit,
+                            ss.configs_select_show_background_error_warning,
+                        )
+                        ss["configs_columns_number"] = ss.configs_select_columns_number
+                        ss["configs_show_background_error_warning"] = (
+                            ss.configs_select_show_background_error_warning
+                        )
+                        ss["configs_search_results_limit"] = (
+                            ss.configs_select_search_results_limit
+                        )
+                        ss["configs_updated_success"] = True
+                        st.rerun()
+                    except Exception as e:
+                        logger.exception(e)
+                        st.error("Error while saving settings.")
 
-            if ss.get("configs_updated_success", False):
-                st.success("Configs updated successfully")
+        if st.button(
+            "Settings",
+            type="secondary",
+            help="Change the dashboard settings",
+            use_container_width=True,
+        ):
+            show_settings_dialog()
+
+        if ss.get("configs_updated_success", False):
+            st.success("Settings updated successfully")
 
     def check_dashboard_error(self):
         if ss.get("dashboard_error", False):
