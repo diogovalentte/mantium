@@ -106,11 +106,15 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 		title := titleGroup.GetTitles()[0]
 		titleName := title.GetTitleName()
 		if strings.Contains(strings.ToLower(titleName), strings.ToLower(term)) {
+			coverImgURL := title.GetImagePortrait()
+			if coverImgURL == "" {
+				coverImgURL = models.DefaultCoverImgURL
+			}
 			mangaSearchResults = append(mangaSearchResults, &models.MangaSearchResult{
 				Source:      sourceName,
 				URL:         fmt.Sprintf("%s/titles/%d", baseSiteURL, title.GetTitleId()),
 				Name:        titleName,
-				CoverURL:    title.GetImagePortrait(),
+				CoverURL:    coverImgURL,
 				LastChapter: "N/A",
 			})
 			count++

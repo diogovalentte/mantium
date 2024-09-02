@@ -28,3 +28,5 @@ type MangaSearchResult struct {
 	InternalID  string
 	Year        int
 }
+
+var DefaultCoverImgURL = "https://i.imgur.com/jMy7evE.jpeg"

@@ -128,7 +128,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 		}
 		mangaSearchResult.Status = getMangaStatus(comic.Status)
 		if len(comic.MDCovers) == 0 {
-			mangaSearchResult.CoverURL = ""
+			mangaSearchResult.CoverURL = models.DefaultCoverImgURL
 		} else {
 			mangaSearchResult.CoverURL = fmt.Sprintf("%s/%s", baseUploadsURL, comic.MDCovers[0].B2Key)
 		}

@@ -156,7 +156,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 			coverURL := fmt.Sprintf("%s/covers/%s/%s", baseUploadsURL, mangaData.ID, coverFileName)
 			mangaSearchResult.CoverURL = coverURL
 		} else {
-			mangaSearchResult.CoverURL = ""
+			mangaSearchResult.CoverURL = models.DefaultCoverImgURL
 		}
 		mangaSearchResults = append(mangaSearchResults, mangaSearchResult)
 	}

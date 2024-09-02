@@ -134,7 +134,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 		if row.Image != "" {
 			mangaSearchResult.CoverURL = baseUploadsURL + "/" + row.Image
 		} else {
-			mangaSearchResult.CoverURL = ""
+			mangaSearchResult.CoverURL = models.DefaultCoverImgURL
 		}
 		mangaSearchResults = append(mangaSearchResults, mangaSearchResult)
 	}

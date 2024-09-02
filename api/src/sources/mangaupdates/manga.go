@@ -111,6 +111,9 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 				coverURL = url
 				break
 			}
+			if coverURL == "" {
+				coverURL = models.DefaultCoverImgURL
+			}
 		}
 		results = append(results, &models.MangaSearchResult{
 			InternalID:  strconv.Itoa(result.Record.ID),
