@@ -179,45 +179,73 @@ class MainDashboard:
             st.toggle("Reverse Sort", key="mangas_sort_reverse")
             st.divider()
 
-            with st.expander("Add Manga"):
-                if st.button(
-                    "Search by Name",
-                    type="primary",
-                    use_container_width=True,
-                ):
-                    ss["manga_add_success_message"] = ""
-                    ss["manga_add_warning_message"] = ""
-                    ss["manga_add_error_message"] = ""
-                    if ss.get("add_manga_chapter_options", None) is not None:
-                        del ss["add_manga_chapter_options"]
-                    if ss.get("add_manga_search_selected_manga", None) is not None:
-                        del ss["add_manga_search_selected_manga"]
-                    ss["add_manga_search_results_mangadex"] = {}
-                    ss["add_manga_search_results_comick"] = {}
-                    ss["add_manga_search_results_mangaplus"] = {}
-                    ss["add_manga_search_results_mangahub"] = {}
-                    ss["add_manga_search_go_back_to_tab"] = 0
+            if not ss.get("show_add_manga_expander", False):
 
-                    @st.experimental_dialog("Search Manga", width="large")
-                    def show_add_manga_form_dialog():
-                        self.show_add_manga_form_search()
+                def on_click():
+                    ss["show_add_manga_expander"] = True
 
-                    show_add_manga_form_dialog()
+                st.button("Add Manga", on_click=on_click, use_container_width=True)
+            else:
+                with st.expander("Add Manga", expanded=True):
 
-                if st.button("Add using URL", type="primary", use_container_width=True):
-                    ss["manga_add_success_message"] = ""
-                    ss["manga_add_warning_message"] = ""
-                    ss["manga_add_error_message"] = ""
-                    if ss.get("add_manga_chapter_options", None) is not None:
-                        del ss["add_manga_chapter_options"]
+                    def on_search_click():
+                        ss["show_add_manga_search_form"] = True
 
-                    @st.experimental_dialog("Add Manga Using URL")
-                    def show_add_manga_form_dialog():
-                        self.show_add_manga_form_url()
+                    st.button(
+                        "Search by Name",
+                        type="primary",
+                        use_container_width=True,
+                        on_click=on_search_click,
+                    )
 
-                    show_add_manga_form_dialog()
+                    def on_url_click():
+                        ss["show_add_manga_url_form"] = True
 
-            st.divider()
+                    st.button(
+                        "Add using URL",
+                        type="primary",
+                        use_container_width=True,
+                        on_click=on_url_click,
+                    )
+
+                ss["show_add_manga_expander"] = False
+                st.divider()
+
+            if ss.get("show_add_manga_search_form", False):
+                ss["manga_add_success_message"] = ""
+                ss["manga_add_warning_message"] = ""
+                ss["manga_add_error_message"] = ""
+                if ss.get("add_manga_chapter_options", None) is not None:
+                    del ss["add_manga_chapter_options"]
+                if ss.get("add_manga_search_selected_manga", None) is not None:
+                    del ss["add_manga_search_selected_manga"]
+                ss["add_manga_search_results_mangadex"] = {}
+                ss["add_manga_search_results_comick"] = {}
+                ss["add_manga_search_results_mangaplus"] = {}
+                ss["add_manga_search_results_mangahub"] = {}
+                ss["add_manga_search_go_back_to_tab"] = 0
+
+                @st.experimental_dialog("Search Manga", width="large")
+                def show_add_manga_form_dialog():
+                    self.show_add_manga_form_search()
+
+                show_add_manga_form_dialog()
+                ss["show_add_manga_search_form"] = False
+
+            elif ss.get("show_add_manga_url_form", False):
+                ss["manga_add_success_message"] = ""
+                ss["manga_add_warning_message"] = ""
+                ss["manga_add_error_message"] = ""
+                if ss.get("add_manga_chapter_options", None) is not None:
+                    del ss["add_manga_chapter_options"]
+
+                @st.experimental_dialog("Add Manga Using URL")
+                def show_add_manga_form_dialog():
+                    self.show_add_manga_form_url()
+
+                show_add_manga_form_dialog()
+                ss["show_add_manga_url_form"] = False
+
             self.show_settings()
 
     def show_background_error(self):
@@ -1020,6 +1048,7 @@ class MainDashboard:
                     min_value=1,
                     max_value=50,
                     value=ss["configs_search_results_limit"],
+                    help="The maximum number of search results to show when searching for a manga to add to the dashboard",
                     key="configs_select_search_results_limit",
                 )
 
