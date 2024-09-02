@@ -19,21 +19,23 @@ type (
 // Chapter is the struct for a chapter.
 // Chapter don't has exported methods because a chapter should be used only by a manga.
 type Chapter struct {
+	// UpdatedAt is the time when the chapter was released or updated (read).
+	// Should truncate at the second.
+	// The timezone should be the default/system timezone.
+	UpdatedAt time.Time
 	// URL is the URL of the chapter
 	URL string
 	// Chapter usually is the chapter number, but in some cases it can be a one-shot or a special chapter
 	Chapter string
 	// Name is the name of the chapter
 	Name string
-	// UpdatedAt is the time when the chapter was released or updated (read).
-	// Should truncate at the second.
-	// The timezone should be the default/system timezone.
-	UpdatedAt time.Time
-	Type      Type
+	// InteralID is a unique identifier for the chapter in the source
+	InternalID string
+	Type       Type
 }
 
 func (c Chapter) String() string {
-	return fmt.Sprintf("Chapter{URL: %s, Chapter: %s, Name: %s, UpdatedAt: %s, Type: %d}", c.URL, c.Chapter, c.Name, c.UpdatedAt, c.Type)
+	return fmt.Sprintf("Chapter{URL: %s, Chapter: %s, Name: %s, InternalID: %s, UpdatedAt: %s, Type: %d}", c.URL, c.Chapter, c.Name, c.InternalID, c.UpdatedAt, c.Type)
 }
 
 func insertChapterDB(c *Chapter, mangaID ID, tx *sql.Tx) (int, error) {
@@ -46,12 +48,12 @@ func insertChapterDB(c *Chapter, mangaID ID, tx *sql.Tx) (int, error) {
 	var chapterID int
 	err = tx.QueryRow(`
         INSERT INTO chapters
-            (manga_id, url, chapter, name, updated_at, type)
+            (manga_id, url, chapter, name, internal_id, updated_at, type)
         VALUES
-            ($1, $2, $3, $4, $5, $6)
+            ($1, $2, $3, $4, $5, $6, $7)
         RETURNING
             id;
-    `, mangaID, c.URL, c.Chapter, c.Name, c.UpdatedAt, c.Type).Scan(&chapterID)
+    `, mangaID, c.URL, c.Chapter, c.Name, c.InternalID, c.UpdatedAt, c.Type).Scan(&chapterID)
 	if err != nil {
 		return -1, util.AddErrorContext(fmt.Sprintf(contextError, mangaID), err)
 	}
@@ -65,12 +67,12 @@ func getChapterDB(id int, db *sql.DB) (*Chapter, error) {
 	var chapter Chapter
 	err := db.QueryRow(`
         SELECT
-            url, chapter, name, updated_at, type
+            url, chapter, name, internal_id, updated_at, type
         FROM
             chapters
         WHERE
             id = $1;
-    `, id).Scan(&chapter.URL, &chapter.Chapter, &chapter.Name, &chapter.UpdatedAt, &chapter.Type)
+    `, id).Scan(&chapter.URL, &chapter.Chapter, &chapter.Name, &chapter.InternalID, &chapter.UpdatedAt, &chapter.Type)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, util.AddErrorContext(fmt.Sprintf(contextError, id), errordefs.ErrChapterNotFoundDB)
@@ -112,13 +114,13 @@ func upsertMangaChapter(m *Manga, chapter *Chapter, tx *sql.Tx) error {
 
 	var chapterID int
 	err = tx.QueryRow(`
-        INSERT INTO chapters (manga_id, url, chapter, name, updated_at, type)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO chapters (manga_id, url, chapter, name, internal_id, updated_at, type)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         ON CONFLICT ON CONSTRAINT chapters_manga_id_type_unique
         DO UPDATE
-            SET url = EXCLUDED.url, chapter = EXCLUDED.chapter, name = EXCLUDED.name, updated_at = EXCLUDED.updated_at
+            SET url = EXCLUDED.url, chapter = EXCLUDED.chapter, name = EXCLUDED.name, internal_id = EXCLUDED.internal_id, updated_at = EXCLUDED.updated_at
         RETURNING id;
-    `, m.ID, chapter.URL, chapter.Chapter, chapter.Name, chapter.UpdatedAt, chapter.Type).Scan(&chapterID)
+    `, m.ID, chapter.URL, chapter.Chapter, chapter.Name, chapter.InternalID, chapter.UpdatedAt, chapter.Type).Scan(&chapterID)
 	if err != nil {
 		return util.AddErrorContext(contextError, err)
 	}
@@ -140,6 +142,9 @@ func upsertMangaChapter(m *Manga, chapter *Chapter, tx *sql.Tx) error {
 
 	var result sql.Result
 	result, err = tx.Exec(query, chapterID, m.ID)
+	if err != nil {
+		return util.AddErrorContext(contextError, err)
+	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return util.AddErrorContext(contextError, err)

@@ -12,7 +12,7 @@ import (
 var chapterURLBase = "https://mangaplus.shueisha.co.jp/viewer/"
 
 // GetChapterMetadata returns a chapter by its chapter or URL
-func (s *Source) GetChapterMetadata(mangaURL string, chapter string, chapterURL string) (*manga.Chapter, error) {
+func (s *Source) GetChapterMetadata(mangaURL, _, chapter, chapterURL, _ string) (*manga.Chapter, error) {
 	errorContext := "error while getting metadata of chapter with chapter '%s' and URL '%s', and manga URL '%s'"
 
 	if chapter == "" && chapterURL == "" {
@@ -22,10 +22,10 @@ func (s *Source) GetChapterMetadata(mangaURL string, chapter string, chapterURL 
 	returnChapter := &manga.Chapter{}
 	var err error
 	if chapter != "" {
-		returnChapter, err = s.GetChapterMetadataByChapter(mangaURL, chapter)
+		returnChapter, err = s.GetChapterMetadataByChapter(mangaURL, "", chapter)
 	}
 	if chapterURL != "" && (err != nil || chapter == "") {
-		returnChapter, err = s.GetChapterMetadataByURL(chapterURL)
+		returnChapter, err = s.GetChapterMetadataByURL(chapterURL, "")
 	}
 
 	if err != nil {
@@ -36,14 +36,14 @@ func (s *Source) GetChapterMetadata(mangaURL string, chapter string, chapterURL 
 }
 
 // GetChapterMetadataByURL returns a manga chapter by its URL.
-func (s *Source) GetChapterMetadataByURL(_ string) (*manga.Chapter, error) {
+func (s *Source) GetChapterMetadataByURL(_, _ string) (*manga.Chapter, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
 // GetChapterMetadataByChapter returns a manga chapter by its chapter.
 // Chapter is expected to be a clean chapter. For example, in the site, a chapter can be like "# 025",
 // but here it should be "25". Use the function cleanChapter to clean the chapter.
-func (s *Source) GetChapterMetadataByChapter(mangaURL string, chapter string) (*manga.Chapter, error) {
+func (s *Source) GetChapterMetadataByChapter(mangaURL, _, chapter string) (*manga.Chapter, error) {
 	s.checkClient()
 
 	mangaID, err := getMangaID(mangaURL)
@@ -78,7 +78,7 @@ func cleanChapter(chapter string) string {
 }
 
 // GetLastChapterMetadata returns the manga last released chapter
-func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error) {
+func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, error) {
 	s.checkClient()
 
 	mangaID, err := getMangaID(mangaURL)
@@ -103,7 +103,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 }
 
 // GetChaptersMetadata returns all the chapters of a manga
-func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) {
+func (s *Source) GetChaptersMetadata(mangaURL, _ string) ([]*manga.Chapter, error) {
 	s.checkClient()
 
 	mangaID, err := getMangaID(mangaURL)

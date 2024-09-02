@@ -48,6 +48,7 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
           "url" varchar(255) NOT NULL PRIMARY KEY,
           "name" varchar(255) NOT NULL,
           "status" smallint NOT NULL,
+          "internal_id" VARCHAR(100) NOT NULL DEFAULT '',
           "cover_img" bytea,
           "cover_img_resized" bool,
           "cover_img_url" varchar(255),
@@ -62,6 +63,7 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
           "url" varchar(255),
           "chapter" varchar(255),
           "name" varchar(255),
+          "internal_id" VARCHAR(100) NOT NULL DEFAULT '',
           "updated_at" timestamp,
           "type" smallint,
           PRIMARY KEY ("url", "type")
@@ -143,6 +145,8 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
 	log.Info().Msg("Doing migrations if not exists...")
 	_, err = tx.Exec(`
         ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "cover_img_fixed" BOOLEAN NOT NULL DEFAULT FALSE;
+        ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "internal_id" VARCHAR(100) NOT NULL DEFAULT '';
+        ALTER TABLE "chapters" ADD COLUMN IF NOT EXISTS "internal_id" VARCHAR(100) NOT NULL DEFAULT '';
     `)
 	if err != nil {
 		tx.Rollback()

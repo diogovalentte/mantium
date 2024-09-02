@@ -52,7 +52,7 @@ func GetSources() map[string]models.Source {
 }
 
 // GetMangaMetadata gets the metadata of a manga using a source
-func GetMangaMetadata(mangaURL string, ignoreGetLastChapterError bool) (*manga.Manga, error) {
+func GetMangaMetadata(mangaURL, internalID string, ignoreGetLastChapterError bool) (*manga.Manga, error) {
 	contextError := "error while getting metadata of manga with URL '%s' from source"
 
 	domain, err := getDomain(mangaURL)
@@ -66,7 +66,7 @@ func GetMangaMetadata(mangaURL string, ignoreGetLastChapterError bool) (*manga.M
 	}
 	contextError = fmt.Sprintf("(%s) %s", domain, contextError)
 
-	manga, err := getManga(mangaURL, source, ignoreGetLastChapterError)
+	manga, err := getManga(mangaURL, internalID, source, ignoreGetLastChapterError)
 	if err != nil {
 		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL), err)
 	}
@@ -100,7 +100,7 @@ func SearchManga(term, sourceSiteURL string, limit int) ([]*models.MangaSearchRe
 // GetChapterMetadata gets the metadata of a chapter using a source.
 // Each source has its own way to get the chapter. Some can't get the chapter by its URL/chapter,
 // so they get the chapter by the chapter chapter/URL.
-func GetChapterMetadata(mangaURL string, chapter string, chapterURL string) (*manga.Chapter, error) {
+func GetChapterMetadata(mangaURL, mangaInternalID, chapter, chapterURL, chapterInternalID string) (*manga.Chapter, error) {
 	contextError := "error while getting metadata of chapter with chapter '%s' and URL '%s' for manga with URL '%s' from source"
 
 	domain, err := getDomain(mangaURL)
@@ -114,7 +114,7 @@ func GetChapterMetadata(mangaURL string, chapter string, chapterURL string) (*ma
 	}
 	contextError = fmt.Sprintf("(%s) %s", domain, contextError)
 
-	chapterReturn, err := getChapter(mangaURL, chapter, chapterURL, source)
+	chapterReturn, err := getChapter(mangaURL, mangaInternalID, chapter, chapterURL, chapterInternalID, source)
 	if err != nil {
 		return nil, util.AddErrorContext(fmt.Sprintf(contextError, chapter, chapterURL, mangaURL), err)
 	}
@@ -123,7 +123,7 @@ func GetChapterMetadata(mangaURL string, chapter string, chapterURL string) (*ma
 }
 
 // GetMangaChapters gets the chapters of a manga using a source
-func GetMangaChapters(mangaURL string) ([]*manga.Chapter, error) {
+func GetMangaChapters(mangaURL, mangaInternalID string) ([]*manga.Chapter, error) {
 	contextError := "error while getting manga with URL '%s' chapters from source"
 
 	domain, err := getDomain(mangaURL)
@@ -137,7 +137,7 @@ func GetMangaChapters(mangaURL string) ([]*manga.Chapter, error) {
 	}
 	contextError = fmt.Sprintf("(%s) %s", domain, contextError)
 
-	chapters, err := getChapters(mangaURL, source)
+	chapters, err := getChapters(mangaURL, mangaInternalID, source)
 	if err != nil {
 		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL), err)
 	}
@@ -156,18 +156,18 @@ func getDomain(urlString string) (string, error) {
 	return parsedURL.Hostname(), nil
 }
 
-func getManga(mangaURL string, source models.Source, ignoreGetLastChapterError bool) (*manga.Manga, error) {
-	return source.GetMangaMetadata(mangaURL, ignoreGetLastChapterError)
+func getManga(mangaURL, mangaInternalID string, source models.Source, ignoreGetLastChapterError bool) (*manga.Manga, error) {
+	return source.GetMangaMetadata(mangaURL, mangaInternalID, ignoreGetLastChapterError)
 }
 
 func searchManga(term string, limit int, source models.Source) ([]*models.MangaSearchResult, error) {
 	return source.Search(term, limit)
 }
 
-func getChapter(mangaURL string, chapter string, chapterURL string, source models.Source) (*manga.Chapter, error) {
-	return source.GetChapterMetadata(mangaURL, chapter, chapterURL)
+func getChapter(mangaURL, mangaInternalID, chapter, chapterURL, chapterInternalID string, source models.Source) (*manga.Chapter, error) {
+	return source.GetChapterMetadata(mangaURL, mangaInternalID, chapter, chapterURL, chapterInternalID)
 }
 
-func getChapters(mangaURL string, source models.Source) ([]*manga.Chapter, error) {
-	return source.GetChaptersMetadata(mangaURL)
+func getChapters(mangaURL, mangaInternalID string, source models.Source) ([]*manga.Chapter, error) {
+	return source.GetChaptersMetadata(mangaURL, mangaInternalID)
 }

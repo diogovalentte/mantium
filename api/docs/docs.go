@@ -259,6 +259,13 @@ const docTemplate = `{
                         "description": "Manga URL",
                         "name": "url",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"1as4fa7\"",
+                        "description": "Internal ID",
+                        "name": "internal_id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -294,6 +301,13 @@ const docTemplate = `{
                         "example": "\"https://mangadex.org/title/1/one-piece\"",
                         "description": "Manga URL",
                         "name": "url",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"1as4fa7\"",
+                        "description": "Internal ID",
+                        "name": "internal_id",
                         "in": "query"
                     },
                     {
@@ -350,8 +364,15 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "description": "Manga status",
-                        "name": "status",
+                        "type": "string",
+                        "example": "\"1as4fa7\"",
+                        "description": "Internal ID",
+                        "name": "internal_id",
+                        "in": "query"
+                    },
+                    {
+                        "description": "Chapter",
+                        "name": "chapter",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -382,7 +403,7 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "description": "Search data",
-                        "name": "manga",
+                        "name": "search",
                         "in": "body",
                         "required": true,
                         "schema": {
@@ -682,6 +703,10 @@ const docTemplate = `{
                 "id": {
                     "type": "integer"
                 },
+                "internalID": {
+                    "description": "InteralID is a unique identifier for the manga in the source",
+                    "type": "string"
+                },
                 "lastReadChapter": {
                     "description": "LastReadChapter is the last chapter read by the user",
                     "allOf": [
@@ -728,6 +753,9 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "internalID": {
+                    "type": "string"
+                },
                 "lastChapter": {
                     "type": "string"
                 },
@@ -755,6 +783,9 @@ const docTemplate = `{
                 "url"
             ],
             "properties": {
+                "internal_id": {
+                    "type": "string"
+                },
                 "last_read_chapter": {
                     "type": "string"
                 },

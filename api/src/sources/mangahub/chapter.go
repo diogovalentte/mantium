@@ -12,7 +12,7 @@ import (
 )
 
 // GetChapterMetadata returns a chapter by its chapter or URL
-func (s *Source) GetChapterMetadata(mangaURL string, chapter string, chapterURL string) (*manga.Chapter, error) {
+func (s *Source) GetChapterMetadata(mangaURL, _, chapter, chapterURL, _ string) (*manga.Chapter, error) {
 	errorContext := "error while getting metadata of chapter with chapter '%s' and URL '%s', and manga URL '%s'"
 
 	if chapter == "" && chapterURL == "" {
@@ -22,7 +22,7 @@ func (s *Source) GetChapterMetadata(mangaURL string, chapter string, chapterURL 
 	returnChapter := &manga.Chapter{}
 	var err error
 	if chapter != "" {
-		returnChapter, err = s.GetChapterMetadataByChapter(mangaURL, chapter)
+		returnChapter, err = s.GetChapterMetadataByChapter(mangaURL, "", chapter)
 	}
 	if chapterURL != "" && (err != nil || chapter == "") {
 		returnChapter, err = s.GetChapterMetadataByURL(chapterURL)
@@ -41,7 +41,7 @@ func (s *Source) GetChapterMetadataByURL(_ string) (*manga.Chapter, error) {
 }
 
 // GetChapterMetadataByChapter scrapes the manga page and return the chapter by its chapter
-func (s *Source) GetChapterMetadataByChapter(mangaURL string, chapter string) (*manga.Chapter, error) {
+func (s *Source) GetChapterMetadataByChapter(mangaURL, _, chapter string) (*manga.Chapter, error) {
 	s.checkClient()
 
 	mangaSlug, err := getMangaSlug(mangaURL)
@@ -106,7 +106,7 @@ type getMangaAPIChapter struct {
 }
 
 // GetLastChapterMetadata scrapes the manga page and return the latest chapter
-func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error) {
+func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, error) {
 	s.checkClient()
 
 	errorContext := "error while getting last chapter metadata"
@@ -140,7 +140,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 		}
 	}
 
-	chapterReturn, err := s.GetChapterMetadataByChapter(mangaURL, strconv.FormatFloat(mangaAPIResp.Data.Manga.LastestChapter, 'f', -1, 64))
+	chapterReturn, err := s.GetChapterMetadataByChapter(mangaURL, "", strconv.FormatFloat(mangaAPIResp.Data.Manga.LastestChapter, 'f', -1, 64))
 	if err != nil {
 		return nil, util.AddErrorContext(errorContext, err)
 	}
@@ -149,7 +149,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 }
 
 // GetChaptersMetadata scrapes the manga page and return the chapters
-func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) {
+func (s *Source) GetChaptersMetadata(mangaURL, _ string) ([]*manga.Chapter, error) {
 	s.checkClient()
 
 	errorContext := "error while getting chapters metadata"

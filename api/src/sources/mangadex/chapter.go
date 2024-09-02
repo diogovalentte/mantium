@@ -10,7 +10,7 @@ import (
 )
 
 // GetChapterMetadata returns a chapter by its chapter or URL
-func (s *Source) GetChapterMetadata(mangaURL string, chapter string, chapterURL string) (*manga.Chapter, error) {
+func (s *Source) GetChapterMetadata(mangaURL, _, chapter, chapterURL, _ string) (*manga.Chapter, error) {
 	errorContext := "error while getting metadata of chapter with chapter '%s' and URL '%s', and manga URL '%s'"
 
 	if chapter == "" && chapterURL == "" {
@@ -99,7 +99,7 @@ func (s *Source) getChapterMetadataByChapter(_ string, _ string) (*manga.Chapter
 }
 
 // GetLastChapterMetadata returns the last chapter of a manga by its URL
-func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error) {
+func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, error) {
 	s.checkClient()
 
 	errorContext := "error while getting last chapter metadata"
@@ -155,7 +155,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL string) (*manga.Chapter, error)
 }
 
 // GetChaptersMetadata returns the chapters of a manga by its URL
-func (s *Source) GetChaptersMetadata(mangaURL string) ([]*manga.Chapter, error) {
+func (s *Source) GetChaptersMetadata(mangaURL, _ string) ([]*manga.Chapter, error) {
 	s.checkClient()
 
 	errorContext := "error while getting chapters metadata"

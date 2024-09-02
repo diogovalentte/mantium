@@ -54,7 +54,7 @@ func MangaRoutes(group *gin.RouterGroup) {
 // @Description Searches a manga in the source. You must provide the source site URL like "https://mangadex.org" and the search query.
 // @Accept json
 // @Produce json
-// @Param manga body SearchMangaRequest true "Search data"
+// @Param search body SearchMangaRequest true "Search data"
 // @Success 200 {object} map[string][]models.MangaSearchResult "{"mangas": [mangaSearchResultObj]}"
 // @Router /manga/search [post]
 func SearchManga(c *gin.Context) {
@@ -114,7 +114,7 @@ func AddManga(c *gin.Context) {
 		}
 	}
 
-	mangaAdd, err := sources.GetMangaMetadata(requestData.URL, !mangaHasNoChapters)
+	mangaAdd, err := sources.GetMangaMetadata(requestData.URL, requestData.MangaInternalID, !mangaHasNoChapters)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -123,7 +123,7 @@ func AddManga(c *gin.Context) {
 	mangaAdd.Status = manga.Status(requestData.Status)
 
 	if requestData.LastReadChapter != "" || requestData.LastReadChapterURL != "" {
-		mangaAdd.LastReadChapter, err = sources.GetChapterMetadata(requestData.URL, requestData.LastReadChapter, requestData.LastReadChapterURL)
+		mangaAdd.LastReadChapter, err = sources.GetChapterMetadata(requestData.URL, requestData.MangaInternalID, requestData.LastReadChapter, requestData.LastReadChapterURL, requestData.LastReadChapterInternalID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
@@ -175,10 +175,12 @@ func AddManga(c *gin.Context) {
 
 // AddMangaRequest is the request body for the AddManga route
 type AddMangaRequest struct {
-	URL                string `json:"url" binding:"required,http_url"`
-	LastReadChapter    string `json:"last_read_chapter"`
-	LastReadChapterURL string `json:"last_read_chapter_url"`
-	Status             int    `json:"status" binding:"required,gte=0,lte=5"`
+	URL                       string `json:"url" binding:"required,http_url"`
+	MangaInternalID           string `json:"manga_internal_id"`
+	LastReadChapter           string `json:"last_read_chapter"`
+	LastReadChapterURL        string `json:"last_read_chapter_url"`
+	LastReadChapterInternalID string `json:"last_read_chapter_internal_id"`
+	Status                    int    `json:"status" binding:"required,gte=0,lte=5"`
 }
 
 // @Summary Delete manga
@@ -727,11 +729,13 @@ type iframeTemplateData struct {
 // @Produce json
 // @Param id query int false "Manga ID" Example(1)
 // @Param url query string false "Manga URL" Example("https://mangadex.org/title/1/one-piece")
+// @Param manga_internal_id query string false "Manga Internal ID" Example("1as4fa7")
 // @Success 200 {array} manga.Chapter "{"chapters": [chapterObj]}"
 // @Router /manga/chapters [get]
 func GetMangaChapters(c *gin.Context) {
 	mangaIDStr := c.Query("id")
 	mangaURL := c.Query("url")
+	mangaInternalID := c.Query("manga_internal_id")
 	mangaID, mangaURL, err := getMangaIDAndURL(mangaIDStr, mangaURL)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
@@ -751,7 +755,7 @@ func GetMangaChapters(c *gin.Context) {
 		mangaURL = mangaGet.URL
 	}
 
-	chapters, err := sources.GetMangaChapters(mangaURL)
+	chapters, err := sources.GetMangaChapters(mangaURL, mangaInternalID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -815,7 +819,8 @@ type UpdateMangaStatusRequest struct {
 // @Produce json
 // @Param id query int false "Manga ID" Example(1)
 // @Param url query string false "Manga URL" Example("https://mangadex.org/title/1/one-piece")
-// @Param status body UpdateMangaChapterRequest true "Manga status"
+// @Param manga_internal_id query string false "Manga Internal ID" Example("1as4fa7")
+// @Param chapter body UpdateMangaChapterRequest true "Chapter"
 // @Success 200 {object} responseMessage
 // @Router /manga/last_read_chapter [patch]
 func UpdateMangaLastReadChapter(c *gin.Context) {
@@ -823,6 +828,7 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 
 	mangaIDStr := c.Query("id")
 	mangaURL := c.Query("url")
+	mangaInternalID := c.Query("manga_internal_id")
 	mangaID, mangaURL, err := getMangaIDAndURL(mangaIDStr, mangaURL)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
@@ -849,7 +855,7 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 	if requestData.Chapter == "" && requestData.ChapterURL == "" {
 		chapter = mangaUpdate.LastReleasedChapter
 	} else {
-		chapter, err = sources.GetChapterMetadata(mangaUpdate.URL, requestData.Chapter, requestData.ChapterURL)
+		chapter, err = sources.GetChapterMetadata(mangaUpdate.URL, mangaInternalID, requestData.Chapter, requestData.ChapterURL, requestData.ChapterInternalID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
@@ -871,8 +877,9 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 
 // UpdateMangaChapterRequest is the request body for updating a manga chapter
 type UpdateMangaChapterRequest struct {
-	Chapter    string `json:"chapter,omitempty"`
-	ChapterURL string `json:"chapter_url,omitempty"`
+	Chapter           string `json:"chapter,omitempty"`
+	ChapterURL        string `json:"chapter_url,omitempty"`
+	ChapterInternalID string `json:"chapter_internal_id,omitempty"`
 }
 
 // @Summary Update manga cover image
@@ -880,6 +887,7 @@ type UpdateMangaChapterRequest struct {
 // @Produce json
 // @Param id query int false "Manga ID" Example(1)
 // @Param url query string false "Manga URL" Example("https://mangadex.org/title/1/one-piece")
+// @Param manga_internal_id query string false "Manga Internal ID" Example("1as4fa7")
 // @Param cover_img formData file false "Manga cover image file"
 // @Param cover_img_url query string false "Manga cover image URL" Example("https://example.com/cover.jpg")
 // @Param get_cover_img_from_source query bool false "Let Mantium fetch the cover image from the source site" Example(true)
@@ -888,6 +896,7 @@ type UpdateMangaChapterRequest struct {
 func UpdateMangaCoverImg(c *gin.Context) {
 	mangaIDStr := c.Query("id")
 	mangaURL := c.Query("url")
+	mangaInternalID := c.Query("manga_internal_id")
 	coverImgURL := c.Query("cover_img_url")
 	getCoverImgFromSource := c.Query("get_cover_img_from_source")
 
@@ -986,7 +995,7 @@ func UpdateMangaCoverImg(c *gin.Context) {
 	} else if getCoverImgFromSource == "true" {
 		var updatedManga *manga.Manga
 		for i := 0; i < retries; i++ {
-			updatedManga, err = sources.GetMangaMetadata(mangaToUpdate.URL, true)
+			updatedManga, err = sources.GetMangaMetadata(mangaToUpdate.URL, mangaInternalID, true)
 			if err != nil {
 				if i == retries-1 {
 					c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -1048,7 +1057,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 	for _, mangaToUpdate := range mangas {
 		var updatedManga *manga.Manga
 		for i := 0; i < retries; i++ {
-			updatedManga, err = sources.GetMangaMetadata(mangaToUpdate.URL, mangaToUpdate.LastReleasedChapter == nil)
+			updatedManga, err = sources.GetMangaMetadata(mangaToUpdate.URL, mangaToUpdate.InternalID, mangaToUpdate.LastReleasedChapter == nil)
 			if err != nil {
 				if i != retries-1 {
 					logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msgf("Error getting manga metadata, retrying in %.2f seconds...", retryInterval.Seconds())

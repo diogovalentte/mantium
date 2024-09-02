@@ -8,8 +8,12 @@ import streamlit as st
 from PIL import Image
 from src.api.api_client import get_api_client
 from src.exceptions import APIException
-from src.util import (centered_container, fix_streamlit_index_html,
-                      get_relative_time, tagger)
+from src.util import (
+    centered_container,
+    fix_streamlit_index_html,
+    get_relative_time,
+    tagger,
+)
 from streamlit import session_state as ss
 from streamlit_extras.stylable_container import stylable_container
 from streamlit_javascript import st_javascript
@@ -484,8 +488,7 @@ class MainDashboard:
                     != manga["LastReleasedChapter"]["Chapter"]
                 ):
                     self.api_client.update_manga_last_read_chapter(
-                        manga["ID"],
-                        manga["URL"],
+                        manga["ID"], manga["URL"], manga["InternalID"], ""
                     )
 
             st.button(
@@ -513,7 +516,7 @@ class MainDashboard:
         with st.spinner("Getting manga chapters..."):
             try:
                 ss["update_manga_chapter_options"] = get_manga_chapters(
-                    manga["ID"], manga["URL"]
+                    manga["ID"], manga["URL"], manga["InternalID"]
                 )
             except APIException as e:
                 logger.exception(e)
@@ -607,8 +610,10 @@ class MainDashboard:
                         self.api_client.update_manga_last_read_chapter(
                             manga["ID"],
                             manga["URL"],
+                            manga["InternalID"],
                             chapter["Chapter"],
                             chapter["URL"],
+                            chapter["InternalID"],
                         )
 
                     cover_url = ss.update_manga_form_cover_img_url
@@ -637,6 +642,7 @@ class MainDashboard:
                                 self.api_client.update_manga_cover_img(
                                     manga["ID"],
                                     manga["URL"],
+                                    manga["InternalID"],
                                     cover_img_url=cover_url,
                                     cover_img=cover_upload if cover_upload else b"",
                                 )
@@ -644,6 +650,7 @@ class MainDashboard:
                                 self.api_client.update_manga_cover_img(
                                     manga["ID"],
                                     manga["URL"],
+                                    manga["InternalID"],
                                     get_cover_img_from_source=get_cover_img_from_source,
                                 )
                         case _:
@@ -709,14 +716,19 @@ class MainDashboard:
                 try:
                     with st.spinner("Getting manga chapters..."):
                         ss["add_manga_chapter_options"] = get_manga_chapters(
-                            -1, ss["add_manga_search_selected_manga"]["URL"]
+                            -1,
+                            ss["add_manga_search_selected_manga"]["URL"],
+                            ss["add_manga_search_selected_manga"]["InternalID"],
                         )
                 except APIException as e:
                     logger.exception(e)
                     st.error("Error while getting manga chapters.")
                     st.stop()
 
-                self.show_add_manga_form(ss["add_manga_search_selected_manga"]["URL"])
+                self.show_add_manga_form(
+                    ss["add_manga_search_selected_manga"]["URL"],
+                    ss["add_manga_search_selected_manga"]["InternalID"],
+                )
 
             def on_click():
                 match ss["add_manga_search_selected_manga"]["Source"]:
@@ -927,7 +939,9 @@ class MainDashboard:
         if manga_url:
             try:
                 with st.spinner("Getting manga chapters..."):
-                    ss["add_manga_chapter_options"] = get_manga_chapters(-1, manga_url)
+                    ss["add_manga_chapter_options"] = get_manga_chapters(
+                        -1, manga_url, ""
+                    )
             except APIException as e:
                 resp_text = str(e.response_text).lower()
                 if (
@@ -945,9 +959,9 @@ class MainDashboard:
                     st.error("Error while getting manga chapters.")
                     st.stop()
 
-        self.show_add_manga_form(ss.add_manga_form_url)
+        self.show_add_manga_form(ss.add_manga_form_url, "")
 
-    def show_add_manga_form(self, manga_url: str):
+    def show_add_manga_form(self, manga_url: str, manga_internal_id: str):
         with st.form(key="add_manga_form", border=False, clear_on_submit=True):
             st.selectbox(
                 "Status",
@@ -978,12 +992,14 @@ class MainDashboard:
                 ss["add_manga_manga_to_add"] = {
                     "manga_url": manga_url,
                     "status": ss.add_manga_form_status,
+                    "manga_internal_id": manga_internal_id,
                     "chapter": ss.add_manga_form_chapter["Chapter"]
                     if ss.add_manga_form_chapter is not None
                     else "",
                     "chapter_url": ss.add_manga_form_chapter["URL"]
                     if ss.add_manga_form_chapter is not None
                     else "",
+                    "chapter_internal_id": ss.add_manga_form_chapter["InternalID"],
                 }
                 ss.add_manga_form_url = ""
                 del ss["add_manga_chapter_options"]
@@ -999,33 +1015,39 @@ class MainDashboard:
                         "Provide a manga URL and select the last read chapter first"
                     )
                 else:
-                    with st.spinner("Adding manga..."):
-                        ss["add_manga_search_selected_manga"] = None
-                        try:
-                            self.api_client.add_manga(
-                                ss["add_manga_manga_to_add"]["manga_url"],
-                                ss["add_manga_manga_to_add"]["status"],
-                                ss["add_manga_manga_to_add"]["chapter"],
-                                ss["add_manga_manga_to_add"]["chapter_url"],
+                    try:
+                        self.api_client.add_manga(
+                            ss["add_manga_manga_to_add"]["manga_url"],
+                            ss["add_manga_manga_to_add"]["status"],
+                            ss["add_manga_manga_to_add"]["manga_internal_id"],
+                            ss["add_manga_manga_to_add"]["chapter"],
+                            ss["add_manga_manga_to_add"]["chapter_url"],
+                            ss["add_manga_manga_to_add"]["chapter_internal_id"],
+                        )
+                    except APIException as e:
+                        if (
+                            "manga added to DB, but error executing integrations".lower()
+                            in str(e).lower()
+                        ):
+                            logger.exception(e)
+                            ss["manga_add_warning_message"] = (
+                                "Manga added to DB, but couldn't add it to at least one integration."
                             )
-                        except APIException as e:
-                            if (
-                                "manga added to DB, but error executing integrations".lower()
-                                in str(e).lower()
-                            ):
-                                logger.exception(e)
-                                ss["manga_add_warning_message"] = (
-                                    "Manga added to DB, but couldn't add it to at least one integration."
-                                )
-                                st.rerun()
-                            else:
-                                logger.exception(e)
-                                ss["manga_add_error_message"] = (
-                                    "Error while adding manga."
-                                )
-                        else:
-                            ss["manga_add_success_message"] = "Manga added successfully"
                             st.rerun()
+                        elif "manga already exists in DB".lower() in str(e).lower():
+                            ss["manga_add_warning_message"] = (
+                                "Manga already in Mantium."
+                            )
+                            st.rerun()
+                        else:
+                            logger.exception(e)
+                            ss["manga_add_error_message"] = (
+                                "Error while adding manga."
+                            )
+                    else:
+                        ss["manga_add_success_message"] = "Manga added successfully"
+                        ss["add_manga_search_selected_manga"] = None
+                        st.rerun()
 
         if ss.get("manga_add_error_message", "") != "":
             st.error(ss["manga_add_error_message"])
@@ -1141,8 +1163,8 @@ if __name__ == "__main__":
     api_client.check_health()
 
     @st.cache_data(show_spinner=False, max_entries=1, ttl=600)
-    def get_manga_chapters(id: int, url: str):
-        chapters = api_client.get_manga_chapters(id, url)
+    def get_manga_chapters(id: int, url: str, internal_id: str):
+        chapters = api_client.get_manga_chapters(id, url, internal_id)
 
         return chapters
 

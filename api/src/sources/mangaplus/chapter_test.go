@@ -58,7 +58,7 @@ func TestGetChapterMetadata(t *testing.T) {
 			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
 			mangaURL := test.url
 
-			actualChapter, err := source.GetChapterMetadata(mangaURL, expected.Chapter, "")
+			actualChapter, err := source.GetChapterMetadata(mangaURL, "", expected.Chapter, "", "")
 			if err != nil {
 				t.Fatalf("error while getting chapter: %v", err)
 			}
@@ -73,7 +73,7 @@ func TestGetChapterMetadata(t *testing.T) {
 			expected := test.expected
 			mangaURL := test.url + "salt"
 
-			actualChapter, err := source.GetChapterMetadata(mangaURL, expected.Chapter, "")
+			actualChapter, err := source.GetChapterMetadata(mangaURL, "", expected.Chapter, "", "")
 			if err != nil {
 				if !util.ErrorContains(err, "manga ID not found in the URL") {
 					t.Fatalf("unexpected error: %v", err)
@@ -92,7 +92,7 @@ func TestGetChapterMetadata(t *testing.T) {
 			expected := test.expected
 			mangaURL := test.url
 
-			actualChapter, err := source.GetChapterMetadata(mangaURL, expected.Chapter+"salt", "")
+			actualChapter, err := source.GetChapterMetadata(mangaURL, "", expected.Chapter+"salt", "", "")
 			if err != nil {
 				if !util.ErrorContains(err, errordefs.ErrChapterNotFound.Error()) {
 					t.Fatalf("unexpected error: %v", err)
@@ -115,7 +115,7 @@ func TestGetLastChapterMetadata(t *testing.T) {
 		for _, test := range chapterTestTable {
 			mangaURL := test.url
 
-			actualChapter, err := source.GetLastChapterMetadata(mangaURL)
+			actualChapter, err := source.GetLastChapterMetadata(mangaURL, "")
 			if err != nil {
 				t.Fatalf("error while getting chapter: %v", err)
 			}
@@ -138,7 +138,7 @@ func TestGetLastChapterMetadata(t *testing.T) {
 		for _, test := range chapterTestTable {
 			mangaURL := test.url
 
-			_, err := source.GetLastChapterMetadata(mangaURL + "salt")
+			_, err := source.GetLastChapterMetadata(mangaURL+"salt", "")
 			if err != nil {
 				if util.ErrorContains(err, "manga ID not found in the URL") {
 					continue
@@ -150,7 +150,7 @@ func TestGetLastChapterMetadata(t *testing.T) {
 
 			re := regexp.MustCompile(`/titles/(\d+)`)
 			mangaURL = re.ReplaceAllString(mangaURL, "/titles/000000")
-			_, err = source.GetMangaMetadata(mangaURL, false)
+			_, err = source.GetMangaMetadata(mangaURL, "", false)
 			if err != nil {
 				if util.ErrorContains(err, errordefs.ErrMangaNotFound.Error()) {
 					continue
@@ -171,7 +171,7 @@ func TestGetChaptersMetadata(t *testing.T) {
 		for _, test := range chapterTestTable {
 			mangaURL := test.url
 
-			chapters, err := source.GetChaptersMetadata(mangaURL)
+			chapters, err := source.GetChaptersMetadata(mangaURL, "")
 			if err != nil {
 				t.Fatalf("error while getting chapters: %v", err)
 			}
@@ -201,7 +201,7 @@ func TestGetChaptersMetadata(t *testing.T) {
 			mangaURL := test.url + "salt"
 			expectedQuantity := 0
 
-			chapters, err := source.GetChaptersMetadata(mangaURL)
+			chapters, err := source.GetChaptersMetadata(mangaURL, "")
 			if err != nil {
 				if !util.ErrorContains(err, "manga ID not found in the URL") {
 					t.Fatalf("expected error, got %s", err)

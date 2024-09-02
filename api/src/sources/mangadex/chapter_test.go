@@ -58,7 +58,7 @@ func TestGetChapterMetadata(t *testing.T) {
 			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
 			chapterURL := test.chapterURL
 
-			actualChapter, err := source.GetChapterMetadata("", "", chapterURL)
+			actualChapter, err := source.GetChapterMetadata("", "", "", chapterURL, "")
 			if err != nil {
 				t.Fatalf("error while getting chapter: %v", err)
 			}
@@ -78,7 +78,7 @@ func TestGetChapterMetadata(t *testing.T) {
 				t.Fatalf("error while replacing chapter URL ID: %v", err)
 			}
 
-			actualChapter, err := source.GetChapterMetadata("", "", chapterURL)
+			actualChapter, err := source.GetChapterMetadata("", "", "", chapterURL, "")
 			if err != nil {
 				if !util.ErrorContains(err, errordefs.ErrChapterNotFound.Error()) {
 					t.Fatalf("unexpected error: %v", err)
@@ -91,7 +91,7 @@ func TestGetChapterMetadata(t *testing.T) {
 				t.Fatalf("expected actual chapter %s to NOT be deep equal to expected chapter %s", actualChapter, expected)
 			}
 
-			actualChapter, err = source.GetChapterMetadata("", expected.Chapter, "")
+			actualChapter, err = source.GetChapterMetadata("", "", expected.Chapter, "", "")
 			if err != nil {
 				if !util.ErrorContains(err, "not implemented") {
 					t.Fatalf("unexpected error: %v", err)
@@ -117,7 +117,7 @@ func TestGetLastChapterMetadata(t *testing.T) {
 			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
 			mangaURL := test.mangaURL
 
-			actualChapter, err := source.GetLastChapterMetadata(mangaURL)
+			actualChapter, err := source.GetLastChapterMetadata(mangaURL, "")
 			if err != nil {
 				t.Fatalf("error while getting chapter: %v", err)
 			}
@@ -137,7 +137,7 @@ func TestGetLastChapterMetadata(t *testing.T) {
 				t.Fatalf("error while replacing chapter URL ID: %v", err)
 			}
 
-			actualChapter, err := source.GetLastChapterMetadata(mangaURL)
+			actualChapter, err := source.GetLastChapterMetadata(mangaURL, "")
 			if err != nil {
 				if !util.ErrorContains(err, errordefs.ErrLastReleasedChapterNotFound.Error()) {
 					t.Fatalf("unexpected error: %v", err)
@@ -181,7 +181,7 @@ func TestGetChaptersMetadata(t *testing.T) {
 			mangaURL := test.url
 			expectedQuantity := test.quantity
 
-			chapters, err := source.GetChaptersMetadata(mangaURL)
+			chapters, err := source.GetChaptersMetadata(mangaURL, "")
 			if err != nil {
 				t.Fatalf("error while getting chapters: %v", err)
 			}
@@ -215,7 +215,7 @@ func TestGetChaptersMetadata(t *testing.T) {
 			}
 			expectedQuantity := 0
 
-			chapters, err := source.GetChaptersMetadata(mangaURL)
+			chapters, err := source.GetChaptersMetadata(mangaURL, "")
 			if err != nil {
 				t.Fatalf("expected error, got nil")
 			}
