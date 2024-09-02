@@ -115,26 +115,33 @@ class MainDashboard:
 
         check_for_updates()
 
-        if (
-            ss.get("manga_updated_success_message", "") != ""
-            or ss.get("manga_updated_error_message", "") != ""
-            or ss.get("manga_update_warning_message", "") != ""
-        ):
+        if ss.get("manga_updated_success_message", "") != "":
 
-            @st.experimental_dialog("Update Manga")
-            def show_update_manga_message():
+            @st.experimental_dialog("Manga Updated")
+            def show_add_manga_message():
                 if ss.get("manga_updated_success_message", "") != "":
                     st.success(ss["manga_updated_success_message"])
-                if ss.get("manga_updated_error_message", "") != "":
-                    st.error(ss["manga_updated_error_message"])
-                if ss.get("manga_update_warning_message", "") != "":
-                    st.warning(ss["manga_update_warning_message"])
 
-            show_update_manga_message()
+            show_add_manga_message()
 
             ss["manga_updated_success_message"] = ""
-            ss["manga_updated_error"] = ""
-            ss["manga_update_warning_message"] = ""
+
+        if (
+            ss.get("manga_add_success_message", "") != ""
+            or ss.get("manga_add_warning_message", "") != ""
+        ):
+
+            @st.experimental_dialog("Add Manga")
+            def show_add_manga_message():
+                if ss.get("manga_add_success_message", "") != "":
+                    st.success(ss["manga_add_success_message"])
+                if ss.get("manga_add_warning_message", "") != "":
+                    st.warning(ss["manga_add_warning_message"])
+
+            show_add_manga_message()
+
+            ss["manga_add_success_message"] = ""
+            ss["manga_add_warning_message"] = ""
 
     def sidebar(self) -> None:
         with st.sidebar:
@@ -208,12 +215,6 @@ class MainDashboard:
                         self.show_add_manga_form_url()
 
                     show_add_manga_form_dialog()
-                if ss.get("manga_add_success_message", "") != "":
-                    st.success(ss["manga_add_success_message"])
-                elif ss.get("manga_add_warning_message", "") != "":
-                    st.warning(ss["manga_add_warning_message"])
-                elif ss.get("manga_add_error_message", "") != "":
-                    st.warning(ss["manga_add_error_message"])
 
             st.divider()
             self.show_settings()
@@ -242,7 +243,7 @@ class MainDashboard:
                     ):
                         show_error_message_dialog()
                     with stylable_container(
-                        key="highlight_manga_delete_button",
+                        key="delete_background_error_button",
                         css_styles="""
                             button {
                                 background-color: red;
@@ -470,7 +471,7 @@ class MainDashboard:
             except APIException as e:
                 logger.exception(e)
                 st.error("Error while getting manga chapters")
-                ss["update_manga_chapter_options"] = []
+                st.stop()
 
         with st.form(key="update_manga_form", border=False):
             st.selectbox(
@@ -602,13 +603,17 @@ class MainDashboard:
                             ss["manga_update_warning_message"] = (
                                 "To update the cover image, provide either an URL, upload a file, or check the box to get the image from the source site. The other fields were updated successfully."
                             )
-                            st.rerun()
-                    ss["manga_updated_success_message"] = "Manga updated successfully"
-                    st.rerun()
+                    if not (
+                        ss.get("manga_updated_error_message", "") != ""
+                        or ss.get("manga_update_warning_message", "") != ""
+                    ):
+                        ss["manga_updated_success_message"] = (
+                            "Manga updated successfully"
+                        )
+                        st.rerun()
                 except APIException as e:
                     logger.exception(e)
-                    ss["manga_updated_error"] = "Error while updating manga."
-                    st.rerun()
+                    ss["manga_updated_error_message"] = "Error while updating manga."
 
         def delete_manga_btn_callback():
             try:
@@ -616,7 +621,6 @@ class MainDashboard:
             except Exception as e:
                 logger.exception(e)
                 ss["manga_updated_error_message"] = "Error while deleting manga."
-                st.rerun()
             else:
                 ss["manga_updated_success_message"] = "Manga deleted successfully"
 
@@ -635,7 +639,21 @@ class MainDashboard:
                 use_container_width=True,
                 key="delete_manga_btn",
             ):
-                st.rerun()
+                if not (
+                    ss.get("manga_updated_error_message", "") != ""
+                    or ss.get("manga_update_warning_message", "") != ""
+                ):
+                    st.rerun()
+        if (
+            ss.get("manga_updated_error_message", "") != ""
+            or ss.get("manga_update_warning_message", "") != ""
+        ):
+            if ss.get("manga_updated_error_message", "") != "":
+                st.error(ss["manga_updated_error_message"])
+            if ss.get("manga_update_warning_message", "") != "":
+                st.warning(ss["manga_update_warning_message"])
+            ss["manga_updated_error_message"] = ""
+            ss["manga_update_warning_message"] = ""
 
     def show_add_manga_form_search(self):
         container = st.empty()
@@ -647,20 +665,9 @@ class MainDashboard:
                             -1, ss["add_manga_search_selected_manga"]["URL"]
                         )
                 except APIException as e:
-                    resp_text = str(e.response_text).lower()
-                    if (
-                        "error while getting source: source '" in resp_text
-                        and "not found" in resp_text
-                    ):
-                        st.warning("No source site for this manga")
-                    elif (
-                        "manga doesn't have and id or url" in resp_text
-                        or "invalid uri for request" in resp_text
-                    ):
-                        st.warning("Invalid URL")
-                    else:
-                        logger.exception(e)
-                        st.error("Error while getting manga chapters.")
+                    logger.exception(e)
+                    st.error("Error while getting manga chapters.")
+                    st.stop()
 
                 self.show_add_manga_form(ss["add_manga_search_selected_manga"]["URL"])
 
@@ -889,6 +896,7 @@ class MainDashboard:
                 else:
                     logger.exception(e)
                     st.error("Error while getting manga chapters.")
+                    st.stop()
 
         self.show_add_manga_form(ss.add_manga_form_url)
 
@@ -968,10 +976,13 @@ class MainDashboard:
                                 ss["manga_add_error_message"] = (
                                     "Error while adding manga."
                                 )
-                                st.rerun()
                         else:
                             ss["manga_add_success_message"] = "Manga added successfully"
                             st.rerun()
+
+        if ss.get("manga_add_error_message", "") != "":
+            st.error(ss["manga_add_error_message"])
+            ss["manga_add_error_message"] = ""
 
     def show_settings(self):
         @st.experimental_dialog("Settings")
