@@ -1,18 +1,18 @@
 # Mantium
 
-![image](https://github.com/diogovalentte/mantium/assets/49578155/69e5d417-e3c8-4a4e-9613-b47eff54ecce)
+![image](https://github.com/user-attachments/assets/1d12d199-e464-435f-81b5-e9c294ce7199)
 
 Mantium is a dashboard for tracking mangas from multiple source sites, like [Mangadex](https://mangadex.org) and [ComicK](https://comick.io). This project doesn't download the chapter images, it downloads the manga metadata (name, URL, cover, etc.) and chapter metadata (number, name, URL), to show in the dashboard, where you manage the mangas you're tracking.
 
-- Mantium currently can track mangas on [Manga Plus](https://mangaplus.shueisha.co.jp), [MangaDex](https://mangadex.org), [ComicK](https://comick.io), and [MangaHub](https://mangahub.io).
+- Mantium currently can track mangas on [Manga Plus](https://mangaplus.shueisha.co.jp), [MangaDex](https://mangadex.org), [ComicK](https://comick.io), [MangaHub](https://mangahub.io), and [MangaUpdates](https://www.mangaupdates.com/).
 
 The basic workflow is:
 
 1. You find an interesting manga on a site.
-2. Add it to Mantium, set its status (reading, dropped, etc.), and the last chapter you read. Now you see the manga in the dashboard.
+2. Add it the manga to Mantium. Set its status (reading, dropped, etc.), and the last chapter you read. Now you see the manga in the dashboard.
 3. You configure Mantium to periodically check for new chapters (like every 30 minutes). You also configure it to notify you when a new chapter is released.
 4. After getting notified that a new chapter has been released, you read it and set in Mantium that the last chapter you read is the last released chapter.
-5. Or, you can set the last read chapter to any released chapter from the manga.
+5. Or, you can set the last-read chapter to any released chapter from the manga.
 6. That's how you track a manga in Mantium.
 
 # Dashboard
@@ -25,12 +25,22 @@ The dashboard shows you the mangas you're tracking and is where you interact wit
   <img src="https://github.com/diogovalentte/mantium/assets/49578155/83cc24e4-31de-435b-9ea6-22a4aecb8c66">
 </p>
 
+You can add a manga to Mantium using the manga URL or by searching it by name in Mantium
+
+Using the Manga URL | Searching by Name
+:-------------------------:|:-------------------------:
+![](https://github.com/user-attachments/assets/a3e99e90-9b7f-4a7d-870f-cec25bf15b05)  |  ![](https://github.com/user-attachments/assets/1a615598-d56e-4bfe-9e14-40d01d1ce0ff)
+
+When you click to highlight a manga, a popup opens where you can edit or delete the manga.
+
+![image](https://github.com/user-attachments/assets/43cb3ded-c8c1-4e11-9951-c5a88921f601)
+
+## Sidebar
 - On the sidebar, you can:
   - Filter the mangas by name, and status (_reading, completed, dropped, on hold, plan to read, all_).
   - Order the mangas by name, last chapter read, last chapter upload, number of chapters, and unread (_shows unread mangas first, ordering by last upload chapter_), and reverse the sort.
-  - Add a manga to the dashboard, as well as set the manga status and the last chapter you read.
-  - When you click the button to highlight a manga, it shows a form to update the manga status, last read chapter, set a custom cover image, or delete the manga from Mantium.
-  - Set some configs, like the number of columns in the dashboard.
+  - Click to add a manga to Mantium.
+  - Set the dashboard configs like the number of columns in the dashboard.
 
 # iFrame
 
@@ -113,6 +123,11 @@ Sometimes the URL of a source site changes (_like comick.fun to comick.io_). In 
 ### Manga Plus source
 
 Only the first and last chapters are available on the Manga Plus site, so most chapters do not show on Mantium. I recommend reading the manga in the other source sites and when you get to the last chapter, remove the manga and add it again from the Manga Plus source.
+
+### Manga Updates source
+The Manga Updates source is very different from the other sources:
+- Mantium tracks the releases instead of actual chapters. The same chapter can be released by different groups.
+- The chapters are listed by upload date. This means that if a group uploads chapter 2 from a manga that another group already uploaded 50 chapters, chapter 2 will be considered the last chapter released. This is a limitation of MangaUpdates that can't properly sort the chapters by chapter number.
 
 # Running manually
 
