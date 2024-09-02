@@ -26,6 +26,9 @@ definitions:
         description: Chapter usually is the chapter number, but in some cases it can
           be a one-shot or a special chapter
         type: string
+      internalID:
+        description: InteralID is a unique identifier for the chapter in the source
+        type: string
       name:
         description: Name is the name of the chapter
         type: string
@@ -113,11 +116,13 @@ definitions:
     type: object
   routes.AddMangaRequest:
     properties:
-      internal_id:
-        type: string
       last_read_chapter:
         type: string
+      last_read_chapter_internal_id:
+        type: string
       last_read_chapter_url:
+        type: string
+      manga_internal_id:
         type: string
       status:
         maximum: 5
@@ -144,6 +149,8 @@ definitions:
   routes.UpdateMangaChapterRequest:
     properties:
       chapter:
+        type: string
+      chapter_internal_id:
         type: string
       chapter_url:
         type: string
@@ -341,10 +348,10 @@ paths:
         in: query
         name: url
         type: string
-      - description: Internal ID
+      - description: Manga Internal ID
         example: '"1as4fa7"'
         in: query
-        name: internal_id
+        name: manga_internal_id
         type: string
       produces:
       - application/json
@@ -372,10 +379,10 @@ paths:
         in: query
         name: url
         type: string
-      - description: Internal ID
+      - description: Manga Internal ID
         example: '"1as4fa7"'
         in: query
-        name: internal_id
+        name: manga_internal_id
         type: string
       - description: Manga cover image file
         in: formData
@@ -416,10 +423,10 @@ paths:
         in: query
         name: url
         type: string
-      - description: Internal ID
+      - description: Manga Internal ID
         example: '"1as4fa7"'
         in: query
-        name: internal_id
+        name: manga_internal_id
         type: string
       - description: Chapter
         in: body

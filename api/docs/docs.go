@@ -263,8 +263,8 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "\"1as4fa7\"",
-                        "description": "Internal ID",
-                        "name": "internal_id",
+                        "description": "Manga Internal ID",
+                        "name": "manga_internal_id",
                         "in": "query"
                     }
                 ],
@@ -306,8 +306,8 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "\"1as4fa7\"",
-                        "description": "Internal ID",
-                        "name": "internal_id",
+                        "description": "Manga Internal ID",
+                        "name": "manga_internal_id",
                         "in": "query"
                     },
                     {
@@ -366,8 +366,8 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "\"1as4fa7\"",
-                        "description": "Internal ID",
-                        "name": "internal_id",
+                        "description": "Manga Internal ID",
+                        "name": "manga_internal_id",
                         "in": "query"
                     },
                     {
@@ -661,6 +661,10 @@ const docTemplate = `{
                     "description": "Chapter usually is the chapter number, but in some cases it can be a one-shot or a special chapter",
                     "type": "string"
                 },
+                "internalID": {
+                    "description": "InteralID is a unique identifier for the chapter in the source",
+                    "type": "string"
+                },
                 "name": {
                     "description": "Name is the name of the chapter",
                     "type": "string"
@@ -783,13 +787,16 @@ const docTemplate = `{
                 "url"
             ],
             "properties": {
-                "internal_id": {
-                    "type": "string"
-                },
                 "last_read_chapter": {
                     "type": "string"
                 },
+                "last_read_chapter_internal_id": {
+                    "type": "string"
+                },
                 "last_read_chapter_url": {
+                    "type": "string"
+                },
+                "manga_internal_id": {
                     "type": "string"
                 },
                 "status": {
@@ -824,6 +831,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "chapter": {
+                    "type": "string"
+                },
+                "chapter_internal_id": {
                     "type": "string"
                 },
                 "chapter_url": {
