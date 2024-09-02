@@ -55,6 +55,29 @@ var mangasRequestsTestTable = map[string]routes.AddMangaRequest{
 	},
 }
 
+func TestSearchManga(t *testing.T) {
+	t.Run("Search valid manga with read chapter", func(t *testing.T) {
+		body := map[string]string{
+			"q":          "yotsubato",
+			"source_url": "https://mangaupdates.com",
+		}
+		payload, err := json.Marshal(body)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var resMap map[string][]*models.MangaSearchResult
+		err = requestHelper(http.MethodPost, "/v1/manga/search", bytes.NewBuffer(payload), &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["mangas"]
+		if len(actual) < 1 {
+			t.Fatalf(`expected at least 1 manga, got %d`, len(actual))
+		}
+	})
+}
+
 func TestAddManga(t *testing.T) {
 	t.Run("Add valid manga with read chapter", func(t *testing.T) {
 		body, err := json.Marshal(mangasRequestsTestTable["valid manga with read chapter"])
