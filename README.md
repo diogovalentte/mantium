@@ -9,7 +9,7 @@ Mantium is a dashboard for tracking mangas from multiple source sites, like [Man
 The basic workflow is:
 
 1. You find an interesting manga on a site.
-2. Add it the manga to Mantium. Set its status (reading, dropped, etc.), and the last chapter you read. Now you see the manga in the dashboard.
+2. Add the manga to Mantium. Set its status (reading, dropped, etc.), and the last chapter you read. Now you see the manga in the dashboard.
 3. You configure Mantium to periodically check for new chapters (like every 30 minutes). You also configure it to notify you when a new chapter is released.
 4. After getting notified that a new chapter has been released, you read it and set in Mantium that the last chapter you read is the last released chapter.
 5. Or, you can set the last-read chapter to any released chapter from the manga.
