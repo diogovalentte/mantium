@@ -116,6 +116,16 @@ class MainDashboard:
 
         check_for_updates()
 
+        if ss.get("highlighted_manga", None) is not None:
+            manga = ss["highlighted_manga"]
+
+            @st.experimental_dialog(manga["Name"])
+            def show_highlighted_manga_dialog():
+                self.show_highlighted_manga(manga)
+
+            show_highlighted_manga_dialog()
+            ss["highlighted_manga"] = None
+
         if ss.get("manga_updated_success_message", "") != "":
 
             @st.experimental_dialog("Manga Updated")
@@ -532,29 +542,28 @@ class MainDashboard:
                 disabled=not unread,
             )
         with c2:
-            if st.button(
+
+            def highlight_manga():
+                ss["highlighted_manga"] = manga
+
+            st.button(
                 "Highlight",
                 use_container_width=True,
                 type="primary",
                 key=f"highlight_{manga['ID']}",
-            ):
-
-                @st.experimental_dialog(manga["Name"])
-                def show_highlighted_manga_dialog():
-                    self.show_highlighted_manga(manga)
-
-                show_highlighted_manga_dialog()
+                on_click=highlight_manga,
+            )
 
     def show_highlighted_manga(self, manga: dict[str, Any]):
-        with st.spinner("Getting manga chapters..."):
-            try:
+        try:
+            with st.spinner("Getting manga chapters..."):
                 ss["update_manga_chapter_options"] = get_manga_chapters(
                     manga["ID"], manga["URL"], manga["InternalID"]
                 )
-            except APIException as e:
-                logger.exception(e)
-                st.error("Error while getting manga chapters")
-                st.stop()
+        except APIException as e:
+            logger.exception(e)
+            st.error("Error while getting manga chapters")
+            st.stop()
 
         with st.form(key="update_manga_form", border=False):
             st.selectbox(
