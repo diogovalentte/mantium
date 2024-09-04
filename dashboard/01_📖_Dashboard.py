@@ -836,12 +836,20 @@ class MainDashboard:
         elif ss[search_results_key].get("term", "") == term:
             results = ss[search_results_key].get("results", [])
         else:
-            with st.spinner("Searching..."):
-                results = self.api_client.search_manga(
-                    term, ss["configs_search_results_limit"], source_site_url
-                )
-                ss[search_results_key]["results"] = results
-            ss[search_results_key]["term"] = term
+            try:
+                with st.spinner("Searching..."):
+                    results = self.api_client.search_manga(
+                        term,
+                        ss["configs_search_results_limit"],
+                        source_site_url,
+                    )
+                    ss[search_results_key]["results"] = results
+            except Exception as ex:
+                logger.exception(ex)
+                st.error("Error while searching for manga.")
+                st.stop()
+            else:
+                ss[search_results_key]["term"] = term
 
         if len(results) == 0:
             st.warning("No results found.")
