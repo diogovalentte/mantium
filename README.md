@@ -1,31 +1,26 @@
 # Mantium
 
-![image](https://github.com/user-attachments/assets/1d12d199-e464-435f-81b5-e9c294ce7199)
-
-Mantium is a dashboard for tracking mangas from multiple source sites, like [Mangadex](https://mangadex.org) and [ComicK](https://comick.io). This project doesn't download the chapter images, it downloads the manga metadata (name, URL, cover, etc.) and chapter metadata (number, name, URL), to show in the dashboard, where you manage the mangas you're tracking.
+**Mantium is a cross-site manga tracker**, which means that you can track manga from multiple source sites, like [Mangadex](https://mangadex.org) and [ComicK](https://comick.io). Mantium doesn't download the chapter images, it downloads the manga metadata (name, URL, cover, etc.) and chapter metadata (number, name, URL) from the source site, and shows on the dashboard and iframe, where you manage the mangas you're tracking.
 
 - Mantium currently can track mangas on [Manga Plus](https://mangaplus.shueisha.co.jp), [MangaDex](https://mangadex.org), [ComicK](https://comick.io), [MangaHub](https://mangahub.io), and [MangaUpdates](https://www.mangaupdates.com/).
 
-The basic workflow is:
+**The basic workflow is:**
 
 1. You find an interesting manga on a site.
-2. Add the manga to Mantium. Set its status (reading, dropped, etc.), and the last chapter you read. Now you see the manga in the dashboard.
-3. You configure Mantium to periodically check for new chapters (like every 30 minutes). You also configure it to notify you when a new chapter is released.
+2. Add the manga to Mantium. Set its status (reading, dropped, etc.), and the last chapter you read from the list of all released chapters.
+3. You configure Mantium to periodically check for new chapters (like every 30 minutes) and notify you when a new chapter is released.
 4. After getting notified that a new chapter has been released, you read it and set in Mantium that the last chapter you read is the last released chapter.
-5. Or, you can set the last-read chapter to any released chapter from the manga.
-6. That's how you track a manga in Mantium.
+5. That's how you track a manga in Mantium.
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/W7W012U1PL)
 
 # Dashboard
 
-The dashboard shows you the mangas you're tracking and is where you interact with them.
-
-- In the main section, there are columns of the mangas you're tracking in cards:
-
 <p align="center">
-  <img src="https://github.com/diogovalentte/mantium/assets/49578155/83cc24e4-31de-435b-9ea6-22a4aecb8c66">
+  <img src="https://github.com/user-attachments/assets/1d12d199-e464-435f-81b5-e9c294ce7199">
 </p>
 
-You can add a manga to Mantium using the manga URL or by searching it by name in Mantium
+You can add a manga to Mantium using the manga URL or by searching it by name in Mantium:
 
 Using the Manga URL | Searching by Name
 :-------------------------:|:-------------------------:
@@ -58,11 +53,11 @@ When you add an iFrame widget in your dashboard, it's **>your<** web browser tha
 
 # Check manga updates and notify
 
-You can set Mantium to periodically get the metadata of the mangas you're tracking from their source sites (like every 30 minutes). If the manga metadata (like cover image, name changes, or last release chapter) changes from the the stored metadata, Mantium updates it.
+You can set Mantium to periodically get the metadata of the mangas you're tracking from their source sites (like every 30 minutes). If the manga metadata (like the cover image, name changes, or last release chapter) changes from the stored metadata, Mantium updates it.
 
 You can also set Mantium to notify you when a manga with the status "reading" or "completed" has a newly released chapter.
 
-- If an error occurs in the background while updating the mangas metadata or notifying, a warning will appear in the dashboard and iframe. The error will also be printed to the API and dashboard container, and you can click to show the error in the dashboard.
+- If an error occurs in the background while updating the manga's metadata or notifying, a warning will appear on the dashboard and iframe.
 
 # Integrations
 
@@ -71,12 +66,6 @@ Mantium has integrations, like:
 - [Ntfy](https://github.com/binwiederhier/ntfy).
 
 More about the integrations [here](https://github.com/diogovalentte/mantium/blob/main/kaizoku-integration.md).
-
-# API
-
-When you interact with the dashboard, it requests the API to execute things, like adding, updating, and deleting a manga from Mantium. The API is where your mangas are managed and tracked internally, it gets the mangas metadata from the source sites and stores them on the database.
-
-After starting the API, you can find the API docs under the path `/v1/swagger/index.html`, like `http://192.168.1.44/v1/swagger/index.html` or `https://sub.domain.com/v1/swagger/index.html`, depending on how you access the API.
 
 # Running
 
@@ -106,6 +95,18 @@ The dashboard and the API don't have any authentication system, so anyone who ca
 
 - If you want to use the iFrame returned by the API, you can still put an authentication portal in front of the API if the API and dashboard containers are in the same Docker network. The dashboard will communicate with the API using the API's container name.
 
+### Manga Plus source
+
+Only the first and last chapters are available on the Manga Plus site, so most chapters do not show on Mantium. I recommend reading the manga in the other source sites and when you get to the last chapter, remove the manga and add it again from the Manga Plus source.
+
+### Manga Updates source
+The Manga Updates source is very different from the other sources:
+- Mantium tracks the releases instead of actual chapters. The same chapter can be released by different groups.
+- The chapters are listed by upload date. This means that if a group uploads chapter 2 from a manga that another group already uploaded 50 chapters, chapter 2 will be considered the last chapter released. This is a limitation of MangaUpdates that can't properly sort the chapters by chapter number.
+
+### Source site down
+Sometimes the source sites can be down for some time, like in maintenance. In these cases, there is nothing Mantium can do about it, and all interactions with manga from this source site will fail.
+
 ### What to do when a manga is removed from the source site or its URL changes
 
 If a manga is removed from the source site (_like Mangedex_) or its URL changes, the API will not be able to track it, as it saves the manga URL on the database when you add the manga in the dashboard and continues to use this URL forever. If this happens, the dashboard/API logs will show an error like this:
@@ -120,14 +121,9 @@ To fix this, delete the manga and add it again from another source site or use i
 
 Sometimes the URL of a source site changes (_like comick.fun to comick.io_). In this case, please open an issue if a new release with the updated URL is not released yet.
 
-### Manga Plus source
+### API
 
-Only the first and last chapters are available on the Manga Plus site, so most chapters do not show on Mantium. I recommend reading the manga in the other source sites and when you get to the last chapter, remove the manga and add it again from the Manga Plus source.
-
-### Manga Updates source
-The Manga Updates source is very different from the other sources:
-- Mantium tracks the releases instead of actual chapters. The same chapter can be released by different groups.
-- The chapters are listed by upload date. This means that if a group uploads chapter 2 from a manga that another group already uploaded 50 chapters, chapter 2 will be considered the last chapter released. This is a limitation of MangaUpdates that can't properly sort the chapters by chapter number.
+The API docs are under the path `/v1/swagger/index.html`.
 
 # Running manually
 
@@ -185,10 +181,10 @@ go run main.go
 
 ## Dashboard
 
-6. Export the API address environment variable:
+6. The dashboard expects to connect to the API on the address `http://localhost:8080`. If the API is running in a different address, export the API address environment variable:
 
 ```bash
-export API_ADDRESS=http://localhost:8080
+export API_ADDRESS=http://localhost:8081
 ```
 
 7. Inside the `dashboard/` folder, install the dashboard dependencies:
