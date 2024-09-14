@@ -1297,7 +1297,7 @@ func NotifyMangaLastReleasedChapterUpdate(oldManga *manga.Manga, newManga *manga
 		return err
 	}
 
-	title := fmt.Sprintf("Mantium - New chapter of manga: %s", newManga.Name)
+	title := fmt.Sprintf("(Mantium) New chapter of manga: %s", newManga.Name)
 
 	var message string
 	if oldManga.LastReleasedChapter != nil {
