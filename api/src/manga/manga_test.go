@@ -36,6 +36,7 @@ var mangaTest = &Manga{
 	Name:           "One Piece",
 	Status:         1,
 	CoverImgURL:    "https://cnd.random.best-manga.jpg", // mangahub.io
+	CoverImg:       []byte{},
 	PreferredGroup: "MangaStream",
 	LastReleasedChapter: &Chapter{
 		URL:       "https://testingsite/manga/best-manga/chapter-15",
@@ -115,7 +116,7 @@ func TestMangaDBLifeCycle(t *testing.T) {
 		manga.ID = mangaID
 	})
 	t.Run("Should get a manga's ID and then get the manga from DB by ID", func(t *testing.T) {
-		mangaID, err := getMangaIDByURL(manga.URL + "salt")
+		_, err := getMangaIDByURL(manga.URL + "salt")
 		if err != nil {
 			if util.ErrorContains(err, errordefs.ErrMangaNotFoundDB.Error()) {
 				mangaID, err = getMangaIDByURL(manga.URL)
@@ -274,7 +275,7 @@ func TestMangaWithoutChaptersDBLifeCycle(t *testing.T) {
 		manga.ID = mangaID
 	})
 	t.Run("Should get a manga's ID and then get the manga from DB by ID", func(t *testing.T) {
-		mangaID, err := getMangaIDByURL(manga.URL + "salt")
+		_, err := getMangaIDByURL(manga.URL + "salt")
 		if err != nil {
 			if util.ErrorContains(err, errordefs.ErrMangaNotFoundDB.Error()) {
 				mangaID, err = getMangaIDByURL(manga.URL)
