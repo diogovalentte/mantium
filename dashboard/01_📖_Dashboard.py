@@ -1049,17 +1049,16 @@ class MainDashboard:
                 st.warning("Manga has no released chapters. You still can add it.")
 
             def add_manga_callback():
+                chapter = ss.add_manga_form_chapter
+                if chapter is None:
+                    chapter = {}
                 ss["add_manga_manga_to_add"] = {
                     "manga_url": manga_url,
                     "status": ss.add_manga_form_status,
                     "manga_internal_id": manga_internal_id,
-                    "chapter": ss.add_manga_form_chapter["Chapter"]
-                    if ss.add_manga_form_chapter is not None
-                    else "",
-                    "chapter_url": ss.add_manga_form_chapter["URL"]
-                    if ss.add_manga_form_chapter is not None
-                    else "",
-                    "chapter_internal_id": ss.add_manga_form_chapter["InternalID"],
+                    "chapter": chapter.get("Chapter", ""),
+                    "chapter_url": chapter.get("URL", ""),
+                    "chapter_internal_id": chapter.get("InternalID", ""),
                 }
                 ss.add_manga_form_url = ""
                 del ss["add_manga_chapter_options"]
