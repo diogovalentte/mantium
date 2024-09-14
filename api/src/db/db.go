@@ -146,6 +146,7 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
 	_, err = tx.Exec(`
         ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "cover_img_fixed" BOOLEAN NOT NULL DEFAULT FALSE;
         ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "internal_id" VARCHAR(100) NOT NULL DEFAULT '';
+        ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "type" smallint NOT NULL DEFAULT 1;
         ALTER TABLE "chapters" ADD COLUMN IF NOT EXISTS "internal_id" VARCHAR(100) NOT NULL DEFAULT '';
     `)
 	if err != nil {
