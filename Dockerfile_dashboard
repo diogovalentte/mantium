@@ -7,6 +7,7 @@ COPY ./dashboard .
 ENV DASHBOARD_PORT=8501
 ENV TZ=UTC
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install virtualenv && python3 -m venv venv
+RUN . venv/bin/activate && pip install --no-cache-dir -r requirements.txt
 
-CMD ["sh", "-c", "streamlit run --server.port=$DASHBOARD_PORT 01_📖_Dashboard.py"]
+CMD ["sh", "-c", ". venv/bin/activate && streamlit run --server.port=$DASHBOARD_PORT 01_📖_Dashboard.py"]
