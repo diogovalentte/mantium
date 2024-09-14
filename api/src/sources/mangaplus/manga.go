@@ -60,7 +60,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string, ignoreGetLastChapterError 
 			return nil, errordefs.ErrChapterNotFound
 		}
 	} else {
-		mangaReturn.LastReleasedChapter = chapters[len(chapters)-1]
+		mangaReturn.LastReleasedChapter = chapters[0]
 		mangaReturn.LastReleasedChapter.Type = 1
 	}
 
@@ -125,13 +125,16 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 }
 
 func getChaptersFromAPIList(titleViewChapters []*TitleDetailView_Chapters) []*manga.Chapter {
-	var chaptersReturn []*manga.Chapter
+	chaptersReturn := make([]*manga.Chapter, 0, 6) // Most manga have only the first and last 3 chapters available
 
-	for _, titleViewChapter := range titleViewChapters {
-		for _, protoChapter := range titleViewChapter.FirstChapterList {
+	for i := len(titleViewChapters) - 1; i >= 0; i-- {
+		titleViewChapter := titleViewChapters[i]
+		for j := len(titleViewChapter.LastChapterList) - 1; j >= 0; j-- {
+			protoChapter := titleViewChapter.LastChapterList[j]
 			chaptersReturn = append(chaptersReturn, getChapterFromAPIChapter(protoChapter))
 		}
-		for _, protoChapter := range titleViewChapter.LastChapterList {
+		for j := len(titleViewChapter.FirstChapterList) - 1; j >= 0; j-- {
+			protoChapter := titleViewChapter.FirstChapterList[j]
 			chaptersReturn = append(chaptersReturn, getChapterFromAPIChapter(protoChapter))
 		}
 	}

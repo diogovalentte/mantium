@@ -101,7 +101,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, err
 		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), errordefs.ErrChapterNotFound)
 	}
 
-	return chapters[len(chapters)-1], nil
+	return chapters[0], nil
 }
 
 // GetChaptersMetadata returns all the chapters of a manga
