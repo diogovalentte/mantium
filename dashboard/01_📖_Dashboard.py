@@ -591,7 +591,7 @@ class MainDashboard:
                     logger.warning(e)
                     last_read_chapter_idx = None
             else:
-                last_read_chapter_idx = 0
+                last_read_chapter_idx = len(ss["update_manga_chapter_options"])-1
             st.selectbox(
                 "Last Read Chapter",
                 index=last_read_chapter_idx,
@@ -1036,6 +1036,7 @@ class MainDashboard:
             st.selectbox(
                 "Last Read Chapter",
                 options=ss.get("add_manga_chapter_options", []),
+                index=None,
                 key="add_manga_form_chapter",
                 format_func=lambda chapter: f"Ch. {chapter['Chapter']} --- {get_relative_time(self.api_client.get_updated_at_datetime(chapter['UpdatedAt']))}"
                 if chapter is not None
