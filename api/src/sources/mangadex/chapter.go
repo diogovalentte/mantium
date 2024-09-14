@@ -88,8 +88,8 @@ type getChapterAPIResponse struct {
 	Data     struct {
 		ID            string                `json:"id"`
 		Type          string                `json:"type"`
-		Attributes    chapterAttributes     `json:"attributes"`
 		Relationships []genericRelationship `json:"relationships"`
+		Attributes    chapterAttributes     `json:"attributes"`
 	}
 }
 
@@ -255,15 +255,15 @@ func generateMangaFeed(s *Source, mangaURL string, chaptersChan chan<- *manga.Ch
 type getMangaFeedAPIResponse struct {
 	Result   string `json:"result"`
 	Response string `json:"response"`
-	Limit    int    `json:"limit"`
-	Offset   int    `json:"offset"`
-	Total    int    `json:"total"`
 	Data     []struct {
 		ID            string                `json:"id"`
 		Type          string                `json:"type"`
-		Attributes    chapterAttributes     `json:"attributes"`
 		Relationships []genericRelationship `json:"relationships"`
+		Attributes    chapterAttributes     `json:"attributes"`
 	}
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
+	Total  int `json:"total"`
 }
 
 // getChapterID returns the ID of a chapter given its URL.

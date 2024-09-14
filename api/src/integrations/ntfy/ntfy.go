@@ -14,7 +14,7 @@ import (
 )
 
 // GetNtfyPublisher returns a new NtfyPublisher
-func GetNtfyPublisher() (*NtfyPublisher, error) {
+func GetNtfyPublisher() (*Publisher, error) {
 	contextError := "could not get Ntfy publisher"
 
 	configs := config.GlobalConfigs.Ntfy
@@ -34,7 +34,7 @@ func GetNtfyPublisher() (*NtfyPublisher, error) {
 		return nil, util.AddErrorContext(contextError, err)
 	}
 
-	return &NtfyPublisher{
+	return &Publisher{
 		Publisher: publisher,
 		Topic:     configs.Topic,
 		Token:     configs.Token,
@@ -51,15 +51,15 @@ func (t *customNtfyTransport) RoundTrip(req *http.Request) (*http.Response, erro
 	return http.DefaultTransport.RoundTrip(req)
 }
 
-// NtfyPublisher is a wrapper around gotfy.Publisher
-type NtfyPublisher struct {
+// Publisher is a wrapper around gotfy.Publisher
+type Publisher struct {
 	Publisher *gotfy.Publisher
 	Topic     string
 	Token     string
 }
 
 // SendMessage sends a message to the Ntfy server
-func (t *NtfyPublisher) SendMessage(ctx context.Context, message *gotfy.Message) error {
+func (t *Publisher) SendMessage(ctx context.Context, message *gotfy.Message) error {
 	_, err := t.Publisher.SendMessage(ctx, message)
 	if err != nil {
 		return util.AddErrorContext("could not send message to Ntfy", err)

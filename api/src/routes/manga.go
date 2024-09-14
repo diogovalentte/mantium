@@ -1047,7 +1047,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 		"kaizoku":        {},
 	}
 	var newMetadata bool
-	var trangaInt *tranga.Tranga = nil
+	var trangaInt *tranga.Tranga
 	if config.GlobalConfigs.Tranga.Valid {
 		trangaInt = &tranga.Tranga{}
 		trangaInt.Init()
