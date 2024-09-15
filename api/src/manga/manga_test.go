@@ -72,34 +72,32 @@ var chaptersTest = map[string]*Chapter{
 
 func TestMangaDBLifeCycle(t *testing.T) {
 	var err error
-	var mangaID ID
-
 	manga := getMangaCopy(mangaTest)
 
 	// Testing manga and chapter validations
 	t.Run("Should insert a manga into DB", func(t *testing.T) {
 		manga.Status = 0
-		mangaID, err = manga.InsertIntoDB()
+		err = manga.InsertIntoDB()
 		if err != nil {
-			if util.ErrorContains(err, "manga status should be >= 1 && <= 5") {
+			if util.ErrorContains(err, "status should be >= 1 && <= 5") {
 				manga.Status = mangaTest.Status
 				manga.LastReleasedChapter.Name = ""
-				mangaID, err = manga.InsertIntoDB()
+				err = manga.InsertIntoDB()
 				if util.ErrorContains(err, "chapter name is empty") {
 					manga.LastReleasedChapter.Name = mangaTest.LastReleasedChapter.Name
 					manga.LastReleasedChapter.Type = 0
-					mangaID, err = manga.InsertIntoDB()
+					err = manga.InsertIntoDB()
 					if util.ErrorContains(err, "chapter type should be 1 (last release) or 2 (last read)") {
 						manga.LastReleasedChapter.Type = mangaTest.LastReleasedChapter.Type
 						manga.LastReadChapter.URL = ""
-						mangaID, err = manga.InsertIntoDB()
+						err = manga.InsertIntoDB()
 						if util.ErrorContains(err, "chapter URL is empty") {
 							manga.LastReadChapter.URL = mangaTest.LastReadChapter.URL
 							manga.Type = 0
-							mangaID, err = manga.InsertIntoDB()
+							err = manga.InsertIntoDB()
 							if util.ErrorContains(err, "manga type should be 1 or 2") {
 								manga.Type = mangaTest.Type
-								mangaID, err = manga.InsertIntoDB()
+								err = manga.InsertIntoDB()
 								if err != nil {
 									t.Fatal(err)
 								}
@@ -121,13 +119,12 @@ func TestMangaDBLifeCycle(t *testing.T) {
 		} else {
 			t.Fatal(fmt.Errorf("no errors while adding the invalid manga to DB"))
 		}
-		manga.ID = mangaID
 	})
 	t.Run("Should get a manga's ID and then get the manga from DB by ID", func(t *testing.T) {
 		_, err := getMangaIDByURL(manga.URL + "salt")
 		if err != nil {
 			if util.ErrorContains(err, errordefs.ErrMangaNotFoundDB.Error()) {
-				mangaID, err = getMangaIDByURL(manga.URL)
+				mangaID, err := getMangaIDByURL(manga.URL)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -141,10 +138,10 @@ func TestMangaDBLifeCycle(t *testing.T) {
 			t.Fatal("no errors while getting the invalid manga from DB")
 		}
 
-		_, err = GetMangaDBByID(mangaID - 10000)
+		_, err = GetMangaDBByID(manga.ID - 10000)
 		if err != nil {
-			if util.ErrorContains(err, errordefs.ErrMangaDoesntHaveIDAndURL.Error()) {
-				mangaID, err = getMangaIDByURL(manga.URL)
+			if util.ErrorContains(err, errordefs.ErrMangaHasNoIDOrURL.Error()) {
+				_, err := getMangaIDByURL(manga.URL)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -154,10 +151,10 @@ func TestMangaDBLifeCycle(t *testing.T) {
 		} else {
 			t.Fatal(fmt.Errorf("no errors while getting the invalid manga from DB"))
 		}
-		_, err = GetMangaDBByID(mangaID + 10000)
+		_, err = GetMangaDBByID(manga.ID + 10000)
 		if err != nil {
 			if util.ErrorContains(err, errordefs.ErrMangaNotFoundDB.Error()) {
-				mangaID, err = getMangaIDByURL(manga.URL)
+				_, err = getMangaIDByURL(manga.URL)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -172,7 +169,7 @@ func TestMangaDBLifeCycle(t *testing.T) {
 		_, err := GetMangaDBByURL(manga.URL + "salt")
 		if err != nil {
 			if util.ErrorContains(err, errordefs.ErrMangaNotFoundDB.Error()) {
-				mangaID, err = getMangaIDByURL(manga.URL)
+				_, err = getMangaIDByURL(manga.URL)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -197,7 +194,7 @@ func TestMangaDBLifeCycle(t *testing.T) {
 	t.Run("Should update a manga's status in DB", func(t *testing.T) {
 		err := manga.UpdateStatusInDB(6)
 		if err != nil {
-			if util.ErrorContains(err, "manga status should be >= 1 && <= 5") {
+			if util.ErrorContains(err, "status should be >= 1 && <= 5") {
 				err = manga.UpdateStatusInDB(5)
 				if err != nil {
 					t.Fatal(err)
@@ -257,8 +254,6 @@ func TestMangaDBLifeCycle(t *testing.T) {
 
 func TestMangaWithoutChaptersDBLifeCycle(t *testing.T) {
 	var err error
-	var mangaID ID
-
 	manga := getMangaCopy(mangaTest)
 	manga.LastReleasedChapter = nil
 	manga.LastReadChapter = nil
@@ -266,11 +261,11 @@ func TestMangaWithoutChaptersDBLifeCycle(t *testing.T) {
 	// Testing manga and chapter validations
 	t.Run("Should insert a manga into DB", func(t *testing.T) {
 		manga.Status = 0
-		mangaID, err = manga.InsertIntoDB()
+		err = manga.InsertIntoDB()
 		if err != nil {
-			if util.ErrorContains(err, "manga status should be >= 1 && <= 5") {
+			if util.ErrorContains(err, "status should be >= 1 && <= 5") {
 				manga.Status = mangaTest.Status
-				mangaID, err = manga.InsertIntoDB()
+				err = manga.InsertIntoDB()
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -280,13 +275,12 @@ func TestMangaWithoutChaptersDBLifeCycle(t *testing.T) {
 		} else {
 			t.Fatal("no errors while adding the invalid manga to DB")
 		}
-		manga.ID = mangaID
 	})
 	t.Run("Should get a manga's ID and then get the manga from DB by ID", func(t *testing.T) {
 		_, err := getMangaIDByURL(manga.URL + "salt")
 		if err != nil {
 			if util.ErrorContains(err, errordefs.ErrMangaNotFoundDB.Error()) {
-				mangaID, err = getMangaIDByURL(manga.URL)
+				mangaID, err := getMangaIDByURL(manga.URL)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -300,10 +294,10 @@ func TestMangaWithoutChaptersDBLifeCycle(t *testing.T) {
 			t.Fatal("no errors while getting the invalid manga from DB")
 		}
 
-		_, err = GetMangaDBByID(mangaID - 10000)
+		_, err = GetMangaDBByID(manga.ID - 10000)
 		if err != nil {
-			if util.ErrorContains(err, errordefs.ErrMangaDoesntHaveIDAndURL.Error()) {
-				mangaID, err = getMangaIDByURL(manga.URL)
+			if util.ErrorContains(err, errordefs.ErrMangaHasNoIDOrURL.Error()) {
+				_, err = getMangaIDByURL(manga.URL)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -313,10 +307,10 @@ func TestMangaWithoutChaptersDBLifeCycle(t *testing.T) {
 		} else {
 			t.Fatal("no errors while getting the invalid manga from DB")
 		}
-		_, err = GetMangaDBByID(mangaID + 10000)
+		_, err = GetMangaDBByID(manga.ID + 10000)
 		if err != nil {
 			if util.ErrorContains(err, errordefs.ErrMangaNotFoundDB.Error()) {
-				mangaID, err = getMangaIDByURL(manga.URL)
+				_, err = getMangaIDByURL(manga.URL)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -331,7 +325,7 @@ func TestMangaWithoutChaptersDBLifeCycle(t *testing.T) {
 		_, err := GetMangaDBByURL(manga.URL + "salt")
 		if err != nil {
 			if util.ErrorContains(err, errordefs.ErrMangaNotFoundDB.Error()) {
-				mangaID, err = getMangaIDByURL(manga.URL)
+				_, err = getMangaIDByURL(manga.URL)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -342,7 +336,7 @@ func TestMangaWithoutChaptersDBLifeCycle(t *testing.T) {
 			t.Fatal("no errors while getting the invalid manga from DB")
 		}
 	})
-	t.Run("should get all mangas from DB", func(t *testing.T) {
+	t.Run("Should get all mangas from DB", func(t *testing.T) {
 		mangas, err := GetMangasDB()
 		if err != nil {
 			t.Fatal(err)
@@ -355,7 +349,7 @@ func TestMangaWithoutChaptersDBLifeCycle(t *testing.T) {
 	t.Run("Should update a manga's status in DB", func(t *testing.T) {
 		err := manga.UpdateStatusInDB(6)
 		if err != nil {
-			if util.ErrorContains(err, "manga status should be >= 1 && <= 5") {
+			if util.ErrorContains(err, "status should be >= 1 && <= 5") {
 				err = manga.UpdateStatusInDB(5)
 				if err != nil {
 					t.Fatal(err)
@@ -413,12 +407,12 @@ func TestMangaWithoutChaptersDBLifeCycle(t *testing.T) {
 	})
 }
 
-func getMangaCopy(source *Manga) Manga {
+func getMangaCopy(source *Manga) *Manga {
 	manga := *source
 	lastReleasedChapter := *source.LastReleasedChapter
 	lastReadChapter := *source.LastReadChapter
 	manga.LastReleasedChapter = &lastReleasedChapter
 	manga.LastReadChapter = &lastReadChapter
 
-	return manga
+	return &manga
 }

@@ -34,29 +34,6 @@ func (c Chapter) String() string {
 	return fmt.Sprintf("Chapter{URL: %s, Chapter: %s, Name: %s, InternalID: %s, UpdatedAt: %s, Type: %d}", c.URL, c.Chapter, c.Name, c.InternalID, c.UpdatedAt, c.Type)
 }
 
-func insertChapterDB(c *Chapter, mangaID ID, tx *sql.Tx) (int, error) {
-	contextError := "error inserting chapter of manga ID '%d' in the database"
-
-	err := validateChapter(c)
-	if err != nil {
-		return -1, util.AddErrorContext(fmt.Sprintf(contextError, mangaID), err)
-	}
-	var chapterID int
-	err = tx.QueryRow(`
-        INSERT INTO chapters
-            (manga_id, url, chapter, name, internal_id, updated_at, type)
-        VALUES
-            ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING
-            id;
-    `, mangaID, c.URL, c.Chapter, c.Name, c.InternalID, c.UpdatedAt, c.Type).Scan(&chapterID)
-	if err != nil {
-		return -1, util.AddErrorContext(fmt.Sprintf(contextError, mangaID), err)
-	}
-
-	return chapterID, nil
-}
-
 func getChapterDB(id int, db *sql.DB) (*Chapter, error) {
 	contextError := "error getting chapter with ID '%d' from the database"
 
@@ -86,26 +63,12 @@ func getChapterDB(id int, db *sql.DB) (*Chapter, error) {
 
 // upsertMangaChapter updates the last released or last read chapter of a manga
 // if the manga doesn't exist in the database, it will be inserted
-func upsertMangaChapter(m *Manga, chapter *Chapter, tx *sql.Tx) error {
+func upsertMangaChapter(mangaID ID, chapter *Chapter, tx *sql.Tx) error {
 	contextError := "error upserting manga chapter in the database"
 
-	err := validateManga(m)
+	err := validateChapter(chapter)
 	if err != nil {
 		return util.AddErrorContext(contextError, err)
-	}
-
-	err = validateChapter(chapter)
-	if err != nil {
-		return util.AddErrorContext(contextError, err)
-	}
-
-	mangaID := m.ID
-	if mangaID == 0 {
-		mangaID, err = getMangaIDByURL(m.URL)
-		if err != nil {
-			return util.AddErrorContext(contextError, err)
-		}
-		m.ID = mangaID
 	}
 
 	var chapterID int
@@ -116,7 +79,7 @@ func upsertMangaChapter(m *Manga, chapter *Chapter, tx *sql.Tx) error {
         DO UPDATE
             SET url = EXCLUDED.url, chapter = EXCLUDED.chapter, name = EXCLUDED.name, internal_id = EXCLUDED.internal_id, updated_at = EXCLUDED.updated_at
         RETURNING id;
-    `, m.ID, chapter.URL, chapter.Chapter, chapter.Name, chapter.InternalID, chapter.UpdatedAt, chapter.Type).Scan(&chapterID)
+    `, mangaID, chapter.URL, chapter.Chapter, chapter.Name, chapter.InternalID, chapter.UpdatedAt, chapter.Type).Scan(&chapterID)
 	if err != nil {
 		return util.AddErrorContext(contextError, err)
 	}
@@ -137,7 +100,7 @@ func upsertMangaChapter(m *Manga, chapter *Chapter, tx *sql.Tx) error {
 	}
 
 	var result sql.Result
-	result, err = tx.Exec(query, chapterID, m.ID)
+	result, err = tx.Exec(query, chapterID, mangaID)
 	if err != nil {
 		return util.AddErrorContext(contextError, err)
 	}
@@ -147,6 +110,54 @@ func upsertMangaChapter(m *Manga, chapter *Chapter, tx *sql.Tx) error {
 	}
 	if rowsAffected == 0 {
 		return util.AddErrorContext(contextError, errordefs.ErrMangaNotFoundDB)
+	}
+
+	return nil
+}
+
+// upsertMangaChapter updates the last released or last read chapter of a manga
+// if the manga doesn't exist in the database, it will be inserted
+func upsertMultiMangaChapter(multiMangaID ID, chapter *Chapter, tx *sql.Tx) error {
+	contextError := "error upserting multimanga chapter in the database"
+
+	err := validateChapter(chapter)
+	if err != nil {
+		return util.AddErrorContext(contextError, err)
+	}
+
+	if chapter.Type != 2 {
+		return util.AddErrorContext(contextError, fmt.Errorf("chapter type should be 2 (last read), instead it's %d", chapter.Type))
+	}
+
+	var chapterID int
+	err = tx.QueryRow(`
+        INSERT INTO chapters (multimanga_id, url, chapter, name, internal_id, updated_at, type)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        ON CONFLICT ON CONSTRAINT chapters_multimanga_id_type_unique
+        DO UPDATE
+            SET url = EXCLUDED.url, chapter = EXCLUDED.chapter, name = EXCLUDED.name, internal_id = EXCLUDED.internal_id, updated_at = EXCLUDED.updated_at
+        RETURNING id;
+    `, multiMangaID, chapter.URL, chapter.Chapter, chapter.Name, chapter.InternalID, chapter.UpdatedAt, chapter.Type).Scan(&chapterID)
+	if err != nil {
+		return util.AddErrorContext(contextError, err)
+	}
+
+	query := `
+        UPDATE multimangas
+        SET last_read_chapter = $1
+        WHERE id = $2;
+    `
+	var result sql.Result
+	result, err = tx.Exec(query, chapterID, multiMangaID)
+	if err != nil {
+		return util.AddErrorContext(contextError, err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return util.AddErrorContext(contextError, err)
+	}
+	if rowsAffected == 0 {
+		return util.AddErrorContext(contextError, errordefs.ErrMultiMangaNotFoundDB)
 	}
 
 	return nil

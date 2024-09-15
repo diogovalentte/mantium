@@ -132,7 +132,8 @@ func AddManga(c *gin.Context) {
 		mangaAdd.LastReadChapter.UpdatedAt = currentTime.Truncate(time.Second)
 	}
 
-	_, err = mangaAdd.InsertIntoDB()
+	mangaAdd.Type = 1
+	err = mangaAdd.InsertIntoDB()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -715,13 +716,13 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
 }
 
 type iframeTemplateData struct {
-	Mangas                        []*manga.Manga
+	BackgroundErrorTime           time.Time
 	Theme                         string
 	APIURL                        string
 	ScrollbarThumbBackgroundColor string
 	ScrollbarTrackBackgroundColor string
+	Mangas                        []*manga.Manga
 	ShowBackgroundError           bool
-	BackgroundErrorTime           time.Time
 }
 
 // @Summary Get manga chapters
@@ -888,7 +889,7 @@ type UpdateMangaChapterRequest struct {
 // @Param id query int false "Manga ID" Example(1)
 // @Param url query string false "Manga URL" Example("https://mangadex.org/title/1/one-piece")
 // @Param manga_internal_id query string false "Manga Internal ID" Example("1as4fa7")
-// @Param cover_img formData file false "Manga cover image file"
+// @Param cover_img formData file false "Manga cover image file. Remember to set the Content-Type header to 'multipart/form-data' when sending the request."
 // @Param cover_img_url query string false "Manga cover image URL" Example("https://example.com/cover.jpg")
 // @Param get_cover_img_from_source query bool false "Let Mantium fetch the cover image from the source site" Example(true)
 // @Success 200 {object} responseMessage
@@ -900,17 +901,21 @@ func UpdateMangaCoverImg(c *gin.Context) {
 	coverImgURL := c.Query("cover_img_url")
 	getCoverImgFromSource := c.Query("get_cover_img_from_source")
 
+	var coverImg []byte
 	var requestFile multipart.File
 	requestFile, _, err := c.Request.FormFile("cover_img")
-	if err != nil && err != http.ErrMissingFile {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-	defer requestFile.Close()
-	coverImg, err := io.ReadAll(requestFile)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
+		if err != http.ErrMissingFile && err != http.ErrNotMultipart {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	} else {
+		defer requestFile.Close()
+		coverImg, err = io.ReadAll(requestFile)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
 	}
 
 	var score int

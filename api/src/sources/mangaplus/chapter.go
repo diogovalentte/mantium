@@ -16,7 +16,7 @@ func (s *Source) GetChapterMetadata(mangaURL, _, chapter, chapterURL, _ string) 
 	errorContext := "error while getting metadata of chapter"
 
 	if chapter == "" && chapterURL == "" {
-		return nil, util.AddErrorContext(errorContext, errordefs.ErrChapterDoesntHaveChapterAndURL)
+		return nil, util.AddErrorContext(errorContext, errordefs.ErrChapterHasNoChapterOrURL)
 	}
 
 	returnChapter := &manga.Chapter{}

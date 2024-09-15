@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -244,6 +245,28 @@ func TestGetMangas(t *testing.T) {
 	})
 }
 
+func TestGetMangasiFrame(t *testing.T) {
+	t.Run("Get the mangas iframe", func(t *testing.T) {
+		url := "/v1/mangas/iframe?api_url=http://localhost:8080&theme=dark&limit=10"
+		w := httptest.NewRecorder()
+		req, err := http.NewRequest(http.MethodGet, url, nil)
+		if err != nil {
+			t.Fatalf("error creating request: %s", err)
+		}
+
+		router := api.SetupRouter()
+		router.ServeHTTP(w, req)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		htmlResp := w.Body.String()
+		if !strings.Contains(htmlResp, "Mantium") {
+			t.Fatalf(`expected response to contain "Mantium", got %s`, htmlResp)
+		}
+	})
+}
+
 func TestGetMangaChapters(t *testing.T) {
 	t.Run("Get manga chapters", func(t *testing.T) {
 		test := mangasRequestsTestTable["valid manga with read chapter"]
@@ -353,6 +376,122 @@ func TestUpdateManga(t *testing.T) {
 		expected := errordefs.ErrMangaNotFoundDB.Error()
 		if !strContains(actual, expected) {
 			t.Fatalf(`expected actual message "%s" to contain expected message "%s"`, actual, expected)
+		}
+	})
+	t.Run("Update a manga cover img using URL", func(t *testing.T) {
+		test := mangasRequestsTestTable["valid manga with read chapter"]
+		coverImgURL := "https://i.imgur.com/jMy7evE.jpeg"
+		var resMap map[string]string
+		err := requestHelper(http.MethodPatch, fmt.Sprintf("/v1/manga/cover_img?url=%s&cover_img_url=%s", test.URL, coverImgURL), nil, &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["message"]
+		expected := "Manga cover image updated successfully"
+		if actual != expected {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
+		}
+	})
+	t.Run("Update a manga cover img with a file", func(t *testing.T) {
+		test := mangasRequestsTestTable["valid manga with read chapter"]
+
+		coverImg, err := os.ReadFile("../../defaults/default_cover_img.jpg")
+		if err != nil {
+			t.Fatal(err)
+		}
+		var b bytes.Buffer
+		w := multipart.NewWriter(&b)
+		fileWriter, err := w.CreateFormFile("cover_img", "test.jpg")
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = io.Copy(fileWriter, bytes.NewReader(coverImg))
+		if err != nil {
+			t.Fatal(err)
+		}
+		w.Close()
+
+		var resMap map[string]string
+		url := fmt.Sprintf("/v1/manga/cover_img?url=%s", test.URL)
+
+		rw := httptest.NewRecorder()
+		req, err := http.NewRequest(http.MethodPatch, url, &b)
+		if err != nil {
+			t.Fatalf("error creating request: %s", err)
+		}
+		req.Header.Set("Content-Type", w.FormDataContentType())
+
+		router := api.SetupRouter()
+		router.ServeHTTP(rw, req)
+
+		jsonBytes := rw.Body.Bytes()
+		if err := json.Unmarshal(jsonBytes, &resMap); err != nil {
+			t.Fatalf("error unmarshaling JSON: %s\nreponse text: %s", err.Error(), string(jsonBytes))
+		}
+
+		actual := resMap["message"]
+		expected := "Manga cover image updated successfully"
+		if actual != expected {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
+		}
+	})
+	t.Run("Update a manga cover img getting from source site", func(t *testing.T) {
+		test := mangasRequestsTestTable["valid manga with read chapter"]
+		var resMap map[string]string
+		err := requestHelper(http.MethodPatch, fmt.Sprintf("/v1/manga/cover_img?url=%s&get_cover_img_from_source=true", test.URL), nil, &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["message"]
+		expected := "Manga cover image updated successfully"
+		if actual != expected {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
+		}
+	})
+	t.Run("Don't update a manga cover img because no args", func(t *testing.T) {
+		test := mangasRequestsTestTable["valid manga with read chapter"]
+		var resMap map[string]string
+		err := requestHelper(http.MethodPatch, fmt.Sprintf("/v1/manga/cover_img?url=%s", test.URL), nil, &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["message"]
+		expected := "you must provide one of the following: cover_img, cover_img_url, get_cover_img_from_source"
+		if actual != expected {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
+		}
+	})
+	t.Run("Don't update a manga cover img because 2 args", func(t *testing.T) {
+		test := mangasRequestsTestTable["valid manga with read chapter"]
+		coverImgURL := "https://i.imgur.com/jMy7evE.jpeg"
+		var resMap map[string]string
+		err := requestHelper(http.MethodPatch, fmt.Sprintf("/v1/manga/cover_img?url=%s&get_cover_img_from_source=true&cover_img_url=%s", test.URL, coverImgURL), nil, &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["message"]
+		expected := "you must provide only one of the following: cover_img, cover_img_url, get_cover_img_from_source"
+		if actual != expected {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
+		}
+	})
+	t.Run("Don't update a manga cover img because invalid image URL", func(t *testing.T) {
+		test := mangasRequestsTestTable["valid manga with read chapter"]
+		coverImgURL := "https://site.com/jMy7evE.jpeg"
+		var resMap map[string]string
+		err := requestHelper(http.MethodPatch, fmt.Sprintf("/v1/manga/cover_img?url=%s&cover_img_url=%s", test.URL, coverImgURL), nil, &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["message"]
+		expected := "error downloading image 'https://site.com/jMy7evE.jpeg'"
+		if !strings.Contains(actual, expected) {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
 		}
 	})
 }

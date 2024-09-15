@@ -49,7 +49,6 @@ type Manga struct {
 	// Type is the type of the manga, it can be:
 	// 1 - Normal manga
 	// 2 - Part of a multimanga
-	// 3 - Multimanga. A multimanga is saved to the multimangas table in DB. This type is only used on the API side.
 	Type int
 	// CoverImgResized is true if the cover image was resized
 	CoverImgResized bool
@@ -64,32 +63,33 @@ func (m Manga) String() string {
 }
 
 // InsertIntoDB saves the manga into the database
-func (m *Manga) InsertIntoDB() (ID, error) {
+func (m *Manga) InsertIntoDB() error {
 	contextError := "error inserting manga '%s' into DB"
 
 	db, err := db.OpenConn()
 	if err != nil {
-		return -1, util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
 	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
-		return -1, util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
 
 	mangaID, err := insertMangaIntoDB(m, tx)
 	if err != nil {
 		tx.Rollback()
-		return -1, util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return -1, util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
+	m.ID = mangaID
 
-	return mangaID, nil
+	return nil
 }
 
 func insertMangaIntoDB(m *Manga, tx *sql.Tx) (ID, error) {
@@ -115,43 +115,24 @@ func insertMangaIntoDB(m *Manga, tx *sql.Tx) (ID, error) {
 	}
 
 	if m.LastReleasedChapter != nil {
-		chapterID, err := insertChapterDB(m.LastReleasedChapter, mangaID, tx)
+		err := upsertMangaChapter(mangaID, m.LastReleasedChapter, tx)
 		if err != nil {
 			if err.Error() == `pq: duplicate key value violates unique constraint "chapters_pkey"` {
 				return -1, fmt.Errorf("last released chapter of the manga you're trying to add already exists in DB")
 			}
 			return -1, err
 		}
-
-		_, err = tx.Exec(`
-            UPDATE mangas
-            SET last_released_chapter = $1
-            WHERE id = $2;
-        `, chapterID, mangaID)
-		if err != nil {
-			return -1, err
-		}
 	}
 	if m.LastReadChapter != nil {
-		chapterID, err := insertChapterDB(m.LastReadChapter, mangaID, tx)
+		err := upsertMangaChapter(mangaID, m.LastReadChapter, tx)
 		if err != nil {
 			if err.Error() == `pq: duplicate key value violates unique constraint "chapters_pkey"` {
 				return -1, fmt.Errorf("last read chapter of the manga you're trying to add already exists in DB")
 			}
 			return -1, err
 		}
-
-		_, err = tx.Exec(`
-            UPDATE mangas
-            SET last_read_chapter = $1
-            WHERE id = $2;
-        `, chapterID, mangaID)
-		if err != nil {
-			return -1, err
-		}
 	}
 
-	// if the manga has chapters, also update the last_released_chapter and last_read_chapter
 	return mangaID, nil
 }
 
@@ -210,7 +191,7 @@ func deleteMangaDB(m *Manga, tx *sql.Tx) error {
 			return err
 		}
 	} else {
-		return errordefs.ErrMangaDoesntHaveIDAndURL
+		return errordefs.ErrMangaHasNoIDOrURL
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -249,6 +230,7 @@ func (m *Manga) UpdateStatusInDB(status Status) error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
+	m.Status = status
 
 	return nil
 }
@@ -284,7 +266,7 @@ func updateMangaStatusDB(m *Manga, status Status, tx *sql.Tx) error {
 			return err
 		}
 	} else {
-		return errordefs.ErrMangaDoesntHaveIDAndURL
+		return errordefs.ErrMangaHasNoIDOrURL
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -294,7 +276,6 @@ func updateMangaStatusDB(m *Manga, status Status, tx *sql.Tx) error {
 	if rowsAffected == 0 {
 		return errordefs.ErrMangaNotFoundDB
 	}
-	m.Status = status
 
 	return nil
 }
@@ -315,7 +296,7 @@ func (m *Manga) UpsertChapterInDB(chapter *Chapter) error {
 		return util.AddErrorContext(fmt.Sprintf(contextError, chapter, m), err)
 	}
 
-	err = upsertMangaChapter(m, chapter, tx)
+	err = upsertMangaChapter(m.ID, chapter, tx)
 	if err != nil {
 		tx.Rollback()
 		return util.AddErrorContext(fmt.Sprintf(contextError, chapter, m), err)
@@ -386,7 +367,7 @@ func updateMangaName(m *Manga, name string, tx *sql.Tx) error {
 			return err
 		}
 	} else {
-		return errordefs.ErrMangaDoesntHaveIDAndURL
+		return errordefs.ErrMangaHasNoIDOrURL
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -459,7 +440,7 @@ func updateMangaCoverImg(m *Manga, coverImg []byte, coverImgResized bool, coverI
 			return err
 		}
 	} else {
-		return errordefs.ErrMangaDoesntHaveIDAndURL
+		return errordefs.ErrMangaHasNoIDOrURL
 	}
 
 	rowsAffected, err := result.RowsAffected()
@@ -512,7 +493,7 @@ func updateMangaMetadata(m *Manga, tx *sql.Tx) error {
 	}
 
 	if m.LastReleasedChapter != nil {
-		err = upsertMangaChapter(m, m.LastReleasedChapter, tx)
+		err = upsertMangaChapter(m.ID, m.LastReleasedChapter, tx)
 		if err != nil {
 			return err
 		}
@@ -588,7 +569,7 @@ func getMangaFromDB(m *Manga, db *sql.DB) error {
 			return err
 		}
 	} else {
-		return errordefs.ErrMangaDoesntHaveIDAndURL
+		return errordefs.ErrMangaHasNoIDOrURL
 	}
 
 	if lastReleasedChapterID.Valid && lastReleasedChapterID.Int64 != 0 {
@@ -763,7 +744,7 @@ func validateManga(m *Manga) error {
 
 func validateStatus(status Status) error {
 	if status < 1 || status > 5 {
-		return fmt.Errorf("manga status should be >= 1 && <= 5, instead it's %d", status)
+		return fmt.Errorf("status should be >= 1 && <= 5, instead it's %d", status)
 	}
 
 	return nil
