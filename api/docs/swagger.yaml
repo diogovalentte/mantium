@@ -33,6 +33,10 @@ definitions:
         description: Name is the name of the chapter
         type: string
       type:
+        description: |-
+          Type is the type of the chapter, it can be:
+          1: "release" - the chapter was released, it's representing a chapter that was released by (or scraped from) a source
+          2: "read" - the chapter was read, it's representing a chapter that was read by the user
         type: integer
       updatedAt:
         description: |-
@@ -88,6 +92,12 @@ definitions:
           website
         type: string
       status:
+        type: integer
+      type:
+        description: |-
+          Type is the type of the manga, it can be:
+          1 - Normal manga
+          2 - Part of a multimanga
         type: integer
       url:
         description: URL is the URL of the manga
@@ -384,7 +394,8 @@ paths:
         in: query
         name: manga_internal_id
         type: string
-      - description: Manga cover image file
+      - description: Manga cover image file. Remember to set the Content-Type header
+          to 'multipart/form-data' when sending the request.
         in: formData
         name: cover_img
         type: file
@@ -496,6 +507,29 @@ paths:
           schema:
             $ref: '#/definitions/routes.responseMessage'
       summary: Update manga status
+  /manga/turn_into_multimanga:
+    post:
+      description: Turns a manga into a multimanga. You must provide either the manga
+        ID or the manga URL.
+      parameters:
+      - description: Manga ID
+        example: 1
+        in: query
+        name: id
+        type: integer
+      - description: Manga URL
+        example: '"https://mangadex.org/title/1/one-piece"'
+        in: query
+        name: url
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Turn manga into multimanga
   /mangas:
     get:
       description: Gets all mangas from the database.

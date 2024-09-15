@@ -312,7 +312,7 @@ const docTemplate = `{
                     },
                     {
                         "type": "file",
-                        "description": "Manga cover image file",
+                        "description": "Manga cover image file. Remember to set the Content-Type header to 'multipart/form-data' when sending the request.",
                         "name": "cover_img",
                         "in": "formData"
                     },
@@ -457,6 +457,39 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/routes.UpdateMangaStatusRequest"
                         }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/manga/turn_into_multimanga": {
+            "post": {
+                "description": "Turns a manga into a multimanga. You must provide either the manga ID or the manga URL.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Turn manga into multimanga",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Manga ID",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"https://mangadex.org/title/1/one-piece\"",
+                        "description": "Manga URL",
+                        "name": "url",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -670,6 +703,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "type": {
+                    "description": "Type is the type of the chapter, it can be:\n1: \"release\" - the chapter was released, it's representing a chapter that was released by (or scraped from) a source\n2: \"read\" - the chapter was read, it's representing a chapter that was read by the user",
                     "type": "integer"
                 },
                 "updatedAt": {
@@ -740,6 +774,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
+                    "type": "integer"
+                },
+                "type": {
+                    "description": "Type is the type of the manga, it can be:\n1 - Normal manga\n2 - Part of a multimanga",
                     "type": "integer"
                 },
                 "url": {

@@ -47,6 +47,7 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.PATCH("/mangas/metadata", UpdateMangasMetadata)
 		group.POST("/mangas/add_to_kaizoku", AddMangasToKaizoku)
 		group.POST("/mangas/add_to_tranga", AddMangasToTranga)
+		group.POST("/manga/turn_into_multimanga", TurnIntoMultiManga)
 	}
 }
 
@@ -1269,6 +1270,43 @@ func AddMangasToTranga(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Mangas added to Tranga successfully"})
+}
+
+// @Summary Turn manga into multimanga
+// @Description Turns a manga into a multimanga. You must provide either the manga ID or the manga URL.
+// @Produce json
+// @Param id query int false "Manga ID" Example(1)
+// @Param url query string false "Manga URL" Example("https://mangadex.org/title/1/one-piece")
+// @Success 200 {object} responseMessage
+// @Router /manga/turn_into_multimanga [post]
+func TurnIntoMultiManga(c *gin.Context) {
+	mangaIDStr := c.Query("id")
+	mangaURL := c.Query("url")
+	mangaID, mangaURL, err := getMangaIDAndURL(mangaIDStr, mangaURL)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	sourceManga, err := manga.GetMangaDB(mangaID, mangaURL)
+	if err != nil {
+		if strings.Contains(err.Error(), errordefs.ErrMangaNotFoundDB.Error()) {
+			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	_, err = manga.TurnIntoMultiManga(sourceManga)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	dashboard.UpdateDashboard()
+
+	c.JSON(http.StatusOK, gin.H{"message": "Manga turned into multimanga successfully"})
 }
 
 func getMangaIDAndURL(mangaIDStr string, mangaURL string) (manga.ID, string, error) {

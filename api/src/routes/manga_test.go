@@ -496,6 +496,22 @@ func TestUpdateManga(t *testing.T) {
 	})
 }
 
+func TestUpdateMangasMetadata(t *testing.T) {
+	t.Run("Update all mangas metadata", func(t *testing.T) {
+		var resMap map[string]string
+		err := requestHelper(http.MethodPatch, "/v1/mangas/metadata", nil, &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["message"]
+		expected := "Mangas metadata updated successfully"
+		if actual != expected {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
+		}
+	})
+}
+
 func TestDeleteManga(t *testing.T) {
 	t.Run("Delete valid manga with read chapter", func(t *testing.T) {
 		test := mangasRequestsTestTable["valid manga with read chapter"]
@@ -541,16 +557,33 @@ func TestDeleteManga(t *testing.T) {
 	})
 }
 
-func TestUpdateMangasMetadata(t *testing.T) {
-	t.Run("Update all mangas metadata", func(t *testing.T) {
-		var resMap map[string]string
-		err := requestHelper(http.MethodPatch, "/v1/mangas/metadata", nil, &resMap)
+func TestTurnMangaIntoMultiManga(t *testing.T) {
+	t.Run("Should turn a manga into a multimanga into DB", func(t *testing.T) {
+		test := mangasRequestsTestTable["valid manga with read chapter"]
+		body, err := json.Marshal(test)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var addResMap map[string]string
+		err = requestHelper(http.MethodPost, "/v1/manga", bytes.NewBuffer(body), &addResMap)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		actual := resMap["message"]
-		expected := "Mangas metadata updated successfully"
+		actual := addResMap["message"]
+		expected := "Manga added successfully"
+		if actual != expected {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
+		}
+
+		var resMap map[string]string
+		err = requestHelper(http.MethodPost, fmt.Sprintf("/v1/manga/turn_into_multimanga?url=%s", test.URL), nil, &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual = resMap["message"]
+		expected = "Manga turned into multimanga successfully"
 		if actual != expected {
 			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
 		}
