@@ -643,7 +643,7 @@ class MainDashboard:
                     if status != manga["Status"]:
                         self.api_client.update_manga_status(status, manga["ID"])
 
-                    chapter = ss.update_manga_form_chapter
+                    chapter = ss["update_manga_form_chapter" + str(manga["ID"])]
                     if chapter is not None and (
                         manga["LastReadChapter"] is None
                         or chapter["URL"] != manga["LastReadChapter"]["URL"]
