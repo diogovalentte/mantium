@@ -64,12 +64,6 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
           "last_read_chapter" integer
         );
 
-        CREATE TABLE IF NOT EXISTS "multimanga_mangas" (
-          "multimanga_id" INT REFERENCES multimangas(id) ON DELETE CASCADE,
-          "manga_id" INT REFERENCES mangas(id) ON DELETE CASCADE,
-          PRIMARY KEY (multimanga_id, manga_id)
-        );
-
         CREATE TABLE IF NOT EXISTS "chapters" (
           "id" serial UNIQUE,
           "manga_id" integer,
@@ -161,7 +155,7 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
 
         ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "cover_img_fixed" BOOLEAN NOT NULL DEFAULT FALSE;
         ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "internal_id" VARCHAR(100) NOT NULL DEFAULT '';
-        ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "type" smallint NOT NULL DEFAULT 1;
+        ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "multimanga_id" integer REFERENCES multimangas(id) ON DELETE CASCADE DEFAULT NULL;
         ALTER TABLE "mangas" ALTER COLUMN "last_released_chapter" TYPE integer;
         ALTER TABLE "mangas" ALTER COLUMN "last_read_chapter" TYPE integer;
         ALTER TABLE "chapters" ADD COLUMN IF NOT EXISTS "internal_id" VARCHAR(100) NOT NULL DEFAULT '';
@@ -173,20 +167,19 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
        		if not exists (
        			select 1
        			from pg_catalog.pg_constraint
-       			where conname = 'chapters_multimanga_id'
+       			where conname = 'chapters_multimanga_id_type_unique'
        		) then
-                ALTER TABLE "chapters" ADD CONSTRAINT chapters_multimanga_id FOREIGN KEY ("multimanga_id") REFERENCES "multimangas" ("id") ON DELETE CASCADE;
+                ALTER TABLE "chapters" ADD CONSTRAINT chapters_multimanga_id_type_unique UNIQUE (multimanga_id, type);
        		end if;
        	end $$;
-
         do $$
        	begin
        		if not exists (
        			select 1
        			from pg_catalog.pg_constraint
-       			where conname = 'chapters_multimanga_id_type_unique'
+       			where conname = 'chapters_multimanga_id'
        		) then
-                ALTER TABLE "chapters" ADD CONSTRAINT chapters_multimanga_id_type_unique UNIQUE (multimanga_id, type);
+                ALTER TABLE "chapters" ADD CONSTRAINT chapters_multimanga_id FOREIGN KEY ("multimanga_id") REFERENCES "multimangas" ("id") ON DELETE CASCADE;
        		end if;
        	end $$;
     `)

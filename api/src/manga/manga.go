@@ -46,10 +46,8 @@ type Manga struct {
 	CoverImg []byte
 	ID       ID
 	Status   Status
-	// Type is the type of the manga, it can be:
-	// 1 - Normal manga
-	// 2 - Part of a multimanga
-	Type int
+	// When the manga is part of a multimanga, this field should be set to the multimanga ID
+	MultiMangaID ID
 	// CoverImgResized is true if the cover image was resized
 	CoverImgResized bool
 	// CoverImgFixed is true if the cover image is fixed. If true, the cover image will not be updated when updating the manga metadata.
@@ -58,8 +56,8 @@ type Manga struct {
 }
 
 func (m Manga) String() string {
-	return fmt.Sprintf("Manga{ID: %d, Source: %s, URL: %s, Name: %s, InternalID: %s, Status: %d, CoverImg: []byte, CoverImgResized: %v, CoverImgURL: %s, CoverImgFixed: %v, PreferredGroup: %s, Type: %d, LastReleasedChapter: %s, LastReadChapter: %s}",
-		m.ID, m.Source, m.URL, m.Name, m.InternalID, m.Status, m.CoverImgResized, m.CoverImgURL, m.CoverImgFixed, m.PreferredGroup, m.Type, m.LastReleasedChapter, m.LastReadChapter)
+	return fmt.Sprintf("Manga{ID: %d, Source: %s, URL: %s, Name: %s, InternalID: %s, Status: %d, CoverImg: []byte, CoverImgResized: %v, CoverImgURL: %s, CoverImgFixed: %v, PreferredGroup: %s, MultiMangaID: %d, LastReleasedChapter: %s, LastReadChapter: %s}",
+		m.ID, m.Source, m.URL, m.Name, m.InternalID, m.Status, m.CoverImgResized, m.CoverImgURL, m.CoverImgFixed, m.PreferredGroup, m.MultiMangaID, m.LastReleasedChapter, m.LastReadChapter)
 }
 
 // InsertIntoDB saves the manga into the database
@@ -98,15 +96,22 @@ func insertMangaIntoDB(m *Manga, tx *sql.Tx) (ID, error) {
 		return -1, err
 	}
 
+	var multiMangaID sql.NullInt32
+	if m.MultiMangaID > 0 {
+		multiMangaID = sql.NullInt32{Int32: int32(m.MultiMangaID), Valid: true}
+	} else {
+		multiMangaID = sql.NullInt32{Valid: false}
+	}
+
 	var mangaID ID
 	err = tx.QueryRow(`
         INSERT INTO mangas
-            (source, url, name, internal_id, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group, type)
+            (source, url, name, internal_id, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group, multimanga_id)
         VALUES
             ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         RETURNING
             id;
-    `, m.Source, m.URL, m.Name, m.InternalID, m.Status, m.CoverImg, m.CoverImgResized, m.CoverImgURL, m.CoverImgFixed, m.PreferredGroup, m.Type).Scan(&mangaID)
+    `, m.Source, m.URL, m.Name, m.InternalID, m.Status, m.CoverImg, m.CoverImgResized, m.CoverImgURL, m.CoverImgFixed, m.PreferredGroup, multiMangaID).Scan(&mangaID)
 	if err != nil {
 		if err.Error() == `pq: duplicate key value violates unique constraint "mangas_pkey"` {
 			return -1, errordefs.ErrMangaAlreadyInDB
@@ -381,51 +386,6 @@ func updateMangaName(m *Manga, name string, tx *sql.Tx) error {
 	return nil
 }
 
-func updateMangaTypeDB(m *Manga, newType int, tx *sql.Tx) error {
-	err := validateManga(m)
-	if err != nil {
-		return err
-	}
-
-	err = validateMangaType(newType)
-	if err != nil {
-		return err
-	}
-
-	var result sql.Result
-	if m.ID > 0 {
-		result, err = tx.Exec(`
-            UPDATE mangas
-            SET type = $1
-            WHERE id = $2;
-        `, newType, m.ID)
-		if err != nil {
-			return err
-		}
-	} else if m.URL != "" {
-		result, err = tx.Exec(`
-            UPDATE mangas
-            SET type = $1
-            WHERE url = $2;
-        `, newType, m.URL)
-		if err != nil {
-			return err
-		}
-	} else {
-		return errordefs.ErrMangaHasNoIDOrURL
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rowsAffected == 0 {
-		return errordefs.ErrMangaNotFoundDB
-	}
-
-	return nil
-}
-
 // UpdateCoverImgInDB updates the manga cover image in the database.
 // It doesn't care if the cover image is fixed or not.
 func (m *Manga) UpdateCoverImgInDB(coverImg []byte, coverImgResized bool, coverImgURL string) error {
@@ -587,29 +547,30 @@ func GetMangaDB(mangaID ID, mangaURL string) (*Manga, error) {
 func getMangaFromDB(m *Manga, db *sql.DB) error {
 	var lastReleasedChapterID sql.NullInt64
 	var lastReadChapterID sql.NullInt64
+	var multiMangaID sql.NullInt64
 	if m.ID > 0 {
 		query := `
             SELECT
-                id, source, url, name, internal_id, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group, type, last_released_chapter, last_read_chapter
+                id, source, url, name, internal_id, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group, multimanga_id, last_released_chapter, last_read_chapter
             FROM
                 mangas
             WHERE
                 id = $1;
         `
-		err := db.QueryRow(query, m.ID).Scan(&m.ID, &m.Source, &m.URL, &m.Name, &m.InternalID, &m.Status, &m.CoverImg, &m.CoverImgResized, &m.CoverImgURL, &m.CoverImgFixed, &m.PreferredGroup, &m.Type, &lastReleasedChapterID, &lastReadChapterID)
+		err := db.QueryRow(query, m.ID).Scan(&m.ID, &m.Source, &m.URL, &m.Name, &m.InternalID, &m.Status, &m.CoverImg, &m.CoverImgResized, &m.CoverImgURL, &m.CoverImgFixed, &m.PreferredGroup, &multiMangaID, &lastReleasedChapterID, &lastReadChapterID)
 		if err != nil {
 			return err
 		}
 	} else if m.URL != "" {
 		query := `
             SELECT
-                id, source, url, name, internal_id, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group, type, last_released_chapter, last_read_chapter
+                id, source, url, name, internal_id, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group, multimanga_id, last_released_chapter, last_read_chapter
             FROM
                 mangas
             WHERE
                 url = $1;
         `
-		err := db.QueryRow(query, m.URL).Scan(&m.ID, &m.Source, &m.URL, &m.Name, &m.InternalID, &m.Status, &m.CoverImg, &m.CoverImgResized, &m.CoverImgURL, &m.CoverImgFixed, &m.PreferredGroup, &m.Type, &lastReleasedChapterID, &lastReadChapterID)
+		err := db.QueryRow(query, m.URL).Scan(&m.ID, &m.Source, &m.URL, &m.Name, &m.InternalID, &m.Status, &m.CoverImg, &m.CoverImgResized, &m.CoverImgURL, &m.CoverImgFixed, &m.PreferredGroup, &multiMangaID, &lastReleasedChapterID, &lastReadChapterID)
 		if err != nil {
 			return err
 		}
@@ -630,6 +591,9 @@ func getMangaFromDB(m *Manga, db *sql.DB) error {
 			return err
 		}
 		m.LastReadChapter = chapter
+	}
+	if multiMangaID.Valid && multiMangaID.Int64 != 0 {
+		m.MultiMangaID = ID(multiMangaID.Int64)
 	}
 
 	err := validateManga(m)
@@ -675,7 +639,7 @@ func GetMangaDBByURL(url string) (*Manga, error) {
 	return GetMangaDB(0, url)
 }
 
-// GetMangasDB gets all mangas from the database
+// GetMangasDB gets all mangas (that are not part of a multimanga) from the database
 func GetMangasDB() ([]*Manga, error) {
 	contextError := "error getting mangas from DB"
 
@@ -696,9 +660,11 @@ func GetMangasDB() ([]*Manga, error) {
 func getMangasFromDB(db *sql.DB) ([]*Manga, error) {
 	query := `
         SELECT
-            id, source, url, name, internal_id, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group, type, last_released_chapter, last_read_chapter
+            id, source, url, name, internal_id, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group, multimanga_id, last_released_chapter, last_read_chapter
         FROM
-            mangas;
+            mangas
+        WHERE
+            multimanga_id IS NULL;
     `
 	rows, err := db.Query(query)
 	if err != nil {
@@ -711,7 +677,8 @@ func getMangasFromDB(db *sql.DB) ([]*Manga, error) {
 		var manga Manga
 		var lastReleasedChapterID sql.NullInt64
 		var lastReadChapterID sql.NullInt64
-		err = rows.Scan(&manga.ID, &manga.Source, &manga.URL, &manga.Name, &manga.InternalID, &manga.Status, &manga.CoverImg, &manga.CoverImgResized, &manga.CoverImgURL, &manga.CoverImgFixed, &manga.PreferredGroup, &manga.Type, &lastReleasedChapterID, &lastReadChapterID)
+		var multiMangaID sql.NullInt64
+		err = rows.Scan(&manga.ID, &manga.Source, &manga.URL, &manga.Name, &manga.InternalID, &manga.Status, &manga.CoverImg, &manga.CoverImgResized, &manga.CoverImgURL, &manga.CoverImgFixed, &manga.PreferredGroup, &multiMangaID, &lastReleasedChapterID, &lastReadChapterID)
 		if err != nil {
 			return nil, err
 		}
@@ -729,6 +696,9 @@ func getMangasFromDB(db *sql.DB) ([]*Manga, error) {
 				return nil, err
 			}
 			manga.LastReadChapter = chapter
+		}
+		if multiMangaID.Valid && multiMangaID.Int64 != 0 {
+			manga.MultiMangaID = ID(multiMangaID.Int64)
 		}
 
 		err := validateManga(&manga)
@@ -751,10 +721,6 @@ func validateManga(m *Manga) error {
 	}
 
 	err := validateStatus(m.Status)
-	if err != nil {
-		return util.AddErrorContext(contextError, err)
-	}
-	err = validateMangaType(m.Type)
 	if err != nil {
 		return util.AddErrorContext(contextError, err)
 	}
@@ -790,14 +756,6 @@ func validateManga(m *Manga) error {
 func validateStatus(status Status) error {
 	if status < 1 || status > 5 {
 		return fmt.Errorf("status should be >= 1 && <= 5, instead it's %d", status)
-	}
-
-	return nil
-}
-
-func validateMangaType(mangaType int) error {
-	if mangaType != 1 && mangaType != 2 {
-		return fmt.Errorf("manga type should be 1 or 2, instead it's %d", mangaType)
 	}
 
 	return nil

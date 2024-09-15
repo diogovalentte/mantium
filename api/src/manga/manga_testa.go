@@ -2,33 +2,31 @@ package manga
 
 import (
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
-	"github.com/diogovalentte/mantium/api/src/config"
 	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
-func setup() error {
-	err := config.SetConfigs("../../../.env.test")
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func TestMain(m *testing.M) {
-	err := setup()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	exitCode := m.Run()
-	os.Exit(exitCode)
-}
+// func setup() error {
+// 	err := config.SetConfigs("../../../.env.test")
+// 	if err != nil {
+// 		return err
+// 	}
+//
+// 	return nil
+// }
+//
+// func TestMain(m *testing.M) {
+// 	err := setup()
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		os.Exit(1)
+// 	}
+// 	exitCode := m.Run()
+// 	os.Exit(exitCode)
+// }
 
 var mangaTest = &Manga{
 	Source:         "testing",
@@ -38,7 +36,6 @@ var mangaTest = &Manga{
 	CoverImgURL:    "https://cnd.random.best-manga.jpg", // mangahub.io
 	CoverImg:       []byte{},
 	PreferredGroup: "MangaStream",
-	Type:           1,
 	LastReleasedChapter: &Chapter{
 		URL:       "https://testingsite/manga/best-manga/chapter-15",
 		Name:      "Chapter 1",
@@ -93,15 +90,8 @@ func TestMangaDBLifeCycle(t *testing.T) {
 						err = manga.InsertIntoDB()
 						if util.ErrorContains(err, "chapter URL is empty") {
 							manga.LastReadChapter.URL = mangaTest.LastReadChapter.URL
-							manga.Type = 0
 							err = manga.InsertIntoDB()
-							if util.ErrorContains(err, "manga type should be 1 or 2") {
-								manga.Type = mangaTest.Type
-								err = manga.InsertIntoDB()
-								if err != nil {
-									t.Fatal(err)
-								}
-							} else {
+							if err != nil {
 								t.Fatal(err)
 							}
 						} else {

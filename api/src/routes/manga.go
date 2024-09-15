@@ -133,7 +133,6 @@ func AddManga(c *gin.Context) {
 		mangaAdd.LastReadChapter.UpdatedAt = currentTime.Truncate(time.Second)
 	}
 
-	mangaAdd.Type = 1
 	err = mangaAdd.InsertIntoDB()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -253,7 +252,7 @@ func GetManga(c *gin.Context) {
 }
 
 // @Summary Get mangas
-// @Description Gets all mangas from the database.
+// @Description Gets all mangas from the database in no particlar order.
 // @Produce json
 // @Success 200 {array} manga.Manga "{"mangas": [mangaObj]}"
 // @Router /mangas [get]
@@ -262,6 +261,14 @@ func GetMangas(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
+	}
+	multimangas, err := manga.GetMultiMangasDB()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	for _, multimanga := range multimangas {
+		mangas = append(mangas, multimanga.CurrentManga)
 	}
 
 	resMap := map[string][]*manga.Manga{"mangas": mangas}

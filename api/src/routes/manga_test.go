@@ -110,7 +110,7 @@ func TestAddManga(t *testing.T) {
 
 		actual := resMap["message"]
 		expected := errordefs.ErrMangaNotFound.Error()
-		if !strContains(actual, expected) {
+		if !strings.Contains(actual, expected) {
 			t.Fatalf(`expected actual message "%s" to contain expected message "%s"`, actual, expected)
 		}
 	})
@@ -127,7 +127,7 @@ func TestAddManga(t *testing.T) {
 
 		actual := resMap["message"]
 		expected := errordefs.ErrChapterNotFound.Error()
-		if !strContains(actual, expected) {
+		if !strings.Contains(actual, expected) {
 			t.Fatalf(`expected actual message "%s" to contain expected message "%s"`, actual, expected)
 		}
 	})
@@ -172,7 +172,7 @@ func TestSearchMangas(t *testing.T) {
 	})
 }
 
-func TestGetMangas(t *testing.T) {
+func TestGetManga(t *testing.T) {
 	t.Run("Get one manga with read chapter", func(t *testing.T) {
 		test := mangasRequestsTestTable["valid manga with read chapter"]
 		body, err := json.Marshal(test)
@@ -204,7 +204,7 @@ func TestGetMangas(t *testing.T) {
 
 		actual := resMap["message"]
 		expected := errordefs.ErrMangaNotFoundDB.Error()
-		if !strContains(actual, expected) {
+		if !strings.Contains(actual, expected) {
 			t.Fatalf(`expected actual message "%s" to contain expected message "%s"`, actual, expected)
 		}
 	})
@@ -222,25 +222,8 @@ func TestGetMangas(t *testing.T) {
 
 		actual := resMap["message"]
 		expected := errordefs.ErrMangaNotFoundDB.Error()
-		if !strContains(actual, expected) {
+		if !strings.Contains(actual, expected) {
 			t.Fatalf(`expected actual message "%s" to contain expected message "%s"`, actual, expected)
-		}
-	})
-	t.Run("Get mangas from DB", func(t *testing.T) {
-		var resMap map[string][]manga.Manga
-		err := requestHelper(http.MethodGet, "/v1/mangas", nil, &resMap)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		mangas := resMap["mangas"]
-		if len(mangas) < 1 {
-			t.Fatalf(`expected at least 1 manga, got %d`, len(mangas))
-		}
-		for _, m := range mangas {
-			if m.URL == "" || m.Status == 0 {
-				t.Fatalf(`expected all mangas to have a URL and a status, got %v`, mangas)
-			}
 		}
 	})
 }
@@ -299,7 +282,7 @@ func TestGetMangaChapters(t *testing.T) {
 
 		actual := resMap["message"]
 		expected := errordefs.ErrMangaNotFound.Error()
-		if !strContains(actual, expected) {
+		if !strings.Contains(actual, expected) {
 			t.Fatalf(`expected actual message "%s" to contain expected message "%s"`, actual, expected)
 		}
 	})
@@ -374,7 +357,7 @@ func TestUpdateManga(t *testing.T) {
 
 		actual := resMap["message"]
 		expected := errordefs.ErrMangaNotFoundDB.Error()
-		if !strContains(actual, expected) {
+		if !strings.Contains(actual, expected) {
 			t.Fatalf(`expected actual message "%s" to contain expected message "%s"`, actual, expected)
 		}
 	})
@@ -496,22 +479,6 @@ func TestUpdateManga(t *testing.T) {
 	})
 }
 
-func TestUpdateMangasMetadata(t *testing.T) {
-	t.Run("Update all mangas metadata", func(t *testing.T) {
-		var resMap map[string]string
-		err := requestHelper(http.MethodPatch, "/v1/mangas/metadata", nil, &resMap)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		actual := resMap["message"]
-		expected := "Mangas metadata updated successfully"
-		if actual != expected {
-			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
-		}
-	})
-}
-
 func TestDeleteManga(t *testing.T) {
 	t.Run("Delete valid manga with read chapter", func(t *testing.T) {
 		test := mangasRequestsTestTable["valid manga with read chapter"]
@@ -537,7 +504,7 @@ func TestDeleteManga(t *testing.T) {
 
 		actual := resMap["message"]
 		expected := errordefs.ErrMangaNotFoundDB.Error()
-		if !strContains(actual, expected) {
+		if !strings.Contains(actual, expected) {
 			t.Fatalf(`expected actual message "%s" to contain expected message "%s"`, actual, expected)
 		}
 	})
@@ -551,39 +518,76 @@ func TestDeleteManga(t *testing.T) {
 
 		actual := resMap["message"]
 		expected := errordefs.ErrMangaNotFoundDB.Error()
-		if !strContains(actual, expected) {
+		if !strings.Contains(actual, expected) {
 			t.Fatalf(`expected actual message "%s" to contain expected message "%s"`, actual, expected)
 		}
 	})
 }
 
 func TestTurnMangaIntoMultiManga(t *testing.T) {
-	t.Run("Should turn a manga into a multimanga into DB", func(t *testing.T) {
-		test := mangasRequestsTestTable["valid manga with read chapter"]
-		body, err := json.Marshal(test)
+	t.Run("Add valid manga with read chapter to turn into multimanga", func(t *testing.T) {
+		body, err := json.Marshal(mangasRequestsTestTable["valid manga with read chapter"])
 		if err != nil {
 			t.Fatal(err)
 		}
-		var addResMap map[string]string
-		err = requestHelper(http.MethodPost, "/v1/manga", bytes.NewBuffer(body), &addResMap)
+		var resMap map[string]string
+		err = requestHelper(http.MethodPost, "/v1/manga", bytes.NewBuffer(body), &resMap)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		actual := addResMap["message"]
+		actual := resMap["message"]
 		expected := "Manga added successfully"
 		if actual != expected {
 			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
 		}
-
+	})
+	t.Run("Should turn a manga into a multimanga into DB", func(t *testing.T) {
+		test := mangasRequestsTestTable["valid manga with read chapter"]
 		var resMap map[string]string
-		err = requestHelper(http.MethodPost, fmt.Sprintf("/v1/manga/turn_into_multimanga?url=%s", test.URL), nil, &resMap)
+		err := requestHelper(http.MethodPost, fmt.Sprintf("/v1/manga/turn_into_multimanga?url=%s", test.URL), nil, &resMap)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		actual = resMap["message"]
-		expected = "Manga turned into multimanga successfully"
+		actual := resMap["message"]
+		expected := "Manga turned into multimanga successfully"
+		if actual != expected {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
+		}
+	})
+}
+
+func TestGetMangas(t *testing.T) {
+	t.Run("Get mangas from DB", func(t *testing.T) {
+		var resMap map[string][]manga.Manga
+		err := requestHelper(http.MethodGet, "/v1/mangas", nil, &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		mangas := resMap["mangas"]
+		if len(mangas) < 1 {
+			t.Fatalf(`expected at least 1 manga, got %d`, len(mangas))
+		}
+		for _, m := range mangas {
+			if m.URL == "" || m.Status == 0 {
+				t.Fatalf(`expected all mangas to have a URL and a status, got %v`, mangas)
+			}
+		}
+	})
+}
+
+func TestUpdateMangasMetadata(t *testing.T) {
+	t.Run("Update all mangas metadata", func(t *testing.T) {
+		var resMap map[string]string
+		err := requestHelper(http.MethodPatch, "/v1/mangas/metadata", nil, &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["message"]
+		expected := "Mangas metadata updated successfully"
 		if actual != expected {
 			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
 		}
@@ -606,10 +610,6 @@ func requestHelper(method, url string, body io.Reader, target interface{}) error
 	}
 
 	return nil
-}
-
-func strContains(s1, s2 string) bool {
-	return strings.Contains(s1, s2)
 }
 
 func TestNotifyMangaLastReleasedChapterUpdate(t *testing.T) {

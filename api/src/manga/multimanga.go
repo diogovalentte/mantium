@@ -3,6 +3,7 @@ package manga
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/lib/pq"
@@ -12,7 +13,7 @@ import (
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
-// A multimanga is an interface to the same manga from multiple sources.
+// MultiManga is an interface to the same manga from multiple sources.
 // It is used to get the manga with the lastest chapter.
 type MultiManga struct {
 	CurrentManga    *Manga
@@ -51,7 +52,7 @@ func (mm *MultiManga) CreateIntoDB() error {
 		return util.AddErrorContext(fmt.Sprintf(contextError, mm), err)
 	}
 
-	multiMangaID, err := insertMultiMangaIntoDB(mm, tx)
+	err = insertMultiMangaIntoDB(mm, tx)
 	if err != nil {
 		tx.Rollback()
 		return util.AddErrorContext(fmt.Sprintf(contextError, mm), err)
@@ -61,69 +62,60 @@ func (mm *MultiManga) CreateIntoDB() error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, mm), err)
 	}
-	mm.ID = multiMangaID
 
 	return nil
 }
 
-// Also creates the multimanga manga list's mangas
-func insertMultiMangaIntoDB(mm *MultiManga, tx *sql.Tx) (ID, error) {
+// Also creates the multimanga manga list's mangas and set current manga.
+func insertMultiMangaIntoDB(mm *MultiManga, tx *sql.Tx) error {
 	err := validateMultiManga(mm)
 	if err != nil {
-		return -1, err
-	}
-
-	var currentMangaID ID
-	var mangaIDs []ID
-	for _, manga := range mm.Mangas {
-		manga.Type = 2
-		manga.LastReadChapter = nil
-		mangaID, err := insertMangaIntoDB(manga, tx)
-		if err != nil {
-			return -1, err
-		}
-		manga.ID = mangaID
-		mangaIDs = append(mangaIDs, mangaID)
-		if manga.URL == mm.CurrentManga.URL {
-			currentMangaID = mangaID
-		}
+		return err
 	}
 
 	var multiMangaID ID
 	err = tx.QueryRow(`
         INSERT INTO multimangas
-            (status, current_manga)
+            (status)
         VALUES
-            ($1, $2)
+            ($1)
         RETURNING
             id;
-    `, mm.Status, currentMangaID).Scan(&multiMangaID)
+    `, mm.Status).Scan(&multiMangaID)
 	if err != nil {
 		if err.Error() == `pq: duplicate key value violates unique constraint "multimangas_pkey"` {
-			return -1, errordefs.ErrMultiMangaAlreadyInDB
+			return errordefs.ErrMultiMangaAlreadyInDB
 		}
-		return -1, err
+		return err
+	}
+	mm.ID = multiMangaID
+
+	for _, manga := range mm.Mangas {
+		manga.MultiMangaID = multiMangaID
+		manga.LastReadChapter = nil
+		mangaID, err := insertMangaIntoDB(manga, tx)
+		if err != nil {
+			return err
+		}
+		manga.ID = mangaID
 	}
 
-	for _, mangaID := range mangaIDs {
-		query := "INSERT INTO multimanga_mangas (multimanga_id, manga_id) VALUES ($1, $2)"
-		_, err = tx.Exec(query, multiMangaID, mangaID)
-		if err != nil {
-			return -1, err
-		}
+	err = updateMultiMangaCurrentManga(mm, tx)
+	if err != nil {
+		return err
 	}
 
 	if mm.LastReadChapter != nil {
 		err := upsertMultiMangaChapter(multiMangaID, mm.LastReadChapter, tx)
 		if err != nil {
 			if err.Error() == `pq: duplicate key value violates unique constraint "chapters_pkey"` {
-				return -1, fmt.Errorf("last read chapter of the multimanga you're trying to add already exists in DB")
+				return fmt.Errorf("last read chapter of the multimanga you're trying to add already exists in DB")
 			}
-			return -1, err
+			return err
 		}
 	}
 
-	return multiMangaID, nil
+	return nil
 }
 
 // DeleteFromDB deletes the multimanga, its mangas, and its chapter from the database
@@ -155,7 +147,7 @@ func (mm *MultiManga) DeleteFromDB() error {
 	return nil
 }
 
-// Will delete chapters and rows in the multimanga_mangas table
+// Will delete chapters and mangas
 // because of the foreign key constraint ON DELETE CASCADE
 func deleteMultiMangaDB(mm *MultiManga, tx *sql.Tx) error {
 	err := validateMultiManga(mm)
@@ -166,26 +158,6 @@ func deleteMultiMangaDB(mm *MultiManga, tx *sql.Tx) error {
 		return errordefs.ErrMultiMangaHasNoID
 	}
 
-	rows, err := tx.Query(`
-        SELECT manga_id
-        FROM multimanga_mangas
-        WHERE multimanga_id = $1;
-    `, mm.ID)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	var IDs pq.Int64Array
-	for rows.Next() {
-		var id ID
-		err = rows.Scan(&id)
-		if err != nil {
-			return err
-		}
-		IDs = append(IDs, int64(id))
-	}
-
-	// have to delete the multimanga before the mangas because of foreign key constraints
 	result, err := tx.Exec(`
         DELETE FROM multimangas
         WHERE id = $1;
@@ -200,21 +172,6 @@ func deleteMultiMangaDB(mm *MultiManga, tx *sql.Tx) error {
 	}
 	if rowsAffected == 0 {
 		return errordefs.ErrMultiMangaNotFoundDB
-	}
-
-	result, err = tx.Exec(`
-        DELETE FROM mangas
-        WHERE id = ANY($1);
-    `, IDs)
-	if err != nil {
-		return err
-	}
-	rowsAffected, err = result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rowsAffected != int64(len(IDs)) {
-		return fmt.Errorf("not all mangas were deleted")
 	}
 
 	return nil
@@ -316,10 +273,15 @@ func (mm *MultiManga) UpsertChapterInDB(chapter *Chapter) error {
 	return nil
 }
 
-// UpdateCurrentMangaInDB updates the multimanga current manga in the database.
-// The manga has to be already in the DB.
-func (mm *MultiManga) UpdateCurrentMangaInDB(m *Manga) error {
-	contextError := "error updating multimanga '%s' current manga to manga '%s' in DB"
+// UpdateCurrentMangaInDB checks the manga is in the multimanga manga list
+// and updates the current manga in the database.
+func (mm *MultiManga) UpdateCurrentMangaInDB() error {
+	contextError := "error updating multimanga '%s' current manga"
+	m, err := getLatestManga(mm.Mangas)
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, mm), err)
+	}
+	contextError = "error updating multimanga '%s' current manga to manga '%s' in DB"
 
 	db, err := db.OpenConn()
 	if err != nil {
@@ -332,7 +294,8 @@ func (mm *MultiManga) UpdateCurrentMangaInDB(m *Manga) error {
 		return util.AddErrorContext(fmt.Sprintf(contextError, mm, m), err)
 	}
 
-	err = updateMultiMangaCurrentManga(mm, m, tx)
+	mm.CurrentManga = m
+	err = updateMultiMangaCurrentManga(mm, tx)
 	if err != nil {
 		tx.Rollback()
 		return util.AddErrorContext(fmt.Sprintf(contextError, mm, m), err)
@@ -342,23 +305,27 @@ func (mm *MultiManga) UpdateCurrentMangaInDB(m *Manga) error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, mm, m), err)
 	}
-	mm.CurrentManga = m
 
 	return nil
 }
 
-func updateMultiMangaCurrentManga(mm *MultiManga, m *Manga, tx *sql.Tx) error {
+// updateMultiMangaCurrentManga updates the multimanga current manga in the database.
+func updateMultiMangaCurrentManga(mm *MultiManga, tx *sql.Tx) error {
 	err := validateMultiManga(mm)
 	if err != nil {
 		return err
 	}
 
-	err = validateManga(m)
+	err = validateManga(mm.CurrentManga)
 	if err != nil {
 		return err
 	}
-	if m.ID < 1 {
-		return errordefs.ErrMangaHasNoIDOrURL
+	mangaID := mm.CurrentManga.ID
+	if mangaID < 1 {
+		mangaID, err = getMangaIDByURL(mm.CurrentManga.URL)
+		if err != nil {
+			return err
+		}
 	}
 
 	query := `
@@ -366,16 +333,24 @@ func updateMultiMangaCurrentManga(mm *MultiManga, m *Manga, tx *sql.Tx) error {
         SET current_manga = $1
         WHERE id = $2;
     `
-	_, err = tx.Exec(query, m.ID, mm.ID)
+	result, err := tx.Exec(query, mangaID, mm.ID)
 	if err != nil {
 		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return errordefs.ErrMultiMangaNotFoundDB
 	}
 
 	return nil
 }
 
 // AddManga adds a manga to the multimanga.
-// It inserts the manga into the DB.
+// It also inserts the manga into the DB and updates the multimanga current manga.
 func (mm *MultiManga) AddManga(m *Manga) error {
 	contextError := "error adding manga '%s' to multimanga '%s' in DB"
 
@@ -390,13 +365,27 @@ func (mm *MultiManga) AddManga(m *Manga) error {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), err)
 	}
 
-	mangaID, err := addMangaToMultiMangaList(mm, m, tx)
+	m.MultiMangaID = mm.ID
+	m.LastReadChapter = nil
+	mangaID, err := insertMangaIntoDB(m, tx)
 	if err != nil {
-		tx.Rollback()
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), err)
 	}
 	m.ID = mangaID
 	mm.Mangas = append(mm.Mangas, m)
+
+	currentManga, err := getLatestManga(mm.Mangas)
+	if err != nil {
+		tx.Rollback()
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), err)
+	}
+
+	mm.CurrentManga = currentManga
+	err = updateMultiMangaCurrentManga(mm, tx)
+	if err != nil {
+		tx.Rollback()
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), err)
+	}
 
 	err = tx.Commit()
 	if err != nil {
@@ -406,30 +395,8 @@ func (mm *MultiManga) AddManga(m *Manga) error {
 	return nil
 }
 
-func addMangaToMultiMangaList(mm *MultiManga, m *Manga, tx *sql.Tx) (ID, error) {
-	err := validateMultiManga(mm)
-	if err != nil {
-		return -1, err
-	}
-
-	m.Type = 2
-	m.LastReadChapter = nil
-	mangaID, err := insertMangaIntoDB(m, tx)
-	if err != nil {
-		return -1, err
-	}
-
-	query := `
-        INSERT INTO multimanga_mangas (multimanga_id, manga_id) VALUES ($1, $2)
-    `
-	_, err = tx.Exec(query, mm.ID, mangaID)
-	if err != nil {
-		return -1, err
-	}
-
-	return mangaID, nil
-}
-
+// RemoveManga removes a manga from the multimanga mangas list
+// and updates current manga.
 func (mm *MultiManga) RemoveManga(m *Manga) error {
 	contextError := "error removing manga '%s' from multimanga '%s' in DB"
 
@@ -446,7 +413,7 @@ func (mm *MultiManga) RemoveManga(m *Manga) error {
 
 	mangaIdx := -1
 	for i, manga := range mm.Mangas {
-		if manga.URL == m.URL {
+		if manga == m {
 			mangaIdx = i
 			break
 		}
@@ -454,19 +421,32 @@ func (mm *MultiManga) RemoveManga(m *Manga) error {
 	if mangaIdx == -1 {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), errordefs.ErrMangaNotFoundInMultiManga)
 	}
+	if len(mm.Mangas) == 1 {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), errordefs.ErrAttemptedToRemoveLastMultiMangaManga)
+	}
 
-	// only deleting the manga also deletes the register from the multimanga_mangas table
-	// because of cascade on delete
-	err = deleteMangaDB(m, tx)
+	mangas := append(mm.Mangas[:mangaIdx], mm.Mangas[mangaIdx+1:]...)
+
+	currentManga, err := getLatestManga(mangas)
 	if err != nil {
 		tx.Rollback()
-		if util.ErrorContains(err, `update or delete on table "mangas" violates foreign key constraint "multimangas_current_manga_fkey" on table "multimangas"`) {
-			return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), errordefs.ErrAttemptedToDeleteCurrentManga)
-		}
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), err)
 	}
 
-	mm.Mangas = append(mm.Mangas[:mangaIdx], mm.Mangas[mangaIdx+1:]...)
+	mm.CurrentManga = currentManga
+	err = updateMultiMangaCurrentManga(mm, tx)
+	if err != nil {
+		tx.Rollback()
+		return util.AddErrorContext(fmt.Sprintf(contextError, mm, m), err)
+	}
+
+	err = deleteMangaDB(m, tx)
+	if err != nil {
+		tx.Rollback()
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), err)
+	}
+
+	mm.Mangas = mangas
 
 	err = tx.Commit()
 	if err != nil {
@@ -476,7 +456,7 @@ func (mm *MultiManga) RemoveManga(m *Manga) error {
 	return nil
 }
 
-// GetMultMangaDB gets a multimanga from the database by its ID
+// GetMultiMangaFromDB gets a multimanga from the database by its ID
 func GetMultiMangaFromDB(multimangaID ID) (*MultiManga, error) {
 	contextError := "error getting multimanga with ID '%d' from DB"
 
@@ -549,7 +529,6 @@ func getMultiMangaFromDB(multimangaID ID, db *sql.DB) (*MultiManga, error) {
 	}
 
 	mm := &MultiManga{}
-	mm.ID = multimangaID
 
 	query := `
         SELECT
@@ -559,7 +538,7 @@ func getMultiMangaFromDB(multimangaID ID, db *sql.DB) (*MultiManga, error) {
         WHERE
             id = $1;
     `
-	err := db.QueryRow(query, mm.ID).Scan(&mm.ID, &mm.Status, &currentMangaID, &lastReadChapterID)
+	err := db.QueryRow(query, multimangaID).Scan(&mm.ID, &mm.Status, &currentMangaID, &lastReadChapterID)
 	if err != nil {
 		return nil, err
 	}
@@ -595,9 +574,9 @@ func getMultiMangaFromDB(multimangaID ID, db *sql.DB) (*MultiManga, error) {
 func getMultiMangaMangasFromDB(multiMangaID ID, db *sql.DB) ([]*Manga, error) {
 	query := `
         SELECT
-            manga_id
+            id
         FROM
-            multimanga_mangas
+            mangas
         WHERE
             multimanga_id = $1;
     `
@@ -671,54 +650,16 @@ func turnMangaIntoMultiMangaInDB(m *Manga, tx *sql.Tx) (*MultiManga, error) {
 		return nil, err
 	}
 
-	var multiMangaID ID
 	multiManga := &MultiManga{
 		CurrentManga:    m,
 		LastReadChapter: m.LastReadChapter,
 		Mangas:          []*Manga{m},
 		Status:          m.Status,
 	}
-	m.LastReadChapter = nil
-	m.Type = 2
 
-	multiMangaID, err = insertMultiMangaIntoDB(multiManga, tx)
+	err = insertMultiMangaIntoDB(multiManga, tx)
 	if err != nil {
 		return nil, err
-	}
-	multiManga.ID = multiMangaID
-
-	return multiManga, nil
-}
-
-// GetMangaMultiManga gets the multimanga of a manga.
-func GetMangaMultiManga(mangaID ID) (*MultiManga, error) {
-	contextError := "error getting multimanga of manga with ID '%d'"
-	db, err := db.OpenConn()
-	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaID), err)
-	}
-	defer db.Close()
-
-	var multiMangaID ID
-	query := `
-        SELECT
-            multimanga_id
-        FROM
-            multimanga_mangas
-        WHERE
-            manga_id = $1;
-    `
-	err = db.QueryRow(query, mangaID).Scan(&multiMangaID)
-	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaID), err)
-	}
-	if multiMangaID < 1 {
-		return nil, errordefs.ErrMultiMangaNotFoundDB
-	}
-
-	multiManga, err := getMultiMangaFromDB(multiMangaID, db)
-	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaID), err)
 	}
 
 	return multiManga, nil
@@ -743,7 +684,7 @@ func validateMultiManga(mm *MultiManga) error {
 		if err != nil {
 			return util.AddErrorContext(contextError, err)
 		}
-		if manga.URL == mm.CurrentManga.URL {
+		if manga == mm.CurrentManga {
 			found = true
 		}
 	}
@@ -752,4 +693,47 @@ func validateMultiManga(mm *MultiManga) error {
 	}
 
 	return nil
+}
+
+// Tries to return the manga with the latest chapter.
+func getLatestManga(mangas []*Manga) (*Manga, error) {
+	if len(mangas) == 0 {
+		return nil, errordefs.ErrMultiMangaMangaListIsEmpty
+	}
+	if len(mangas) == 1 {
+		return mangas[0], nil
+	}
+	currentManga := mangas[0]
+	for _, manga := range mangas[1:] {
+		currentChapter := currentManga.LastReleasedChapter
+		newChapter := manga.LastReleasedChapter
+		if currentChapter == nil {
+			currentManga = manga
+			continue
+		}
+		if newChapter == nil {
+			continue
+		}
+
+		if currentChapter.Chapter == newChapter.Chapter {
+			if currentChapter.UpdatedAt.Before(newChapter.UpdatedAt) {
+				currentManga = manga
+			}
+			continue
+		}
+
+		currentChapterInt, err := strconv.Atoi(currentChapter.Chapter)
+		if err != nil {
+			continue
+		}
+		newChapterInt, err := strconv.Atoi(newChapter.Chapter)
+		if err != nil {
+			continue
+		}
+		if currentChapterInt < newChapterInt {
+			currentManga = manga
+		}
+	}
+
+	return currentManga, nil
 }

@@ -2,52 +2,102 @@ package manga
 
 import (
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
+	"github.com/diogovalentte/mantium/api/src/config"
 	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
+func setup() error {
+	err := config.SetConfigs("../../../.env.test")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func TestMain(m *testing.M) {
+	err := setup()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	exitCode := m.Run()
+	os.Exit(exitCode)
+}
+
 var multimangaMangasTest = []*Manga{
 	{
-		Source:         "testsite",
-		URL:            "https://othersite/manga/best-manga",
+		Source:         "mangahub.io",
+		URL:            "https://mangahub.io/manga/yotsubato",
 		Name:           "Yotsuba&!",
 		Status:         1,
 		CoverImgURL:    "https://cnd.random.best-manga.jpg", // mangahub.io
 		CoverImg:       []byte{},
 		PreferredGroup: "testGroup",
-		Type:           2,
 		LastReadChapter: &Chapter{
-			URL:       "https://testingsite/manga/best-manga/chapter-15",
-			Name:      "Chapter 1",
-			Chapter:   "15",
+			URL:       "https://mangahub.io/manga/yotsubato/chapter-14",
+			Name:      "Chapter 14",
+			Chapter:   "14",
 			UpdatedAt: time.Now(),
 			Type:      2,
 		},
 	},
 	{
-		Source:         "mangadex.org",
-		URL:            "https://mangadex.org/title/deathnote",
-		Name:           "Death Note",
-		Status:         2,
+		Source:         "comick.io",
+		URL:            "https://comick.io/title/yotsubato",
+		Name:           "Yotsuba to!",
+		Status:         1,
 		CoverImgURL:    "https://cnd.random.best-manga.jpg", // mangahub.io
 		CoverImg:       []byte{},
 		PreferredGroup: "",
-		Type:           2,
 		LastReleasedChapter: &Chapter{
-			URL:       "https://testingsite/manga/best-manga/chapter-15",
-			Name:      "Chapter 1",
+			URL:       "https://comick.io/manga/yotsubato/f45asdf4",
+			Name:      "Chapter 15",
 			Chapter:   "15",
-			UpdatedAt: time.Now(),
+			UpdatedAt: time.Date(2015, 10, 3, 5, 42, 11, 0, time.UTC),
+			Type:      1,
+		},
+	},
+	{
+		Source:         "mangadex.org",
+		URL:            "https://mangadex.org/title/yotsubato",
+		Name:           "Yotsubato!",
+		Status:         1,
+		CoverImgURL:    "https://cnd.random.best-manga.jpg", // mangahub.io
+		CoverImg:       []byte{},
+		PreferredGroup: "",
+		LastReleasedChapter: &Chapter{
+			URL:       "https://magnadex.org/chapter/f54af4afd4",
+			Name:      "Chapter 14",
+			Chapter:   "Chapter 14",
+			UpdatedAt: time.Date(2015, 10, 4, 13, 1, 52, 0, time.UTC),
+			Type:      1,
+		},
+	},
+	{
+		Source:         "mangaupdates.com",
+		URL:            "https://mangaupdates.com/manga/fas45a4",
+		Name:           "Yotsubato",
+		Status:         1,
+		CoverImgURL:    "https://cnd.random.best-manga.jpg", // mangahub.io
+		CoverImg:       []byte{},
+		PreferredGroup: "",
+		LastReleasedChapter: &Chapter{
+			URL:       "https://mangaupdates.com/release/fff4a4a7",
+			Name:      "Chapter 15",
+			Chapter:   "15",
+			UpdatedAt: time.Date(2015, 10, 2, 14, 11, 45, 0, time.UTC),
 			Type:      1,
 		},
 	},
 }
 
 var multiMangaTest = &MultiManga{
-	ID:           1,
 	Status:       1,
 	CurrentManga: multimangaMangasTest[0],
 	Mangas:       multimangaMangasTest,
@@ -91,15 +141,8 @@ func TestMultiMangaDBLifeCycle(t *testing.T) {
 						err = multiManga.CreateIntoDB()
 						if util.ErrorContains(err, "chapter URL is empty") {
 							multiManga.LastReadChapter.URL = multiMangaTest.LastReadChapter.URL
-							multiManga.CurrentManga.Type = 0
 							err = multiManga.CreateIntoDB()
-							if util.ErrorContains(err, "manga type should be 1 or 2") {
-								multiManga.CurrentManga.Type = multiMangaTest.CurrentManga.Type
-								err = multiManga.CreateIntoDB()
-								if err != nil {
-									t.Fatal(err)
-								}
-							} else {
+							if err != nil {
 								t.Fatal(err)
 							}
 						} else {
@@ -170,30 +213,32 @@ func TestMultiMangaDBLifeCycle(t *testing.T) {
 			t.Fatal("no errors while getting the invalid multimanga from DB")
 		}
 	})
-	t.Run("Should not remove a manga from a multimanga list", func(t *testing.T) {
-		err := multiManga.RemoveManga(multiManga.Mangas[0])
-		if err == nil {
-			t.Fatal(err)
-		} else {
-			if !util.ErrorContains(err, errordefs.ErrAttemptedToDeleteCurrentManga.Error()) {
-				t.Fatal(err)
-			}
-		}
-	})
-	t.Run("Should update the current manga of a multimanga", func(t *testing.T) {
-		err := multiManga.UpdateCurrentMangaInDB(multiManga.Mangas[1])
+	t.Run("Should update the current manga of a multimanga 1", func(t *testing.T) {
+		err := multiManga.UpdateCurrentMangaInDB()
 		if err != nil {
 			t.Fatal(err)
 		}
 	})
 	t.Run("Should remove a manga from a multimanga list", func(t *testing.T) {
-		err := multiManga.RemoveManga(multiManga.Mangas[0])
+		err := multiManga.RemoveManga(multiManga.Mangas[1])
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("Should update the current manga of a multimanga 2", func(t *testing.T) {
+		err := multiManga.UpdateCurrentMangaInDB()
 		if err != nil {
 			t.Fatal(err)
 		}
 	})
 	t.Run("Should add a manga to a multimanga list", func(t *testing.T) {
-		err := multiManga.AddManga(multiMangaTest.Mangas[0])
+		err := multiManga.AddManga(multiMangaTest.Mangas[1])
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("Should update the current manga of a multimanga 3", func(t *testing.T) {
+		err := multiManga.UpdateCurrentMangaInDB()
 		if err != nil {
 			t.Fatal(err)
 		}

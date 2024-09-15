@@ -9,12 +9,13 @@ var (
 	ErrMangaNotFoundInMultiManga   = &CustomError{Message: "manga not found in multimanga"}
 	ErrChapterNotFound             = &CustomError{Message: "chapter not found in source"}
 
-	ErrMangaNotFoundDB               = &CustomError{Message: "manga not found in DB"}
-	ErrMultiMangaNotFoundDB          = &CustomError{Message: "multimanga not found in DB"}
-	ErrMangaAlreadyInDB              = &CustomError{Message: "manga already exists in DB"}
-	ErrMultiMangaAlreadyInDB         = &CustomError{Message: "multimanga already exists in DB"}
-	ErrChapterNotFoundDB             = &CustomError{Message: "chapter not found in DB"}
-	ErrAttemptedToDeleteCurrentManga = &CustomError{Message: "attempted to delete the multimanga's current manga"}
+	ErrMangaNotFoundDB                      = &CustomError{Message: "manga not found in DB"}
+	ErrMultiMangaNotFoundDB                 = &CustomError{Message: "multimanga not found in DB"}
+	ErrMangaAlreadyInDB                     = &CustomError{Message: "manga already exists in DB"}
+	ErrMultiMangaAlreadyInDB                = &CustomError{Message: "multimanga already exists in DB"}
+	ErrChapterNotFoundDB                    = &CustomError{Message: "chapter not found in DB"}
+	ErrAttemptedToRemoveLastMultiMangaManga = &CustomError{Message: "attempted to remove the last manga from a multimanga"}
+	ErrMultiMangaMangaListIsEmpty           = &CustomError{Message: "multimanga manga list is empty"}
 )
 
 // CustomError is a custom error

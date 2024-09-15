@@ -9,6 +9,13 @@ import (
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
+type (
+	// Type is the type of the chapter, it can be:
+	// 1: "release" - the chapter was released, it's representing a chapter that was released by (or scraped from) a source
+	// 2: "read" - the chapter was read, it's representing a chapter that was read by the user
+	Type int
+)
+
 // Chapter is the struct for a chapter.
 // Chapter don't has exported methods because a chapter should be used only by a manga.
 type Chapter struct {
@@ -24,10 +31,7 @@ type Chapter struct {
 	Name string
 	// InteralID is a unique identifier for the chapter in the source
 	InternalID string
-	// Type is the type of the chapter, it can be:
-	// 1: "release" - the chapter was released, it's representing a chapter that was released by (or scraped from) a source
-	// 2: "read" - the chapter was read, it's representing a chapter that was read by the user
-	Type int
+	Type       Type
 }
 
 func (c Chapter) String() string {
