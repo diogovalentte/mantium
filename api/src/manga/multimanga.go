@@ -690,6 +690,40 @@ func turnMangaIntoMultiMangaInDB(m *Manga, tx *sql.Tx) (*MultiManga, error) {
 	return multiManga, nil
 }
 
+// GetMangaMultiManga gets the multimanga of a manga.
+func GetMangaMultiManga(mangaID ID) (*MultiManga, error) {
+	contextError := "error getting multimanga of manga with ID '%d'"
+	db, err := db.OpenConn()
+	if err != nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaID), err)
+	}
+	defer db.Close()
+
+	var multiMangaID ID
+	query := `
+        SELECT
+            multimanga_id
+        FROM
+            multimanga_mangas
+        WHERE
+            manga_id = $1;
+    `
+	err = db.QueryRow(query, mangaID).Scan(&multiMangaID)
+	if err != nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaID), err)
+	}
+	if multiMangaID < 1 {
+		return nil, errordefs.ErrMultiMangaNotFoundDB
+	}
+
+	multiManga, err := getMultiMangaFromDB(multiMangaID, db)
+	if err != nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaID), err)
+	}
+
+	return multiManga, nil
+}
+
 func validateMultiManga(mm *MultiManga) error {
 	contextError := "error validating multimanga"
 
