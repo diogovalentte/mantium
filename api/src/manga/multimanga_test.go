@@ -19,6 +19,13 @@ var multimangaMangasTest = []*Manga{
 		CoverImg:       []byte{},
 		PreferredGroup: "testGroup",
 		Type:           2,
+		LastReadChapter: &Chapter{
+			URL:       "https://testingsite/manga/best-manga/chapter-15",
+			Name:      "Chapter 1",
+			Chapter:   "15",
+			UpdatedAt: time.Now(),
+			Type:      2,
+		},
 	},
 	{
 		Source:         "mangadex.org",
@@ -29,6 +36,13 @@ var multimangaMangasTest = []*Manga{
 		CoverImg:       []byte{},
 		PreferredGroup: "",
 		Type:           2,
+		LastReleasedChapter: &Chapter{
+			URL:       "https://testingsite/manga/best-manga/chapter-15",
+			Name:      "Chapter 1",
+			Chapter:   "15",
+			UpdatedAt: time.Now(),
+			Type:      1,
+		},
 	},
 }
 
@@ -61,27 +75,27 @@ func TestMultiMangaDBLifeCycle(t *testing.T) {
 
 	t.Run("Should insert a multimanga into DB", func(t *testing.T) {
 		multiManga.Status = 0
-		err = multiManga.InsertIntoDB()
+		err = multiManga.CreateIntoDB()
 		if err != nil {
 			if util.ErrorContains(err, "status should be >= 1 && <= 5") {
 				multiManga.Status = multiMangaTest.Status
 				multiManga.LastReadChapter.Name = ""
-				err = multiManga.InsertIntoDB()
+				err = multiManga.CreateIntoDB()
 				if util.ErrorContains(err, "chapter name is empty") {
 					multiManga.LastReadChapter.Name = multiMangaTest.LastReadChapter.Name
 					multiManga.LastReadChapter.Type = 0
-					err = multiManga.InsertIntoDB()
+					err = multiManga.CreateIntoDB()
 					if util.ErrorContains(err, "chapter type should be 1 (last release) or 2 (last read)") {
 						multiManga.LastReadChapter.Type = multiMangaTest.LastReadChapter.Type
 						multiManga.LastReadChapter.URL = ""
-						err = multiManga.InsertIntoDB()
+						err = multiManga.CreateIntoDB()
 						if util.ErrorContains(err, "chapter URL is empty") {
 							multiManga.LastReadChapter.URL = multiMangaTest.LastReadChapter.URL
 							multiManga.CurrentManga.Type = 0
-							err = multiManga.InsertIntoDB()
+							err = multiManga.CreateIntoDB()
 							if util.ErrorContains(err, "manga type should be 1 or 2") {
 								multiManga.CurrentManga.Type = multiMangaTest.CurrentManga.Type
-								err = multiManga.InsertIntoDB()
+								err = multiManga.CreateIntoDB()
 								if err != nil {
 									t.Fatal(err)
 								}
@@ -200,8 +214,30 @@ func TestMultiMangaDBLifeCycle(t *testing.T) {
 			t.Fatal("DB should have at the least one multimanga, instead it has:", len(multimangas))
 		}
 	})
-	t.Run("Should delete a manga into DB", func(t *testing.T) {
+	t.Run("Should delete a multimanga from DB", func(t *testing.T) {
 		err = multiManga.DeleteFromDB()
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
+func TestMangaIntoMultiMangaDBLifeCycle(t *testing.T) {
+	manga := getMangaCopy(multiMangaTest.Mangas[0])
+	var multiManga *MultiManga
+
+	t.Run("Should turn a manga into a multimanga into DB", func(t *testing.T) {
+		err := manga.InsertIntoDB()
+		if err != nil {
+			t.Fatal(err)
+		}
+		multiManga, err = TurnIntoMultiManga(manga)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("Should delete a multimanga from DB", func(t *testing.T) {
+		err := multiManga.DeleteFromDB()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -210,12 +246,17 @@ func TestMultiMangaDBLifeCycle(t *testing.T) {
 
 func getMultiMangaCopy(source *MultiManga) *MultiManga {
 	multiManga := *source
-	lastReadChapter := *source.LastReadChapter
-	multiManga.LastReadChapter = &lastReadChapter
+	if source.LastReadChapter != nil {
+		lastReadChapter := *source.LastReadChapter
+		multiManga.LastReadChapter = &lastReadChapter
+	}
+	if len(source.Mangas) < 1 {
+		panic("source.Mangas is empty")
+	}
+
 	mangas := make([]*Manga, len(source.Mangas))
 	for i, manga := range source.Mangas {
-		m := *manga
-		mangas[i] = &m
+		mangas[i] = getMangaCopy(manga)
 	}
 	multiManga.Mangas = mangas
 	multiManga.CurrentManga = mangas[0]

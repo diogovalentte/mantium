@@ -409,10 +409,14 @@ func TestMangaWithoutChaptersDBLifeCycle(t *testing.T) {
 
 func getMangaCopy(source *Manga) *Manga {
 	manga := *source
-	lastReleasedChapter := *source.LastReleasedChapter
-	lastReadChapter := *source.LastReadChapter
-	manga.LastReleasedChapter = &lastReleasedChapter
-	manga.LastReadChapter = &lastReadChapter
+	if source.LastReleasedChapter != nil {
+		lastReleasedChapter := *source.LastReleasedChapter
+		manga.LastReleasedChapter = &lastReleasedChapter
+	}
+	if source.LastReadChapter != nil {
+		lastReadChapter := *source.LastReadChapter
+		manga.LastReadChapter = &lastReadChapter
+	}
 
 	return &manga
 }

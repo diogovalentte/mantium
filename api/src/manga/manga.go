@@ -381,6 +381,51 @@ func updateMangaName(m *Manga, name string, tx *sql.Tx) error {
 	return nil
 }
 
+func updateMangaTypeDB(m *Manga, newType int, tx *sql.Tx) error {
+	err := validateManga(m)
+	if err != nil {
+		return err
+	}
+
+	err = validateMangaType(newType)
+	if err != nil {
+		return err
+	}
+
+	var result sql.Result
+	if m.ID > 0 {
+		result, err = tx.Exec(`
+            UPDATE mangas
+            SET type = $1
+            WHERE id = $2;
+        `, newType, m.ID)
+		if err != nil {
+			return err
+		}
+	} else if m.URL != "" {
+		result, err = tx.Exec(`
+            UPDATE mangas
+            SET type = $1
+            WHERE url = $2;
+        `, newType, m.URL)
+		if err != nil {
+			return err
+		}
+	} else {
+		return errordefs.ErrMangaHasNoIDOrURL
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return errordefs.ErrMangaNotFoundDB
+	}
+
+	return nil
+}
+
 // UpdateCoverImgInDB updates the manga cover image in the database.
 // It doesn't care if the cover image is fixed or not.
 func (m *Manga) UpdateCoverImgInDB(coverImg []byte, coverImgResized bool, coverImgURL string) error {

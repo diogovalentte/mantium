@@ -35,9 +35,10 @@ func (mm MultiManga) String() string {
 	return returnStr
 }
 
-// InsertIntoDB saves the multimanga into the database
-func (mm *MultiManga) InsertIntoDB() error {
-	contextError := "error inserting multimanga '%s' into DB"
+// CreateIntoDB creates the multimanga and its mangas into the database.
+// It's a method to create a multimanga from scratch.
+func (mm *MultiManga) CreateIntoDB() error {
+	contextError := "error creating multimanga '%s' into DB"
 
 	db, err := db.OpenConn()
 	if err != nil {
@@ -65,6 +66,7 @@ func (mm *MultiManga) InsertIntoDB() error {
 	return nil
 }
 
+// Also creates the multimanga manga list's mangas
 func insertMultiMangaIntoDB(mm *MultiManga, tx *sql.Tx) (ID, error) {
 	err := validateMultiManga(mm)
 	if err != nil {
@@ -75,6 +77,7 @@ func insertMultiMangaIntoDB(mm *MultiManga, tx *sql.Tx) (ID, error) {
 	var mangaIDs []ID
 	for _, manga := range mm.Mangas {
 		manga.Type = 2
+		manga.LastReadChapter = nil
 		mangaID, err := insertMangaIntoDB(manga, tx)
 		if err != nil {
 			return -1, err
@@ -410,6 +413,7 @@ func addMangaToMultiMangaList(mm *MultiManga, m *Manga, tx *sql.Tx) (ID, error) 
 	}
 
 	m.Type = 2
+	m.LastReadChapter = nil
 	mangaID, err := insertMangaIntoDB(m, tx)
 	if err != nil {
 		return -1, err
@@ -623,6 +627,67 @@ func getMultiMangaMangasFromDB(multiMangaID ID, db *sql.DB) ([]*Manga, error) {
 	}
 
 	return mangas, nil
+}
+
+// TurnIntoMultiManga turns a manga into a multimanga.
+// It creates the multimanga in DB, sets the manga as the current manga,
+// adds the manga to the multimanga manga list, and sets the status and last read chapter.
+func TurnIntoMultiManga(m *Manga) (*MultiManga, error) {
+	contextError := "error turning manga '%s' into multimanga in DB"
+
+	db, err := db.OpenConn()
+	if err != nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+	}
+
+	multiManga, err := turnMangaIntoMultiMangaInDB(m, tx)
+	if err != nil {
+		tx.Rollback()
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+	}
+
+	return multiManga, nil
+}
+
+func turnMangaIntoMultiMangaInDB(m *Manga, tx *sql.Tx) (*MultiManga, error) {
+	err := validateManga(m)
+	if err != nil {
+		return nil, err
+	}
+
+	err = deleteMangaDB(m, tx)
+	if err != nil {
+		return nil, err
+	}
+
+	var multiMangaID ID
+	multiManga := &MultiManga{
+		CurrentManga:    m,
+		LastReadChapter: m.LastReadChapter,
+		Mangas:          []*Manga{m},
+		Status:          m.Status,
+	}
+	m.LastReadChapter = nil
+	m.Type = 2
+
+	multiMangaID, err = insertMultiMangaIntoDB(multiManga, tx)
+	if err != nil {
+		return nil, err
+	}
+	multiManga.ID = multiMangaID
+
+	return multiManga, nil
 }
 
 func validateMultiManga(mm *MultiManga) error {
