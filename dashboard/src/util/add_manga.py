@@ -53,7 +53,6 @@ def show_add_manga_form(manga_url: str, manga_internal_id: str):
                 "chapter_url": chapter.get("URL", ""),
                 "chapter_internal_id": chapter.get("InternalID", ""),
             }
-            ss.add_manga_form_url = ""
             del ss["add_manga_chapter_options"]
 
         if st.form_submit_button(
@@ -81,15 +80,15 @@ def show_add_manga_form(manga_url: str, manga_internal_id: str):
                     ):
                         logger.exception(e)
                         ss["add_manga_warning_message"] = (
-                            "Manga added to DB, but couldn't add it to at least one integration."
+                            "Manga added to DB, but couldn't add it to at least one integration"
                         )
                         st.rerun()
                     elif "manga already exists in DB".lower() in str(e).lower():
-                        ss["add_manga_warning_message"] = "Manga already in Mantium."
+                        ss["add_manga_warning_message"] = "Manga already in Mantium"
                         st.rerun()
                     else:
                         logger.exception(e)
-                        ss["add_manga_error_message"] = "Error while adding manga."
+                        ss["add_manga_error_message"] = "Error while adding manga"
                 else:
                     ss["add_manga_success_message"] = "Manga added successfully"
                     ss["add_manga_search_selected_manga"] = None
@@ -133,8 +132,8 @@ def show_add_manga_form_url():
                 logger.exception(e)
                 st.error("Error while getting manga chapters.")
                 st.stop()
-
-    show_add_manga_form(ss.add_manga_form_url, "")
+        else:
+            show_add_manga_form(ss.add_manga_form_url, "")
 
 
 def show_add_manga_form_search():
