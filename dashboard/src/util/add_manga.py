@@ -125,6 +125,10 @@ def show_add_manga_form_url():
                 or "invalid uri for request" in resp_text
             ):
                 st.warning("Invalid URL")
+            elif (
+                "manga not found in source" in resp_text
+            ):
+                st.warning("Manga not found")
             else:
                 logger.exception(e)
                 st.error("Error while getting manga chapters.")
@@ -139,10 +143,12 @@ def show_add_manga_form_search():
         with container:
             try:
                 with st.spinner("Getting manga chapters..."):
-                    ss["add_manga_chapter_options"] = api_client.get_cached_manga_chapters(
-                        -1,
-                        ss["add_manga_search_selected_manga"]["URL"],
-                        ss["add_manga_search_selected_manga"]["InternalID"],
+                    ss["add_manga_chapter_options"] = (
+                        api_client.get_cached_manga_chapters(
+                            -1,
+                            ss["add_manga_search_selected_manga"]["URL"],
+                            ss["add_manga_search_selected_manga"]["InternalID"],
+                        )
                     )
             except APIException as e:
                 logger.exception(e)
@@ -179,16 +185,19 @@ def show_add_manga_form_search():
                 mangaupdates_tab,
             ) = st.tabs(["Mangadex", "Comick", "Mangaplus", "Mangahub", "MangaUpdates"])
 
+            # if change key_to_save_manga, also change it in func show_dialogs in the 01_?.py main file
+            button_name, key_to_save_manga = "Select", "add_manga_search_selected_manga"
+
             with mangadex_tab:
-                show_search_manga_term_form("https://mangadex.org")
+                show_search_manga_term_form("https://mangadex.org", button_name, key_to_save_manga)
             with comick_tab:
-                show_search_manga_term_form("https://comick.io")
+                show_search_manga_term_form("https://comick.io", button_name, key_to_save_manga)
             with mangaplus_tab:
-                show_search_manga_term_form("https://mangaplus.shueisha.co.jp")
+                show_search_manga_term_form("https://mangaplus.shueisha.co.jp", button_name, key_to_save_manga)
             with mangahub_tab:
-                show_search_manga_term_form("https://mangahub.io")
+                show_search_manga_term_form("https://mangahub.io", button_name, key_to_save_manga)
             with mangaupdates_tab:
-                show_search_manga_term_form("https://mangaupdates.com")
+                show_search_manga_term_form("https://mangaupdates.com", button_name, key_to_save_manga)
 
         tab_index = ss["add_manga_search_go_back_to_tab"]
         js = f"""window.parent.document.querySelectorAll('button[data-baseweb="tab"]')[{tab_index}].click();"""
@@ -197,17 +206,24 @@ def show_add_manga_form_search():
         st_javascript(js)
 
 
-def show_search_manga_term_form(source_site_url: str):
+def show_search_manga_term_form(source_site_url: str, button_name: str, key_to_save_manga: str):
+    """Show search manga term form.
+
+    Args:
+        source_site_url (str): The source site URL to search for manga.
+        button_name (str): The name of the button to select a manga.
+        key_to_save_manga (str): The key to save the selected manga in streamlit.session_state.
+    """
     search_results_key = (
-        f"add_manga_search_results_{source_site_url.split('//')[1].split('.')[0]}"
+        f"{key_to_save_manga}_search_results_{source_site_url.split('//')[1].split('.')[0]}"
     )
-    search_term_key = f"search_manga_{source_site_url.split('//')[1].split('.')[0]}"
+    search_term_key = f"{key_to_save_manga}_search_term_{source_site_url.split('//')[1].split('.')[0]}"
 
     term = st.text_input(
         "Term to Search",
         value=ss[search_term_key]
         if ss.get(search_term_key, "") != ""
-        else ss[search_results_key].get("term", ""),
+        else ss.get(search_results_key, {}).get("term", ""),
         key=search_term_key,
     )
 
@@ -219,7 +235,7 @@ def show_search_manga_term_form(source_site_url: str):
     else:
         try:
             with st.spinner("Searching..."):
-                results = api_client.search_manga(
+                results = api_client.search_mangas(
                     term,
                     ss["settings_search_results_limit"],
                     source_site_url,
@@ -235,18 +251,24 @@ def show_search_manga_term_form(source_site_url: str):
     if len(results) == 0:
         st.warning("No results found.")
     else:
-        show_search_result_mangas(st.columns(2), results)
+        show_search_result_mangas(
+            st.columns(2), results, button_name, key_to_save_manga
+        )
         st.info(
             "Did not find the manga you were looking for? Try another source site or using the URL directly."
         )
 
 
-def show_search_result_mangas(cols_list: list, mangas):
+def show_search_result_mangas(
+    cols_list: list, mangas, button_name: str, key_to_save_manga: str
+):
     """Show search result mangas in the cols_list columns.
 
     Args:
         cols_list (list): A list of streamlit.columns.
         mangas (dict): A list of search result mangas.
+        button_name (str): The name of the button to select a manga.
+        key_to_save_manga (str): The key to save the selected manga in streamlit.session_state.
     """
     manga_container_height = 660
     col_index = 0
@@ -256,11 +278,20 @@ def show_search_result_mangas(cols_list: list, mangas):
         with cols_list[col_index]:
             with st.container(border=True, height=manga_container_height):
                 with centered_container("center_container"):
-                    show_search_result_manga(manga)
+                    show_search_result_manga(manga, button_name, key_to_save_manga)
         col_index += 1
 
 
-def show_search_result_manga(manga: dict[str, Any]):
+def show_search_result_manga(
+    manga: dict[str, Any], button_name: str, key_to_save_manga: str
+):
+    """Show search result manga.
+
+    Args:
+        mangas (dict): A list of search result mangas.
+        button_name (str): The name of the button to select a manga.
+        key_to_save_manga (str): The key to save the selected manga in streamlit.session_state.
+    """
     # Try to make the title fit in the container the best way
     # Also try to make the containers the same size
     default_title_font_size = 36
@@ -362,12 +393,12 @@ def show_search_result_manga(manga: dict[str, Any]):
     st.caption(manga["Description"])
 
     def on_click():
-        ss["add_manga_search_selected_manga"] = manga
+        ss[key_to_save_manga] = manga
 
     st.button(
-        "Select",
+        button_name,
         type="primary",
         use_container_width=True,
         on_click=on_click,
-        key=f"add_manga_search_select_button_{manga['URL']}",
+        key=key_to_save_manga + "_search_result_" + manga["URL"],
     )

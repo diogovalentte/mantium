@@ -84,6 +84,49 @@ class MultiMangaAPIClient:
 
         return multimanga
 
+    def add_manga_to_multimanga(
+        self,
+        id: int,
+        manga_url: str,
+        manga_internal_id: str,
+    ) -> dict[str, str]:
+        url = self.base_multimanga_url + "/manga?id=" + str(id)
+
+        request_body = {
+            "manga_url": manga_url,
+            "manga_internal_id": manga_internal_id,
+        }
+
+        res = requests.post(url, json=request_body)
+
+        if res.status_code not in self.acceptable_status_codes:
+            raise APIException(
+                "error while adding manga to multimanga",
+                url,
+                "POST",
+                res.status_code,
+                res.text,
+            )
+
+        return res.json()
+
+    def remove_manga_from_multimanga(self, id: int, manga_id: int) -> dict[str, str]:
+        url = self.base_multimanga_url + "/manga"
+        url = f"{url}?id={id}&manga_id={manga_id}"
+
+        res = requests.delete(url)
+
+        if res.status_code not in self.acceptable_status_codes:
+            raise APIException(
+                "error while removing manga from multimanga",
+                url,
+                "DELETE",
+                res.status_code,
+                res.text,
+            )
+
+        return res.json()
+
     def update_multimanga_status(
         self,
         status: int,

@@ -185,11 +185,12 @@ class MainDashboard:
                 del ss["add_manga_chapter_options"]
             if ss.get("add_manga_search_selected_manga", None) is not None:
                 del ss["add_manga_search_selected_manga"]
-            ss["add_manga_search_results_mangadex"] = {}
-            ss["add_manga_search_results_comick"] = {}
-            ss["add_manga_search_results_mangaplus"] = {}
-            ss["add_manga_search_results_mangahub"] = {}
-            ss["add_manga_search_results_mangaupdates"] = {}
+            base_key = "add_manga_search_selected_manga_search_results"
+            ss[base_key + "_mangadex"] = {}
+            ss[base_key + "_comick"] = {}
+            ss[base_key + "_mangaplus"] = {}
+            ss[base_key + "_mangahub"] = {}
+            ss[base_key + "_mangaupdates"] = {}
             ss["add_manga_search_go_back_to_tab"] = 0
 
             @st.experimental_dialog("Search Manga", width="large")
@@ -227,12 +228,16 @@ class MainDashboard:
 
             @st.experimental_dialog(manga["Name"])
             def show_highlighted_manga_dialog():
-                if manga["MultiMangaID"] == 0:
-                    show_update_manga(manga)
-                else:
-                    show_update_multimanga(manga)
+                show_update_manga(manga)
 
-            show_highlighted_manga_dialog()
+            @st.experimental_dialog(manga["Name"], width="large")
+            def show_highlighted_multimanga_dialog():
+                show_update_multimanga(manga["MultiMangaID"])
+
+            if manga["MultiMangaID"] == 0:
+                show_highlighted_manga_dialog()
+            else:
+                show_highlighted_multimanga_dialog()
             ss["highlighted_manga"] = None
         elif ss.get("update_manga_success_message", "") != "":
 
@@ -537,6 +542,10 @@ class MainDashboard:
 
             def highlight_manga():
                 ss["highlighted_manga"] = manga
+                ss["show_update_multimanga_add_manga_search"] = False
+                ss["show_update_multimanga_add_manga_url"] = False
+                ss["show_update_multimanga_manage_mangas"] = False
+
 
             st.button(
                 "Highlight",

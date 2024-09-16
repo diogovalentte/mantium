@@ -276,7 +276,7 @@ class MangaAPIClient:
             return []
         return chapters
 
-    def search_manga(
+    def search_mangas(
         self, term: str, limit: int, source_site_url: str
     ) -> dict[str, str]:
         url = self.base_manga_url + "s/search"

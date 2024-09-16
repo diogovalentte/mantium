@@ -1422,6 +1422,11 @@ func AddMangaToMultiManga(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid JSON fields, refer to the API documentation"})
 		return
 	}
+	_, err = url.ParseRequestURI(requestData.MangaURL)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid manga URL"})
+		return
+	}
 
 	mangaAdd, err := sources.GetMangaMetadata(requestData.MangaURL, requestData.MangaInternalID)
 	if err != nil {
@@ -1452,7 +1457,7 @@ func AddMangaToMultiManga(c *gin.Context) {
 
 // AddMangaToMultiMangaRequest is the request body for the AddManga route
 type AddMangaToMultiMangaRequest struct {
-	MangaURL        string `json:"manga_url" binding:"required,http_url"`
+	MangaURL        string `json:"manga_url" binding:"required"`
 	MangaInternalID string `json:"manga_internal_id"`
 }
 
