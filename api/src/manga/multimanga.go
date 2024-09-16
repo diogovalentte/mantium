@@ -416,6 +416,7 @@ func updateMultiMangaCurrentManga(mm *MultiManga, tx *sql.Tx) error {
 
 // AddManga adds a manga to the multimanga.
 // It also inserts the manga into the DB and updates the multimanga current manga.
+// Manga should a fully valid manga.
 func (mm *MultiManga) AddManga(m *Manga) error {
 	contextError := "error adding manga '%s' to multimanga '%s' in DB"
 
