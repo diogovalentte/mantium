@@ -27,9 +27,9 @@ type MultiManga struct {
 	Status   Status // All mangas in the multimanga should have the same status
 	// CoverImgResized is true if the cover image was resized
 	CoverImgResized bool
-	// CoverImgFixed is true if the cover image is fixed. If true, the cover image will not be updated when updating the manga metadata.
+	// CoverImgFixed is true if the cover image is fixed. If false (default) the current manga's cover image should be used.
+	// Else, use the multimanga's cover image fields.
 	// It's used for when the cover image is manually set by the user.
-	// By default, the current manga's cover image is used.
 	CoverImgFixed bool
 }
 
@@ -103,6 +103,7 @@ func insertMultiMangaIntoDB(mm *MultiManga, tx *sql.Tx) error {
 	for _, manga := range mm.Mangas {
 		manga.MultiMangaID = multiMangaID
 		manga.LastReadChapter = nil
+		manga.CoverImgFixed = false
 		mangaID, err := insertMangaIntoDB(manga, tx)
 		if err != nil {
 			return err

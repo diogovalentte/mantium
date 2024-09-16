@@ -155,7 +155,7 @@ func TestMultiMangaDBLifeCycle(t *testing.T) {
 			t.Fatal("no errors while updating the multimanga with an invalid status in DB")
 		}
 	})
-	t.Run("Should update a manga's cover image in DB", func(t *testing.T) {
+	t.Run("Should update a manga's cover image in DB using image URL", func(t *testing.T) {
 		err := multiManga.UpdateCoverImgInDB([]byte{}, false, "https://cnd.random.best-manga.jpg")
 		if err != nil {
 			t.Fatal(err)

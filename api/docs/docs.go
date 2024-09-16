@@ -735,6 +735,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/multimanga/cover_img": {
+            "patch": {
+                "description": "Updates a multimanga cover image in the database. You must provide only one of the following: cover_img, cover_img_url, use_current_manga_cover_img.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Update multimanga cover image",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Multimanga ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "file",
+                        "description": "Multimanga cover image file. Remember to set the Content-Type header to 'multipart/form-data' when sending the request.",
+                        "name": "cover_img",
+                        "in": "formData"
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"https://example.com/cover.jpg\"",
+                        "description": "Multimanga cover image URL",
+                        "name": "cover_img_url",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "Use the multimanga's current manga cover image",
+                        "name": "use_current_manga_cover_img",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
         "/multimanga/last_read_chapter": {
             "patch": {
                 "description": "Updates a multimanga last read chapter in the database. It also needs to know from which manga the chapter is from. If both ` + "`" + `chapter` + "`" + ` and ` + "`" + `chapter_url` + "`" + ` are empty strings in the body, set the last read chapter to the last released chapter in the database.",
@@ -950,6 +997,25 @@ const docTemplate = `{
         "manga.MultiManga": {
             "type": "object",
             "properties": {
+                "coverImg": {
+                    "description": "CoverImg is the cover image of the multimanga",
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "coverImgFixed": {
+                    "description": "CoverImgFixed is true if the cover image is fixed. If false (default) the current manga's cover image should be used.\nElse, use the multimanga's cover image fields.\nIt's used for when the cover image is manually set by the user.",
+                    "type": "boolean"
+                },
+                "coverImgResized": {
+                    "description": "CoverImgResized is true if the cover image was resized",
+                    "type": "boolean"
+                },
+                "coverImgURL": {
+                    "description": "CoverImgURL is the URL of the cover image",
+                    "type": "string"
+                },
                 "currentManga": {
                     "$ref": "#/definitions/manga.Manga"
                 },

@@ -99,6 +99,23 @@ definitions:
     type: object
   manga.MultiManga:
     properties:
+      coverImg:
+        description: CoverImg is the cover image of the multimanga
+        items:
+          type: integer
+        type: array
+      coverImgFixed:
+        description: |-
+          CoverImgFixed is true if the cover image is fixed. If false (default) the current manga's cover image should be used.
+          Else, use the multimanga's cover image fields.
+          It's used for when the cover image is manually set by the user.
+        type: boolean
+      coverImgResized:
+        description: CoverImgResized is true if the cover image was resized
+        type: boolean
+      coverImgURL:
+        description: CoverImgURL is the URL of the cover image
+        type: string
       currentManga:
         $ref: '#/definitions/manga.Manga'
       id:
@@ -710,6 +727,40 @@ paths:
               $ref: '#/definitions/manga.Chapter'
             type: array
       summary: Get multimanga current manga chapters
+  /multimanga/cover_img:
+    patch:
+      description: 'Updates a multimanga cover image in the database. You must provide
+        only one of the following: cover_img, cover_img_url, use_current_manga_cover_img.'
+      parameters:
+      - description: Multimanga ID
+        example: 1
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: Multimanga cover image file. Remember to set the Content-Type
+          header to 'multipart/form-data' when sending the request.
+        in: formData
+        name: cover_img
+        type: file
+      - description: Multimanga cover image URL
+        example: '"https://example.com/cover.jpg"'
+        in: query
+        name: cover_img_url
+        type: string
+      - description: Use the multimanga's current manga cover image
+        example: true
+        in: query
+        name: use_current_manga_cover_img
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Update multimanga cover image
   /multimanga/last_read_chapter:
     patch:
       description: Updates a multimanga last read chapter in the database. It also

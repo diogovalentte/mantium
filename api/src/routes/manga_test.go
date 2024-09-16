@@ -479,6 +479,26 @@ func TestUpdateManga(t *testing.T) {
 	})
 }
 
+func TestGetMangas(t *testing.T) {
+	t.Run("Get mangas from DB", func(t *testing.T) {
+		var resMap map[string][]manga.Manga
+		err := requestHelper(http.MethodGet, "/v1/mangas", nil, &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		mangas := resMap["mangas"]
+		if len(mangas) < 1 {
+			t.Fatalf(`expected at least 1 manga, got %d`, len(mangas))
+		}
+		for _, m := range mangas {
+			if m.URL == "" || m.Status == 0 {
+				t.Fatalf(`expected all mangas to have a URL and a status, got %v`, mangas)
+			}
+		}
+	})
+}
+
 func TestDeleteManga(t *testing.T) {
 	t.Run("Delete valid manga with read chapter", func(t *testing.T) {
 		test := mangasRequestsTestTable["valid manga with read chapter"]
@@ -525,11 +545,8 @@ func TestDeleteManga(t *testing.T) {
 }
 
 func TestMultiMangaLifeCycle(t *testing.T) {
-	var multimangaID int
-	multimangaID = 91
-	multimanga := &manga.MultiManga{
-		ID: manga.ID(multimangaID),
-	}
+	multimanga := &manga.MultiManga{}
+
 	t.Run("Add valid manga with read chapter to turn into multimanga", func(t *testing.T) {
 		body, err := json.Marshal(mangasRequestsTestTable["valid manga with read chapter"])
 		if err != nil {
@@ -561,10 +578,27 @@ func TestMultiMangaLifeCycle(t *testing.T) {
 			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
 		}
 	})
+	t.Run("Get multimanga current manga", func(t *testing.T) {
+		var resMap map[string][]manga.Manga
+		err := requestHelper(http.MethodGet, "/v1/mangas", nil, &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		mangas := resMap["mangas"]
+		if len(mangas) < 1 {
+			t.Fatalf(`expected at least 1 manga, got %d`, len(mangas))
+		}
+		for _, m := range mangas {
+			if m.MultiMangaID != 0 {
+				multimanga.ID = m.MultiMangaID
+			}
+		}
+	})
 	t.Run("Get a multimanga", func(t *testing.T) {
 		test := mangasRequestsTestTable["valid manga with read chapter"]
 		var resMap map[string]manga.MultiManga
-		err := requestHelper(http.MethodGet, fmt.Sprintf("/v1/multimanga?id=%d", multimangaID), nil, &resMap)
+		err := requestHelper(http.MethodGet, fmt.Sprintf("/v1/multimanga?id=%d", multimanga.ID), nil, &resMap)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -638,9 +672,115 @@ func TestMultiMangaLifeCycle(t *testing.T) {
 			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
 		}
 	})
-}
+	t.Run("Update a multimanga cover img using URL", func(t *testing.T) {
+		coverImgURL := "https://i.imgur.com/jMy7evE.jpeg"
+		var resMap map[string]string
+		err := requestHelper(http.MethodPatch, fmt.Sprintf("/v1/multimanga/cover_img?id=%d&cover_img_url=%s", multimanga.ID, coverImgURL), nil, &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-func TestGetMangas(t *testing.T) {
+		actual := resMap["message"]
+		expected := "Multimanga cover image updated successfully"
+		if actual != expected {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
+		}
+	})
+	t.Run("Update a multimanga cover img with a file", func(t *testing.T) {
+		coverImg, err := os.ReadFile("../../defaults/default_cover_img.jpg")
+		if err != nil {
+			t.Fatal(err)
+		}
+		var b bytes.Buffer
+		w := multipart.NewWriter(&b)
+		fileWriter, err := w.CreateFormFile("cover_img", "test.jpg")
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = io.Copy(fileWriter, bytes.NewReader(coverImg))
+		if err != nil {
+			t.Fatal(err)
+		}
+		w.Close()
+
+		var resMap map[string]string
+		url := fmt.Sprintf("/v1/multimanga/cover_img?id=%d", multimanga.ID)
+
+		rw := httptest.NewRecorder()
+		req, err := http.NewRequest(http.MethodPatch, url, &b)
+		if err != nil {
+			t.Fatalf("error creating request: %s", err)
+		}
+		req.Header.Set("Content-Type", w.FormDataContentType())
+
+		router := api.SetupRouter()
+		router.ServeHTTP(rw, req)
+
+		jsonBytes := rw.Body.Bytes()
+		if err := json.Unmarshal(jsonBytes, &resMap); err != nil {
+			t.Fatalf("error unmarshaling JSON: %s\nreponse text: %s", err.Error(), string(jsonBytes))
+		}
+
+		actual := resMap["message"]
+		expected := "Multimanga cover image updated successfully"
+		if actual != expected {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
+		}
+	})
+	t.Run("Update a multimanga cover img to use current manga's cover image", func(t *testing.T) {
+		var resMap map[string]string
+		err := requestHelper(http.MethodPatch, fmt.Sprintf("/v1/multimanga/cover_img?id=%d&use_current_manga_cover_img=true", multimanga.ID), nil, &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["message"]
+		expected := "Multimanga cover image updated successfully"
+		if actual != expected {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
+		}
+	})
+	t.Run("Don't update a multimanga cover img because no args", func(t *testing.T) {
+		var resMap map[string]string
+		err := requestHelper(http.MethodPatch, fmt.Sprintf("/v1/multimanga/cover_img?id=%d", multimanga.ID), nil, &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["message"]
+		expected := "you must provide one of the following: cover_img, cover_img_url, use_current_manga_cover_img"
+		if actual != expected {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
+		}
+	})
+	t.Run("Don't update a multimanga cover img because 2 args", func(t *testing.T) {
+		coverImgURL := "https://i.imgur.com/jMy7evE.jpeg"
+		var resMap map[string]string
+		err := requestHelper(http.MethodPatch, fmt.Sprintf("/v1/multimanga/cover_img?id=%d&use_current_manga_cover_img=true&cover_img_url=%s", multimanga.ID, coverImgURL), nil, &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["message"]
+		expected := "you must provide only one of the following: cover_img, cover_img_url, use_current_manga_cover_img"
+		if actual != expected {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
+		}
+	})
+	t.Run("Don't update a multimanga cover img because invalid image URL", func(t *testing.T) {
+		coverImgURL := "https://site.com/jMy7evE.jpeg"
+		var resMap map[string]string
+		err := requestHelper(http.MethodPatch, fmt.Sprintf("/v1/multimanga/cover_img?id=%d&cover_img_url=%s", multimanga.ID, coverImgURL), nil, &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["message"]
+		expected := "error downloading image 'https://site.com/jMy7evE.jpeg'"
+		if !strings.Contains(actual, expected) {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
+		}
+	})
 	t.Run("Get mangas from DB", func(t *testing.T) {
 		var resMap map[string][]manga.Manga
 		err := requestHelper(http.MethodGet, "/v1/mangas", nil, &resMap)
@@ -656,6 +796,19 @@ func TestGetMangas(t *testing.T) {
 			if m.URL == "" || m.Status == 0 {
 				t.Fatalf(`expected all mangas to have a URL and a status, got %v`, mangas)
 			}
+		}
+	})
+	t.Run("Delete multimanga", func(t *testing.T) {
+		var resMap map[string]string
+		err := requestHelper(http.MethodDelete, fmt.Sprintf("/v1/multimanga?id=%d", multimanga.ID), nil, &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["message"]
+		expected := "Multimanga deleted successfully"
+		if actual != expected {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
 		}
 	})
 }

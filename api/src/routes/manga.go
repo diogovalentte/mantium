@@ -48,7 +48,7 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.GET("/multimanga/chapters", GetMultiMangaChapters)
 		group.PATCH("/multimanga/status", UpdateMultiMangaStatus)
 		group.PATCH("/multimanga/last_read_chapter", UpdateMultiMangaLastReadChapter)
-		// group.PATCH("/multimanga/cover_img", UpdateMultiMangaCoverImg)
+		group.PATCH("/multimanga/cover_img", UpdateMultiMangaCoverImg)
 
 		group.POST("/mangas/search", SearchManga)
 		group.GET("/mangas", GetMangas)
@@ -265,7 +265,7 @@ func DeleteMultiManga(c *gin.Context) {
 
 	dashboard.UpdateDashboard()
 
-	c.JSON(http.StatusOK, gin.H{"message": "MultiManga deleted successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Multimanga deleted successfully"})
 }
 
 // @Summary Get manga
@@ -349,6 +349,11 @@ func GetMangas(c *gin.Context) {
 	for _, multimanga := range multimangas {
 		multimanga.CurrentManga.LastReadChapter = multimanga.LastReadChapter
 		multimanga.CurrentManga.Status = multimanga.Status
+		if multimanga.CoverImgFixed {
+			multimanga.CurrentManga.CoverImg = multimanga.CoverImg
+			multimanga.CurrentManga.CoverImgURL = multimanga.CoverImgURL
+			multimanga.CurrentManga.CoverImgFixed = true
+		}
 		mangas = append(mangas, multimanga.CurrentManga)
 	}
 
@@ -1222,14 +1227,11 @@ func UpdateMangaCoverImg(c *gin.Context) {
 		}
 
 		mangaToUpdate.CoverImgFixed = true
-
-		isImgRezied := false
 		resizedCoverImg, err := util.ResizeImage(coverImg, uint(util.DefaultImageWidth), uint(util.DefaultImageHeight))
 		if err == nil {
-			isImgRezied = true
-			err = mangaToUpdate.UpdateCoverImgInDB(resizedCoverImg, isImgRezied, coverImgURL)
+			err = mangaToUpdate.UpdateCoverImgInDB(resizedCoverImg, true, coverImgURL)
 		} else {
-			err = mangaToUpdate.UpdateCoverImgInDB(coverImg, isImgRezied, coverImgURL)
+			err = mangaToUpdate.UpdateCoverImgInDB(coverImg, false, coverImgURL)
 		}
 
 		if err != nil {
@@ -1281,6 +1283,129 @@ func UpdateMangaCoverImg(c *gin.Context) {
 	dashboard.UpdateDashboard()
 
 	c.JSON(http.StatusOK, gin.H{"message": "Manga cover image updated successfully"})
+}
+
+// @Summary Update multimanga cover image
+// @Description Updates a multimanga cover image in the database. You must provide only one of the following: cover_img, cover_img_url, use_current_manga_cover_img.
+// @Produce json
+// @Param id query int true "Multimanga ID" Example(1)
+// @Param cover_img formData file false "Multimanga cover image file. Remember to set the Content-Type header to 'multipart/form-data' when sending the request."
+// @Param cover_img_url query string false "Multimanga cover image URL" Example("https://example.com/cover.jpg")
+// @Param use_current_manga_cover_img query bool false "Use the multimanga's current manga cover image" Example(true)
+// @Success 200 {object} responseMessage
+// @Router /multimanga/cover_img [patch]
+func UpdateMultiMangaCoverImg(c *gin.Context) {
+	coverImgURL := c.Query("cover_img_url")
+	useCurrentMangaCoverImg := c.Query("use_current_manga_cover_img")
+	multimangaIDStr := c.Query("id")
+	if multimangaIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "id must be provided"})
+		return
+	}
+	multimangaID, err := strconv.Atoi(multimangaIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "id must be a number"})
+		return
+	}
+
+	var coverImg []byte
+	var requestFile multipart.File
+	requestFile, _, err = c.Request.FormFile("cover_img")
+	if err != nil {
+		if err != http.ErrMissingFile && err != http.ErrNotMultipart {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	} else {
+		defer requestFile.Close()
+		coverImg, err = io.ReadAll(requestFile)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	}
+
+	var score int
+	if coverImgURL != "" {
+		score++
+	}
+	if useCurrentMangaCoverImg != "" {
+		score++
+	}
+	if len(coverImg) != 0 {
+		score++
+	}
+
+	switch score {
+	case 0:
+		c.JSON(http.StatusBadRequest, gin.H{"message": "you must provide one of the following: cover_img, cover_img_url, use_current_manga_cover_img"})
+		return
+	case 1:
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{"message": "you must provide only one of the following: cover_img, cover_img_url, use_current_manga_cover_img"})
+		return
+	}
+
+	multimanga, err := manga.GetMultiMangaFromDB(manga.ID(multimangaID))
+	if err != nil {
+		if strings.Contains(err.Error(), errordefs.ErrMultiMangaNotFoundDB.Error()) {
+			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	retries := 3
+	retryInterval := 3 * time.Second
+	if len(coverImg) != 0 {
+		if !util.IsImageValid(coverImg) {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "invalid image"})
+			return
+		}
+
+		multimanga.CoverImgFixed = true
+		resizedCoverImg, err := util.ResizeImage(coverImg, uint(util.DefaultImageWidth), uint(util.DefaultImageHeight))
+		if err == nil {
+			err = multimanga.UpdateCoverImgInDB(resizedCoverImg, true, coverImgURL)
+		} else {
+			err = multimanga.UpdateCoverImgInDB(coverImg, false, coverImgURL)
+		}
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	} else if coverImgURL != "" {
+		coverImg, isImgRezied, err := util.GetImageFromURL(coverImgURL, retries, retryInterval)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+
+		if !util.IsImageValid(coverImg) {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "invalid image"})
+			return
+		}
+
+		multimanga.CoverImgFixed = true
+		err = multimanga.UpdateCoverImgInDB(coverImg, isImgRezied, coverImgURL)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	} else if useCurrentMangaCoverImg == "true" {
+		multimanga.CoverImgFixed = false
+		err = multimanga.UpdateCoverImgInDB([]byte{}, false, "")
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	}
+
+	dashboard.UpdateDashboard()
+
+	c.JSON(http.StatusOK, gin.H{"message": "Multimanga cover image updated successfully"})
 }
 
 // @Summary Update mangas metadata
