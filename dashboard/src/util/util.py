@@ -1,9 +1,29 @@
+import logging
 import pathlib
 from datetime import datetime
 
 import streamlit as st
 from bs4 import BeautifulSoup
+from src.api.api_client import get_api_client
 from streamlit_extras.stylable_container import stylable_container
+
+
+def get_logger():
+    logging.basicConfig(
+        encoding="utf-8",
+        level=logging.INFO,
+        format="%(asctime)s :: %(levelname)-8s :: %(name)s :: %(message)s",
+    )
+
+    return logging.getLogger()
+
+
+@st.cache_data(show_spinner=False, max_entries=1, ttl=600)
+def get_manga_chapters(id: int, url: str, internal_id: str):
+    api_client = get_api_client()
+    chapters = api_client.get_manga_chapters(id, url, internal_id)
+
+    return chapters
 
 
 def centered_container(key: str):
