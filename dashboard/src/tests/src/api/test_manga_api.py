@@ -1,3 +1,4 @@
+# Outdated tests, need to be updated
 from datetime import datetime
 
 from src.api.manga_api import MangaAPIClient
