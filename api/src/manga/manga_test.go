@@ -2,31 +2,33 @@ package manga
 
 import (
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
+	"github.com/diogovalentte/mantium/api/src/config"
 	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
-// func setup() error {
-// 	err := config.SetConfigs("../../../.env.test")
-// 	if err != nil {
-// 		return err
-// 	}
-//
-// 	return nil
-// }
-//
-// func TestMain(m *testing.M) {
-// 	err := setup()
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		os.Exit(1)
-// 	}
-// 	exitCode := m.Run()
-// 	os.Exit(exitCode)
-// }
+func setup() error {
+	err := config.SetConfigs("../../../.env.test")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func TestMain(m *testing.M) {
+	err := setup()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	exitCode := m.Run()
+	os.Exit(exitCode)
+}
 
 var mangaTest = &Manga{
 	Source:         "testing",
@@ -194,6 +196,12 @@ func TestMangaDBLifeCycle(t *testing.T) {
 			}
 		} else {
 			t.Fatal("no errors while updating the manga with an invalid status in DB")
+		}
+	})
+	t.Run("Should update a manga's cover image in DB", func(t *testing.T) {
+		err := manga.UpdateCoverImgInDB([]byte{}, false, "https://cnd.random.best-manga.jpg")
+		if err != nil {
+			t.Fatal(err)
 		}
 	})
 	t.Run("Should update a manga's last released chapter in DB", func(t *testing.T) {

@@ -2,33 +2,12 @@ package manga
 
 import (
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
-	"github.com/diogovalentte/mantium/api/src/config"
 	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
-
-func setup() error {
-	err := config.SetConfigs("../../../.env.test")
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func TestMain(m *testing.M) {
-	err := setup()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	exitCode := m.Run()
-	os.Exit(exitCode)
-}
 
 var multimangaMangasTest = []*Manga{
 	{
@@ -176,6 +155,12 @@ func TestMultiMangaDBLifeCycle(t *testing.T) {
 			t.Fatal("no errors while updating the multimanga with an invalid status in DB")
 		}
 	})
+	t.Run("Should update a manga's cover image in DB", func(t *testing.T) {
+		err := multiManga.UpdateCoverImgInDB([]byte{}, false, "https://cnd.random.best-manga.jpg")
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
 	t.Run("Should update a manga's last read chapter in DB", func(t *testing.T) {
 		chapter := *chaptersTest["last_read_chapter"]
 		chapter.Type = 0
@@ -198,7 +183,7 @@ func TestMultiMangaDBLifeCycle(t *testing.T) {
 	t.Run("Should not get a multimanga from DB", func(t *testing.T) {
 		_, err = GetMultiMangaFromDB(0)
 		if err != nil {
-			if !util.ErrorContains(err, errordefs.ErrMultiMangaHasNoID.Error()) {
+			if !util.ErrorContains(err, errordefs.ErrMultiMangaNotFoundDB.Error()) {
 				t.Fatal(err)
 			}
 		} else {

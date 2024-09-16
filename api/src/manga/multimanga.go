@@ -19,13 +19,23 @@ type MultiManga struct {
 	CurrentManga    *Manga
 	LastReadChapter *Chapter
 	Mangas          []*Manga
-	ID              ID
-	Status          Status // All mangas in the multimanga should have the same status
+	// CoverImgURL is the URL of the cover image
+	CoverImgURL string
+	// CoverImg is the cover image of the multimanga
+	CoverImg []byte
+	ID       ID
+	Status   Status // All mangas in the multimanga should have the same status
+	// CoverImgResized is true if the cover image was resized
+	CoverImgResized bool
+	// CoverImgFixed is true if the cover image is fixed. If true, the cover image will not be updated when updating the manga metadata.
+	// It's used for when the cover image is manually set by the user.
+	// By default, the current manga's cover image is used.
+	CoverImgFixed bool
 }
 
 func (mm MultiManga) String() string {
-	returnStr := fmt.Sprintf("MultiManga{ID: %d, Status: %d, LastReadChapter: %s, CurrentManga: %s, Mangas: [",
-		mm.ID, mm.Status, mm.LastReadChapter, mm.CurrentManga)
+	returnStr := fmt.Sprintf("MultiManga{ID: %d, Status: %d, CoverImg: []byte, CoverImgResized: %v, CoverImgURL: %s, CoverImgFixed: %v, LastReadChapter: %s, CurrentManga: %s, Mangas: [",
+		mm.ID, mm.Status, mm.CoverImgResized, mm.CoverImgURL, mm.CoverImgFixed, mm.LastReadChapter, mm.CurrentManga)
 
 	for _, manga := range mm.Mangas {
 		returnStr += manga.String() + ", "
@@ -154,9 +164,6 @@ func deleteMultiMangaDB(mm *MultiManga, tx *sql.Tx) error {
 	if err != nil {
 		return err
 	}
-	if mm.ID < 1 {
-		return errordefs.ErrMultiMangaHasNoID
-	}
 
 	result, err := tx.Exec(`
         DELETE FROM multimangas
@@ -212,9 +219,6 @@ func updateMultiMangaStatusDB(mm *MultiManga, status Status, tx *sql.Tx) error {
 	if err != nil {
 		return err
 	}
-	if mm.ID < 1 {
-		return errordefs.ErrMultiMangaHasNoID
-	}
 
 	err = validateStatus(status)
 	if err != nil {
@@ -227,6 +231,66 @@ func updateMultiMangaStatusDB(mm *MultiManga, status Status, tx *sql.Tx) error {
         SET status = $1
         WHERE id = $2;
     `, status, mm.ID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return errordefs.ErrMultiMangaNotFoundDB
+	}
+
+	return nil
+}
+
+// UpdateCoverImgInDB updates the multimanga cover image in the database.
+// It doesn't care if the cover image is fixed or not.
+func (mm *MultiManga) UpdateCoverImgInDB(coverImg []byte, coverImgResized bool, coverImgURL string) error {
+	contextError := "error updating multimanga '%s' cover image to URL '%s' or/and image with '%d' bytes in DB"
+
+	db, err := db.OpenConn()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, mm, coverImgURL, len(coverImg)), err)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, mm, coverImgURL, len(coverImg)), err)
+	}
+
+	err = updateMultiMangaCoverImg(mm, coverImg, coverImgResized, coverImgURL, mm.CoverImgFixed, tx)
+	if err != nil {
+		tx.Rollback()
+		return util.AddErrorContext(fmt.Sprintf(contextError, mm, coverImgURL, len(coverImg)), err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, mm, coverImgURL, len(coverImg)), err)
+	}
+	mm.CoverImg = coverImg
+	mm.CoverImgResized = coverImgResized
+	mm.CoverImgURL = coverImgURL
+
+	return nil
+}
+
+func updateMultiMangaCoverImg(mm *MultiManga, coverImg []byte, coverImgResized bool, coverImgURL string, fixed bool, tx *sql.Tx) error {
+	err := validateMultiManga(mm)
+	if err != nil {
+		return err
+	}
+
+	var result sql.Result
+	result, err = tx.Exec(`
+        UPDATE multimangas
+        SET cover_img = $1, cover_img_resized = $2, cover_img_url = $3, cover_img_fixed = $4
+        WHERE id = $5;
+    `, coverImg, coverImgResized, coverImgURL, fixed, mm.ID)
 	if err != nil {
 		return err
 	}
@@ -524,9 +588,6 @@ func GetMultiMangasDB() ([]*MultiManga, error) {
 func getMultiMangaFromDB(multimangaID ID, db *sql.DB) (*MultiManga, error) {
 	var currentMangaID sql.NullInt64
 	var lastReadChapterID sql.NullInt64
-	if multimangaID < 1 {
-		return nil, errordefs.ErrMultiMangaHasNoID
-	}
 
 	mm := &MultiManga{}
 
@@ -540,6 +601,9 @@ func getMultiMangaFromDB(multimangaID ID, db *sql.DB) (*MultiManga, error) {
     `
 	err := db.QueryRow(query, multimangaID).Scan(&mm.ID, &mm.Status, &currentMangaID, &lastReadChapterID)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, errordefs.ErrMultiMangaNotFoundDB
+		}
 		return nil, err
 	}
 

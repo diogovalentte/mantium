@@ -559,6 +559,9 @@ func getMangaFromDB(m *Manga, db *sql.DB) error {
         `
 		err := db.QueryRow(query, m.ID).Scan(&m.ID, &m.Source, &m.URL, &m.Name, &m.InternalID, &m.Status, &m.CoverImg, &m.CoverImgResized, &m.CoverImgURL, &m.CoverImgFixed, &m.PreferredGroup, &multiMangaID, &lastReleasedChapterID, &lastReadChapterID)
 		if err != nil {
+			if err == sql.ErrNoRows {
+				return errordefs.ErrMangaNotFoundDB
+			}
 			return err
 		}
 	} else if m.URL != "" {
@@ -572,6 +575,9 @@ func getMangaFromDB(m *Manga, db *sql.DB) error {
         `
 		err := db.QueryRow(query, m.URL).Scan(&m.ID, &m.Source, &m.URL, &m.Name, &m.InternalID, &m.Status, &m.CoverImg, &m.CoverImgResized, &m.CoverImgURL, &m.CoverImgFixed, &m.PreferredGroup, &multiMangaID, &lastReleasedChapterID, &lastReadChapterID)
 		if err != nil {
+			if err == sql.ErrNoRows {
+				return errordefs.ErrMangaNotFoundDB
+			}
 			return err
 		}
 	} else {

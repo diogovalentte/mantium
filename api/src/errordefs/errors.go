@@ -3,7 +3,6 @@ package errordefs
 var (
 	ErrLastReleasedChapterNotFound = &CustomError{Message: "last released chapter not found"}
 	ErrMangaHasNoIDOrURL           = &CustomError{Message: "manga has no ID or URL"}
-	ErrMultiMangaHasNoID           = &CustomError{Message: "multimanga has no ID"}
 	ErrChapterHasNoChapterOrURL    = &CustomError{Message: "chapter has no chapter or URL"}
 	ErrMangaNotFound               = &CustomError{Message: "manga not found in source"}
 	ErrMangaNotFoundInMultiManga   = &CustomError{Message: "manga not found in multimanga"}

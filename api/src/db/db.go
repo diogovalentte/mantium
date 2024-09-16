@@ -61,7 +61,11 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
           "id" serial UNIQUE,
           "status" smallint NOT NULL,
           "current_manga" integer REFERENCES mangas(id),
-          "last_read_chapter" integer
+          "last_read_chapter" integer,
+          "cover_img" bytea,
+          "cover_img_resized" bool,
+          "cover_img_url" varchar(255),
+          "cover_img_fixed" boolean NOT NULL DEFAULT FALSE
         );
 
         CREATE TABLE IF NOT EXISTS "chapters" (

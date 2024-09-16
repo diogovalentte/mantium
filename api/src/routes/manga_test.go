@@ -530,37 +530,37 @@ func TestMultiMangaLifeCycle(t *testing.T) {
 	multimanga := &manga.MultiManga{
 		ID: manga.ID(multimangaID),
 	}
-	// t.Run("Add valid manga with read chapter to turn into multimanga", func(t *testing.T) {
-	// 	body, err := json.Marshal(mangasRequestsTestTable["valid manga with read chapter"])
-	// 	if err != nil {
-	// 		t.Fatal(err)
-	// 	}
-	// 	var resMap map[string]string
-	// 	err = requestHelper(http.MethodPost, "/v1/manga", bytes.NewBuffer(body), &resMap)
-	// 	if err != nil {
-	// 		t.Fatal(err)
-	// 	}
-	//
-	// 	actual := resMap["message"]
-	// 	expected := "Manga added successfully"
-	// 	if actual != expected {
-	// 		t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
-	// 	}
-	// })
-	// t.Run("Should turn a manga into a multimanga into DB", func(t *testing.T) {
-	// 	test := mangasRequestsTestTable["valid manga with read chapter"]
-	// 	var resMap map[string]string
-	// 	err := requestHelper(http.MethodPost, fmt.Sprintf("/v1/manga/turn_into_multimanga?url=%s", test.URL), nil, &resMap)
-	// 	if err != nil {
-	// 		t.Fatal(err)
-	// 	}
-	//
-	// 	actual := resMap["message"]
-	// 	expected := "Manga turned into multimanga successfully"
-	// 	if actual != expected {
-	// 		t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
-	// 	}
-	// })
+	t.Run("Add valid manga with read chapter to turn into multimanga", func(t *testing.T) {
+		body, err := json.Marshal(mangasRequestsTestTable["valid manga with read chapter"])
+		if err != nil {
+			t.Fatal(err)
+		}
+		var resMap map[string]string
+		err = requestHelper(http.MethodPost, "/v1/manga", bytes.NewBuffer(body), &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["message"]
+		expected := "Manga added successfully"
+		if actual != expected {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
+		}
+	})
+	t.Run("Should turn a manga into a multimanga into DB", func(t *testing.T) {
+		test := mangasRequestsTestTable["valid manga with read chapter"]
+		var resMap map[string]string
+		err := requestHelper(http.MethodPost, fmt.Sprintf("/v1/manga/turn_into_multimanga?url=%s", test.URL), nil, &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["message"]
+		expected := "Manga turned into multimanga successfully"
+		if actual != expected {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
+		}
+	})
 	t.Run("Get a multimanga", func(t *testing.T) {
 		test := mangasRequestsTestTable["valid manga with read chapter"]
 		var resMap map[string]manga.MultiManga
