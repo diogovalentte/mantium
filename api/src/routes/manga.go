@@ -331,7 +331,7 @@ func GetMultiManga(c *gin.Context) {
 }
 
 // @Summary Get mangas
-// @Description Gets all mangas from the database in no particlar order.
+// @Description Gets all mangas from the database in no particlar order. Return only the current manga of multimangas.
 // @Produce json
 // @Success 200 {array} manga.Manga "{"mangas": [mangaObj]}"
 // @Router /mangas [get]
@@ -352,6 +352,7 @@ func GetMangas(c *gin.Context) {
 		if multimanga.CoverImgFixed {
 			multimanga.CurrentManga.CoverImg = multimanga.CoverImg
 			multimanga.CurrentManga.CoverImgURL = multimanga.CoverImgURL
+			multimanga.CurrentManga.CoverImgResized = multimanga.CoverImgResized
 			multimanga.CurrentManga.CoverImgFixed = true
 		}
 		mangas = append(mangas, multimanga.CurrentManga)

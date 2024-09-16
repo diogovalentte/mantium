@@ -62,9 +62,9 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
           "status" smallint NOT NULL,
           "current_manga" integer REFERENCES mangas(id),
           "last_read_chapter" integer,
-          "cover_img" bytea,
-          "cover_img_resized" bool,
-          "cover_img_url" varchar(255),
+          "cover_img" bytea NOT NULL DEFAULT '',
+          "cover_img_resized" bool NOT NULL DEFAULT FALSE,
+          "cover_img_url" varchar(255) NOT NULL DEFAULT '',
           "cover_img_fixed" boolean NOT NULL DEFAULT FALSE
         );
 

@@ -467,7 +467,7 @@ const docTemplate = `{
         },
         "/mangas": {
             "get": {
-                "description": "Gets all mangas from the database in no particlar order.",
+                "description": "Gets all mangas from the database in no particlar order. Return only the current manga of multimangas.",
                 "produces": [
                     "application/json"
                 ],

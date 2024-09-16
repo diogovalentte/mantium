@@ -86,12 +86,12 @@ func insertMultiMangaIntoDB(mm *MultiManga, tx *sql.Tx) error {
 	var multiMangaID ID
 	err = tx.QueryRow(`
         INSERT INTO multimangas
-            (status)
+            (status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed)
         VALUES
-            ($1)
+            ($1, $2, $3, $4, $5)
         RETURNING
             id;
-    `, mm.Status).Scan(&multiMangaID)
+    `, mm.Status, mm.CoverImg, mm.CoverImgResized, mm.CoverImgURL, mm.CoverImgFixed).Scan(&multiMangaID)
 	if err != nil {
 		if err.Error() == `pq: duplicate key value violates unique constraint "multimangas_pkey"` {
 			return errordefs.ErrMultiMangaAlreadyInDB
@@ -432,6 +432,7 @@ func (mm *MultiManga) AddManga(m *Manga) error {
 
 	m.MultiMangaID = mm.ID
 	m.LastReadChapter = nil
+	m.CoverImgFixed = false
 	mangaID, err := insertMangaIntoDB(m, tx)
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), err)
@@ -594,13 +595,13 @@ func getMultiMangaFromDB(multimangaID ID, db *sql.DB) (*MultiManga, error) {
 
 	query := `
         SELECT
-            id, status, current_manga, last_read_chapter
+            id, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, current_manga, last_read_chapter
         FROM
             multimangas
         WHERE
             id = $1;
     `
-	err := db.QueryRow(query, multimangaID).Scan(&mm.ID, &mm.Status, &currentMangaID, &lastReadChapterID)
+	err := db.QueryRow(query, multimangaID).Scan(&mm.ID, &mm.Status, &mm.CoverImg, &mm.CoverImgResized, &mm.CoverImgURL, &mm.CoverImgFixed, &currentMangaID, &lastReadChapterID)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, errordefs.ErrMultiMangaNotFoundDB
