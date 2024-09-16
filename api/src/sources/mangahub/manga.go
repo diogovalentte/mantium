@@ -14,7 +14,7 @@ import (
 )
 
 // GetMangaMetadata scrapes the manga page and return the manga data
-func (s *Source) GetMangaMetadata(mangaURL, _ string, ignoreGetLastChapterError bool) (*manga.Manga, error) {
+func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	s.checkClient()
 
 	errorContext := "error while getting manga metadata"
@@ -72,15 +72,18 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string, ignoreGetLastChapterError 
 		mangaReturn.CoverImgResized = true
 	}
 
-	// Last Release Chapter
+	// Last Released Chapter
 	if mangaAPIResp.Data.Manga.LastestChapter != 0 {
-		mangaReturn.LastReleasedChapter, err = s.GetChapterMetadataByChapter(mangaURL, "", strconv.FormatFloat(mangaAPIResp.Data.Manga.LastestChapter, 'f', -1, 64))
+		lastReleasedChapter, err := s.GetChapterMetadataByChapter(mangaURL, "", strconv.FormatFloat(mangaAPIResp.Data.Manga.LastestChapter, 'f', -1, 64))
 		if err != nil {
-			return nil, util.AddErrorContext(errorContext, err)
+			if !util.ErrorContains(err, errordefs.ErrChapterNotFound.Message) {
+				return nil, util.AddErrorContext(errorContext, err)
+			}
+			mangaReturn.LastReadChapter = nil
+		} else {
+			lastReleasedChapter.Type = 1
+			mangaReturn.LastReleasedChapter = lastReleasedChapter
 		}
-		mangaReturn.LastReleasedChapter.Type = 1
-	} else if !ignoreGetLastChapterError {
-		return nil, util.AddErrorContext(errorContext, errordefs.ErrLastReleasedChapterNotFound)
 	}
 
 	return mangaReturn, nil

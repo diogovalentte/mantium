@@ -53,7 +53,7 @@ func GetSources() map[string]models.Source {
 }
 
 // GetMangaMetadata gets the metadata of a manga using a source
-func GetMangaMetadata(mangaURL, internalID string, ignoreGetLastChapterError bool) (*manga.Manga, error) {
+func GetMangaMetadata(mangaURL, internalID string) (*manga.Manga, error) {
 	contextError := "error while getting metadata of manga with URL '%s' and internal ID '%s' from source"
 
 	domain, err := getDomain(mangaURL)
@@ -67,7 +67,7 @@ func GetMangaMetadata(mangaURL, internalID string, ignoreGetLastChapterError boo
 	}
 	contextError = fmt.Sprintf("(%s) %s", domain, contextError)
 
-	manga, err := getManga(mangaURL, internalID, source, ignoreGetLastChapterError)
+	manga, err := getManga(mangaURL, internalID, source)
 	if err != nil {
 		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, internalID), err)
 	}
@@ -157,8 +157,8 @@ func getDomain(urlString string) (string, error) {
 	return parsedURL.Hostname(), nil
 }
 
-func getManga(mangaURL, mangaInternalID string, source models.Source, ignoreGetLastChapterError bool) (*manga.Manga, error) {
-	return source.GetMangaMetadata(mangaURL, mangaInternalID, ignoreGetLastChapterError)
+func getManga(mangaURL, mangaInternalID string, source models.Source) (*manga.Manga, error) {
+	return source.GetMangaMetadata(mangaURL, mangaInternalID)
 }
 
 func searchManga(term string, limit int, source models.Source) ([]*models.MangaSearchResult, error) {

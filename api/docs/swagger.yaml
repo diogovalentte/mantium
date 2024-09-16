@@ -171,6 +171,15 @@ definitions:
     - status
     - url
     type: object
+  routes.AddMangaToMultiMangaRequest:
+    properties:
+      manga_internal_id:
+        type: string
+      manga_url:
+        type: string
+    required:
+    - manga_url
+    type: object
   routes.SearchMangaRequest:
     properties:
       limit:
@@ -345,23 +354,20 @@ paths:
     post:
       consumes:
       - application/json
-      description: Gets a manga metadata from source and inserts in the database.
+      description: Removes a manga from a multimanga list in the database.
       parameters:
-      - description: If true, assumes the manga has no chapters and sets the last
-          released chapter to null without even checking if the manga really doesn't
-          have released chapters. If false, gets the manga's last released chapter
-          metadata from source. It doesn't do anything with the last read chapter.
-          Defaults to false.
-        example: true
+      - description: Multimanga ID
+        example: 1
         in: query
-        name: manga_has_no_chapters
-        type: boolean
-      - description: Manga data
-        in: body
-        name: manga
+        name: id
         required: true
-        schema:
-          $ref: '#/definitions/routes.AddMangaRequest'
+        type: integer
+      - description: Manga ID
+        example: 1
+        in: query
+        name: manga_id
+        required: true
+        type: integer
       produces:
       - application/json
       responses:
@@ -369,7 +375,7 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/routes.responseMessage'
-      summary: Add manga
+      summary: Remove manga from multimanga list
   /manga/chapters:
     get:
       description: Get a manga chapters from the source. You must provide either the
@@ -795,6 +801,32 @@ paths:
           schema:
             $ref: '#/definitions/routes.responseMessage'
       summary: Update multimanga last read chapter
+  /multimanga/manga:
+    post:
+      consumes:
+      - application/json
+      description: Adds a manga to a multimanga list in the database.
+      parameters:
+      - description: Multimanga ID
+        example: 1
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: Manga data
+        in: body
+        name: manga
+        required: true
+        schema:
+          $ref: '#/definitions/routes.AddMangaToMultiMangaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Add manga to multimanga list
   /multimanga/status:
     patch:
       description: Updates a multimanga status in the database.

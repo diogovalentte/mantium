@@ -160,30 +160,30 @@
                 }
             },
             "post": {
-                "description": "Gets a manga metadata from source and inserts in the database.",
+                "description": "Removes a manga from a multimanga list in the database.",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Add manga",
+                "summary": "Remove manga from multimanga list",
                 "parameters": [
                     {
-                        "type": "boolean",
-                        "example": true,
-                        "description": "If true, assumes the manga has no chapters and sets the last released chapter to null without even checking if the manga really doesn't have released chapters. If false, gets the manga's last released chapter metadata from source. It doesn't do anything with the last read chapter. Defaults to false.",
-                        "name": "manga_has_no_chapters",
-                        "in": "query"
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Multimanga ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
                     },
                     {
-                        "description": "Manga data",
-                        "name": "manga",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/routes.AddMangaRequest"
-                        }
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Manga ID",
+                        "name": "manga_id",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -815,6 +815,45 @@
                 }
             }
         },
+        "/multimanga/manga": {
+            "post": {
+                "description": "Adds a manga to a multimanga list in the database.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Add manga to multimanga list",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Multimanga ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "Manga data",
+                        "name": "manga",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.AddMangaToMultiMangaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
         "/multimanga/status": {
             "patch": {
                 "description": "Updates a multimanga status in the database.",
@@ -1083,6 +1122,20 @@
                     "minimum": 0
                 },
                 "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "routes.AddMangaToMultiMangaRequest": {
+            "type": "object",
+            "required": [
+                "manga_url"
+            ],
+            "properties": {
+                "manga_internal_id": {
+                    "type": "string"
+                },
+                "manga_url": {
                     "type": "string"
                 }
             }

@@ -30,15 +30,7 @@ class MangaAPIClient:
             "last_read_chapter": last_read_chapter,
             "last_read_chapter_url": last_read_chapter_url,
             "last_read_chapter_internal_id": last_read_chapter_internal_id,
-            "manga_has_no_chapters": False,
         }
-
-        if last_read_chapter == "":
-            del request_body["last_read_chapter"]
-        if last_read_chapter_url == "":
-            del request_body["last_read_chapter_url"]
-        if last_read_chapter == "" and last_read_chapter_url == "":
-            request_body["manga_has_no_chapters"] = True
 
         res = requests.post(url, json=request_body)
 

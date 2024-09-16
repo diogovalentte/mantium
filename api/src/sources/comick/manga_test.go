@@ -24,10 +24,10 @@ var mangasTestTable = []mangaTestType{
 			CoverImgURL:     "https://meo.comick.pictures/a0yXD.jpg",
 			CoverImgResized: true,
 			LastReleasedChapter: &manga.Chapter{
-				Chapter:   "110",
-				Name:      "Ch. 110",
-				URL:       "https://comick.io/comic/death-note/0MvzG",
-				UpdatedAt: time.Date(2021, 4, 11, 5, 45, 16, 0, time.UTC),
+				Chapter:   "114",
+				Name:      "How to Create",
+				URL:       "https://comick.io/comic/death-note/oZUGR_hb",
+				UpdatedAt: time.Date(2024, 9, 6, 14, 17, 54, 0, time.UTC),
 				Type:      1,
 			},
 		},
@@ -78,7 +78,7 @@ func TestGetMangaMetadata(t *testing.T) {
 			expected.LastReleasedChapter.UpdatedAt = expected.LastReleasedChapter.UpdatedAt.In(time.Local)
 			mangaURL := test.url
 
-			actualManga, err := source.GetMangaMetadata(mangaURL, "", false)
+			actualManga, err := source.GetMangaMetadata(mangaURL, "")
 			if err != nil {
 				t.Fatalf("error while getting manga: %v", err)
 			}
@@ -97,7 +97,7 @@ func TestGetMangaMetadata(t *testing.T) {
 		for _, test := range mangasTestTable {
 			mangaURL := test.url + "salt"
 
-			_, err := source.GetMangaMetadata(mangaURL, "", false)
+			_, err := source.GetMangaMetadata(mangaURL, "")
 			if err != nil {
 				if util.ErrorContains(err, errordefs.ErrMangaNotFound.Error()) {
 					continue

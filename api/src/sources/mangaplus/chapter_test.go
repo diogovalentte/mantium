@@ -150,7 +150,7 @@ func TestGetLastChapterMetadata(t *testing.T) {
 
 			re := regexp.MustCompile(`/titles/(\d+)`)
 			mangaURL = re.ReplaceAllString(mangaURL, "/titles/000000")
-			_, err = source.GetMangaMetadata(mangaURL, "", false)
+			_, err = source.GetMangaMetadata(mangaURL, "")
 			if err != nil {
 				if util.ErrorContains(err, errordefs.ErrMangaNotFound.Error()) {
 					continue

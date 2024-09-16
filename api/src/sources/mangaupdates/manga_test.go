@@ -65,7 +65,7 @@ func TestGetMangaMetadata(t *testing.T) {
 			expected := test.expected
 			expected.LastReleasedChapter.UpdatedAt = expected.LastReleasedChapter.UpdatedAt.In(time.Local)
 
-			manga, err := source.GetMangaMetadata("", test.mangaInternalID, false)
+			manga, err := source.GetMangaMetadata("", test.mangaInternalID)
 			if err != nil {
 				t.Fatalf("error while searching: %v", err)
 			}
@@ -85,7 +85,7 @@ func TestGetMangaMetadata(t *testing.T) {
 			expected := test.expected
 			expected.LastReleasedChapter.UpdatedAt = expected.LastReleasedChapter.UpdatedAt.In(time.Local)
 
-			manga, err := source.GetMangaMetadata(test.url, "", false)
+			manga, err := source.GetMangaMetadata(test.url, "")
 			if err != nil {
 				t.Fatalf("error while searching: %v", err)
 			}

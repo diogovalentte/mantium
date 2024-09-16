@@ -99,7 +99,6 @@ type SearchMangaRequest struct {
 // @Description Gets a manga metadata from source and inserts in the database.
 // @Accept json
 // @Produce json
-// @Param manga_has_no_chapters query bool false "If true, assumes the manga has no chapters and sets the last released chapter to null without even checking if the manga really doesn't have released chapters. If false, gets the manga's last released chapter metadata from source. It's has no relation with the last read chapter. Defaults to false." Example(true).
 // @Param manga body AddMangaRequest true "Manga data"
 // @Success 200 {object} responseMessage
 // @Router /manga [post]
@@ -112,20 +111,7 @@ func AddManga(c *gin.Context) {
 		return
 	}
 
-	var mangaHasNoChapters bool
-	queryMangaHasNoChapters := c.Query("manga_has_no_chapters")
-	if queryMangaHasNoChapters != "" {
-		switch queryMangaHasNoChapters {
-		case "true":
-			mangaHasNoChapters = true
-		case "false":
-		default:
-			c.JSON(http.StatusBadRequest, gin.H{"message": "manga_has_no_chapters must be a boolean like true or false"})
-			return
-		}
-	}
-
-	mangaAdd, err := sources.GetMangaMetadata(requestData.URL, requestData.MangaInternalID, !mangaHasNoChapters)
+	mangaAdd, err := sources.GetMangaMetadata(requestData.URL, requestData.MangaInternalID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -1263,7 +1249,7 @@ func UpdateMangaCoverImg(c *gin.Context) {
 	} else if getCoverImgFromSource == "true" {
 		var updatedManga *manga.Manga
 		for i := 0; i < retries; i++ {
-			updatedManga, err = sources.GetMangaMetadata(mangaToUpdate.URL, mangaInternalID, true)
+			updatedManga, err = sources.GetMangaMetadata(mangaToUpdate.URL, mangaInternalID)
 			if err != nil {
 				if i == retries-1 {
 					c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -1416,7 +1402,6 @@ func UpdateMultiMangaCoverImg(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param id query int true "Multimanga ID" Example(1)
-// @Param manga_has_no_chapters query bool false "If true, assumes the manga has no chapters and sets the last released chapter to null without even checking if the manga really doesn't have released chapters. If false, gets the manga's last released chapter metadata from source. It's has no relation with the last read chapter. Defaults to false." Example(true).
 // @Param manga body AddMangaToMultiMangaRequest true "Manga data"
 // @Success 200 {object} responseMessage
 // @Router /multimanga/manga [post]
@@ -1438,20 +1423,7 @@ func AddMangaToMultiManga(c *gin.Context) {
 		return
 	}
 
-	var mangaHasNoChapters bool
-	queryMangaHasNoChapters := c.Query("manga_has_no_chapters")
-	if queryMangaHasNoChapters != "" {
-		switch queryMangaHasNoChapters {
-		case "true":
-			mangaHasNoChapters = true
-		case "false":
-		default:
-			c.JSON(http.StatusBadRequest, gin.H{"message": "manga_has_no_chapters must be a boolean like true or false"})
-			return
-		}
-	}
-
-	mangaAdd, err := sources.GetMangaMetadata(requestData.MangaURL, requestData.MangaInternalID, !mangaHasNoChapters)
+	mangaAdd, err := sources.GetMangaMetadata(requestData.MangaURL, requestData.MangaInternalID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -1585,7 +1557,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 	for _, mangaToUpdate := range mangas {
 		var updatedManga *manga.Manga
 		for i := 0; i < retries; i++ {
-			updatedManga, err = sources.GetMangaMetadata(mangaToUpdate.URL, mangaToUpdate.InternalID, mangaToUpdate.LastReleasedChapter == nil)
+			updatedManga, err = sources.GetMangaMetadata(mangaToUpdate.URL, mangaToUpdate.InternalID)
 			if err != nil {
 				if i != retries-1 {
 					logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msgf("Error getting manga metadata, retrying in %.2f seconds...", retryInterval.Seconds())

@@ -35,12 +35,12 @@ func (s *Source) GetChapterMetadata(mangaURL, _, chapter, chapterURL, _ string) 
 	return returnChapter, nil
 }
 
-// GetChapterMetadataByURL scrapes the manga page and return the chapter by its URL
+// GetChapterMetadataByURL returns the chapter by its URL
 func (s *Source) GetChapterMetadataByURL(_ string) (*manga.Chapter, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
-// GetChapterMetadataByChapter scrapes the manga page and return the chapter by its chapter
+// GetChapterMetadataByChapter returns the chapter by its chapter
 func (s *Source) GetChapterMetadataByChapter(mangaURL, _, chapter string) (*manga.Chapter, error) {
 	s.checkClient()
 
@@ -105,7 +105,7 @@ type getMangaAPIChapter struct {
 	} `json:"manga"`
 }
 
-// GetLastChapterMetadata scrapes the manga page and return the latest chapter
+// GetLastChapterMetadata returns the latest chapter
 func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, error) {
 	s.checkClient()
 
@@ -148,7 +148,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, err
 	return chapterReturn, nil
 }
 
-// GetChaptersMetadata scrapes the manga page and return the chapters
+// GetChaptersMetadata returns the manga chapters
 func (s *Source) GetChaptersMetadata(mangaURL, _ string) ([]*manga.Chapter, error) {
 	s.checkClient()
 

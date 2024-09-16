@@ -14,7 +14,7 @@ import (
 )
 
 // GetMangaMetadata returns the metadata of a manga given its URL.
-func (s *Source) GetMangaMetadata(mangaURL, _ string, ignoreGetLastChapterError bool) (*manga.Manga, error) {
+func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	s.checkClient()
 
 	errorContext := "error while getting manga metadata"
@@ -44,9 +44,10 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string, ignoreGetLastChapterError 
 
 	lastReleasedChapter, err := s.GetLastChapterMetadata(mangaURL, "")
 	if err != nil {
-		if !(ignoreGetLastChapterError && util.ErrorContains(err, errordefs.ErrLastReleasedChapterNotFound.Message)) {
+		if !util.ErrorContains(err, errordefs.ErrLastReleasedChapterNotFound.Message) {
 			return nil, util.AddErrorContext(errorContext, err)
 		}
+		mangaReturn.LastReadChapter = nil
 	} else {
 		lastReleasedChapter.Type = 1
 		mangaReturn.LastReleasedChapter = lastReleasedChapter
