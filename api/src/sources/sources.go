@@ -111,13 +111,13 @@ func GetChapterMetadata(mangaURL, mangaInternalID, chapter, chapterURL, chapterI
 
 	source, err := GetSource(domain)
 	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf(contextError, chapter, chapterURL, mangaURL), err)
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, mangaInternalID, chapter, chapterURL, chapterInternalID), err)
 	}
 	contextError = fmt.Sprintf("(%s) %s", domain, contextError)
 
 	chapterReturn, err := getChapter(mangaURL, mangaInternalID, chapter, chapterURL, chapterInternalID, source)
 	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf(contextError, chapter, chapterURL, mangaURL), err)
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, mangaInternalID, chapter, chapterURL, chapterInternalID), err)
 	}
 
 	return chapterReturn, nil

@@ -33,10 +33,6 @@ definitions:
         description: Name is the name of the chapter
         type: string
       type:
-        description: |-
-          Type is the type of the chapter, it can be:
-          1: "release" - the chapter was released, it's representing a chapter that was released by (or scraped from) a source
-          2: "read" - the chapter was read, it's representing a chapter that was read by the user
         type: integer
       updatedAt:
         description: |-
@@ -79,6 +75,10 @@ definitions:
         allOf:
         - $ref: '#/definitions/manga.Chapter'
         description: LastReleasedChapter is the last chapter released by the source
+      multiMangaID:
+        description: When the manga is part of a multimanga, this field should be
+          set to the multimanga ID
+        type: integer
       name:
         description: Name is the name of the manga
         type: string
@@ -93,15 +93,25 @@ definitions:
         type: string
       status:
         type: integer
-      type:
-        description: |-
-          Type is the type of the manga, it can be:
-          1 - Normal manga
-          2 - Part of a multimanga
-        type: integer
       url:
         description: URL is the URL of the manga
         type: string
+    type: object
+  manga.MultiManga:
+    properties:
+      currentManga:
+        $ref: '#/definitions/manga.Manga'
+      id:
+        type: integer
+      lastReadChapter:
+        $ref: '#/definitions/manga.Chapter'
+      mangas:
+        items:
+          $ref: '#/definitions/manga.Manga'
+        type: array
+      status:
+        description: All mangas in the multimanga should have the same status
+        type: integer
     type: object
   models.MangaSearchResult:
     properties:
@@ -453,31 +463,6 @@ paths:
           schema:
             $ref: '#/definitions/routes.responseMessage'
       summary: Update manga last read chapter
-  /manga/search:
-    post:
-      consumes:
-      - application/json
-      description: Searches a manga in the source. You must provide the source site
-        URL like "https://mangadex.org" and the search query.
-      parameters:
-      - description: Search data
-        in: body
-        name: search
-        required: true
-        schema:
-          $ref: '#/definitions/routes.SearchMangaRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: '{"mangas": [mangaSearchResultObj]}'
-          schema:
-            additionalProperties:
-              items:
-                $ref: '#/definitions/models.MangaSearchResult'
-              type: array
-            type: object
-      summary: Search manga
   /manga/status:
     patch:
       description: Updates a manga status in the database. You must provide either
@@ -532,7 +517,7 @@ paths:
       summary: Turn manga into multimanga
   /mangas:
     get:
-      description: Gets all mangas from the database.
+      description: Gets all mangas from the database in no particlar order.
       produces:
       - application/json
       responses:
@@ -645,4 +630,141 @@ paths:
           schema:
             $ref: '#/definitions/routes.responseMessage'
       summary: Update mangas metadata
+  /mangas/search:
+    post:
+      consumes:
+      - application/json
+      description: Searches a manga in the source. You must provide the source site
+        URL like "https://mangadex.org" and the search query.
+      parameters:
+      - description: Search data
+        in: body
+        name: search
+        required: true
+        schema:
+          $ref: '#/definitions/routes.SearchMangaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"mangas": [mangaSearchResultObj]}'
+          schema:
+            additionalProperties:
+              items:
+                $ref: '#/definitions/models.MangaSearchResult'
+              type: array
+            type: object
+      summary: Search manga
+  /multimanga:
+    delete:
+      description: Deletes a multimanga from the database.
+      parameters:
+      - description: Multimanga ID
+        example: 1
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Delete multimanga
+    get:
+      description: Gets a multimanga from the database.
+      parameters:
+      - description: Multimanga ID
+        example: 1
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"multimanga": multimangaObj}'
+          schema:
+            $ref: '#/definitions/manga.MultiManga'
+      summary: Get multimanga
+  /multimanga/chapters:
+    get:
+      description: Get chapters of the current manga of a multimanga from the source.
+      parameters:
+      - description: Multimanga ID
+        example: 1
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"chapters": [chapterObj]}'
+          schema:
+            items:
+              $ref: '#/definitions/manga.Chapter'
+            type: array
+      summary: Get multimanga current manga chapters
+  /multimanga/last_read_chapter:
+    patch:
+      description: Updates a multimanga last read chapter in the database. It also
+        needs to know from which manga the chapter is from. If both `chapter` and
+        `chapter_url` are empty strings in the body, set the last read chapter to
+        the last released chapter in the database.
+      parameters:
+      - description: Multimanga ID
+        example: 1
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: Manga ID
+        example: 1
+        in: query
+        name: manga_id
+        required: true
+        type: integer
+      - description: Chapter
+        in: body
+        name: chapter
+        required: true
+        schema:
+          $ref: '#/definitions/routes.UpdateMangaChapterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Update multimanga last read chapter
+  /multimanga/status:
+    patch:
+      description: Updates a multimanga status in the database.
+      parameters:
+      - description: Multimanga ID
+        example: 1
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: Multimanga status
+        in: body
+        name: status
+        required: true
+        schema:
+          $ref: '#/definitions/routes.UpdateMangaStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Update multimanga status
 swagger: "2.0"

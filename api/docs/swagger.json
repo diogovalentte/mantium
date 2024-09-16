@@ -379,43 +379,6 @@
                 }
             }
         },
-        "/manga/search": {
-            "post": {
-                "description": "Searches a manga in the source. You must provide the source site URL like \"https://mangadex.org\" and the search query.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "Search manga",
-                "parameters": [
-                    {
-                        "description": "Search data",
-                        "name": "search",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/routes.SearchMangaRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "{\"mangas\": [mangaSearchResultObj]}",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/definitions/models.MangaSearchResult"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/manga/status": {
             "patch": {
                 "description": "Updates a manga status in the database. You must provide either the manga ID or the manga URL.",
@@ -493,7 +456,7 @@
         },
         "/mangas": {
             "get": {
-                "description": "Gets all mangas from the database.",
+                "description": "Gets all mangas from the database in no particlar order.",
                 "produces": [
                     "application/json"
                 ],
@@ -641,6 +604,205 @@
                     }
                 }
             }
+        },
+        "/mangas/search": {
+            "post": {
+                "description": "Searches a manga in the source. You must provide the source site URL like \"https://mangadex.org\" and the search query.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Search manga",
+                "parameters": [
+                    {
+                        "description": "Search data",
+                        "name": "search",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.SearchMangaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"mangas\": [mangaSearchResultObj]}",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/models.MangaSearchResult"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/multimanga": {
+            "get": {
+                "description": "Gets a multimanga from the database.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get multimanga",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Multimanga ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"multimanga\": multimangaObj}",
+                        "schema": {
+                            "$ref": "#/definitions/manga.MultiManga"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes a multimanga from the database.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Delete multimanga",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Multimanga ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/multimanga/chapters": {
+            "get": {
+                "description": "Get chapters of the current manga of a multimanga from the source.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get multimanga current manga chapters",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Multimanga ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"chapters\": [chapterObj]}",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/manga.Chapter"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/multimanga/last_read_chapter": {
+            "patch": {
+                "description": "Updates a multimanga last read chapter in the database. It also needs to know from which manga the chapter is from. If both `chapter` and `chapter_url` are empty strings in the body, set the last read chapter to the last released chapter in the database.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Update multimanga last read chapter",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Multimanga ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Manga ID",
+                        "name": "manga_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "Chapter",
+                        "name": "chapter",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.UpdateMangaChapterRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/multimanga/status": {
+            "patch": {
+                "description": "Updates a multimanga status in the database.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Update multimanga status",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Multimanga ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "Multimanga status",
+                        "name": "status",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.UpdateMangaStatusRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -692,7 +854,6 @@
                     "type": "string"
                 },
                 "type": {
-                    "description": "Type is the type of the chapter, it can be:\n1: \"release\" - the chapter was released, it's representing a chapter that was released by (or scraped from) a source\n2: \"read\" - the chapter was read, it's representing a chapter that was read by the user",
                     "type": "integer"
                 },
                 "updatedAt": {
@@ -750,6 +911,10 @@
                         }
                     ]
                 },
+                "multiMangaID": {
+                    "description": "When the manga is part of a multimanga, this field should be set to the multimanga ID",
+                    "type": "integer"
+                },
                 "name": {
                     "description": "Name is the name of the manga",
                     "type": "string"
@@ -765,13 +930,33 @@
                 "status": {
                     "type": "integer"
                 },
-                "type": {
-                    "description": "Type is the type of the manga, it can be:\n1 - Normal manga\n2 - Part of a multimanga",
-                    "type": "integer"
-                },
                 "url": {
                     "description": "URL is the URL of the manga",
                     "type": "string"
+                }
+            }
+        },
+        "manga.MultiManga": {
+            "type": "object",
+            "properties": {
+                "currentManga": {
+                    "$ref": "#/definitions/manga.Manga"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "lastReadChapter": {
+                    "$ref": "#/definitions/manga.Chapter"
+                },
+                "mangas": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/manga.Manga"
+                    }
+                },
+                "status": {
+                    "description": "All mangas in the multimanga should have the same status",
+                    "type": "integer"
                 }
             }
         },

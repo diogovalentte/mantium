@@ -34,20 +34,28 @@ import (
 // MangaRoutes sets the manga routes
 func MangaRoutes(group *gin.RouterGroup) {
 	{
-		group.POST("/manga/search", SearchManga)
 		group.POST("/manga", AddManga)
 		group.DELETE("/manga", DeleteManga)
 		group.GET("/manga", GetManga)
-		group.GET("/mangas", GetMangas)
-		group.GET("/mangas/iframe", GetMangasiFrame)
 		group.GET("/manga/chapters", GetMangaChapters)
 		group.PATCH("/manga/status", UpdateMangaStatus)
 		group.PATCH("/manga/last_read_chapter", UpdateMangaLastReadChapter)
 		group.PATCH("/manga/cover_img", UpdateMangaCoverImg)
+		group.POST("/manga/turn_into_multimanga", TurnIntoMultiManga)
+
+		group.DELETE("/multimanga", DeleteMultiManga)
+		group.GET("/multimanga", GetMultiManga)
+		group.GET("/multimanga/chapters", GetMultiMangaChapters)
+		group.PATCH("/multimanga/status", UpdateMultiMangaStatus)
+		group.PATCH("/multimanga/last_read_chapter", UpdateMultiMangaLastReadChapter)
+		// group.PATCH("/multimanga/cover_img", UpdateMultiMangaCoverImg)
+
+		group.POST("/mangas/search", SearchManga)
+		group.GET("/mangas", GetMangas)
+		group.GET("/mangas/iframe", GetMangasiFrame)
 		group.PATCH("/mangas/metadata", UpdateMangasMetadata)
 		group.POST("/mangas/add_to_kaizoku", AddMangasToKaizoku)
 		group.POST("/mangas/add_to_tranga", AddMangasToTranga)
-		group.POST("/manga/turn_into_multimanga", TurnIntoMultiManga)
 	}
 }
 
@@ -57,7 +65,7 @@ func MangaRoutes(group *gin.RouterGroup) {
 // @Produce json
 // @Param search body SearchMangaRequest true "Search data"
 // @Success 200 {object} map[string][]models.MangaSearchResult "{"mangas": [mangaSearchResultObj]}"
-// @Router /manga/search [post]
+// @Router /mangas/search [post]
 func SearchManga(c *gin.Context) {
 	var requestData SearchMangaRequest
 	if err := c.ShouldBindJSON(&requestData); err != nil {
@@ -221,6 +229,45 @@ func DeleteManga(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Manga deleted successfully"})
 }
 
+// @Summary Delete multimanga
+// @Description Deletes a multimanga from the database.
+// @Produce json
+// @Param id query int true "Multimanga ID" Example(1)
+// @Success 200 {object} responseMessage
+// @Router /multimanga [delete]
+func DeleteMultiManga(c *gin.Context) {
+	multimangaIDStr := c.Query("id")
+	if multimangaIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "id must be provided"})
+		return
+	}
+	multimangaID, err := strconv.Atoi(multimangaIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "id must be a number"})
+		return
+	}
+
+	multimangaDelete, err := manga.GetMultiMangaFromDB(manga.ID(multimangaID))
+	if err != nil {
+		if strings.Contains(err.Error(), errordefs.ErrMultiMangaNotFoundDB.Error()) {
+			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	err = multimangaDelete.DeleteFromDB()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	dashboard.UpdateDashboard()
+
+	c.JSON(http.StatusOK, gin.H{"message": "MultiManga deleted successfully"})
+}
+
 // @Summary Get manga
 // @Description Gets a manga from the database. You must provide either the manga ID or the manga URL.
 // @Produce json
@@ -251,6 +298,38 @@ func GetManga(c *gin.Context) {
 	c.JSON(http.StatusOK, resMap)
 }
 
+// @Summary Get multimanga
+// @Description Gets a multimanga from the database.
+// @Produce json
+// @Param id query int true "Multimanga ID" Example(1)
+// @Success 200 {object} manga.MultiManga "{"multimanga": multimangaObj}"
+// @Router /multimanga [get]
+func GetMultiManga(c *gin.Context) {
+	multimangaIDStr := c.Query("id")
+	if multimangaIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "id must be provided"})
+		return
+	}
+	multimangaID, err := strconv.Atoi(multimangaIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "id must be a number"})
+		return
+	}
+
+	multimangaGet, err := manga.GetMultiMangaFromDB(manga.ID(multimangaID))
+	if err != nil {
+		if strings.Contains(err.Error(), errordefs.ErrMangaNotFoundDB.Error()) {
+			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	resMap := map[string]manga.MultiManga{"multimanga": *multimangaGet}
+	c.JSON(http.StatusOK, resMap)
+}
+
 // @Summary Get mangas
 // @Description Gets all mangas from the database in no particlar order.
 // @Produce json
@@ -268,6 +347,8 @@ func GetMangas(c *gin.Context) {
 		return
 	}
 	for _, multimanga := range multimangas {
+		multimanga.CurrentManga.LastReadChapter = multimanga.LastReadChapter
+		multimanga.CurrentManga.Status = multimanga.Status
 		mangas = append(mangas, multimanga.CurrentManga)
 	}
 
@@ -774,6 +855,44 @@ func GetMangaChapters(c *gin.Context) {
 	c.JSON(http.StatusOK, resMap)
 }
 
+// @Summary Get multimanga current manga chapters
+// @Description Get chapters of the current manga of a multimanga from the source.
+// @Produce json
+// @Param id query int true "Multimanga ID" Example(1)
+// @Success 200 {array} manga.Chapter "{"chapters": [chapterObj]}"
+// @Router /multimanga/chapters [get]
+func GetMultiMangaChapters(c *gin.Context) {
+	multimangaIDStr := c.Query("id")
+	if multimangaIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "id must be provided"})
+		return
+	}
+	multimangaID, err := strconv.Atoi(multimangaIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "id must be a number"})
+		return
+	}
+
+	multimanga, err := manga.GetMultiMangaFromDB(manga.ID(multimangaID))
+	if err != nil {
+		if strings.Contains(err.Error(), errordefs.ErrMultiMangaNotFoundDB.Error()) {
+			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	chapters, err := sources.GetMangaChapters(multimanga.CurrentManga.URL, multimanga.CurrentManga.InternalID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	resMap := map[string][]*manga.Chapter{"chapters": chapters}
+	c.JSON(http.StatusOK, resMap)
+}
+
 // @Summary Update manga status
 // @Description Updates a manga status in the database. You must provide either the manga ID or the manga URL.
 // @Produce json
@@ -816,6 +935,52 @@ func UpdateMangaStatus(c *gin.Context) {
 	dashboard.UpdateDashboard()
 
 	c.JSON(http.StatusOK, gin.H{"message": "Manga status updated successfully"})
+}
+
+// @Summary Update multimanga status
+// @Description Updates a multimanga status in the database.
+// @Produce json
+// @Param id query int true "Multimanga ID" Example(1)
+// @Param status body UpdateMangaStatusRequest true "Multimanga status"
+// @Success 200 {object} responseMessage
+// @Router /multimanga/status [patch]
+func UpdateMultiMangaStatus(c *gin.Context) {
+	multimangaIDStr := c.Query("id")
+	if multimangaIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "id must be provided"})
+		return
+	}
+	multimangaID, err := strconv.Atoi(multimangaIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "id must be a number"})
+		return
+	}
+
+	multimanga, err := manga.GetMultiMangaFromDB(manga.ID(multimangaID))
+	if err != nil {
+		if strings.Contains(err.Error(), errordefs.ErrMultiMangaNotFoundDB.Error()) {
+			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	var requestData UpdateMangaStatusRequest
+	if err := c.ShouldBindJSON(&requestData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid JSON fields, refer to the API documentation"})
+		return
+	}
+
+	err = multimanga.UpdateStatusInDB(requestData.Status)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	dashboard.UpdateDashboard()
+
+	c.JSON(http.StatusOK, gin.H{"message": "Multimanga status updated successfully"})
 }
 
 // UpdateMangaStatusRequest is the request body for the UpdateMangaStatus route
@@ -882,6 +1047,91 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 	dashboard.UpdateDashboard()
 
 	c.JSON(http.StatusOK, gin.H{"message": "Manga last read chapter updated successfully"})
+}
+
+// @Summary Update multimanga last read chapter
+// @Description Updates a multimanga last read chapter in the database. It also needs to know from which manga the chapter is from. If both `chapter` and `chapter_url` are empty strings in the body, set the last read chapter to the last released chapter in the database.
+// @Produce json
+// @Param id query int true "Multimanga ID" Example(1)
+// @Param manga_id query int true "Manga ID" Example(1)
+// @Param chapter body UpdateMangaChapterRequest true "Chapter"
+// @Success 200 {object} responseMessage
+// @Router /multimanga/last_read_chapter [patch]
+func UpdateMultiMangaLastReadChapter(c *gin.Context) {
+	currentTime := time.Now()
+
+	multimangaIDStr := c.Query("id")
+	if multimangaIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "id must be provided"})
+		return
+	}
+	multimangaID, err := strconv.Atoi(multimangaIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "id must be a number"})
+		return
+	}
+
+	multimanga, err := manga.GetMultiMangaFromDB(manga.ID(multimangaID))
+	if err != nil {
+		if strings.Contains(err.Error(), errordefs.ErrMultiMangaNotFoundDB.Error()) {
+			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	mangaIDStr := c.Query("manga_id")
+	if mangaIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "manga_id must be provided"})
+		return
+	}
+	mangaID, err := strconv.Atoi(mangaIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "manga_id must be a number"})
+		return
+	}
+
+	var mangaGetChapterFrom *manga.Manga
+	for _, m := range multimanga.Mangas {
+		if m.ID == manga.ID(mangaID) {
+			mangaGetChapterFrom = m
+			break
+		}
+	}
+	if mangaGetChapterFrom == nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": errordefs.ErrMangaNotFoundInMultiManga.Error()})
+		return
+	}
+
+	var requestData UpdateMangaChapterRequest
+	if err := c.ShouldBindJSON(&requestData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid JSON fields, refer to the API documentation"})
+		return
+	}
+
+	var chapter *manga.Chapter
+	if requestData.Chapter == "" && requestData.ChapterURL == "" {
+		chapter = mangaGetChapterFrom.LastReleasedChapter
+	} else {
+		chapter, err = sources.GetChapterMetadata(mangaGetChapterFrom.URL, mangaGetChapterFrom.InternalID, requestData.Chapter, requestData.ChapterURL, requestData.ChapterInternalID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	}
+	chapter.Type = 2
+	chapter.UpdatedAt = currentTime.Truncate(time.Second)
+
+	err = multimanga.UpsertChapterInDB(chapter)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	dashboard.UpdateDashboard()
+
+	c.JSON(http.StatusOK, gin.H{"message": "Multimanga last read chapter updated successfully"})
 }
 
 // UpdateMangaChapterRequest is the request body for updating a manga chapter
@@ -1085,7 +1335,9 @@ func UpdateMangasMetadata(c *gin.Context) {
 			errors["manga_metadata"] = append(errors["manga_metadata"], err.Error())
 			continue
 		}
+		// Turn manga into valid manga to update DB
 		updatedManga.Status = 1
+		updatedManga.ID = mangaToUpdate.ID
 
 		mangaHasNewReleasedChapter := isNewChapterDifferentFromOld(mangaToUpdate.LastReleasedChapter, updatedManga.LastReleasedChapter)
 		if mangaHasNewReleasedChapter || (!mangaToUpdate.CoverImgFixed && (mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg))) || mangaToUpdate.Name != updatedManga.Name {
