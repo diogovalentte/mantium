@@ -9,7 +9,7 @@ from src.api.api_client import get_api_client
 from src.util import defaults
 from src.util.add_manga import (show_add_manga_form_search,
                                 show_add_manga_form_url)
-from src.util.update_manga import show_update_manga
+from src.util.update_manga import show_update_manga, show_update_multimanga
 from src.util.util import (centered_container, fix_streamlit_index_html,
                            get_logger, get_relative_time, tagger)
 from streamlit import session_state as ss
@@ -227,20 +227,33 @@ class MainDashboard:
 
             @st.experimental_dialog(manga["Name"])
             def show_highlighted_manga_dialog():
-                show_update_manga(manga)
+                if manga["MultiMangaID"] == 0:
+                    show_update_manga(manga)
+                else:
+                    show_update_multimanga(manga)
 
             show_highlighted_manga_dialog()
             ss["highlighted_manga"] = None
         elif ss.get("update_manga_success_message", "") != "":
 
             @st.experimental_dialog("Manga Updated")
-            def show_add_manga_message():
+            def show_update_manga_message():
                 if ss.get("update_manga_success_message", "") != "":
                     st.success(ss["update_manga_success_message"])
 
-            show_add_manga_message()
+            show_update_manga_message()
 
             ss["update_manga_success_message"] = ""
+        elif ss.get("update_multimanga_success_message", "") != "":
+
+            @st.experimental_dialog("Multimanga Updated")
+            def show_update_multimanga_message():
+                if ss.get("update_multimanga_success_message", "") != "":
+                    st.success(ss["update_multimanga_success_message"])
+
+            show_update_multimanga_message()
+
+            ss["update_multimanga_success_message"] = ""
         elif (
             ss.get("add_manga_success_message", "") != ""
             or ss.get("add_manga_warning_message", "") != ""

@@ -4,19 +4,13 @@ from urllib.parse import urljoin
 
 import requests
 from src.exceptions import APIException
+from src.util.util import get_updated_at_datetime
 
 
 class MangaAPIClient:
     def __init__(self, base_api_url: str) -> None:
-        self.base_api_url: str = (
-            base_api_url  # The base URL of the API, e.g. http://localhost:8080
-        )
-        self.base_url: str = urljoin(
-            self.base_api_url, "/v1/manga"
-        )  # The base URL to be used by this client
-        self.acceptable_status_codes: tuple = (
-            200,  # The acceptable status codes from the API requests
-        )
+        self.base_manga_url: str = urljoin(base_api_url, "/v1/manga")
+        self.acceptable_status_codes: tuple = (200,)
 
     def add_manga(
         self,
@@ -27,7 +21,7 @@ class MangaAPIClient:
         last_read_chapter_url: str,
         last_read_chapter_internal_id: str,
     ) -> dict[str, str]:
-        url = self.base_url
+        url = self.base_manga_url
 
         request_body = {
             "url": manga_url,
@@ -60,7 +54,7 @@ class MangaAPIClient:
         return res.json()
 
     def get_manga(self, manga_id: int = 0, manga_url: str = "") -> dict[str, Any]:
-        url = self.base_url
+        url = self.base_manga_url
         url = f"{url}?id={manga_id}&url={manga_url}"
 
         res = requests.get(url)
@@ -78,7 +72,7 @@ class MangaAPIClient:
         manga["CoverImg"] = bytes(manga["CoverImg"], "utf-8")
 
         if manga["LastReleasedChapter"] is not None:
-            manga["LastReleasedChapter"]["UpdatedAt"] = self.get_updated_at_datetime(
+            manga["LastReleasedChapter"]["UpdatedAt"] = get_updated_at_datetime(
                 manga["LastReleasedChapter"]["UpdatedAt"]
             )
         else:
@@ -88,7 +82,7 @@ class MangaAPIClient:
                 "URL": manga["URL"],
             }
         if manga["LastReadChapter"] is not None:
-            manga["LastReadChapter"]["UpdatedAt"] = self.get_updated_at_datetime(
+            manga["LastReadChapter"]["UpdatedAt"] = get_updated_at_datetime(
                 manga["LastReadChapter"]["UpdatedAt"]
             )
         else:
@@ -101,7 +95,7 @@ class MangaAPIClient:
         return manga
 
     def get_mangas(self) -> list[dict[str, Any]]:
-        url = self.base_url
+        url = self.base_manga_url
         url = f"{url}s"
 
         res = requests.get(url)
@@ -122,10 +116,8 @@ class MangaAPIClient:
             manga["CoverImg"] = bytes(manga["CoverImg"], "utf-8")
 
             if manga["LastReleasedChapter"] is not None:
-                manga["LastReleasedChapter"]["UpdatedAt"] = (
-                    self.get_updated_at_datetime(
-                        manga["LastReleasedChapter"]["UpdatedAt"]
-                    )
+                manga["LastReleasedChapter"]["UpdatedAt"] = get_updated_at_datetime(
+                    manga["LastReleasedChapter"]["UpdatedAt"]
                 )
             else:
                 manga["LastReleasedChapter"] = {
@@ -134,7 +126,7 @@ class MangaAPIClient:
                     "URL": manga["URL"],
                 }
             if manga["LastReadChapter"] is not None:
-                manga["LastReadChapter"]["UpdatedAt"] = self.get_updated_at_datetime(
+                manga["LastReadChapter"]["UpdatedAt"] = get_updated_at_datetime(
                     manga["LastReadChapter"]["UpdatedAt"]
                 )
             else:
@@ -153,7 +145,7 @@ class MangaAPIClient:
         manga_url: str = "",
     ) -> dict[str, str]:
         path = "/status"
-        url = f"{self.base_url}{path}"
+        url = f"{self.base_manga_url}{path}"
         url = f"{url}?id={manga_id}&url={manga_url}"
 
         request_body = {
@@ -183,7 +175,7 @@ class MangaAPIClient:
         chapter_internal_id: str = "",
     ) -> dict[str, str]:
         path = "/last_read_chapter"
-        url = f"{self.base_url}{path}"
+        url = f"{self.base_manga_url}{path}"
         url = (
             f"{url}?id={manga_id}&url={manga_url}&manga_internal_id={manga_internal_id}"
         )
@@ -217,7 +209,7 @@ class MangaAPIClient:
         get_cover_img_from_source: bool = False,
     ) -> dict[str, str]:
         path = "/cover_img"
-        url = f"{self.base_url}{path}"
+        url = f"{self.base_manga_url}{path}"
         url = f"{url}?id={manga_id}&url={manga_url}&manga_internal_id={manga_internal_id}&{'&cover_img_url=%s' % cover_img_url if cover_img_url else ''}{f'&get_cover_img_from_source={str(get_cover_img_from_source).lower()}' if get_cover_img_from_source else ''}"
 
         res = requests.patch(url, files={"cover_img": cover_img})
@@ -233,8 +225,25 @@ class MangaAPIClient:
 
         return res.json()
 
+    def turn_manga_into_multimanga(self, manga_id: int = 0) -> dict[str, str]:
+        url = self.base_manga_url + "/turn_into_multimanga"
+        url = f"{url}?id={manga_id}"
+
+        res = requests.post(url)
+
+        if res.status_code not in self.acceptable_status_codes:
+            raise APIException(
+                "error while turning manga into multimanga",
+                url,
+                "POST",
+                res.status_code,
+                res.text,
+            )
+
+        return res.json()
+
     def delete_manga(self, manga_id: int = 0, manga_url: str = "") -> dict[str, str]:
-        url = self.base_url
+        url = self.base_manga_url
         url = f"{url}?id={manga_id}&url={manga_url}"
 
         res = requests.delete(url)
@@ -254,7 +263,7 @@ class MangaAPIClient:
         self, manga_id: int = 0, manga_url: str = "", manga_internal_id: str = ""
     ) -> list[dict]:
         path = "/chapters"
-        url = f"{self.base_url}{path}"
+        url = f"{self.base_manga_url}{path}"
         url = (
             f"{url}?id={manga_id}&url={manga_url}&manga_internal_id={manga_internal_id}"
         )
@@ -278,7 +287,7 @@ class MangaAPIClient:
     def search_manga(
         self, term: str, limit: int, source_site_url: str
     ) -> dict[str, str]:
-        url = self.base_url + "/search"
+        url = self.base_manga_url + "s/search"
 
         request_body = {
             "q": term,
@@ -298,16 +307,6 @@ class MangaAPIClient:
             )
 
         return res.json()["mangas"]
-
-    def get_updated_at_datetime(self, updated_at: str) -> datetime:
-        updated_at = self.remove_nano_from_datetime(updated_at)
-        return datetime.strptime(updated_at, "%Y-%m-%dT%H:%M:%SZ")
-
-    def remove_nano_from_datetime(self, datetime_string: str):
-        if len(datetime_string) > 19:
-            return datetime_string[:19] + "Z"
-        else:
-            return datetime_string
 
     def sort_mangas(
         self, mangas: list[dict[str, Any]], sort_option: str, reverse: bool = False

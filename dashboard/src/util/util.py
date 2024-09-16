@@ -4,7 +4,6 @@ from datetime import datetime
 
 import streamlit as st
 from bs4 import BeautifulSoup
-from src.api.api_client import get_api_client
 from streamlit_extras.stylable_container import stylable_container
 
 
@@ -18,12 +17,16 @@ def get_logger():
     return logging.getLogger()
 
 
-@st.cache_data(show_spinner=False, max_entries=1, ttl=600)
-def get_manga_chapters(id: int, url: str, internal_id: str):
-    api_client = get_api_client()
-    chapters = api_client.get_manga_chapters(id, url, internal_id)
+def get_updated_at_datetime(updated_at: str) -> datetime:
+    updated_at = remove_nano_from_datetime(updated_at)
+    return datetime.strptime(updated_at, "%Y-%m-%dT%H:%M:%SZ")
 
-    return chapters
+
+def remove_nano_from_datetime(datetime_string: str):
+    if len(datetime_string) > 19:
+        return datetime_string[:19] + "Z"
+    else:
+        return datetime_string
 
 
 def centered_container(key: str):

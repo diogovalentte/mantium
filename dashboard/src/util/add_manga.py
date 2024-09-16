@@ -4,8 +4,8 @@ import src.util.defaults as defaults
 import streamlit as st
 from src.api.api_client import get_api_client
 from src.exceptions import APIException
-from src.util.util import (centered_container, get_logger, get_manga_chapters,
-                           get_relative_time, tagger)
+from src.util.util import (centered_container, get_logger, get_relative_time,
+                           get_updated_at_datetime, tagger)
 from streamlit import session_state as ss
 from streamlit_javascript import st_javascript
 
@@ -30,7 +30,7 @@ def show_add_manga_form(manga_url: str, manga_internal_id: str):
             options=ss.get("add_manga_chapter_options", []),
             index=None,
             key="add_manga_form_chapter",
-            format_func=lambda chapter: f"Ch. {chapter['Chapter']} --- {get_relative_time(api_client.get_updated_at_datetime(chapter['UpdatedAt']))}"
+            format_func=lambda chapter: f"Ch. {chapter['Chapter']} --- {get_relative_time(get_updated_at_datetime(chapter['UpdatedAt']))}"
             if chapter is not None
             else "N/A",
         )
@@ -110,7 +110,9 @@ def show_add_manga_form_url():
     if manga_url:
         try:
             with st.spinner("Getting manga chapters..."):
-                ss["add_manga_chapter_options"] = get_manga_chapters(-1, manga_url, "")
+                ss["add_manga_chapter_options"] = api_client.get_cached_manga_chapters(
+                    -1, manga_url, ""
+                )
         except APIException as e:
             resp_text = str(e.response_text).lower()
             if (
@@ -137,7 +139,7 @@ def show_add_manga_form_search():
         with container:
             try:
                 with st.spinner("Getting manga chapters..."):
-                    ss["add_manga_chapter_options"] = get_manga_chapters(
+                    ss["add_manga_chapter_options"] = api_client.get_cached_manga_chapters(
                         -1,
                         ss["add_manga_search_selected_manga"]["URL"],
                         ss["add_manga_search_selected_manga"]["InternalID"],
