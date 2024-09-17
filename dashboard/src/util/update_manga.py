@@ -173,7 +173,7 @@ def show_update_manga(manga: dict[str, Any]):
                             )
                     case _:
                         ss["update_manga_warning_message"] = (
-                            "To update the cover image, provide either an URL, upload a file, or check the box to get the image from the source site. The other fields were updated successfully."
+                            "To update the cover image, provide either an URL, upload a file, or check the box to get the image from the source site. The other fields were updated successfully"
                         )
 
                 if ss.update_manga_form_turn_into_multimanga:
@@ -504,7 +504,7 @@ def show_update_multimanga_default_form(multimanga):
                             )
                     case _:
                         ss["update_multimanga_warning_message"] = (
-                            "To update the cover image, provide either an URL, upload a file, or check the box to use the current manga's cover image. The other fields were updated successfully."
+                            "To update the cover image, provide either an URL, upload a file, or check the box to use the current manga's cover image. The other fields were updated successfully"
                         )
 
                 if not (
@@ -588,7 +588,7 @@ def show_update_multimanga_default_form(multimanga):
             ss["show_update_multimanga_manage_mangas"] = True
 
         st.button(
-            "Manage Mangas",
+            "Manage Multimanga Mangas",
             use_container_width=True,
             on_click=manage_callback,
             type="primary",
@@ -767,7 +767,7 @@ def show_multimanga_manga(
                     in str(e).lower()
                 ):
                     ss["update_multimanga_warning_message"] = (
-                        "Can't remove the last manga from a multimanga. Delete the multimanga instead."
+                        "Can't remove the last manga from a multimanga. Delete the multimanga instead"
                     )
                 else:
                     logger.exception(e)

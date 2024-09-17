@@ -596,13 +596,11 @@ class MainDashboard:
                     ss["settings_search_results_limit"] = (
                         ss.configs_select_search_results_limit
                     )
-                    ss["configs_update_success_message"] = (
-                        "Settings saved successfully."
-                    )
+                    ss["configs_update_success_message"] = "Settings saved successfully"
                     st.rerun()
                 except Exception as e:
                     logger.exception(e)
-                    ss["configs_update_error_message"] = "Error while saving settings."
+                    ss["configs_update_error_message"] = "Error while saving settings"
 
         if ss.get("configs_update_error_message", "") != "":
             st.error(ss["configs_update_error_message"])
