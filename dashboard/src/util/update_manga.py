@@ -94,7 +94,7 @@ def show_update_manga(manga: dict[str, Any]):
                 "If you manually changed the cover image and want to go back and let the Mantium fetch the cover image from the source site, check the box below."
             )
             st.checkbox(
-                "Get cover image from source site.",
+                "Get cover image from source site",
                 key="update_manga_form_get_cover_img_from_source",
             )
 
@@ -105,7 +105,9 @@ def show_update_manga(manga: dict[str, Any]):
                 "Turn into MultiManga",
                 key="update_manga_form_turn_into_multimanga",
             )
-            st.info("...")
+            st.markdown(
+                "- More about multimangas [here](https://github.com/diogovalentte/mantium/blob/main/multimangas.md)."
+            )
 
         if st.form_submit_button(
             "Update Manga",
@@ -364,7 +366,7 @@ def show_update_multimanga_manage_mangas(multimanga):
     show_multimanga_mangas(
         cols_list, mangas, multimanga["CurrentManga"]["ID"], multimanga["ID"]
     )
-    
+
     with message_container.container():
         if ss.get("update_multimanga_error_message", "") != "":
             st.error(ss["update_multimanga_error_message"])
@@ -771,9 +773,7 @@ def show_multimanga_manga(
                     logger.exception(e)
                     ss["update_multimanga_error_message"] = "Error while removing manga"
             else:
-                ss["update_multimanga_success_message"] = (
-                    "Manga removed successfully"
-                )
+                ss["update_multimanga_success_message"] = "Manga removed successfully"
             if not (
                 ss.get("update_multimanga_error_message", "") != ""
                 or ss.get("update_multimanga_warning_message", "") != ""
