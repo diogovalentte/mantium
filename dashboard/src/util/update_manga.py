@@ -281,7 +281,7 @@ def show_update_multimanga_add_manga_search(multimanga):
                     logger.exception(e)
                     st.error("Error while adding manga to multimanga")
             else:
-                ss["update_manga_success_message"] = (
+                ss["update_multimanga_success_message"] = (
                     "Manga added to multimanga successfully"
                 )
                 st.rerun()
@@ -355,7 +355,7 @@ def show_update_multimanga_add_manga_url(multimanga):
                 logger.exception(e)
                 st.error("Error while adding manga to multimanga")
         else:
-            ss["update_manga_success_message"] = (
+            ss["update_multimanga_success_message"] = (
                 "Manga added to multimanga successfully"
             )
             st.rerun()
