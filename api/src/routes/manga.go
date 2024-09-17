@@ -1538,6 +1538,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 		notify = true
 	}
 
+	var mangasWithNewChapter []*manga.Manga
 	mangas, err := manga.GetMangasDB()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -1592,38 +1593,109 @@ func UpdateMangasMetadata(c *gin.Context) {
 				continue
 			}
 
-			// Notify only if the manga's status is 1 (reading) or 2 (completed)
-			if notify && (mangaToUpdate.Status == 1 || mangaToUpdate.Status == 2) {
-				if mangaHasNewReleasedChapter {
-					for j := 0; j < retries; j++ {
-						err = NotifyMangaLastReleasedChapterUpdate(mangaToUpdate, updatedManga)
-						if err != nil {
-							if j == retries-1 {
-								logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg(fmt.Sprintf("Manga metadata updated in DB, but error while notifying: %s.\nWill continue with the next manga...", err.Error()))
-								errors["ntfy"] = append(errors["ntfy"], err.Error())
-								break
-							}
-							logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msgf("Manga metadata updated in DB, but error while notifying: %s.\nRetrying in %.2f seconds...", err.Error(), retryInterval.Seconds())
-							continue
-						}
-						break
+			if mangaHasNewReleasedChapter {
+				mangasWithNewChapter = append(mangasWithNewChapter, updatedManga)
+			}
+		}
+	}
+
+	multimangas, err := manga.GetMultiMangasDB()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	for _, multimanga := range multimangas {
+		var mangasHaveNewChapter bool
+		for _, mangaToUpdate := range multimanga.Mangas {
+			var updatedManga *manga.Manga
+			for i := 0; i < retries; i++ {
+				updatedManga, err = sources.GetMangaMetadata(mangaToUpdate.URL, mangaToUpdate.InternalID)
+				if err != nil {
+					if i != retries-1 {
+						logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msgf("Error getting manga metadata, retrying in %.2f seconds...", retryInterval.Seconds())
+						time.Sleep(retryInterval)
+						continue
 					}
 				}
+				break
 			}
+			if updatedManga == nil {
+				logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error getting manga metadata, will continue with the next manga...")
+				errors["manga_metadata"] = append(errors["manga_metadata"], err.Error())
+				continue
+			}
+			// Turn manga into valid manga to update DB
+			updatedManga.Status = multimanga.Status
+			updatedManga.ID = mangaToUpdate.ID
 
-			if trangaInt != nil {
-				err = trangaInt.StartJob(mangaToUpdate)
-				if err != nil {
-					logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Manga metadata updated in DB, but error starting job in Tranga.\nWill continue with the next manga...")
-					errors["tranga"] = append(errors["tranga"], err.Error())
+			mangaHasNewReleasedChapter := isNewChapterDifferentFromOld(mangaToUpdate.LastReleasedChapter, updatedManga.LastReleasedChapter)
+			if mangaHasNewReleasedChapter || (!mangaToUpdate.CoverImgFixed && (mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg))) || mangaToUpdate.Name != updatedManga.Name {
+				newMetadata = true
+				if mangaHasNewReleasedChapter {
+					mangasHaveNewChapter = true
 				}
-
+				err = manga.UpdateMangaMetadataDB(updatedManga)
+				if err != nil {
+					logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error saving manga new metadata to DB, will continue with the next manga...")
+					errors["manga_metadata"] = append(errors["manga_metadata"], err.Error())
+					continue
+				}
+			}
+		}
+		if mangasHaveNewChapter {
+			updatedMultimanga, err := manga.GetMultiMangaFromDB(multimanga.ID)
+			if err != nil {
+				logger.Error().Err(err).Str("multimanga_id", multimanga.ID.String()).Msg("Error getting multimanga from DB")
+				errors["manga_metadata"] = append(errors["manga_metadata"], err.Error())
+				continue
+			}
+			err = updatedMultimanga.UpdateCurrentMangaInDB()
+			if err != nil {
+				logger.Error().Err(err).Str("multimanga_id", multimanga.ID.String()).Msg("Error updating multimanga current manga in DB")
+				errors["manga_metadata"] = append(errors["manga_metadata"], err.Error())
+				continue
+			}
+			if updatedMultimanga.CurrentManga.LastReleasedChapter != nil {
+				if multimanga.CurrentManga.LastReleasedChapter == nil {
+					mangasWithNewChapter = append(mangasWithNewChapter, updatedMultimanga.CurrentManga)
+				} else if updatedMultimanga.CurrentManga.LastReleasedChapter.Chapter != multimanga.CurrentManga.LastReleasedChapter.Chapter {
+					mangasWithNewChapter = append(mangasWithNewChapter, updatedMultimanga.CurrentManga)
+				}
 			}
 		}
 	}
 
 	if newMetadata {
 		dashboard.UpdateDashboard()
+	}
+
+	for _, m := range mangasWithNewChapter {
+		// Notify only if the manga's status is 1 (reading) or 2 (completed)
+		if notify && (m.Status == 1 || m.Status == 2) {
+			for j := 0; j < retries; j++ {
+				err = NotifyMangaLastReleasedChapterUpdate(m)
+				if err != nil {
+					if j == retries-1 {
+						logger.Error().Err(err).Str("manga_url", m.URL).Msg(fmt.Sprintf("Manga metadata updated in DB, but error while notifying: %s.\nWill continue with the next manga...", err.Error()))
+						errors["ntfy"] = append(errors["ntfy"], err.Error())
+						break
+					}
+					logger.Error().Err(err).Str("manga_url", m.URL).Msgf("Manga metadata updated in DB, but error while notifying: %s.\nRetrying in %.2f seconds...", err.Error(), retryInterval.Seconds())
+					continue
+				}
+				break
+			}
+		}
+
+		if trangaInt != nil {
+			err = trangaInt.StartJob(m)
+			if err != nil {
+				logger.Error().Err(err).Str("manga_url", m.URL).Msg("Manga metadata updated in DB, but error starting job in Tranga.\nWill continue with the next manga...")
+				errors["tranga"] = append(errors["tranga"], err.Error())
+			}
+
+		}
 	}
 
 	if config.GlobalConfigs.Kaizoku.Valid && newMetadata {
@@ -1867,22 +1939,17 @@ func getMangaIDAndURL(mangaIDStr string, mangaURL string) (manga.ID, string, err
 }
 
 // NotifyMangaLastReleasedChapterUpdate notifies a manga last released chapter update
-func NotifyMangaLastReleasedChapterUpdate(oldManga *manga.Manga, newManga *manga.Manga) error {
+func NotifyMangaLastReleasedChapterUpdate(m *manga.Manga) error {
 	publisher, err := ntfy.GetNtfyPublisher()
 	if err != nil {
 		return err
 	}
 
-	title := fmt.Sprintf("(Mantium) New chapter of manga: %s", newManga.Name)
+	title := fmt.Sprintf("(Mantium) New chapter of manga: %s", m.Name)
 
-	var message string
-	if oldManga.LastReleasedChapter != nil {
-		message = fmt.Sprintf("New chapter: %s\nLast chapter: %s", newManga.LastReleasedChapter.Chapter, oldManga.LastReleasedChapter.Chapter)
-	} else {
-		message = fmt.Sprintf("New chapter: %s\nLast chapter: N/A", newManga.LastReleasedChapter.Chapter)
-	}
+	message := fmt.Sprintf("New chapter: %s", m.LastReleasedChapter.Chapter)
 
-	chapterLink, err := url.Parse(newManga.LastReleasedChapter.URL)
+	chapterLink, err := url.Parse(m.LastReleasedChapter.URL)
 	if err != nil {
 		return err
 	}

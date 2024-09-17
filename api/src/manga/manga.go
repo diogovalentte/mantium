@@ -23,6 +23,10 @@ type (
 	Status int
 )
 
+func (id ID) String() string {
+    return fmt.Sprintf("%d", id)
+}
+
 // Manga is the interface for a manga
 type Manga struct {
 	// Source is the source of the manga, usually the domain of the website

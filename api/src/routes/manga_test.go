@@ -946,14 +946,7 @@ func requestHelper(method, url string, body io.Reader, target interface{}) error
 
 func TestNotifyMangaLastReleasedChapterUpdate(t *testing.T) {
 	t.Run("Notify manga last released chapter update", func(t *testing.T) {
-		oldManga := &manga.Manga{
-			Name: "One Piece",
-			LastReleasedChapter: &manga.Chapter{
-				Chapter: "1000",
-				URL:     "https://mangahub.io/chapter/one-piece_142/chapter-1000",
-			},
-		}
-		newManga := &manga.Manga{
+		m := &manga.Manga{
 			Name: "One Piece",
 			LastReleasedChapter: &manga.Chapter{
 				Chapter: "1001",
@@ -961,7 +954,7 @@ func TestNotifyMangaLastReleasedChapterUpdate(t *testing.T) {
 			},
 		}
 
-		err := routes.NotifyMangaLastReleasedChapterUpdate(oldManga, newManga)
+		err := routes.NotifyMangaLastReleasedChapterUpdate(m)
 		if err != nil {
 			t.Fatal(err)
 		}
