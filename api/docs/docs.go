@@ -487,7 +487,7 @@ const docTemplate = `{
         },
         "/mangas/add_to_kaizoku": {
             "post": {
-                "description": "Add the mangas in the database to Kaizoku. If it fails to add a manga, it will continue with the next manga. This is a heavy operation depending on the number of mangas in the database.",
+                "description": "Add the mangas in the database to Kaizoku. Add only the current manga of multimangas. If it fails to add a manga, it will continue with the next manga. This is a heavy operation depending on the number of mangas in the database.",
                 "produces": [
                     "application/json"
                 ],
@@ -516,7 +516,7 @@ const docTemplate = `{
         },
         "/mangas/add_to_tranga": {
             "post": {
-                "description": "Add the mangas in the database to Tranga. If it fails to add a manga, it will continue with the next manga. This is a heavy operation depending on the number of mangas in the database. Currently, only MangaDex mangas can be added to Tranga, but it'll try all mangas anyway.",
+                "description": "Add the mangas in the database to Tranga. Add only the current manga of multimangas. If it fails to add a manga, it will continue with the next manga. This is a heavy operation depending on the number of mangas in the database. Currently, only MangaDex mangas can be added to Tranga, but it'll try all mangas anyway.",
                 "produces": [
                     "application/json"
                 ],
