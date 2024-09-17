@@ -402,6 +402,22 @@ func GetMangasiFrame(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
+	multimangas, err := manga.GetMultiMangasDB()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	for _, multimanga := range multimangas {
+		multimanga.CurrentManga.LastReadChapter = multimanga.LastReadChapter
+		multimanga.CurrentManga.Status = multimanga.Status
+		if multimanga.CoverImgFixed {
+			multimanga.CurrentManga.CoverImg = multimanga.CoverImg
+			multimanga.CurrentManga.CoverImgURL = multimanga.CoverImgURL
+			multimanga.CurrentManga.CoverImgResized = multimanga.CoverImgResized
+			multimanga.CurrentManga.CoverImgFixed = true
+		}
+		allMangas = append(allMangas, multimanga.CurrentManga)
+	}
 	allUnreadMangas := manga.FilterUnreadChapterMangas(allMangas)
 	mangas := []*manga.Manga{}
 	for _, manga := range allUnreadMangas {
@@ -605,7 +621,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
     </style>
 
     <script>
-      function setLastReadChapter(mangaId) {
+      function setMangaLastReadChapter(mangaId) {
         try {
             var xhr = new XMLHttpRequest();
             var url = '{{ .APIURL }}/v1/manga/last_read_chapter?id=' + encodeURIComponent(mangaId);
@@ -632,6 +648,37 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
             xhr.send(JSON.stringify(body));
         } catch (error) {
             console.log('Request to update manga', mangaId, ' last read chapter failed:', error);
+            handleSetLastReadChapterError("manga-" + mangaId)
+        }
+      }
+
+      function setMultiMangaLastReadChapter(multimangaId, mangaId) {
+        try {
+            var xhr = new XMLHttpRequest();
+            var url = '{{ .APIURL }}/v1/multimanga/last_read_chapter?id=' + encodeURIComponent(multimangaId) + '&manga_id=' + encodeURIComponent(mangaId);
+            xhr.open('PATCH', url, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+
+            xhr.onload = function () {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                console.log('Request to update multimanga', multimangaId, ' last read chapter finished with success:', xhr.responseText);
+                location.reload();
+              } else {
+                console.log('Request to update multimanga', multimangaId, ' last read chapter failed:', xhr.responseText);
+                handleSetLastReadChapterError("manga-" + mangaId)
+              }
+            };
+
+            xhr.onerror = function () {
+              console.log('Request to update multimanga', multimangaId, ' last read chapter failed:', xhr.responseText);
+              handleSetLastReadChapterError(mangaId)
+            };
+
+            var body = {};
+
+            xhr.send(JSON.stringify(body));
+        } catch (error) {
+            console.log('Request to update multimanga', multimangaId, ' last read chapter failed:', error);
             handleSetLastReadChapterError("manga-" + mangaId)
         }
       }
@@ -753,7 +800,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
             {{ end }}
 
             <div>
-                <button id="manga-{{ .ID }}" onclick="setLastReadChapter('{{ .ID }}')" class="set-last-read-button" onmouseenter="this.style.cursor='pointer';">Set last read</button>
+                <button id="manga-{{ .ID }}" onclick="{{ if eq .MultiMangaID 0 }}setMangaLastReadChapter('{{ .ID }}'){{ else }}setMultiMangaLastReadChapter('{{ .MultiMangaID }}', '{{ .ID }}'){{ end }}" class="set-last-read-button" onmouseenter="this.style.cursor='pointer';">Set last read</button>
             </div>
         </div>
 
