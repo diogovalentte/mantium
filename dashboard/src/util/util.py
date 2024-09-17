@@ -46,14 +46,20 @@ def centered_container(key: str):
 
 
 def tagger(
-    content: str, tag: str, background_color: str | None = "red", extra_css: str = ""
+    content: str,
+    tag: str,
+    background_color: str | None = "red",
+    extra_css: str = "",
+    text_color: str | None = "white",
 ):
     """Creates a tag element.
 
     Args:
         content (str): Content to be tagged.
         tag (str): Tag content, can be a simple text or HTML & CSS.
-        backgroun_color (str | None, optional): Tag background color. Can be any CSS valid color. Defaults to "red".
+        background_color (str | None, optional): Tag background color. Can be any CSS valid color. Defaults to "red".
+        extra_css (str, optional): Extra CSS to be added to the tag. Defaults to "".
+        text_color (str | None, optional): Tag text color. Can be any CSS valid color. Defaults to "white".
     """
     html = f"""
         {content} <span style="display:inline-block;
@@ -61,7 +67,7 @@ def tagger(
         padding: 0.1rem 0.5rem;
         font-size: 14px;
         font-weight: 400;
-        color:white;
+        color: {text_color};
         border-radius: 1rem;{extra_css}">{tag}</span>
     """
 
@@ -112,3 +118,29 @@ def fix_streamlit_index_html():
     index_path.write_text(str(soup))
 
     return
+
+
+def get_source_name_and_color(source: str):
+    """Returns the source name, text color, and background color.
+
+    Args:
+        source (str): Source.
+
+    Returns:
+        (str, str, str): Source name, text color, background color.
+    """
+    match source:
+        case "mangadex.org":
+            return "MangaDex", "white", "#ff6740"
+        case "comick.io" | "comick.xyz":
+            return "ComicK", "white", "#1f2937"
+        case "mangaplus.shueisha.co.jp":
+            return "MangaPlus", "white", "#d40a15"
+        case "mangahub.io":
+            return "MangaHub", "white", "#dc98f1"
+        case "mangaupdates":
+            return "MangaUpdates", "white", "#f69731"
+        case _:
+            return source, "black", "white"
+
+

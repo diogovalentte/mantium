@@ -5,24 +5,22 @@ import streamlit as st
 from src.api.manga_api import MangaAPIClient
 from src.api.multimanga_api import MultiMangaAPIClient
 from src.api.system_api import DashboardAPIClient
+from streamlit import session_state as ss
 
 
 @st.cache_data()
 def get_api_client():
-    api_client = st.session_state.get("api_client", None)
-    if api_client is None:
-        logger = logging.getLogger("api_client")
-        logger.info("Defining the API client...")
+    logger = logging.getLogger("api_client")
+    logger.info("Defining the API client...")
 
-        api_address = os.environ.get("API_ADDRESS", "")
-        if api_address == "":
-            api_address = "http://localhost:8080"
-        logger.info(f"API address: {api_address}")
+    api_address = os.environ.get("API_ADDRESS", "")
+    if api_address == "":
+        api_address = "http://localhost:8080"
+    logger.info(f"API address: {api_address}")
 
-        api_client = APIClient(api_address)
-        st.session_state["api_client"] = api_client
+    api_client = APIClient(api_address)
 
-        logger.info("API client defined")
+    logger.info("API client defined")
 
     return api_client
 

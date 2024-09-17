@@ -1,12 +1,17 @@
+import base64
+from datetime import datetime
+from io import BytesIO
 from typing import Any
 
 import src.util.defaults as defaults
 import streamlit as st
+from PIL import Image
 from src.api.api_client import get_api_client
 from src.exceptions import APIException
 from src.util.add_manga import show_search_manga_term_form
-from src.util.util import (get_logger, get_relative_time,
-                           get_updated_at_datetime)
+from src.util.util import (centered_container, get_logger, get_relative_time,
+                           get_source_name_and_color, get_updated_at_datetime,
+                           tagger)
 from streamlit import session_state as ss
 from streamlit_extras.stylable_container import stylable_container
 
@@ -265,7 +270,9 @@ def show_update_multimanga_add_manga_search(multimanga):
                     )
             except APIException as e:
                 if "manga already exists in DB" in str(e):
-                    st.warning("Manga already exists in multimanga or as a normal manga")
+                    st.warning(
+                        "Manga already exists in multimanga or as a normal manga"
+                    )
                 else:
                     logger.exception(e)
                     st.error("Error while adding manga to multimanga")
@@ -335,13 +342,9 @@ def show_update_multimanga_add_manga_url(multimanga):
                 and "not found" in resp_text
             ):
                 st.warning("No source site for this manga")
-            elif (
-                "invalid manga url" in resp_text
-            ):
+            elif "invalid manga url" in resp_text:
                 st.warning("Invalid URL")
-            elif (
-                "manga not found in source" in resp_text
-            ):
+            elif "manga not found in source" in resp_text:
                 st.warning("Manga not found")
             else:
                 logger.exception(e)
@@ -354,7 +357,21 @@ def show_update_multimanga_add_manga_url(multimanga):
 
 
 def show_update_multimanga_manage_mangas(multimanga):
-    pass
+    message_container = st.empty()
+
+    mangas = multimanga["Mangas"]
+    cols_list = st.columns(2)
+    show_multimanga_mangas(
+        cols_list, mangas, multimanga["CurrentManga"]["ID"], multimanga["ID"]
+    )
+    
+    with message_container.container():
+        if ss.get("update_multimanga_error_message", "") != "":
+            st.error(ss["update_multimanga_error_message"])
+            ss["update_multimanga_error_message"] = ""
+        if ss.get("update_multimanga_warning_message", "") != "":
+            st.warning(ss["update_multimanga_warning_message"])
+            ss["update_multimanga_warning_message"] = ""
 
 
 def show_update_multimanga_default_form(multimanga):
@@ -566,7 +583,7 @@ def show_update_multimanga_default_form(multimanga):
         )
 
         def manage_callback():
-            ss["show_update_multimanga_manage_mangas"] = False
+            ss["show_update_multimanga_manage_mangas"] = True
 
         st.button(
             "Manage Mangas",
@@ -575,3 +592,190 @@ def show_update_multimanga_default_form(multimanga):
             type="primary",
             key="update_multimanga_mangas_show_manage_mangas_button",
         )
+
+
+def show_multimanga_mangas(
+    cols_list: list, mangas, current_manga_id: int, multimanga_id: int
+):
+    """Show the mangas of a multimanga in the cols_list columns.
+
+    Args:
+        cols_list (list): A list of streamlit.columns.
+        mangas (dict): A list of mangas.
+    """
+    col_index = 0
+    for manga in mangas:
+        if col_index == len(cols_list):
+            col_index = 0
+        with cols_list[col_index]:
+            with st.container(border=True):
+                with centered_container("center_container"):
+                    show_multimanga_manga(
+                        manga, multimanga_id, manga["ID"] == current_manga_id
+                    )
+        col_index += 1
+
+
+def show_multimanga_manga(
+    manga: dict[str, Any], multimanga_id: int, current_manga: bool = False
+):
+    # Try to make the title fit in the container the best way
+    # Also try to make the containers the same size
+    default_title_font_size = 36
+    title_len = len(manga["Name"])
+    if title_len < 15:
+        font_size = default_title_font_size
+        margin = 0
+    elif title_len < 30:
+        font_size = 20
+        margin = (default_title_font_size - font_size) / 2 + 1.6
+    else:
+        font_size = 15
+        margin = (default_title_font_size - font_size) / 2 + 1.6
+    improve_headers = """
+        <style>
+            /* Hide the header link button */
+            h1.manga_header > div > a {
+                display: none !important;
+            }
+            /* Add ellipsis (...) if the manga name is to long */
+            h1.manga_header {
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+            }
+
+            h1.manga_header {
+                padding: 0px 0px 1rem;
+            }
+
+            a.manga_header {
+                text-decoration: none;
+                color: inherit;
+            }
+            a.manga_header:hover {
+                color: #04c9b7;
+            }
+        </style>
+    """
+    st.markdown(improve_headers, unsafe_allow_html=True)
+    st.markdown(
+        f"""<h1
+            class="manga_header" style='text-align: center; margin-top: {margin}px; margin-bottom: {margin}px; font-size: {font_size}px;'>
+                <a class="manga_header" href="{manga["URL"]}" target="_blank">{manga["Name"]}</a>
+            </h1>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    if manga["CoverImg"] is not None:
+        img_bytes = base64.b64decode(manga["CoverImg"])
+        img = BytesIO(img_bytes)
+        if not manga["CoverImgResized"]:
+            img = Image.open(img)
+            img = img.resize((250, 355))
+        st.image(img)
+    elif manga["CoverImgURL"] != "":
+        st.markdown(
+            f"""<img src="{manga["CoverURL"]}" width="250" height="355"/>""",
+            unsafe_allow_html=True,
+        )
+    # Hide the "View fullscreen" button from the image
+    hide_img_fs = """
+    <style>
+        button[title="View fullscreen"]{
+            display: none !important;
+        }
+    </style>
+    """
+    st.markdown(hide_img_fs, unsafe_allow_html=True)
+
+    chapter_tag_content = f"""
+        <a href="{manga["LastReleasedChapter"]["URL"]}" target="_blank" style="text-decoration: none; color: {defaults.chapter_link_tag_text_color}">
+            <span>{f'Ch. {manga["LastReleasedChapter"]["Chapter"]}' if manga["LastReleasedChapter"]["Chapter"] != "" else "N/A"}</span>
+        </a>
+    """
+
+    release_date = (
+        manga["LastReleasedChapter"]["UpdatedAt"]
+        if manga["LastReleasedChapter"]["UpdatedAt"] != datetime(1970, 1, 1)
+        else "N/A"
+    )
+    if release_date != "N/A":
+        relative_release_date = get_relative_time(release_date)
+    else:
+        relative_release_date = release_date
+
+    tagger(
+        "<strong>Last Released Chapter:</strong>",
+        chapter_tag_content,
+        defaults.chapter_link_tag_background_color,
+        "float: right;",
+    )
+    st.caption(
+        f'**Release Date**: <span style="float: right;" title="{release_date}">{relative_release_date}</span>',
+        unsafe_allow_html=True,
+    )
+
+    source_name, source_text_color, source_background_color = get_source_name_and_color(
+        manga["Source"]
+    )
+
+    tags = f"""
+        <span style="display:inline-block;
+        background-color: {source_background_color};
+        padding: 0.1rem 0.5rem;
+        font-size: 14px;
+        font-weight: 400;
+        color: {source_text_color};
+        border-radius: 1rem;">{source_name}</span>
+    """
+    if current_manga:
+        tags += f"""<span style="display:inline-block;
+            background-color: {defaults.chapter_link_tag_background_color};
+            padding: 0.1rem 0.5rem;
+            font-size: 14px;
+            font-weight: 400;
+            color: {defaults.chapter_link_tag_text_color};
+            border-radius: 1rem;
+            float: right;">Current Manga</span>
+        """
+
+    st.write(tags, unsafe_allow_html=True)
+
+    with stylable_container(
+        key="update_manga_delete_button",
+        css_styles="""
+            button {
+                background-color: red;
+                color: white;
+            }
+        """,
+    ):
+        if st.button(
+            "Remove",
+            key="update_multimanga_mangas_mangage_mangas_" + str(manga["ID"]),
+            use_container_width=True,
+        ):
+            try:
+                api_client.remove_manga_from_multimanga(multimanga_id, manga["ID"])
+            except Exception as e:
+                if (
+                    "attempted to remove the last manga from a multimanga"
+                    in str(e).lower()
+                ):
+                    ss["update_multimanga_warning_message"] = (
+                        "Can't remove the last manga from a multimanga. Delete the multimanga instead."
+                    )
+                else:
+                    logger.exception(e)
+                    ss["update_multimanga_error_message"] = "Error while removing manga"
+            else:
+                ss["update_multimanga_success_message"] = (
+                    "Manga removed successfully"
+                )
+            if not (
+                ss.get("update_multimanga_error_message", "") != ""
+                or ss.get("update_multimanga_warning_message", "") != ""
+            ):
+                st.rerun()
