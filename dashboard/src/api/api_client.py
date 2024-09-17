@@ -5,7 +5,6 @@ import streamlit as st
 from src.api.manga_api import MangaAPIClient
 from src.api.multimanga_api import MultiMangaAPIClient
 from src.api.system_api import DashboardAPIClient
-from streamlit import session_state as ss
 
 
 @st.cache_data()

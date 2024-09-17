@@ -16,10 +16,10 @@ from streamlit import session_state as ss
 from streamlit_extras.stylable_container import stylable_container
 
 logger = get_logger()
-api_client = get_api_client()
 
 
 def show_update_manga(manga: dict[str, Any]):
+    api_client = get_api_client()
     try:
         with st.spinner("Getting manga chapters..."):
             ss["update_manga_chapter_options"] = api_client.get_cached_manga_chapters(
@@ -224,6 +224,7 @@ def show_update_manga(manga: dict[str, Any]):
 
 
 def show_update_multimanga(multimangaID):
+    api_client = get_api_client()
     try:
         multimanga = api_client.get_multimanga(multimangaID)
     except Exception as e:
@@ -253,6 +254,7 @@ def show_update_multimanga(multimangaID):
 
 
 def show_update_multimanga_add_manga_search(multimanga):
+    api_client = get_api_client()
     button_name, key_to_save_manga = (
         "Add Manga",
         "update_multimanga_mangas_add_manga_selected_manga",
@@ -322,6 +324,7 @@ def show_update_multimanga_add_manga_search(multimanga):
 
 
 def show_update_multimanga_add_manga_url(multimanga):
+    api_client = get_api_client()
     manga_url = st.text_input(
         "Manga URL",
         placeholder="https://mangahub.io/manga/one-piece",
@@ -377,6 +380,7 @@ def show_update_multimanga_manage_mangas(multimanga):
 
 
 def show_update_multimanga_default_form(multimanga):
+    api_client = get_api_client()
     with st.form(key="update_multimanga_form", border=False):
         st.selectbox(
             "Status",
@@ -621,6 +625,7 @@ def show_multimanga_mangas(
 def show_multimanga_manga(
     manga: dict[str, Any], multimanga_id: int, current_manga: bool = False
 ):
+    api_client = get_api_client()
     # Try to make the title fit in the container the best way
     # Also try to make the containers the same size
     default_title_font_size = 36
