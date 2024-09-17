@@ -22,7 +22,7 @@ var GlobalConfigs = &Configs{
 	Kaizoku:                  &KaizokuConfigs{},
 	Tranga:                   &TrangaConfigs{},
 	ConfigsFilePath:          "./configs/configs.json",
-	DefaultConfigsFilePath:   "./defaults/configs.json",
+	DefaultConfigsFilePath:   "../defaults/configs.json",
 }
 
 // Configs is a struct that holds all the configurations.

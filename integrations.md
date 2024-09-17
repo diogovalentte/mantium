@@ -11,10 +11,10 @@ Using environment variables, you can enable the [Kaizoku](https://github.com/oae
 
 #### Mangal sources
 Kaizoku uses [Mangal](https://github.com/metafates/mangal) under the hood to download the chapters. Mangal can only download from configured sources, like the built-in Mangadex source.
-> There is no built-in source for ComicK, but you can add a custom one. Download the Lua script `api/defaults/ComicK.lua` in this repository and add it to the folder `/config/.config/mangal/sources` of your Kaizoku Docker container.
+> There is no built-in source for ComicK, but you can add a custom one. Download the Lua script `defaults/ComicK.lua` in this repository and add it to the folder `/config/.config/mangal/sources` of your Kaizoku Docker container.
 > - This source downloads unique chapters. For example, if group A uploads chapter 110 of a manga and then group B uploads the same chapter, this source will download the chapter from group B instead of downloading both chapters, as group B's chapter was the last one uploaded.
 
-> There is also the file `api/defaults/MangaDex.lua` file in this repo. It's an alternative to the Kaizoku MangaDex source where the only difference is that it also downloads unique chapters and has a fix that allows downloading manga categorized as pornographic. If you want to use it, delete the source file `MangaDex.lua` in your Kaizoku container and add the one to this repository. After this, execute `sudo chattr +i <path to MangaDex.lua file>` so Kaizoku doesn't overwrite this file after the container's restart.
+> There is also the file `defaults/MangaDex.lua` file in this repo. It's an alternative to the Kaizoku MangaDex source where the only difference is that it also downloads unique chapters and has a fix that allows downloading manga categorized as pornographic. If you want to use it, delete the source file `MangaDex.lua` in your Kaizoku container and add the one to this repository. After this, execute `sudo chattr +i <path to MangaDex.lua file>` so Kaizoku doesn't overwrite this file after the container's restart.
 > - After adding the file, restart the container and execute `mangal clear -c` inside the container to clear the mangal cache.
 
 > Some site sources that Mantium supports don't have a built-in or custom source, the integration will not work with mangas tracked in them.

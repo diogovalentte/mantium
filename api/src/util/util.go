@@ -176,7 +176,7 @@ func ResizeImage(imgBytes []byte, width, height uint) ([]byte, error) {
 func GetDefaultCoverImg() ([]byte, error) {
 	contextError := "error getting default cover image from file"
 
-	img, err := os.ReadFile("defaults/default_cover_img.jpg")
+	img, err := os.ReadFile("../defaults/default_cover_img.jpg")
 	if err != nil {
 		return nil, AddErrorContext(contextError, err)
 	}

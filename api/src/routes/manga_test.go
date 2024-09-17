@@ -379,7 +379,7 @@ func TestUpdateManga(t *testing.T) {
 	t.Run("Update a manga cover img with a file", func(t *testing.T) {
 		test := mangasRequestsTestTable["valid manga with read chapter"]
 
-		coverImg, err := os.ReadFile("../../defaults/default_cover_img.jpg")
+		coverImg, err := os.ReadFile("../../../defaults/default_cover_img.jpg")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -784,7 +784,7 @@ func TestMultiMangaLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Update a multimanga cover img with a file", func(t *testing.T) {
-		coverImg, err := os.ReadFile("../../defaults/default_cover_img.jpg")
+		coverImg, err := os.ReadFile("../../../defaults/default_cover_img.jpg")
 		if err != nil {
 			t.Fatal(err)
 		}
