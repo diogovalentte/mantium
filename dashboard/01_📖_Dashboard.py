@@ -88,14 +88,7 @@ class MainDashboard:
         if "system_last_update_time" not in ss:
             ss["system_last_update_time"] = self.api_client.check_for_updates()
 
-        @st.experimental_fragment(run_every=5)
-        def check_for_updates():
-            last_update = self.api_client.check_for_updates()
-            if last_update != ss["system_last_update_time"]:
-                ss["system_last_update_time"] = last_update
-                st.rerun()
-
-        check_for_updates()
+        self.update_dashboard_job()
 
         self.show_dialogs()
 
@@ -616,6 +609,14 @@ class MainDashboard:
             st.info("You can try to refresh the page.")
             ss["dashboard_error"] = False
             st.stop()
+
+    @st.experimental_fragment(run_every=5)
+    def update_dashboard_job(self):
+        last_update = self.api_client.check_for_updates()
+        if last_update != ss["system_last_update_time"]:
+            ss["system_last_update_time"] = last_update
+            st.rerun()
+
 
 
 def main(api_client):
