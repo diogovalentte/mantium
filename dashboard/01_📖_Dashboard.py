@@ -520,9 +520,14 @@ class MainDashboard:
                     manga.get("LastReadChapter", {}).get("Chapter")
                     != manga["LastReleasedChapter"]["Chapter"]
                 ):
-                    self.api_client.update_manga_last_read_chapter(
-                        manga["ID"], manga["URL"], manga["InternalID"], ""
-                    )
+                    if manga["MultiMangaID"] == 0:
+                        self.api_client.update_manga_last_read_chapter(
+                            manga["ID"], manga["URL"], manga["InternalID"]
+                        )
+                    else:
+                        self.api_client.update_multimanga_last_read_chapter(
+                            manga["MultiMangaID"], manga["ID"]
+                        )
 
             st.button(
                 "Set last read",
@@ -538,7 +543,6 @@ class MainDashboard:
                 ss["show_update_multimanga_add_manga_search"] = False
                 ss["show_update_multimanga_add_manga_url"] = False
                 ss["show_update_multimanga_manage_mangas"] = False
-
 
             st.button(
                 "Highlight",
@@ -616,7 +620,6 @@ class MainDashboard:
         if last_update != ss["system_last_update_time"]:
             ss["system_last_update_time"] = last_update
             st.rerun()
-
 
 
 def main(api_client):
