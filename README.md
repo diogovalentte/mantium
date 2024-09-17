@@ -67,6 +67,12 @@ Mantium has integrations, like:
 
 More about the integrations [here](https://github.com/diogovalentte/mantium/blob/main/kaizoku-integration.md).
 
+# Multimanga
+Imagine the same manga is released in the comick and mangadex sources, but sometimes the newest chapter is released first in comick and other times in mangadex. You may want to track the manga in both sources so that you are notified whenever a new chapter is released in both sources. But adding the same manga from different sources makes them act as completely different mangas. You would need to set the last read chapters for all mangas manually and you'll be notified for all mangas.
+
+The multimanga feature solves this issue. With it, you can track the same manga from multiple sources, and they will be treated as the same manga! No multiple notifications or setting the last read chapter for all of them!
+- A deeper explanation of the multimanga feature and a demo video can be found [here](https://github.com/diogovalentte/mantium/blob/main/multimangas.md).
+
 # Running
 
 By default, the API will be available on port `8080` and the dashboard on port `8501`, and they're not accessible by other machines. To access the API and dashboard in other machines, you run the containers in [host network mode](https://docs.docker.com/network/drivers/host/) or behind a reverse proxy.
