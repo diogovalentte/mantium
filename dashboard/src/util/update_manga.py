@@ -56,7 +56,7 @@ def show_update_manga(manga: dict[str, Any]):
                 logger.warning(e)
                 last_read_chapter_idx = None
         else:
-            last_read_chapter_idx = len(ss["update_manga_chapter_options"]) - 1
+            last_read_chapter_idx = None
         st.selectbox(
             "Last Read Chapter",
             index=last_read_chapter_idx,
@@ -401,7 +401,7 @@ def show_update_multimanga_default_form(multimanga):
                 logger.warning(e)
                 last_read_chapter_idx = None
         else:
-            last_read_chapter_idx = len(ss["update_multimanga_chapter_options"]) - 1
+            last_read_chapter_idx = None
         st.selectbox(
             "Last Read Chapter",
             index=last_read_chapter_idx,

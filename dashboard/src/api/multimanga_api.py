@@ -58,6 +58,16 @@ class MultiMangaAPIClient:
                 "UpdatedAt": datetime(1970, 1, 1),
                 "URL": multimanga["CurrentManga"]["URL"],
             }
+        if multimanga["LastReadChapter"] is not None:
+            multimanga["LastReadChapter"]["UpdatedAt"] = get_updated_at_datetime(
+                multimanga["LastReadChapter"]["UpdatedAt"]
+            )
+        else:
+            multimanga["LastReadChapter"] = {
+                "Chapter": "",
+                "UpdatedAt": datetime(1970, 1, 1),
+                "URL": multimanga["CurrentManga"]["URL"],
+            }
 
         for manga in multimanga["Mangas"]:
             manga["CoverImg"] = bytes(manga["CoverImg"], "utf-8")
