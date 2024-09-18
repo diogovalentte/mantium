@@ -106,7 +106,7 @@ def show_update_manga(manga: dict[str, Any]):
                 key="update_manga_form_turn_into_multimanga",
             )
             st.markdown(
-                "- More about multimangas [here](https://github.com/diogovalentte/mantium/blob/main/multimangas.md)."
+                "- More about multimangas [here](https://github.com/diogovalentte/mantium/blob/main/multimanga.md)."
             )
 
         if st.form_submit_button(
