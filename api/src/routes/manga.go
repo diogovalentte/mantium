@@ -1799,14 +1799,7 @@ func AddMangasToKaizoku(c *gin.Context) {
 		return
 	}
 	for _, multimanga := range multimangas {
-		multimanga.CurrentManga.LastReadChapter = multimanga.LastReadChapter
 		multimanga.CurrentManga.Status = multimanga.Status
-		if multimanga.CoverImgFixed {
-			multimanga.CurrentManga.CoverImg = multimanga.CoverImg
-			multimanga.CurrentManga.CoverImgURL = multimanga.CoverImgURL
-			multimanga.CurrentManga.CoverImgResized = multimanga.CoverImgResized
-			multimanga.CurrentManga.CoverImgFixed = true
-		}
 		mangas = append(mangas, multimanga.CurrentManga)
 	}
 
@@ -1880,14 +1873,7 @@ func AddMangasToTranga(c *gin.Context) {
 		return
 	}
 	for _, multimanga := range multimangas {
-		multimanga.CurrentManga.LastReadChapter = multimanga.LastReadChapter
 		multimanga.CurrentManga.Status = multimanga.Status
-		if multimanga.CoverImgFixed {
-			multimanga.CurrentManga.CoverImg = multimanga.CoverImg
-			multimanga.CurrentManga.CoverImgURL = multimanga.CoverImgURL
-			multimanga.CurrentManga.CoverImgResized = multimanga.CoverImgResized
-			multimanga.CurrentManga.CoverImgFixed = true
-		}
 		mangas = append(mangas, multimanga.CurrentManga)
 	}
 
