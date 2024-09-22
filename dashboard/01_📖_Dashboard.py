@@ -7,11 +7,23 @@ import streamlit as st
 from PIL import Image
 from src.api.api_client import get_api_client
 from src.util import defaults
-from src.util.add_manga import (show_add_manga_form_search,
-                                show_add_manga_form_url)
-from src.util.update_manga import show_update_manga, show_update_multimanga
-from src.util.util import (centered_container, fix_streamlit_index_html,
-                           get_logger, get_relative_time, tagger)
+from src.util.add_manga import (
+    show_add_custom_manga_form,
+    show_add_manga_form_search,
+    show_add_manga_form_url,
+)
+from src.util.update_manga import (
+    show_update_custom_manga,
+    show_update_manga,
+    show_update_multimanga,
+)
+from src.util.util import (
+    centered_container,
+    fix_streamlit_index_html,
+    get_logger,
+    get_relative_time,
+    tagger,
+)
 from streamlit import session_state as ss
 from streamlit_extras.stylable_container import stylable_container
 from streamlit_javascript import st_javascript
@@ -156,6 +168,16 @@ class MainDashboard:
                         on_click=on_url_click,
                     )
 
+                    def on_custom_magna_click():
+                        ss["show_add_custom_manga_form"] = True
+
+                    st.button(
+                        "Add Custom Manga",
+                        type="primary",
+                        use_container_width=True,
+                        on_click=on_custom_magna_click,
+                    )
+
                     def on_settings_click():
                         ss["show_settings_form"] = True
 
@@ -205,6 +227,17 @@ class MainDashboard:
 
             show_add_manga_form_dialog()
             ss["show_add_manga_url_form"] = False
+        elif ss.get("show_add_custom_manga_form", False):
+            ss["add_manga_success_message"] = ""
+            ss["add_manga_warning_message"] = ""
+            ss["add_manga_error_message"] = ""
+
+            @st.experimental_dialog("Add Custom Manga")
+            def show_add_manga_form_dialog():
+                show_add_custom_manga_form()
+
+            show_add_manga_form_dialog()
+            ss["show_add_custom_manga_form"] = False
         elif ss.get("show_settings_form", False):
             ss["configs_update_success_message"] = ""
             ss["configs_update_warning_message"] = ""
@@ -223,12 +256,19 @@ class MainDashboard:
             def show_highlighted_manga_dialog():
                 show_update_manga(manga)
 
+            @st.experimental_dialog(manga["Name"])
+            def show_highlighted_custom_manga_dialog():
+                show_update_custom_manga(manga)
+
             @st.experimental_dialog(manga["Name"], width="large")
             def show_highlighted_multimanga_dialog():
                 show_update_multimanga(manga["MultiMangaID"])
 
             if manga["MultiMangaID"] == 0:
-                show_highlighted_manga_dialog()
+                if manga["Source"] == defaults.CUSTOM_MANGA_SOURCE:
+                    show_highlighted_custom_manga_dialog()
+                else:
+                    show_highlighted_manga_dialog()
             else:
                 show_highlighted_multimanga_dialog()
             ss["highlighted_manga"] = None

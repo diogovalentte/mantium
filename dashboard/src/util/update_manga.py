@@ -9,9 +9,14 @@ from PIL import Image
 from src.api.api_client import get_api_client
 from src.exceptions import APIException
 from src.util.add_manga import show_search_manga_term_form
-from src.util.util import (centered_container, get_logger, get_relative_time,
-                           get_source_name_and_color, get_updated_at_datetime,
-                           tagger)
+from src.util.util import (
+    centered_container,
+    get_logger,
+    get_relative_time,
+    get_source_name_and_color,
+    get_updated_at_datetime,
+    tagger,
+)
 from streamlit import session_state as ss
 from streamlit_extras.stylable_container import stylable_container
 
@@ -191,6 +196,230 @@ def show_update_manga(manga: dict[str, Any]):
 
     with stylable_container(
         key="update_manga_delete_button",
+        css_styles="""
+            button {
+                background-color: red;
+                color: white;
+            }
+        """,
+    ):
+        if st.button(
+            "Delete Manga",
+            use_container_width=True,
+        ):
+            try:
+                api_client.delete_manga(manga["ID"])
+            except Exception as e:
+                logger.exception(e)
+                ss["update_manga_error_message"] = "Error while deleting manga"
+            else:
+                ss["update_manga_success_message"] = "Manga deleted successfully"
+            if not (
+                ss.get("update_manga_error_message", "") != ""
+                or ss.get("update_manga_warning_message", "") != ""
+            ):
+                st.rerun()
+
+    if ss.get("update_manga_error_message", "") != "":
+        st.error(ss["update_manga_error_message"])
+    if ss.get("update_manga_warning_message", "") != "":
+        st.warning(ss["update_manga_warning_message"])
+    ss["update_manga_error_message"] = ""
+    ss["update_manga_warning_message"] = ""
+
+
+def show_update_custom_manga(manga: dict[str, Any]):
+    api_client = get_api_client()
+
+    with st.form(key="update_custom_manga_form", border=False):
+        st.text_input(
+            "Manga Name (obliglatory)",
+            value=manga["Name"],
+            placeholder="One Piece",
+            key="update_custom_manga_form_name",
+        )
+
+        st.text_input(
+            "Manga URL",
+            value=manga["URL"],
+            placeholder="https://randomsite.com/title/one-piece",
+            key="update_custom_manga_form_url",
+        )
+
+        st.selectbox(
+            "Status",
+            index=manga["Status"] - 1,
+            options=list(defaults.manga_status_options.keys())[
+                1:
+            ],  # Exclude the "All" option
+            format_func=lambda index: defaults.manga_status_options[index],
+            key="update_custom_manga_form_status",
+        )
+
+        with st.expander(
+            "Next Chapter",
+        ):
+            st.text_input(
+                "New Chapter to Read",
+                value=manga["LastReadChapter"]["Chapter"],
+                placeholder="1000",
+                help="Can be a number or text",
+                key="update_custom_manga_form_chapter",
+            )
+
+            st.text_input(
+                "Chapter URL",
+                value=manga["LastReadChapter"]["URL"],
+                placeholder="https://randomsite.com/title/one-piece/chapter/1000",
+                key="update_custom_manga_form_chapter_url",
+            )
+
+            st.checkbox(
+                "No more chapters available",
+                value=manga["LastReadChapter"]["Chapter"]
+                == manga["LastReleasedChapter"]["Chapter"],
+                help="Check this if there are no more chapters available. By default, if next chapter is empty, it's checked, even if you changed it previously. You can change it anytime.",
+                key="update_custom_manga_form_no_more_chapters",
+            )
+
+        with st.expander(
+            "Cover Image",
+        ):
+            st.info(
+                "Provide only a cover image URL or a file. If neither are provided, Mantium will use a default cover image."
+            )
+            st.text_input(
+                "Cover Image URL",
+                placeholder="https://example.com/image.jpg",
+                key="update_custom_manga_form_cover_img_url",
+            )
+            st.file_uploader(
+                "Upload Cover Image",
+                type=["png", "jpg", "jpeg"],
+                key="update_custom_manga_form_cover_img_file",
+            )
+            st.checkbox(
+                "Use Mantium default cover image",
+                key="update_custom_manga_form_use_mantim_default_cover_img",
+            )
+
+        if st.form_submit_button(
+            "Add Manga",
+            use_container_width=True,
+            type="primary",
+        ):
+            try:
+                name = ss.update_custom_manga_form_name
+                url = ss.update_custom_manga_form_url
+                status = ss.update_custom_manga_form_status
+                next_chapter = ss.update_custom_manga_form_chapter
+                next_chapter_url = ss.update_custom_manga_form_chapter_url
+                manga_has_more_chapters = (
+                    not ss.update_custom_manga_form_no_more_chapters
+                )
+                cover_img_url = ss.update_custom_manga_form_cover_img_url
+                cover_img = (
+                    ss.update_custom_manga_form_cover_img_file.getvalue()
+                    if ss.update_custom_manga_form_cover_img_file
+                    else None
+                )
+                use_mantium_default_cover_img = (
+                    ss.update_custom_manga_form_use_mantim_default_cover_img
+                )
+                if name == "":
+                    st.warning("Provide a manga name")
+                elif next_chapter == "" and next_chapter_url != "":
+                    ss["update_manga_warning_message"] = (
+                        "Provide a chapter number to go with the chapter URL"
+                    )
+                else:
+                    if name != manga["Name"]:
+                        api_client.update_manga_name(name, manga["ID"])
+
+                    if url != manga["URL"]:
+                        api_client.update_manga_url(url, manga["ID"])
+
+                    if status != manga["Status"]:
+                        api_client.update_manga_status(status, manga["ID"])
+
+                    if (
+                        next_chapter != manga["LastReadChapter"]["Chapter"]
+                        or next_chapter_url != manga["LastReadChapter"]["URL"]
+                    ):
+                        api_client.update_manga_last_read_chapter(
+                            manga["ID"],
+                            "",
+                            "",
+                            next_chapter,
+                            next_chapter_url,
+                            "",
+                        )
+
+                    if (
+                        manga_has_more_chapters
+                        and manga["LastReadChapter"]["Chapter"] != ""
+                        and manga["LastReadChapter"]["Chapter"]
+                        == manga["LastReleasedChapter"]["Chapter"]
+                    ) or (
+                        not manga_has_more_chapters
+                        and manga["LastReadChapter"]["Chapter"] != ""
+                        and manga["LastReadChapter"]["Chapter"]
+                        != manga["LastReleasedChapter"]["Chapter"]
+                    ) or next_chapter != manga["LastReadChapter"]["Chapter"]:
+                        api_client.update_custom_manga_has_more_chapters(
+                            manga_has_more_chapters, manga["ID"], ""
+                        )
+
+                    values_count = sum(
+                        [
+                            bool(cover_img_url),
+                            bool(cover_img),
+                            use_mantium_default_cover_img,
+                        ]
+                    )
+                    match values_count:
+                        case 0:
+                            pass
+                        case 1:
+                            if cover_img_url != "" or cover_img is not None:
+                                api_client.update_manga_cover_img(
+                                    manga["ID"],
+                                    "",
+                                    "",
+                                    cover_img_url,
+                                    cover_img if cover_img else b"",
+                                    False,
+                                    False,
+                                )
+                            elif use_mantium_default_cover_img:
+                                api_client.update_manga_cover_img(
+                                    manga["ID"],
+                                    "",
+                                    "",
+                                    "",
+                                    b"",
+                                    False,
+                                    True,
+                                )
+                        case _:
+                            st.warning(
+                                "To update the cover image, provide either an URL, upload a file, or check the box to use the Mantium default cover image. The other fields were updated successfully"
+                            )
+
+                    if not (
+                        ss.get("update_manga_error_message", "") != ""
+                        or ss.get("update_manga_warning_message", "") != ""
+                    ):
+                        ss["update_manga_success_message"] = (
+                            "Manga updated successfully"
+                        )
+                        st.rerun()
+            except Exception as e:
+                logger.exception(e)
+                ss["update_manga_error_message"] = "Error while updating manga"
+
+    with stylable_container(
+        key="update_custom_manga_delete_button",
         css_styles="""
             button {
                 background-color: red;

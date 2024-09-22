@@ -2,6 +2,7 @@ import logging
 import os
 
 import streamlit as st
+from src.api.custom_manga_api import CustomMangaAPIClient
 from src.api.manga_api import MangaAPIClient
 from src.api.multimanga_api import MultiMangaAPIClient
 from src.api.system_api import DashboardAPIClient
@@ -24,11 +25,14 @@ def get_api_client():
     return api_client
 
 
-class APIClient(MangaAPIClient, MultiMangaAPIClient, DashboardAPIClient):
+class APIClient(
+    MangaAPIClient, MultiMangaAPIClient, DashboardAPIClient, CustomMangaAPIClient
+):
     def __init__(self, base_url: str) -> None:
         self.base_api_url = base_url
         super().__init__(self.base_api_url)
         MultiMangaAPIClient.__init__(self, self.base_api_url)
+        CustomMangaAPIClient.__init__(self, self.base_api_url)
         DashboardAPIClient.__init__(self, self.base_api_url)
 
     @st.cache_data(show_spinner=False, max_entries=5, ttl=600)
