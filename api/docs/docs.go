@@ -1315,7 +1315,7 @@ const docTemplate = `{
                 "cover_img_url": {
                     "type": "string"
                 },
-                "manga_has_no_more_chapters": {
+                "manga_has_more_chapters": {
                     "type": "boolean"
                 },
                 "name": {

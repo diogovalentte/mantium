@@ -602,12 +602,12 @@ func TestDeleteManga(t *testing.T) {
 }
 
 var addCustomMangaRequest = &routes.AddCustomMangaRequest{
-	Name:                   "Custom Manga",
-	URL:                    "https://customsite.com/title/custom_manga123",
-	Status:                 2,
-	MangaHasNoMoreChapters: true,
-	CoverImgURL:            "",
-	CoverImg:               []byte{},
+	Name:                 "Custom Manga",
+	URL:                  "https://customsite.com/title/custom_manga123",
+	Status:               2,
+	MangaHasMoreChapters: false,
+	CoverImgURL:          "",
+	CoverImg:             []byte{},
 	NextChapter: &struct {
 		Chapter string `json:"chapter"`
 		URL     string `json:"chapter_url" binding:"http_url"`

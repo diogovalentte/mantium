@@ -748,7 +748,7 @@ func AddCustomManga(c *gin.Context) {
 		Source:          "custom_manga",
 	}
 
-	if requestData.MangaHasNoMoreChapters {
+	if !requestData.MangaHasMoreChapters {
 		lastReleasedChapter := *customChapter
 		lastReleasedChapter.Type = 1
 		customManga.LastReleasedChapter = &lastReleasedChapter
@@ -812,12 +812,12 @@ type AddCustomMangaRequest struct {
 		Chapter string `json:"chapter"`
 		URL     string `json:"chapter_url" binding:"http_url"`
 	}
-	Name                   string `json:"name" binding:"required"`
-	URL                    string `json:"url" binding:"http_url"`
-	CoverImgURL            string `json:"cover_img_url" binding:"omitempty,http_url"`
-	CoverImg               []byte `json:"cover_img"`
-	Status                 int    `json:"status" binding:"required,gte=0,lte=5"`
-	MangaHasNoMoreChapters bool   `json:"manga_has_no_more_chapters"`
+	Name                 string `json:"name" binding:"required"`
+	URL                  string `json:"url" binding:"http_url"`
+	CoverImgURL          string `json:"cover_img_url" binding:"omitempty,http_url"`
+	CoverImg             []byte `json:"cover_img"`
+	Status               int    `json:"status" binding:"required,gte=0,lte=5"`
+	MangaHasMoreChapters bool   `json:"manga_has_more_chapters"`
 }
 
 // @Summary Update custom manga no more chapters
