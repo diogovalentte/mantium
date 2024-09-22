@@ -4,6 +4,8 @@ WORKDIR /app/api
 
 COPY ./api .
 
+COPY ./defaults ../defaults
+
 RUN go mod download
 
 RUN go build -o main .
