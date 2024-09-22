@@ -378,11 +378,9 @@ class MangaAPIClient:
 
         def chapters_released_sorting(manga: dict[str, Any]) -> float:
             chapter = manga["LastReleasedChapter"]["Chapter"]
-            if chapter.isdigit():
+            try:
                 return float(chapter)
-            else:
-                # Assign a very large number as a placeholder for non-numeric chapter names
-                # This ensures that they appear after numeric chapters
+            except ValueError:
                 return -float("inf")
 
         if sort_option == "Unread":
