@@ -52,7 +52,12 @@ func init() {
 	if config.GlobalConfigs.Kaizoku.Valid {
 		log.Info().Msg("Will use the Kaizoku integration")
 	} else {
-		log.Error().Msg("Will not use the Kaizoku integration")
+		log.Info().Msg("Will not use the Kaizoku integration")
+	}
+	if config.GlobalConfigs.Tranga.Valid {
+		log.Info().Msg("Will use the Tranga integration")
+	} else {
+		log.Info().Msg("Will not use the Tranga integration")
 	}
 }
 
