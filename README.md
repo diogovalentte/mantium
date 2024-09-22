@@ -17,7 +17,7 @@
 # Dashboard
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/1d12d199-e464-435f-81b5-e9c294ce7199">
+  <img src="https://github.com/user-attachments/assets/0c696396-fc78-4843-bdad-710888c0d016">
 </p>
 
 You can add a manga to Mantium using the manga URL or by searching it by name in Mantium:
@@ -28,7 +28,7 @@ Using the Manga URL | Searching by Name
 
 When you click to highlight a manga, a popup opens where you can edit or delete the manga.
 
-![image](https://github.com/user-attachments/assets/43cb3ded-c8c1-4e11-9951-c5a88921f601)
+![image](https://github.com/user-attachments/assets/da3c454f-3362-418e-a064-aa75afdb5aaa)
 
 ## Sidebar
 - On the sidebar, you can:
@@ -51,6 +51,21 @@ When you add an iFrame widget in your dashboard, it's **>your<** web browser tha
   - If you run the API on your server, add your server IP address + port in the dashboard and make sure your browser can access this IP + port.
   - If you're accessing Homarr or another dashboard with a domain and using HTTPS (like `https://dash.domain.com`), you also need to access this API with a domain and use HTTPS (like `https://mantium-api.domain.com`) to add the iFrame to your dashboard. If you try to use HTTP with your HTTPS, your browser will block the iFrame.
 
+# Custom Manga
+Mantium allows you to add mangas, manhwa, light novels, etc. that aren't from one of the supported source sites. You must manually track these mangas, providing info about them like name, URL, cover image, etc. You also **can** provide the **next chapter** you should read from the manga, and update it every time you read a chapter.
+
+When you read the last available chapter from a custom manga, check the "**No more chapters available**" checkbox so that the manga is considered read instead of unread.
+
+![image](https://github.com/user-attachments/assets/a8b3c88f-da7e-4a23-b6c6-077133edecc9)
+
+# Multimanga
+Imagine the same manga is released in the comick and mangadex sources, but sometimes the newest chapter is released first in comick and other times in mangadex. You may want to track the manga in both sources so that you are notified whenever a new chapter is released in both sources. But adding the same manga from different sources makes them act as completely different mangas. You would need to set the last read chapters for all mangas manually and be notified for all mangas.
+
+The multimanga feature solves this issue. With it, **you can track the same manga from multiple sources, and they will be treated as the same manga**! No multiple notifications or setting the last read chapter for all of them!
+- A deeper explanation of the multimanga feature and a demo video can be found [here](https://github.com/diogovalentte/mantium/blob/main/multimanga.md).
+
+![image](https://github.com/user-attachments/assets/020681aa-8e59-4f2f-aefe-c92a89251fe8)
+
 # Check manga updates and notify
 
 You can set Mantium to periodically get the metadata of the mangas you're tracking from their source sites (like every 30 minutes). If the manga metadata (like the cover image, name changes, or last release chapter) changes from the stored metadata, Mantium updates it.
@@ -66,12 +81,6 @@ Mantium has integrations, like:
 - [Ntfy](https://github.com/binwiederhier/ntfy).
 
 More about the integrations [here](https://github.com/diogovalentte/mantium/blob/main/kaizoku-integration.md).
-
-# Multimanga
-Imagine the same manga is released in the comick and mangadex sources, but sometimes the newest chapter is released first in comick and other times in mangadex. You may want to track the manga in both sources so that you are notified whenever a new chapter is released in both sources. But adding the same manga from different sources makes them act as completely different mangas. You would need to set the last read chapters for all mangas manually and you'll be notified for all mangas.
-
-The multimanga feature solves this issue. With it, you can track the same manga from multiple sources, and they will be treated as the same manga! No multiple notifications or setting the last read chapter for all of them!
-- A deeper explanation of the multimanga feature and a demo video can be found [here](https://github.com/diogovalentte/mantium/blob/main/multimanga.md).
 
 # Running
 
