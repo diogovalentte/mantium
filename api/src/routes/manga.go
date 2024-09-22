@@ -100,6 +100,15 @@ func AddManga(c *gin.Context) {
 		mangaAdd.LastReadChapter.UpdatedAt = currentTime.Truncate(time.Second)
 	}
 
+	if len(mangaAdd.CoverImg) == 0 {
+		mangaAdd.CoverImg, err = util.GetDefaultCoverImg()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		mangaAdd.CoverImgResized = true
+	}
+
 	err = mangaAdd.InsertIntoDB()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})

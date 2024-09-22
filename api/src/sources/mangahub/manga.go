@@ -63,13 +63,6 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 		}
 		mangaReturn.CoverImgResized = resized
 		mangaReturn.CoverImg = coverImg
-	} else {
-		mangaReturn.CoverImg, err = util.GetDefaultCoverImg()
-		if err != nil {
-			return nil, util.AddErrorContext(errorContext, err)
-		}
-		mangaReturn.CoverImgURL = ""
-		mangaReturn.CoverImgResized = true
 	}
 
 	// Last Released Chapter
