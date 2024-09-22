@@ -123,6 +123,10 @@ func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgB
 		}
 	}
 
+	if !IsImageValid(imageBytes) {
+		return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), fmt.Errorf("invalid image"))
+	}
+
 	img, err := ResizeImage(imageBytes, uint(DefaultImageWidth), uint(DefaultImageHeight))
 	if err != nil {
 		// JPEG format that has an unsupported subsampling ratio
@@ -179,7 +183,7 @@ func GetDefaultCoverImg() ([]byte, error) {
 	path := "../defaults/default_cover_img.jpg"
 
 	if _, err := os.Stat(path); err != nil {
-        // when testing the path is different
+		// when testing the path is different
 		path = "../../../defaults/default_cover_img.jpg"
 	}
 
@@ -194,7 +198,11 @@ func GetDefaultCoverImg() ([]byte, error) {
 // IsImageValid checks if an image is valid by decoding it
 func IsImageValid(imgBytes []byte) bool {
 	_, _, err := image.DecodeConfig(bytes.NewReader(imgBytes))
-	return err == nil
+	if err != nil {
+		return ErrorContains(err, "luma/chroma subsampling ratio")
+	}
+
+	return true
 }
 
 // GetRFC3339Datetime returns a time.Time from a RFC3339 formatted string.

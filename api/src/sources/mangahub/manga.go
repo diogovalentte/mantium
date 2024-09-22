@@ -56,13 +56,13 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 
 	// Cover Image
 	if mangaAPIResp.Data.Manga.Image != "" {
-		mangaReturn.CoverImgURL = baseUploadsURL + "/" + mangaAPIResp.Data.Manga.Image
-		coverImg, resized, err := util.GetImageFromURL(mangaReturn.CoverImgURL, 3, 1*time.Second)
-		if err != nil {
-			return nil, util.AddErrorContext(errorContext, err)
+		coverImgURL := baseUploadsURL + "/" + mangaAPIResp.Data.Manga.Image
+		coverImg, resized, err := util.GetImageFromURL(coverImgURL, 3, 1*time.Second)
+		if err == nil {
+			mangaReturn.CoverImgURL = coverImgURL
+			mangaReturn.CoverImgResized = resized
+			mangaReturn.CoverImg = coverImg
 		}
-		mangaReturn.CoverImgResized = resized
-		mangaReturn.CoverImg = coverImg
 	}
 
 	// Last Released Chapter

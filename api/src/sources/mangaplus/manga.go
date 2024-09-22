@@ -43,13 +43,13 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	caser := cases.Title(language.AmericanEnglish)
 	mangaReturn.Name = strings.TrimSpace(caser.String(strings.ToLower(mangaReturn.Name)))
 
-	mangaReturn.CoverImgURL = title.GetImagePortrait()
-	if mangaReturn.CoverImgURL == "" {
-		mangaReturn.CoverImgURL = title.GetImageLandscape()
-		if mangaReturn.CoverImgURL == "" {
-			mangaReturn.CoverImgURL = titleView.GetTitleImageUrl()
-			if mangaReturn.CoverImgURL == "" {
-				mangaReturn.CoverImgURL = titleView.GetBackgroundImageUrl()
+	coverImgURL := title.GetImagePortrait()
+	if coverImgURL == "" {
+		coverImgURL = title.GetImageLandscape()
+		if coverImgURL == "" {
+			coverImgURL = titleView.GetTitleImageUrl()
+			if coverImgURL == "" {
+				coverImgURL = titleView.GetBackgroundImageUrl()
 			}
 		}
 	}
@@ -60,13 +60,13 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 		mangaReturn.LastReleasedChapter.Type = 1
 	}
 
-	if mangaReturn.CoverImgURL != "" {
-		coverImg, resized, err := util.GetImageFromURL(mangaReturn.CoverImgURL, 3, 1*time.Second)
-		if err != nil {
-			return nil, util.AddErrorContext(errorContext, err)
+	if coverImgURL != "" {
+		coverImg, resized, err := util.GetImageFromURL(coverImgURL, 3, 1*time.Second)
+		if err == nil {
+			mangaReturn.CoverImgURL = coverImgURL
+			mangaReturn.CoverImgResized = resized
+			mangaReturn.CoverImg = coverImg
 		}
-		mangaReturn.CoverImgResized = resized
-		mangaReturn.CoverImg = coverImg
 	}
 
 	return mangaReturn, nil

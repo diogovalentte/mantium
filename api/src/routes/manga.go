@@ -611,12 +611,7 @@ func UpdateMangaCoverImg(c *gin.Context) {
 	} else if coverImgURL != "" {
 		coverImg, isImgRezied, err := util.GetImageFromURL(coverImgURL, retries, retryInterval)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-
-		if !util.IsImageValid(coverImg) {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "invalid image"})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "invalid image: " + err.Error()})
 			return
 		}
 
@@ -790,12 +785,7 @@ func AddCustomManga(c *gin.Context) {
 		}
 		customManga.CoverImg, customManga.CoverImgResized, err = util.GetImageFromURL(requestData.CoverImgURL, 3, 3*time.Second)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-
-		if !util.IsImageValid(customManga.CoverImg) {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "invalid image"})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "invalid image: " + err.Error()})
 			return
 		}
 
@@ -1246,12 +1236,7 @@ func UpdateMultiMangaCoverImg(c *gin.Context) {
 	} else if coverImgURL != "" {
 		coverImg, isImgRezied, err := util.GetImageFromURL(coverImgURL, retries, retryInterval)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-
-		if !util.IsImageValid(coverImg) {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "invalid image"})
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "invalid image: " + err.Error()})
 			return
 		}
 

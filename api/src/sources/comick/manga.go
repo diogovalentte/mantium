@@ -63,14 +63,12 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	}
 	if coverFileName != "" {
 		coverURL := fmt.Sprintf("%s/%s", baseUploadsURL, coverFileName)
-		mangaReturn.CoverImgURL = coverURL
-
 		coverImg, resized, err := util.GetImageFromURL(coverURL, 3, 1*time.Second)
-		if err != nil {
-			return nil, util.AddErrorContext(errorContext, err)
+		if err == nil {
+			mangaReturn.CoverImgURL = coverURL
+			mangaReturn.CoverImgResized = resized
+			mangaReturn.CoverImg = coverImg
 		}
-		mangaReturn.CoverImgResized = resized
-		mangaReturn.CoverImg = coverImg
 	}
 
 	return mangaReturn, nil
