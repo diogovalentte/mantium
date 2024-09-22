@@ -362,6 +362,11 @@ func UpdateMangaName(c *gin.Context) {
 		return
 	}
 
+	if newMangaName == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "you must provide a new manga name"})
+		return
+	}
+
 	mangaUpdate, err := manga.GetMangaDB(mangaID, mangaURL)
 	if err != nil {
 		if strings.Contains(err.Error(), errordefs.ErrMangaNotFoundDB.Error()) {
@@ -384,7 +389,7 @@ func UpdateMangaName(c *gin.Context) {
 }
 
 // @Summary Update manga URL
-// @Description Updates a manga URL in the database. You must provide either the manga ID or the manga current URL.
+// @Description Updates a manga URL in the database. If URL is empty and it's a custom manga, the operation is execute, else, an error is returned. You must provide either the manga ID or the manga current URL.
 // @Produce json
 // @Param id query int false "Manga ID" Example(1)
 // @Param url query string false "Manga current URL" Example("https://mangadex.org/title/1/one-piece")
@@ -409,6 +414,15 @@ func UpdateMangaURL(c *gin.Context) {
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
+	}
+
+	if newMangaURL == "" {
+		if mangaUpdate.Source == manga.CustomMangaSource {
+			newMangaURL = manga.CustomMangaURLPrefix + "/" + uuid.New().String()
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "you must provide a new manga URL"})
+			return
+		}
 	}
 
 	err = mangaUpdate.UpdateURLInDB(newMangaURL)

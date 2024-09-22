@@ -617,7 +617,7 @@ const docTemplate = `{
         },
         "/manga/url": {
             "patch": {
-                "description": "Updates a manga URL in the database. You must provide either the manga ID or the manga current URL.",
+                "description": "Updates a manga URL in the database. If URL is empty and it's a custom manga, the operation is execute, else, an error is returned. You must provide either the manga ID or the manga current URL.",
                 "produces": [
                     "application/json"
                 ],
@@ -1219,7 +1219,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "url": {
-                    "description": "URL is the URL of the manga.\nIf custom manga doesn't have a URL provided by the user, it should be like http://custom_manga/\u003cuuid\u003e.",
+                    "description": "URL is the URL of the manga.\nIf custom manga doesn't have a URL provided by the user, it should be like above CustomMangaSource/\u003cuuid\u003e.",
                     "type": "string"
                 }
             }
