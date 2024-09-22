@@ -670,6 +670,14 @@ func UpdateMangaCoverImg(c *gin.Context) {
 				time.Sleep(retryInterval)
 				continue
 			}
+			if len(updatedManga.CoverImg) == 0 {
+				continue
+			}
+		}
+
+		if len(updatedManga.CoverImg) == 0 {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "cover image not found in source"})
+			return
 		}
 
 		mangaToUpdate.CoverImgFixed = false
@@ -1315,6 +1323,15 @@ func AddMangaToMultiManga(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
+	}
+
+	if len(mangaAdd.CoverImg) == 0 {
+		mangaAdd.CoverImg, err = util.GetDefaultCoverImg()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		mangaAdd.CoverImgResized = true
 	}
 
 	multimanga, err := manga.GetMultiMangaFromDB(manga.ID(multimangaID))
@@ -2043,6 +2060,9 @@ func UpdateMangasMetadata(c *gin.Context) {
 					continue
 				}
 			}
+			if len(updatedManga.CoverImg) == 0 {
+				continue
+			}
 			break
 		}
 		if updatedManga == nil {
@@ -2050,7 +2070,17 @@ func UpdateMangasMetadata(c *gin.Context) {
 			errors["manga_metadata"] = append(errors["manga_metadata"], err.Error())
 			continue
 		}
+
 		// Turn manga into valid manga to update DB
+		if len(updatedManga.CoverImg) == 0 {
+			updatedManga.CoverImg, err = util.GetDefaultCoverImg()
+			if err != nil {
+				logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error getting default cover image, will continue with the next manga...")
+				errors["manga_metadata"] = append(errors["manga_metadata"], err.Error())
+				continue
+			}
+			updatedManga.CoverImgResized = true
+		}
 		updatedManga.Status = 1
 		updatedManga.ID = mangaToUpdate.ID
 
@@ -2090,6 +2120,9 @@ func UpdateMangasMetadata(c *gin.Context) {
 						continue
 					}
 				}
+				if len(updatedManga.CoverImg) == 0 {
+					continue
+				}
 				break
 			}
 			if updatedManga == nil {
@@ -2097,7 +2130,17 @@ func UpdateMangasMetadata(c *gin.Context) {
 				errors["manga_metadata"] = append(errors["manga_metadata"], err.Error())
 				continue
 			}
+
 			// Turn manga into valid manga to update DB
+			if len(updatedManga.CoverImg) == 0 {
+				updatedManga.CoverImg, err = util.GetDefaultCoverImg()
+				if err != nil {
+					logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error getting default cover image, will continue with the next manga...")
+					errors["manga_metadata"] = append(errors["manga_metadata"], err.Error())
+					continue
+				}
+				updatedManga.CoverImgResized = true
+			}
 			updatedManga.Status = multimanga.Status
 			updatedManga.ID = mangaToUpdate.ID
 

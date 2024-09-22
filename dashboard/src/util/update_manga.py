@@ -191,6 +191,15 @@ def show_update_manga(manga: dict[str, Any]):
                     ss["update_manga_success_message"] = "Manga updated successfully"
                     st.rerun()
             except APIException as e:
+                error_message = str(e.response_text).lower()
+                logger.exception(e)
+                if "cover image not found in source" in error_message:
+                    ss["update_manga_warning_message"] = (
+                        "Could not get cover image from source. Other fields were updated successfully"
+                    )
+                else:
+                    ss["update_manga_error_message"] = "Error while updating manga"
+            except Exception as e:
                 logger.exception(e)
                 ss["update_manga_error_message"] = "Error while updating manga"
 
