@@ -513,7 +513,7 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 				UpdatedAt: currentTime.Truncate(time.Second),
 			}
 			if chapter.URL == "" {
-				chapter.URL = mangaUpdate.URL
+				chapter.URL = manga.CustomMangaURLPrefix + "/" + uuid.New().String()
 			}
 			err = manga.UpdateCustomMangaLastReadChapterInDB(mangaUpdate, chapter)
 			if err != nil {
