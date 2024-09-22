@@ -424,7 +424,7 @@ def show_add_custom_manga_form():
 
     with st.form(key="add_custom_manga_form", border=False):
         st.text_input(
-            "Manga Name (obliglatory)",
+            "Manga Name (not optional)",
             placeholder="One Piece",
             key="add_custom_manga_form_name",
         )

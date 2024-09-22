@@ -242,7 +242,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
 
     with st.form(key="update_custom_manga_form", border=False):
         st.text_input(
-            "Manga Name (obliglatory)",
+            "Manga Name (not optional)",
             value=manga["Name"],
             placeholder="One Piece",
             key="update_custom_manga_form_name",
