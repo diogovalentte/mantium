@@ -17,6 +17,7 @@ import (
 
 	"github.com/AnthonyHewins/gotfy"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 
 	"github.com/diogovalentte/mantium/api/src/config"
@@ -483,7 +484,7 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 			if chapter.URL == "" {
 				chapter.URL = mangaUpdate.URL
 			}
-			err = mangaUpdate.UpsertChapterIntoDB(chapter)
+			err = manga.UpdateCustomMangaLastReadChapterInDB(mangaUpdate, chapter)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 				return
@@ -736,7 +737,11 @@ func AddCustomManga(c *gin.Context) {
 		Name:   requestData.Name,
 		URL:    requestData.URL,
 		Status: status,
-		Source: "custom_manga",
+		Source: manga.CustomMangaSource,
+	}
+
+	if customManga.URL == "" {
+		customManga.URL = "custom_manga_" + uuid.New().String()
 	}
 
 	if requestData.NextChapter != nil {
@@ -746,6 +751,10 @@ func AddCustomManga(c *gin.Context) {
 			URL:       requestData.NextChapter.URL,
 			Type:      2,
 			UpdatedAt: currentTime.Truncate(time.Second),
+		}
+
+		if requestData.NextChapter.URL == "" {
+			customManga.LastReadChapter.URL = "custom_manga_" + uuid.New().String()
 		}
 	}
 
@@ -806,6 +815,8 @@ func AddCustomManga(c *gin.Context) {
 		return
 	}
 
+	dashboard.UpdateDashboard()
+
 	c.JSON(http.StatusOK, gin.H{"message": "Manga added successfully"})
 }
 
@@ -865,15 +876,19 @@ func UpdateCustomMangaMoreChapters(c *gin.Context) {
 	if hasMoreChapters == "true" {
 		err = mangaToUpdate.DeleteLastReleasedChapterFromDB()
 	} else {
-		chapter := *mangaToUpdate.LastReadChapter
-		chapter.Type = 1
-		err = mangaToUpdate.UpsertChapterIntoDB(&chapter)
+		if mangaToUpdate.LastReadChapter != nil {
+			chapter := *mangaToUpdate.LastReadChapter
+			chapter.Type = 1
+			err = mangaToUpdate.UpsertChapterIntoDB(&chapter)
+		}
 	}
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
+
+	dashboard.UpdateDashboard()
 
 	c.JSON(http.StatusOK, gin.H{"message": "Custom manga updated successfully"})
 }

@@ -24,6 +24,7 @@ type Chapter struct {
 	// The timezone should be the default/system timezone.
 	UpdatedAt time.Time
 	// URL is the URL of the chapter
+	// If custom manga chapter doesn't have a URL provided by the user, it should be like custom_manga_<uuid>.
 	URL string
 	// Chapter usually is the chapter number, but in some cases it can be a one-shot or a special chapter
 	Chapter string
@@ -203,9 +204,9 @@ func deleteMangaChapter(mangaID ID, chapter *Chapter, tx *sql.Tx) error {
 
 	query = `
         DELETE FROM chapters
-        WHERE manga_id = $1 AND url = $2;
+        WHERE manga_id = $1 AND url = $2 AND type = $3;
     `
-	result, err = tx.Exec(query, mangaID, chapter.URL)
+	result, err = tx.Exec(query, mangaID, chapter.URL, chapter.Type)
 	if err != nil {
 		return util.AddErrorContext(contextError, err)
 	}

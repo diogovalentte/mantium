@@ -38,7 +38,8 @@ type Manga struct {
 	// If source is the above CustomMangaSource const, it means the manga is a custom manga created by the user.
 	// and without a source site.
 	Source string
-	// URL is the URL of the manga
+	// URL is the URL of the manga.
+	// If custom manga doesn't have a URL provided by the user, it should be like custom_manga_<uuid>.
 	URL string
 	// Name is the name of the manga
 	Name string
@@ -338,6 +339,10 @@ func (m *Manga) UpsertChapterIntoDB(chapter *Chapter) error {
 func (m *Manga) DeleteLastReadChapterFromDB() error {
 	contextError := "error deleting last read chapter '%s' of manga '%s' from DB"
 
+	if m.LastReadChapter == nil {
+		return nil
+	}
+
 	db, err := db.OpenConn()
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReadChapter, m), err)
@@ -367,6 +372,10 @@ func (m *Manga) DeleteLastReadChapterFromDB() error {
 // DeleteLastReleasedChapterFromDB deletes the last released chapter of the manga from the database
 func (m *Manga) DeleteLastReleasedChapterFromDB() error {
 	contextError := "error deleting last released chapter '%s' of manga '%s' from DB"
+
+	if m.LastReleasedChapter == nil {
+		return nil
+	}
 
 	db, err := db.OpenConn()
 	if err != nil {
@@ -409,15 +418,20 @@ func (m *Manga) DeleteChaptersFromDB() error {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m.LastReadChapter, m), err)
 	}
 
-	err = deleteMangaChapter(m.ID, m.LastReleasedChapter, tx)
-	if err != nil {
-		tx.Rollback()
-		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m.LastReadChapter, m), err)
+	if m.LastReleasedChapter != nil {
+		err = deleteMangaChapter(m.ID, m.LastReleasedChapter, tx)
+		if err != nil {
+			tx.Rollback()
+			return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m.LastReadChapter, m), err)
+		}
 	}
-	err = deleteMangaChapter(m.ID, m.LastReadChapter, tx)
-	if err != nil {
-		tx.Rollback()
-		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m.LastReadChapter, m), err)
+
+	if m.LastReadChapter != nil {
+		err = deleteMangaChapter(m.ID, m.LastReadChapter, tx)
+		if err != nil {
+			tx.Rollback()
+			return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m.LastReadChapter, m), err)
+		}
 	}
 
 	err = tx.Commit()
@@ -902,6 +916,46 @@ func getMangasFromDB(db *sql.DB) ([]*Manga, error) {
 	return mangas, nil
 }
 
+// UpdateCustomMangaLastReadChapterInDB updates the last read chapter of a custom manga in the database.
+// It also needs to delete the last released chapter.
+func UpdateCustomMangaLastReadChapterInDB(m *Manga, chapter *Chapter) error {
+	contextError := "error updating custom manga '%s' last read chapter to '%s' in DB"
+
+	db, err := db.OpenConn()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, chapter), err)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, chapter), err)
+	}
+
+	err = upsertMangaChapter(m.ID, chapter, tx)
+	if err != nil {
+		tx.Rollback()
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, chapter), err)
+	}
+
+	if m.LastReleasedChapter != nil {
+		err = deleteMangaChapter(m.ID, m.LastReleasedChapter, tx)
+		if err != nil {
+			tx.Rollback()
+			return util.AddErrorContext(fmt.Sprintf(contextError, m, chapter), err)
+		}
+	}
+
+	m.LastReadChapter = chapter
+
+	err = tx.Commit()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, chapter), err)
+	}
+
+	return nil
+}
+
 // validateManga should be used every time the API interacts with the mangas table in the database
 func validateManga(m *Manga) error {
 	contextError := "error validating manga"
@@ -916,9 +970,6 @@ func validateManga(m *Manga) error {
 	}
 	if m.Source == "" {
 		return util.AddErrorContext(contextError, fmt.Errorf("manga source is empty"))
-	}
-	if m.URL == "" {
-		return util.AddErrorContext(contextError, fmt.Errorf("manga URL is empty"))
 	}
 	if m.Name == "" {
 		return util.AddErrorContext(contextError, fmt.Errorf("manga name is empty"))
