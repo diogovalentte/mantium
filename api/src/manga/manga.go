@@ -39,7 +39,7 @@ type Manga struct {
 	// and without a source site.
 	Source string
 	// URL is the URL of the manga.
-    // If custom manga doesn't have a URL provided by the user, it should be like http://custom_manga/<uuid>.
+	// If custom manga doesn't have a URL provided by the user, it should be like http://custom_manga/<uuid>.
 	URL string
 	// Name is the name of the manga
 	Name string
@@ -921,6 +921,10 @@ func getMangasFromDB(db *sql.DB) ([]*Manga, error) {
 func UpdateCustomMangaLastReadChapterInDB(m *Manga, chapter *Chapter) error {
 	contextError := "error updating custom manga '%s' last read chapter to '%s' in DB"
 
+	if chapter.Type != 2 {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, chapter), fmt.Errorf("chapter type should be 2, instead it's %d", chapter.Type))
+	}
+
 	db, err := db.OpenConn()
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, chapter), err)
@@ -939,11 +943,14 @@ func UpdateCustomMangaLastReadChapterInDB(m *Manga, chapter *Chapter) error {
 	}
 
 	if m.LastReleasedChapter != nil {
-		err = deleteMangaChapter(m.ID, m.LastReleasedChapter, tx)
+		rChapter := *chapter
+		rChapter.Type = 1
+		err = upsertMangaChapter(m.ID, &rChapter, tx)
 		if err != nil {
 			tx.Rollback()
 			return util.AddErrorContext(fmt.Sprintf(contextError, m, chapter), err)
 		}
+		m.LastReleasedChapter = &rChapter
 	}
 
 	m.LastReadChapter = chapter

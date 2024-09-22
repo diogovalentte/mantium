@@ -411,7 +411,7 @@ func UpdateMangaURL(c *gin.Context) {
 }
 
 // @Summary Update manga last read chapter
-// @Description Updates a manga last read chapter in the database. If both `chapter` and `chapter_url` are empty strings in the body, set the last read chapter to the last released chapter for normal mangas, for custom mangas, deletes the manga's last read chapter. You must provide either the manga ID or the manga URL.
+// @Description Updates a manga last read chapter in the database. If both `chapter` and `chapter_url` are empty strings in the body, set the last read chapter to the last released chapter for normal mangas. For custom mangas, deletes the manga's last read chapter. You can't provide only the chapter_url for custom mangas. You must provide either the manga ID or the manga URL.
 // @Produce json
 // @Param id query int false "Manga ID" Example(1)
 // @Param url query string false "Manga URL" Example("https://mangadex.org/title/1/one-piece")
@@ -467,10 +467,15 @@ func UpdateMangaLastReadChapter(c *gin.Context) {
 			return
 		}
 	} else {
-		if requestData.Chapter == "" && requestData.ChapterURL == "" {
-			err = mangaUpdate.DeleteChaptersFromDB()
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		if requestData.Chapter == "" {
+			if requestData.ChapterURL == "" {
+				err = mangaUpdate.DeleteChaptersFromDB()
+				if err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+					return
+				}
+			} else {
+				c.JSON(http.StatusBadRequest, gin.H{"message": "you can't provide only the chapter_url for custom mangas"})
 				return
 			}
 		} else {
@@ -736,7 +741,7 @@ func AddCustomManga(c *gin.Context) {
 	}
 
 	if customManga.URL == "" {
-        customManga.URL = "http://custom_manga.com/" + uuid.New().String()
+		customManga.URL = "http://custom_manga.com/" + uuid.New().String()
 	}
 
 	if requestData.NextChapter != nil {
@@ -749,12 +754,10 @@ func AddCustomManga(c *gin.Context) {
 		}
 
 		if requestData.NextChapter.URL == "" {
-            customManga.LastReadChapter.URL = "http://custom_manga.com/" + uuid.New().String()
+			customManga.LastReadChapter.URL = "http://custom_manga.com/" + uuid.New().String()
 		}
-	}
 
-	if !requestData.MangaHasMoreChapters {
-		if requestData.NextChapter != nil {
+		if !requestData.MangaHasMoreChapters {
 			lastReleasedChapter := *customManga.LastReadChapter
 			lastReleasedChapter.Type = 1
 			customManga.LastReleasedChapter = &lastReleasedChapter

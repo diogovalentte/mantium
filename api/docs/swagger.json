@@ -414,7 +414,7 @@
         },
         "/manga/last_read_chapter": {
             "patch": {
-                "description": "Updates a manga last read chapter in the database. If both `chapter` and `chapter_url` are empty strings in the body, set the last read chapter to the last released chapter for normal mangas, for custom mangas, deletes the manga's last read chapter. You must provide either the manga ID or the manga URL.",
+                "description": "Updates a manga last read chapter in the database. If both `chapter` and `chapter_url` are empty strings in the body, set the last read chapter to the last released chapter for normal mangas. For custom mangas, deletes the manga's last read chapter. You can't provide only the chapter_url for custom mangas. You must provide either the manga ID or the manga URL.",
                 "produces": [
                     "application/json"
                 ],
@@ -1138,7 +1138,7 @@
                     "type": "string"
                 },
                 "url": {
-                    "description": "URL is the URL of the chapter",
+                    "description": "URL is the URL of the chapter\nIf custom manga chapter doesn't have a URL provided by the user, it should be like http://custom_manga/\u003cuuid\u003e.",
                     "type": "string"
                 }
             }
@@ -1208,7 +1208,7 @@
                     "type": "integer"
                 },
                 "url": {
-                    "description": "URL is the URL of the manga",
+                    "description": "URL is the URL of the manga.\nIf custom manga doesn't have a URL provided by the user, it should be like http://custom_manga/\u003cuuid\u003e.",
                     "type": "string"
                 }
             }
@@ -1310,7 +1310,7 @@
                 "name": {
                     "type": "string"
                 },
-                "nextChapter": {
+                "next_chapter": {
                     "type": "object",
                     "properties": {
                         "chapter": {
