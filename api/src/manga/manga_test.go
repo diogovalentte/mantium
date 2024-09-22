@@ -198,6 +198,22 @@ func TestMangaDBLifeCycle(t *testing.T) {
 			t.Fatal("no errors while updating the manga with an invalid status in DB")
 		}
 	})
+	t.Run("Should update a manga's name in DB", func(t *testing.T) {
+		err := manga.UpdateNameInDB("new manga name")
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("Should update a manga's URL in DB", func(t *testing.T) {
+		err := manga.UpdateURLInDB("https://new-manga-url.com")
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = manga.UpdateURLInDB(mangaTest.URL)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
 	t.Run("Should update a manga's cover image in DB", func(t *testing.T) {
 		err := manga.UpdateCoverImgInDB([]byte{}, false, "https://cnd.random.best-manga.jpg")
 		if err != nil {

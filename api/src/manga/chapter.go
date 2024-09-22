@@ -228,9 +228,6 @@ func validateChapter(c *Chapter) error {
 	if c == nil {
 		return util.AddErrorContext(contextError, fmt.Errorf("chapter is nil"))
 	}
-	if c.URL == "" {
-		return util.AddErrorContext(contextError, fmt.Errorf("chapter URL is empty"))
-	}
 	if c.Chapter == "" {
 		return util.AddErrorContext(contextError, fmt.Errorf("chapter chapter is empty"))
 	}

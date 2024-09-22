@@ -70,11 +70,16 @@ definitions:
       lastReadChapter:
         allOf:
         - $ref: '#/definitions/manga.Chapter'
-        description: LastReadChapter is the last chapter read by the user
+        description: |-
+          LastReadChapter is the last chapter read by the user
+          In a custom manga, this field represents the next manga the user should read
+          or, if it's equal to the last released chapter, the manga is considered read.
       lastReleasedChapter:
         allOf:
         - $ref: '#/definitions/manga.Chapter'
-        description: LastReleasedChapter is the last chapter released by the source
+        description: |-
+          LastReleasedChapter is the last chapter released by the source
+          If the custom manga has no more released chapter, it'll be equal to the LastReadChapter.
       multiMangaID:
         description: When the manga is part of a multimanga, this field should be
           set to the multimanga ID
@@ -84,12 +89,14 @@ definitions:
         type: string
       preferredGroup:
         description: |-
-          PreferredGroup is the preferred group that translates (and more) the manga
-          Not all sources have multiple groups
+          PreferredGroup is the preferred group that translates (and more) the manga.
+          Not all sources have multiple groups. Currently not used.
         type: string
       source:
-        description: Source is the source of the manga, usually the domain of the
-          website
+        description: |-
+          Source is the source of the manga, usually the domain of the website.
+          If source is the above CustomMangaSource const, it means the manga is a custom manga created by the user.
+          and without a source site.
         type: string
       status:
         type: integer
@@ -150,6 +157,35 @@ definitions:
         type: string
       year:
         type: integer
+    type: object
+  routes.AddCustomMangaRequest:
+    properties:
+      cover_img:
+        items:
+          type: integer
+        type: array
+      cover_img_url:
+        type: string
+      manga_has_no_more_chapters:
+        type: boolean
+      name:
+        type: string
+      nextChapter:
+        properties:
+          chapter:
+            type: string
+          chapter_url:
+            type: string
+        type: object
+      status:
+        maximum: 5
+        minimum: 0
+        type: integer
+      url:
+        type: string
+    required:
+    - name
+    - status
     type: object
   routes.AddMangaRequest:
     properties:
@@ -218,6 +254,56 @@ definitions:
 info:
   contact: {}
 paths:
+  /custom_manga:
+    post:
+      consumes:
+      - application/json
+      description: Inserts a custom manga into the database.
+      parameters:
+      - description: Manga data
+        in: body
+        name: manga
+        required: true
+        schema:
+          $ref: '#/definitions/routes.AddCustomMangaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Add custom manga
+  /custom_manga/has_more_chapters:
+    patch:
+      consumes:
+      - application/json
+      description: Update if a custom manga has more chapters or not.
+      parameters:
+      - description: Manga ID
+        example: 1
+        in: query
+        name: id
+        type: integer
+      - description: Manga current URL
+        example: '"https://mangadex.org/title/1/one-piece"'
+        in: query
+        name: url
+        type: string
+      - description: Manga has more chapters
+        example: false
+        in: query
+        name: has_more_chapters
+        required: true
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Update custom manga no more chapters
   /dashboard/configs:
     get:
       description: Returns the dashboard configs read from the configs.json file.
@@ -408,9 +494,11 @@ paths:
       summary: Get manga chapters
   /manga/cover_img:
     patch:
-      description: 'Updates a manga cover image in the database. You must provide
-        either the manga ID or the manga URL. You must provide only one of the following:
-        cover_img, cover_img_url, get_cover_img_from_source.'
+      description: 'Updates a manga/custom manga cover image in the database. You
+        must provide either the manga ID or the manga URL. You must provide only one
+        of the following: cover_img, cover_img_url, get_cover_img_from_source. If
+        it''s a custom manga, using get_cover_img_from_source will return an error
+        message.'
       parameters:
       - description: Manga ID
         example: 1
@@ -442,6 +530,11 @@ paths:
         in: query
         name: get_cover_img_from_source
         type: boolean
+      - description: Update manga cover image to  Mantium's default cover image
+        example: true
+        in: query
+        name: use_mantium_default_img
+        type: boolean
       produces:
       - application/json
       responses:
@@ -454,8 +547,9 @@ paths:
     patch:
       description: Updates a manga last read chapter in the database. If both `chapter`
         and `chapter_url` are empty strings in the body, set the last read chapter
-        to the last released chapter in the database. You must provide either the
-        manga ID or the manga URL.
+        to the last released chapter for normal mangas, for custom mangas, deletes
+        the manga's last read chapter. You must provide either the manga ID or the
+        manga URL.
       parameters:
       - description: Manga ID
         example: 1
@@ -486,6 +580,35 @@ paths:
           schema:
             $ref: '#/definitions/routes.responseMessage'
       summary: Update manga last read chapter
+  /manga/name:
+    patch:
+      description: Updates a manga name in the database. You must provide either the
+        manga ID or the manga URL.
+      parameters:
+      - description: Manga ID
+        example: 1
+        in: query
+        name: id
+        type: integer
+      - description: Manga current URL
+        example: '"https://mangadex.org/title/1/one-piece"'
+        in: query
+        name: url
+        type: string
+      - description: New manga name
+        example: '"One Piece"'
+        in: query
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Update manga name
   /manga/status:
     patch:
       description: Updates a manga status in the database. You must provide either
@@ -538,6 +661,35 @@ paths:
           schema:
             $ref: '#/definitions/routes.responseMessage'
       summary: Turn manga into multimanga
+  /manga/url:
+    patch:
+      description: Updates a manga URL in the database. You must provide either the
+        manga ID or the manga current URL.
+      parameters:
+      - description: Manga ID
+        example: 1
+        in: query
+        name: id
+        type: integer
+      - description: Manga current URL
+        example: '"https://mangadex.org/title/1/one-piece"'
+        in: query
+        name: url
+        type: string
+      - description: 'Manga new URL '
+        example: '"https://mangadex.org/title/2/two-piece"'
+        in: query
+        name: new_url
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Update manga URL
   /mangas:
     get:
       description: Gets all mangas from the database in no particlar order. Return

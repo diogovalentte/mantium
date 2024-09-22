@@ -23,13 +23,20 @@ type (
 	Status int
 )
 
+const (
+	// CustomMangaSource is the source of custom mangas.
+	CustomMangaSource = "custom_manga"
+)
+
 func (id ID) String() string {
-    return fmt.Sprintf("%d", id)
+	return fmt.Sprintf("%d", id)
 }
 
 // Manga is the interface for a manga
 type Manga struct {
-	// Source is the source of the manga, usually the domain of the website
+	// Source is the source of the manga, usually the domain of the website.
+	// If source is the above CustomMangaSource const, it means the manga is a custom manga created by the user.
+	// and without a source site.
 	Source string
 	// URL is the URL of the manga
 	URL string
@@ -37,14 +44,17 @@ type Manga struct {
 	Name string
 	// InteralID is a unique identifier for the manga in the source
 	InternalID string
-	// PreferredGroup is the preferred group that translates (and more) the manga
-	// Not all sources have multiple groups
+	// PreferredGroup is the preferred group that translates (and more) the manga.
+	// Not all sources have multiple groups. Currently not used.
 	PreferredGroup string
 	// CoverImgURL is the URL of the cover image
 	CoverImgURL string
 	// LastReleasedChapter is the last chapter released by the source
+	// If the custom manga has no more released chapter, it'll be equal to the LastReadChapter.
 	LastReleasedChapter *Chapter
 	// LastReadChapter is the last chapter read by the user
+	// In a custom manga, this field represents the next manga the user should read
+	// or, if it's equal to the last released chapter, the manga is considered read.
 	LastReadChapter *Chapter
 	// CoverImg is the cover image of the manga
 	CoverImg []byte
@@ -216,28 +226,28 @@ func deleteMangaDB(m *Manga, tx *sql.Tx) error {
 
 // UpdateStatusInDB updates the manga status in the database
 func (m *Manga) UpdateStatusInDB(status Status) error {
-	contextError := "error updating manga '%s' status in DB"
+	contextError := "error updating manga '%s' status to '%d' in DB"
 
 	db, err := db.OpenConn()
 	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, status), err)
 	}
 	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, status), err)
 	}
 
 	err = updateMangaStatusDB(m, status, tx)
 	if err != nil {
 		tx.Rollback()
-		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, status), err)
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, status), err)
 	}
 	m.Status = status
 
@@ -250,7 +260,7 @@ func updateMangaStatusDB(m *Manga, status Status, tx *sql.Tx) error {
 		return err
 	}
 
-	err = validateStatus(status)
+	err = ValidateStatus(status)
 	if err != nil {
 		return err
 	}
@@ -435,7 +445,7 @@ func (m *Manga) UpdateNameInDB(name string) error {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, name), err)
 	}
 
-	err = updateMangaName(m, name, tx)
+	err = updateMangaNameDB(m, name, tx)
 	if err != nil {
 		tx.Rollback()
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, name), err)
@@ -450,7 +460,7 @@ func (m *Manga) UpdateNameInDB(name string) error {
 	return nil
 }
 
-func updateMangaName(m *Manga, name string, tx *sql.Tx) error {
+func updateMangaNameDB(m *Manga, name string, tx *sql.Tx) error {
 	err := validateManga(m)
 	if err != nil {
 		return err
@@ -472,6 +482,76 @@ func updateMangaName(m *Manga, name string, tx *sql.Tx) error {
             SET name = $1
             WHERE url = $2;
         `, name, m.URL)
+		if err != nil {
+			return err
+		}
+	} else {
+		return errordefs.ErrMangaHasNoIDOrURL
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return errordefs.ErrMangaNotFoundDB
+	}
+
+	return nil
+}
+
+// UpdateURLInDB updates the manga URL in the database
+func (m *Manga) UpdateURLInDB(URL string) error {
+	contextError := "error updating manga '%s' URL to '%s' in DB"
+
+	db, err := db.OpenConn()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, URL), err)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, URL), err)
+	}
+
+	err = updateMangaURLDB(m, URL, tx)
+	if err != nil {
+		tx.Rollback()
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, URL), err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, URL), err)
+	}
+	m.URL = URL
+
+	return nil
+}
+
+func updateMangaURLDB(m *Manga, URL string, tx *sql.Tx) error {
+	err := validateManga(m)
+	if err != nil {
+		return err
+	}
+
+	var result sql.Result
+	if m.ID > 0 {
+		result, err = tx.Exec(`
+            UPDATE mangas
+            SET url = $1
+            WHERE id = $2;
+        `, URL, m.ID)
+		if err != nil {
+			return err
+		}
+	} else if m.URL != "" {
+		result, err = tx.Exec(`
+            UPDATE mangas
+            SET url = $1
+            WHERE url = $2;
+        `, URL, m.URL)
 		if err != nil {
 			return err
 		}
@@ -608,7 +688,7 @@ func updateMangaMetadata(m *Manga, tx *sql.Tx) error {
 		}
 	}
 
-	err = updateMangaName(m, m.Name, tx)
+	err = updateMangaNameDB(m, m.Name, tx)
 	if err != nil {
 		return err
 	}
@@ -830,7 +910,7 @@ func validateManga(m *Manga) error {
 		return util.AddErrorContext(contextError, fmt.Errorf("manga is nil"))
 	}
 
-	err := validateStatus(m.Status)
+	err := ValidateStatus(m.Status)
 	if err != nil {
 		return util.AddErrorContext(contextError, err)
 	}
@@ -863,7 +943,7 @@ func validateManga(m *Manga) error {
 	return nil
 }
 
-func validateStatus(status Status) error {
+func ValidateStatus(status Status) error {
 	if status < 1 || status > 5 {
 		return fmt.Errorf("status should be >= 1 && <= 5, instead it's %d", status)
 	}

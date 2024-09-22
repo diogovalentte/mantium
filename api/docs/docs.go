@@ -15,6 +15,81 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/custom_manga": {
+            "post": {
+                "description": "Inserts a custom manga into the database.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Add custom manga",
+                "parameters": [
+                    {
+                        "description": "Manga data",
+                        "name": "manga",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.AddCustomMangaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/custom_manga/has_more_chapters": {
+            "patch": {
+                "description": "Update if a custom manga has more chapters or not.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Update custom manga no more chapters",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Manga ID",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"https://mangadex.org/title/1/one-piece\"",
+                        "description": "Manga current URL",
+                        "name": "url",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": false,
+                        "description": "Manga has more chapters",
+                        "name": "has_more_chapters",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
         "/dashboard/configs": {
             "get": {
                 "description": "Returns the dashboard configs read from the configs.json file.",
@@ -283,7 +358,7 @@ const docTemplate = `{
         },
         "/manga/cover_img": {
             "patch": {
-                "description": "Updates a manga cover image in the database. You must provide either the manga ID or the manga URL. You must provide only one of the following: cover_img, cover_img_url, get_cover_img_from_source.",
+                "description": "Updates a manga/custom manga cover image in the database. You must provide either the manga ID or the manga URL. You must provide only one of the following: cover_img, cover_img_url, get_cover_img_from_source. If it's a custom manga, using get_cover_img_from_source will return an error message.",
                 "produces": [
                     "application/json"
                 ],
@@ -329,6 +404,13 @@ const docTemplate = `{
                         "description": "Let Mantium fetch the cover image from the source site",
                         "name": "get_cover_img_from_source",
                         "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "example": true,
+                        "description": "Update manga cover image to  Mantium's default cover image",
+                        "name": "use_mantium_default_img",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -343,7 +425,7 @@ const docTemplate = `{
         },
         "/manga/last_read_chapter": {
             "patch": {
-                "description": "Updates a manga last read chapter in the database. If both ` + "`" + `chapter` + "`" + ` and ` + "`" + `chapter_url` + "`" + ` are empty strings in the body, set the last read chapter to the last released chapter in the database. You must provide either the manga ID or the manga URL.",
+                "description": "Updates a manga last read chapter in the database. If both ` + "`" + `chapter` + "`" + ` and ` + "`" + `chapter_url` + "`" + ` are empty strings in the body, set the last read chapter to the last released chapter for normal mangas, for custom mangas, deletes the manga's last read chapter. You must provide either the manga ID or the manga URL.",
                 "produces": [
                     "application/json"
                 ],
@@ -378,6 +460,47 @@ const docTemplate = `{
                         "schema": {
                             "$ref": "#/definitions/routes.UpdateMangaChapterRequest"
                         }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/manga/name": {
+            "patch": {
+                "description": "Updates a manga name in the database. You must provide either the manga ID or the manga URL.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Update manga name",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Manga ID",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"https://mangadex.org/title/1/one-piece\"",
+                        "description": "Manga current URL",
+                        "name": "url",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"One Piece\"",
+                        "description": "New manga name",
+                        "name": "name",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -453,6 +576,47 @@ const docTemplate = `{
                         "description": "Manga URL",
                         "name": "url",
                         "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/manga/url": {
+            "patch": {
+                "description": "Updates a manga URL in the database. You must provide either the manga ID or the manga current URL.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Update manga URL",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Manga ID",
+                        "name": "id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"https://mangadex.org/title/1/one-piece\"",
+                        "description": "Manga current URL",
+                        "name": "url",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"https://mangadex.org/title/2/two-piece\"",
+                        "description": "Manga new URL ",
+                        "name": "new_url",
+                        "in": "query",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -993,7 +1157,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "lastReadChapter": {
-                    "description": "LastReadChapter is the last chapter read by the user",
+                    "description": "LastReadChapter is the last chapter read by the user\nIn a custom manga, this field represents the next manga the user should read\nor, if it's equal to the last released chapter, the manga is considered read.",
                     "allOf": [
                         {
                             "$ref": "#/definitions/manga.Chapter"
@@ -1001,7 +1165,7 @@ const docTemplate = `{
                     ]
                 },
                 "lastReleasedChapter": {
-                    "description": "LastReleasedChapter is the last chapter released by the source",
+                    "description": "LastReleasedChapter is the last chapter released by the source\nIf the custom manga has no more released chapter, it'll be equal to the LastReadChapter.",
                     "allOf": [
                         {
                             "$ref": "#/definitions/manga.Chapter"
@@ -1017,11 +1181,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "preferredGroup": {
-                    "description": "PreferredGroup is the preferred group that translates (and more) the manga\nNot all sources have multiple groups",
+                    "description": "PreferredGroup is the preferred group that translates (and more) the manga.\nNot all sources have multiple groups. Currently not used.",
                     "type": "string"
                 },
                 "source": {
-                    "description": "Source is the source of the manga, usually the domain of the website",
+                    "description": "Source is the source of the manga, usually the domain of the website.\nIf source is the above CustomMangaSource const, it means the manga is a custom manga created by the user.\nand without a source site.",
                     "type": "string"
                 },
                 "status": {
@@ -1105,6 +1269,49 @@ const docTemplate = `{
                 },
                 "year": {
                     "type": "integer"
+                }
+            }
+        },
+        "routes.AddCustomMangaRequest": {
+            "type": "object",
+            "required": [
+                "name",
+                "status"
+            ],
+            "properties": {
+                "cover_img": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "cover_img_url": {
+                    "type": "string"
+                },
+                "manga_has_no_more_chapters": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "nextChapter": {
+                    "type": "object",
+                    "properties": {
+                        "chapter": {
+                            "type": "string"
+                        },
+                        "chapter_url": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "status": {
+                    "type": "integer",
+                    "maximum": 5,
+                    "minimum": 0
+                },
+                "url": {
+                    "type": "string"
                 }
             }
         },
