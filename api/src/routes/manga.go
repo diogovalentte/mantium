@@ -736,7 +736,7 @@ func AddCustomManga(c *gin.Context) {
 	}
 
 	if customManga.URL == "" {
-		customManga.URL = "custom_manga_" + uuid.New().String()
+        customManga.URL = "http://custom_manga.com/" + uuid.New().String()
 	}
 
 	if requestData.NextChapter != nil {
@@ -749,7 +749,7 @@ func AddCustomManga(c *gin.Context) {
 		}
 
 		if requestData.NextChapter.URL == "" {
-			customManga.LastReadChapter.URL = "custom_manga_" + uuid.New().String()
+            customManga.LastReadChapter.URL = "http://custom_manga.com/" + uuid.New().String()
 		}
 	}
 

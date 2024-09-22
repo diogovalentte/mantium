@@ -24,7 +24,7 @@ type Chapter struct {
 	// The timezone should be the default/system timezone.
 	UpdatedAt time.Time
 	// URL is the URL of the chapter
-	// If custom manga chapter doesn't have a URL provided by the user, it should be like custom_manga_<uuid>.
+    // If custom manga chapter doesn't have a URL provided by the user, it should be like http://custom_manga/<uuid>.
 	URL string
 	// Chapter usually is the chapter number, but in some cases it can be a one-shot or a special chapter
 	Chapter string

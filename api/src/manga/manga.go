@@ -39,7 +39,7 @@ type Manga struct {
 	// and without a source site.
 	Source string
 	// URL is the URL of the manga.
-	// If custom manga doesn't have a URL provided by the user, it should be like custom_manga_<uuid>.
+    // If custom manga doesn't have a URL provided by the user, it should be like http://custom_manga/<uuid>.
 	URL string
 	// Name is the name of the manga
 	Name string
