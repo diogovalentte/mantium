@@ -1018,7 +1018,7 @@ func FilterUnreadChapterMangas(mangas []*Manga) []*Manga {
 	unreadChapterMangas := []*Manga{}
 
 	for _, manga := range mangas {
-		if manga.LastReleasedChapter != nil && manga.LastReadChapter == nil {
+		if (manga.LastReleasedChapter != nil && manga.LastReadChapter == nil) || (manga.LastReleasedChapter == nil && manga.LastReadChapter != nil) {
 			unreadChapterMangas = append(unreadChapterMangas, manga)
 		} else if manga.LastReleasedChapter != nil && manga.LastReadChapter != nil {
 			if manga.LastReleasedChapter.Chapter != manga.LastReadChapter.Chapter {
@@ -1034,12 +1034,31 @@ func FilterUnreadChapterMangas(mangas []*Manga) []*Manga {
 // by their last released chapter updated at property, desc
 func SortMangasByLastReleasedChapterUpdatedAt(mangas []*Manga) {
 	sort.Slice(mangas, func(i, j int) bool {
-		if mangas[i].LastReleasedChapter == nil {
-			return false
+		iChapter := mangas[i].LastReleasedChapter
+		jChapter := mangas[j].LastReleasedChapter
+
+		if iChapter == nil {
+			if mangas[i].Source == CustomMangaSource {
+				if mangas[i].LastReadChapter == nil {
+					return false
+				}
+                iChapter = mangas[i].LastReadChapter
+			} else {
+				return false
+			}
 		}
-		if mangas[j].LastReleasedChapter == nil {
-			return true
+
+		if jChapter == nil {
+			if mangas[j].Source == CustomMangaSource {
+				if mangas[j].LastReadChapter == nil {
+					return false
+				}
+                jChapter = mangas[j].LastReadChapter
+			} else {
+				return false
+			}
 		}
-		return mangas[i].LastReleasedChapter.UpdatedAt.After(mangas[j].LastReleasedChapter.UpdatedAt)
+
+		return iChapter.UpdatedAt.After(jChapter.UpdatedAt)
 	})
 }
