@@ -370,6 +370,8 @@ class MangaAPIClient:
                     manga["LastReadChapter"]["Chapter"]
                     != manga["LastReleasedChapter"]["Chapter"]
                 ):
+                    if manga["Source"] == defaults.CUSTOM_MANGA_SOURCE:
+                        return (0, -manga["LastReadChapter"]["UpdatedAt"].timestamp())
                     return (0, -manga["LastReleasedChapter"]["UpdatedAt"].timestamp())
                 else:
                     return (1, -manga["LastReleasedChapter"]["UpdatedAt"].timestamp())

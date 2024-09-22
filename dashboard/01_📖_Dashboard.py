@@ -498,32 +498,33 @@ class MainDashboard:
             </a>
         """
 
-        chapter = chapter_tag_content.format(
-            manga["LastReleasedChapter"]["URL"],
-            f'Ch. {manga["LastReleasedChapter"]["Chapter"]}'
-            if manga["LastReleasedChapter"]["Chapter"] != ""
-            else "N/A",
-        )
-        release_date = (
-            manga["LastReleasedChapter"]["UpdatedAt"]
-            if manga["LastReleasedChapter"]["UpdatedAt"] != datetime(1970, 1, 1)
-            else "N/A"
-        )
-        if release_date != "N/A":
-            relative_release_date = get_relative_time(release_date)
-        else:
-            relative_release_date = release_date
+        if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE:
+            chapter = chapter_tag_content.format(
+                manga["LastReleasedChapter"]["URL"],
+                f'Ch. {manga["LastReleasedChapter"]["Chapter"]}'
+                if manga["LastReleasedChapter"]["Chapter"] != ""
+                else "N/A",
+            )
+            release_date = (
+                manga["LastReleasedChapter"]["UpdatedAt"]
+                if manga["LastReleasedChapter"]["UpdatedAt"] != datetime(1970, 1, 1)
+                else "N/A"
+            )
+            if release_date != "N/A":
+                relative_release_date = get_relative_time(release_date)
+            else:
+                relative_release_date = release_date
 
-        tagger(
-            "<strong>Last Released Chapter:</strong>",
-            chapter,
-            defaults.chapter_link_tag_background_color,
-            "float: right;",
-        )
-        st.caption(
-            f'**Release Date**: <span style="float: right;" title="{release_date}">{relative_release_date}</span>',
-            unsafe_allow_html=True,
-        )
+            tagger(
+                "<strong>Last Released Chapter:</strong>",
+                chapter,
+                defaults.chapter_link_tag_background_color,
+                "float: right;",
+            )
+            st.caption(
+                f'**Release Date**: <span style="float: right;" title="{release_date}">{relative_release_date}</span>',
+                unsafe_allow_html=True,
+            )
 
         chapter = chapter_tag_content.format(
             manga["LastReadChapter"]["URL"],
@@ -542,47 +543,39 @@ class MainDashboard:
             relative_read_date = read_date
 
         tagger(
-            "<strong>Last Read Chapter:</strong>",
+            "<strong>Last Read Chapter:</strong>"
+            if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
+            else "<strong>Next Chapter:</strong>",
             chapter,
             defaults.chapter_link_tag_background_color,
             "float: right;",
         )
         st.caption(
-            f'**Read Date**: <span style="float: right;" title="{read_date}">{relative_read_date}</span>',
+            f"""**Read Date**: <span style="float: right;" title="{read_date}">{relative_read_date}</span>"""
+            if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
+            else f"**Updated Date**: <span style='float: right;' title='{read_date}'>{relative_read_date}</span>",
             unsafe_allow_html=True,
         )
 
-        c1, c2 = st.columns(2)
-        with c1:
+        def highlight_manga():
+            ss["highlighted_manga"] = manga
+            ss["show_update_multimanga_add_manga_search"] = False
+            ss["show_update_multimanga_add_manga_url"] = False
+            ss["show_update_multimanga_manage_mangas"] = False
 
-            def set_last_read():
-                if (
-                    manga.get("LastReadChapter", {}).get("Chapter")
-                    != manga["LastReleasedChapter"]["Chapter"]
-                ):
-                    if manga["MultiMangaID"] == 0:
-                        self.api_client.update_manga_last_read_chapter(
-                            manga["ID"], manga["URL"], manga["InternalID"]
-                        )
-                    else:
-                        self.api_client.update_multimanga_last_read_chapter(
-                            manga["MultiMangaID"], manga["ID"]
-                        )
+        if manga["Source"] == defaults.CUSTOM_MANGA_SOURCE:
+            st.markdown("""<div style="height: 25.6px"></div>""", unsafe_allow_html=True)
+
+            def set_no_more_chapters():
+                api_client.update_custom_manga_has_more_chapters(False, manga["ID"], "")
 
             st.button(
-                "Set last read",
+                "No more chapter",
                 use_container_width=True,
-                on_click=set_last_read,
-                key=f"set_last_read_{manga['ID']}",
+                on_click=set_no_more_chapters,
+                key=f"set_no_more_chapters_{manga['ID']}",
                 disabled=not unread,
             )
-        with c2:
-
-            def highlight_manga():
-                ss["highlighted_manga"] = manga
-                ss["show_update_multimanga_add_manga_search"] = False
-                ss["show_update_multimanga_add_manga_url"] = False
-                ss["show_update_multimanga_manage_mangas"] = False
 
             st.button(
                 "Highlight",
@@ -591,6 +584,40 @@ class MainDashboard:
                 key=f"highlight_{manga['ID']}",
                 on_click=highlight_manga,
             )
+
+        else:
+            c1, c2 = st.columns(2)
+            with c1:
+
+                def set_last_read():
+                    if (
+                        manga.get("LastReadChapter", {}).get("Chapter")
+                        != manga["LastReleasedChapter"]["Chapter"]
+                    ):
+                        if manga["MultiMangaID"] == 0:
+                            self.api_client.update_manga_last_read_chapter(
+                                manga["ID"], manga["URL"], manga["InternalID"]
+                            )
+                        else:
+                            self.api_client.update_multimanga_last_read_chapter(
+                                manga["MultiMangaID"], manga["ID"]
+                            )
+
+                st.button(
+                    "Set last read",
+                    use_container_width=True,
+                    on_click=set_last_read,
+                    key=f"set_last_read_{manga['ID']}",
+                    disabled=not unread,
+                )
+            with c2:
+                st.button(
+                    "Highlight",
+                    use_container_width=True,
+                    type="primary",
+                    key=f"highlight_{manga['ID']}",
+                    on_click=highlight_manga,
+                )
 
     def show_settings(self):
         with st.form(key="configs_update_configs", border=False):
