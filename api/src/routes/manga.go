@@ -867,6 +867,8 @@ type AddCustomMangaRequest struct {
 // @Success 200 {object} responseMessage
 // @Router /custom_manga/has_more_chapters [patch]
 func UpdateCustomMangaMoreChapters(c *gin.Context) {
+	currentTime := time.Now()
+
 	mangaIDStr := c.Query("id")
 	mangaURL := c.Query("url")
 	hasMoreChapters := c.Query("has_more_chapters")
@@ -902,6 +904,7 @@ func UpdateCustomMangaMoreChapters(c *gin.Context) {
 		if mangaToUpdate.LastReadChapter != nil {
 			chapter := *mangaToUpdate.LastReadChapter
 			chapter.Type = 1
+            chapter.UpdatedAt = currentTime.Truncate(time.Second)
 			err = mangaToUpdate.UpsertChapterIntoDB(&chapter)
 		}
 	}
