@@ -732,26 +732,29 @@ func AddCustomManga(c *gin.Context) {
 		return
 	}
 
-	customChapter := &manga.Chapter{
-		Chapter:   requestData.NextChapter.Chapter,
-		Name:      requestData.NextChapter.Chapter,
-		URL:       requestData.NextChapter.URL,
-		Type:      2,
-		UpdatedAt: currentTime.Truncate(time.Second),
+	customManga := manga.Manga{
+		Name:   requestData.Name,
+		URL:    requestData.URL,
+		Status: status,
+		Source: "custom_manga",
 	}
 
-	customManga := manga.Manga{
-		Name:            requestData.Name,
-		URL:             requestData.URL,
-		Status:          status,
-		LastReadChapter: customChapter,
-		Source:          "custom_manga",
+	if requestData.NextChapter != nil {
+		customManga.LastReadChapter = &manga.Chapter{
+			Chapter:   requestData.NextChapter.Chapter,
+			Name:      requestData.NextChapter.Chapter,
+			URL:       requestData.NextChapter.URL,
+			Type:      2,
+			UpdatedAt: currentTime.Truncate(time.Second),
+		}
 	}
 
 	if !requestData.MangaHasMoreChapters {
-		lastReleasedChapter := *customChapter
-		lastReleasedChapter.Type = 1
-		customManga.LastReleasedChapter = &lastReleasedChapter
+		if requestData.NextChapter != nil {
+			lastReleasedChapter := *customManga.LastReadChapter
+			lastReleasedChapter.Type = 1
+			customManga.LastReleasedChapter = &lastReleasedChapter
+		}
 	}
 
 	if requestData.CoverImgURL != "" && len(requestData.CoverImg) > 0 {
@@ -810,10 +813,10 @@ func AddCustomManga(c *gin.Context) {
 type AddCustomMangaRequest struct {
 	NextChapter *struct {
 		Chapter string `json:"chapter"`
-		URL     string `json:"chapter_url" binding:"http_url"`
+		URL     string `json:"chapter_url" binding:"omitempty,http_url"`
 	}
 	Name                 string `json:"name" binding:"required"`
-	URL                  string `json:"url" binding:"http_url"`
+	URL                  string `json:"url" binding:"omitempty,http_url"`
 	CoverImgURL          string `json:"cover_img_url" binding:"omitempty,http_url"`
 	CoverImg             []byte `json:"cover_img"`
 	Status               int    `json:"status" binding:"required,gte=0,lte=5"`
