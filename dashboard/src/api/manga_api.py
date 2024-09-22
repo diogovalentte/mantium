@@ -398,7 +398,7 @@ class MangaAPIClient:
                 reverse=not reverse,
             )
         elif sort_option == "Name":
-            mangas.sort(key=lambda manga: manga["Name"], reverse=reverse)
+            mangas.sort(key=lambda manga: str(manga["Name"]).lower(), reverse=reverse)
         elif sort_option == "Chapters Released":
             mangas.sort(
                 key=chapters_released_sorting,
