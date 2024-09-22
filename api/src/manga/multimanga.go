@@ -221,7 +221,7 @@ func updateMultiMangaStatusDB(mm *MultiManga, status Status, tx *sql.Tx) error {
 		return err
 	}
 
-	err = validateStatus(status)
+	err = ValidateStatus(status)
 	if err != nil {
 		return err
 	}
@@ -307,10 +307,10 @@ func updateMultiMangaCoverImg(mm *MultiManga, coverImg []byte, coverImgResized b
 	return nil
 }
 
-// UpsertChapterInDB updates the last read chapter in the database
+// UpsertChapterIntoDB updates the last read chapter in the database
 // The chapter.Type field must be set to 2 (last read)
-func (mm *MultiManga) UpsertChapterInDB(chapter *Chapter) error {
-	contextError := "error upserting chapter '%s' to multimanga '%s' in DB"
+func (mm *MultiManga) UpsertChapterIntoDB(chapter *Chapter) error {
+	contextError := "error upserting chapter '%s' to multimanga '%s' into DB"
 
 	db, err := db.OpenConn()
 	if err != nil {
@@ -735,7 +735,7 @@ func turnMangaIntoMultiMangaInDB(m *Manga, tx *sql.Tx) (*MultiManga, error) {
 func validateMultiManga(mm *MultiManga) error {
 	contextError := "error validating multimanga"
 
-	err := validateStatus(mm.Status)
+	err := ValidateStatus(mm.Status)
 	if err != nil {
 		return util.AddErrorContext(contextError, err)
 	}

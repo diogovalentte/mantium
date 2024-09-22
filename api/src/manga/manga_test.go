@@ -204,15 +204,21 @@ func TestMangaDBLifeCycle(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+	t.Run("Should delete the last released chapter of manga from DB", func(t *testing.T) {
+		err := manga.DeleteLastReleasedChapterFromDB()
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
 	t.Run("Should update a manga's last released chapter in DB", func(t *testing.T) {
 		chapter := *chaptersTest["last_released_chapter"]
 		chapter.Type = 0
 
-		err := manga.UpsertChapterInDB(&chapter)
+		err := manga.UpsertChapterIntoDB(&chapter)
 		if err != nil {
 			if util.ErrorContains(err, "chapter type should be 1 (last release) or 2 (last read)") {
 				chapter.Type = chaptersTest["last_released_chapter"].Type
-				err = manga.UpsertChapterInDB(&chapter)
+				err = manga.UpsertChapterIntoDB(&chapter)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -227,11 +233,11 @@ func TestMangaDBLifeCycle(t *testing.T) {
 		chapter := *chaptersTest["last_read_chapter"]
 		chapter.Type = 0
 
-		err := manga.UpsertChapterInDB(&chapter)
+		err := manga.UpsertChapterIntoDB(&chapter)
 		if err != nil {
 			if util.ErrorContains(err, "chapter type should be 1 (last release) or 2 (last read)") {
 				chapter.Type = chaptersTest["last_read_chapter"].Type
-				err = manga.UpsertChapterInDB(&chapter)
+				err = manga.UpsertChapterIntoDB(&chapter)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -240,6 +246,12 @@ func TestMangaDBLifeCycle(t *testing.T) {
 			}
 		} else {
 			t.Fatal("no errors while updating the manga with an invalid chapter in DB")
+		}
+	})
+	t.Run("Should delete the last read chapter of manga from DB", func(t *testing.T) {
+		err := manga.DeleteLastReadChapterFromDB()
+		if err != nil {
+			t.Fatal(err)
 		}
 	})
 	t.Run("Should delete a manga into DB", func(t *testing.T) {
@@ -363,11 +375,11 @@ func TestMangaWithoutChaptersDBLifeCycle(t *testing.T) {
 		chapter := *chaptersTest["last_released_chapter"]
 		chapter.Type = 0
 
-		err := manga.UpsertChapterInDB(&chapter)
+		err := manga.UpsertChapterIntoDB(&chapter)
 		if err != nil {
 			if util.ErrorContains(err, "chapter type should be 1 (last release) or 2 (last read)") {
 				chapter.Type = chaptersTest["last_released_chapter"].Type
-				err = manga.UpsertChapterInDB(&chapter)
+				err = manga.UpsertChapterIntoDB(&chapter)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -382,11 +394,11 @@ func TestMangaWithoutChaptersDBLifeCycle(t *testing.T) {
 		chapter := *chaptersTest["last_read_chapter"]
 		chapter.Type = 0
 
-		err := manga.UpsertChapterInDB(&chapter)
+		err := manga.UpsertChapterIntoDB(&chapter)
 		if err != nil {
 			if util.ErrorContains(err, "chapter type should be 1 (last release) or 2 (last read)") {
 				chapter.Type = chaptersTest["last_read_chapter"].Type
-				err = manga.UpsertChapterInDB(&chapter)
+				err = manga.UpsertChapterIntoDB(&chapter)
 				if err != nil {
 					t.Fatal(err)
 				}

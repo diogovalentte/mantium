@@ -167,9 +167,58 @@ func upsertMultiMangaChapter(multiMangaID ID, chapter *Chapter, tx *sql.Tx) erro
 	return nil
 }
 
-// there is no deleteChapterDB because the chapter should
-// not be deleted directly, it should be deleted when a
-// manga is deleted because of DB constraints
+func deleteMangaChapter(mangaID ID, chapter *Chapter, tx *sql.Tx) error {
+	contextError := "error deleting chapter in the database"
+
+	err := validateChapter(chapter)
+	if err != nil {
+		return util.AddErrorContext(contextError, err)
+	}
+	var query string
+	if chapter.Type == 1 {
+		query = `
+        UPDATE mangas
+        SET last_released_chapter = NULL
+        WHERE id = $1;
+    `
+	} else {
+		query = `
+        UPDATE mangas
+        SET last_read_chapter = NULL
+        WHERE id = $1;
+    `
+	}
+
+	result, err := tx.Exec(query, mangaID)
+	if err != nil {
+		return util.AddErrorContext(contextError, err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return util.AddErrorContext(contextError, err)
+	}
+	if rowsAffected == 0 {
+		return util.AddErrorContext(contextError, errordefs.ErrMangaNotFoundDB)
+	}
+
+	query = `
+        DELETE FROM chapters
+        WHERE manga_id = $1 AND url = $2;
+    `
+	result, err = tx.Exec(query, mangaID, chapter.URL)
+	if err != nil {
+		return util.AddErrorContext(contextError, err)
+	}
+	rowsAffected, err = result.RowsAffected()
+	if err != nil {
+		return util.AddErrorContext(contextError, err)
+	}
+	if rowsAffected == 0 {
+		return util.AddErrorContext(contextError, errordefs.ErrChapterNotFoundDB)
+	}
+
+	return nil
+}
 
 // valdiateChapter should be used every time the API interacts with
 // the mangas and chapter table in the database

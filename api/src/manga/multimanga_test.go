@@ -165,11 +165,11 @@ func TestMultiMangaDBLifeCycle(t *testing.T) {
 		chapter := *chaptersTest["last_read_chapter"]
 		chapter.Type = 0
 
-		err := multiManga.UpsertChapterInDB(&chapter)
+		err := multiManga.UpsertChapterIntoDB(&chapter)
 		if err != nil {
 			if util.ErrorContains(err, "chapter type should be 1 (last release) or 2 (last read)") {
 				chapter.Type = chaptersTest["last_read_chapter"].Type
-				err = multiManga.UpsertChapterInDB(&chapter)
+				err = multiManga.UpsertChapterIntoDB(&chapter)
 				if err != nil {
 					t.Fatal(err)
 				}

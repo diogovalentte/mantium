@@ -289,10 +289,10 @@ func updateMangaStatusDB(m *Manga, status Status, tx *sql.Tx) error {
 	return nil
 }
 
-// UpsertChapterInDB updates the last read/released chapter in the database
+// UpsertChapterIntoDB updates the last read/released chapter in the database
 // The chapter.Type field must be set
-func (m *Manga) UpsertChapterInDB(chapter *Chapter) error {
-	contextError := "error upserting chapter '%s' to manga '%s' in DB"
+func (m *Manga) UpsertChapterIntoDB(chapter *Chapter) error {
+	contextError := "error upserting chapter '%s' to manga '%s' into DB"
 
 	db, err := db.OpenConn()
 	if err != nil {
@@ -315,7 +315,107 @@ func (m *Manga) UpsertChapterInDB(chapter *Chapter) error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, chapter, m), err)
 	}
-	m.LastReleasedChapter = chapter
+	if chapter.Type == 1 {
+		m.LastReleasedChapter = chapter
+	} else {
+		m.LastReadChapter = chapter
+	}
+
+	return nil
+}
+
+// DeleteLastReadChapterFromDB deletes the last read chapter of the manga in the database
+func (m *Manga) DeleteLastReadChapterFromDB() error {
+	contextError := "error deleting last read chapter '%s' of manga '%s' from DB"
+
+	db, err := db.OpenConn()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReadChapter, m), err)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReadChapter, m), err)
+	}
+
+	err = deleteMangaChapter(m.ID, m.LastReadChapter, tx)
+	if err != nil {
+		tx.Rollback()
+		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReadChapter, m), err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReadChapter, m), err)
+	}
+	m.LastReadChapter = nil
+
+	return nil
+}
+
+// DeleteLastReleasedChapterFromDB deletes the last released chapter of the manga from the database
+func (m *Manga) DeleteLastReleasedChapterFromDB() error {
+	contextError := "error deleting last released chapter '%s' of manga '%s' from DB"
+
+	db, err := db.OpenConn()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m), err)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m), err)
+	}
+
+	err = deleteMangaChapter(m.ID, m.LastReleasedChapter, tx)
+	if err != nil {
+		tx.Rollback()
+		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m), err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m), err)
+	}
+	m.LastReleasedChapter = nil
+
+	return nil
+}
+
+// DeleteChaptersFromDB deletes the last released and last read chapters of the manga from the database
+func (m *Manga) DeleteChaptersFromDB() error {
+	contextError := "error deleting last released chapter '%s' and last read chapter '%s' of manga '%s' from DB"
+
+	db, err := db.OpenConn()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m.LastReadChapter, m), err)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m.LastReadChapter, m), err)
+	}
+
+	err = deleteMangaChapter(m.ID, m.LastReleasedChapter, tx)
+	if err != nil {
+		tx.Rollback()
+		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m.LastReadChapter, m), err)
+	}
+	err = deleteMangaChapter(m.ID, m.LastReadChapter, tx)
+	if err != nil {
+		tx.Rollback()
+		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m.LastReadChapter, m), err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m.LastReadChapter, m), err)
+	}
+	m.LastReleasedChapter = nil
+	m.LastReadChapter = nil
 
 	return nil
 }
