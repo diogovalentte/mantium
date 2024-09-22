@@ -225,6 +225,18 @@ func GetManga(c *gin.Context) {
 		return
 	}
 
+	if mangaGet.Source == manga.CustomMangaSource {
+		if strings.HasPrefix(mangaGet.URL, manga.CustomMangaURLPrefix) {
+			mangaGet.URL = ""
+		}
+		if mangaGet.LastReadChapter != nil && strings.HasPrefix(mangaGet.LastReadChapter.URL, manga.CustomMangaURLPrefix) {
+			mangaGet.LastReadChapter.URL = ""
+		}
+		if mangaGet.LastReleasedChapter != nil && strings.HasPrefix(mangaGet.LastReleasedChapter.URL, manga.CustomMangaURLPrefix) {
+			mangaGet.LastReadChapter.URL = ""
+		}
+	}
+
 	resMap := map[string]manga.Manga{"manga": *mangaGet}
 	c.JSON(http.StatusOK, resMap)
 }
@@ -741,7 +753,7 @@ func AddCustomManga(c *gin.Context) {
 	}
 
 	if customManga.URL == "" {
-		customManga.URL = "http://custom_manga.com/" + uuid.New().String()
+		customManga.URL = manga.CustomMangaURLPrefix + "/" + uuid.New().String()
 	}
 
 	if requestData.NextChapter != nil {
@@ -754,7 +766,7 @@ func AddCustomManga(c *gin.Context) {
 		}
 
 		if requestData.NextChapter.URL == "" {
-			customManga.LastReadChapter.URL = "http://custom_manga.com/" + uuid.New().String()
+			customManga.LastReadChapter.URL = manga.CustomMangaURLPrefix + "/" + uuid.New().String()
 		}
 
 		if !requestData.MangaHasMoreChapters {
@@ -1427,6 +1439,20 @@ func GetMangas(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
+	for _, m := range mangas {
+		if m.Source == manga.CustomMangaSource {
+			if strings.HasPrefix(m.URL, manga.CustomMangaURLPrefix) {
+				m.URL = ""
+			}
+			if m.LastReadChapter != nil && strings.HasPrefix(m.LastReadChapter.URL, manga.CustomMangaURLPrefix) {
+				m.LastReadChapter.URL = ""
+			}
+			if m.LastReleasedChapter != nil && strings.HasPrefix(m.LastReleasedChapter.URL, manga.CustomMangaURLPrefix) {
+				m.LastReadChapter.URL = ""
+			}
+		}
+	}
+
 	multimangas, err := manga.GetMultiMangasDB()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})

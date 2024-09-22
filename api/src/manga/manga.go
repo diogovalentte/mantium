@@ -26,6 +26,8 @@ type (
 const (
 	// CustomMangaSource is the source of custom mangas.
 	CustomMangaSource = "custom_manga"
+	// CustomMangaURLPrefix is the prefix of the URL of custom mangas and its chapters when the URL is not provided by the user.
+	CustomMangaURLPrefix = "http://custom_manga.com"
 )
 
 func (id ID) String() string {
@@ -39,7 +41,7 @@ type Manga struct {
 	// and without a source site.
 	Source string
 	// URL is the URL of the manga.
-	// If custom manga doesn't have a URL provided by the user, it should be like http://custom_manga/<uuid>.
+	// If custom manga doesn't have a URL provided by the user, it should be like above CustomMangaSource/<uuid>.
 	URL string
 	// Name is the name of the manga
 	Name string
