@@ -37,6 +37,7 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.POST("/manga", AddManga)
 		group.DELETE("/manga", DeleteManga)
 		group.GET("/manga", GetManga)
+		group.GET("/manga/metadata", GetMangaMetadata)
 		group.GET("/manga/chapters", GetMangaChapters)
 		group.PATCH("/manga/status", UpdateMangaStatus)
 		group.PATCH("/manga/name", UpdateMangaName)
@@ -219,6 +220,24 @@ func GetManga(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
 			return
 		}
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	resMap := map[string]manga.Manga{"manga": *mangaGet}
+	c.JSON(http.StatusOK, resMap)
+}
+
+// @Summary Get manga metadata
+// @Description Gets the metadata for a manga from the source site.
+// @Produce json
+// @Param url query string true "Manga URL" Example("https://mangadex.org/title/1/one-piece")
+// @Success 200 {object} manga.Manga "{"manga": mangaObj}"
+// @Router /manga/metadata [get]
+func GetMangaMetadata(c *gin.Context) {
+	mangaURL := c.Query("url")
+	mangaGet, err := sources.GetMangaMetadata(mangaURL, "")
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}

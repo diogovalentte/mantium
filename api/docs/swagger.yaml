@@ -580,6 +580,24 @@ paths:
           schema:
             $ref: '#/definitions/routes.responseMessage'
       summary: Update manga last read chapter
+  /manga/metadata:
+    get:
+      description: Gets the metadata for a manga from the source site.
+      parameters:
+      - description: Manga URL
+        example: '"https://mangadex.org/title/1/one-piece"'
+        in: query
+        name: url
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"manga": mangaObj}'
+          schema:
+            $ref: '#/definitions/manga.Manga'
+      summary: Get manga metadata
   /manga/name:
     patch:
       description: Updates a manga name in the database. You must provide either the

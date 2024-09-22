@@ -472,6 +472,33 @@ const docTemplate = `{
                 }
             }
         },
+        "/manga/metadata": {
+            "get": {
+                "description": "Gets the metadata for a manga from the source site.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get manga metadata",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "example": "\"https://mangadex.org/title/1/one-piece\"",
+                        "description": "Manga URL",
+                        "name": "url",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"manga\": mangaObj}",
+                        "schema": {
+                            "$ref": "#/definitions/manga.Manga"
+                        }
+                    }
+                }
+            }
+        },
         "/manga/name": {
             "patch": {
                 "description": "Updates a manga name in the database. You must provide either the manga ID or the manga URL.",

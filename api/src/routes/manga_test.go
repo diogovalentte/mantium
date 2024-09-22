@@ -79,6 +79,22 @@ func TestSearchManga(t *testing.T) {
 	})
 }
 
+func TestGetMangaMetadata(t *testing.T) {
+	t.Run("Get metadata of valid manga", func(t *testing.T) {
+		test := mangasRequestsTestTable["valid manga with read chapter"]
+		var resMap map[string]*manga.Manga
+		err := requestHelper(http.MethodGet, fmt.Sprintf("/v1/manga/metadata?url=%s", test.URL), nil, &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["manga"]
+		if actual.URL != test.URL {
+			t.Fatalf(`expected manga with URL "%s", got manga with URL "%s". Response text: %v`, test.URL, actual.URL, resMap)
+		}
+	})
+}
+
 func TestAddManga(t *testing.T) {
 	t.Run("Add valid manga with read chapter", func(t *testing.T) {
 		body, err := json.Marshal(mangasRequestsTestTable["valid manga with read chapter"])
