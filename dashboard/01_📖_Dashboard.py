@@ -607,7 +607,7 @@ class MainDashboard:
                 relative_read_date = read_date
 
             tagger(
-                "<strong>Next Chapter:</strong>",
+                f"<strong>{'Next' if manga['LastReadChapter']['Chapter'] != manga['LastReleasedChapter']['Chapter'] else 'Last Read'} Chapter:</strong>",
                 chapter_tag_content,
                 defaults.chapter_link_tag_background_color,
                 "float: right;",
