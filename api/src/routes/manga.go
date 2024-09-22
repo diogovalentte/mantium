@@ -779,10 +779,6 @@ func AddCustomManga(c *gin.Context) {
 			customManga.CoverImgResized = false
 		}
 	} else if requestData.CoverImgURL != "" {
-		if _, err := url.ParseRequestURI(requestData.CoverImgURL); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "invalid image URL"})
-			return
-		}
 		customManga.CoverImg, customManga.CoverImgResized, err = util.GetImageFromURL(requestData.CoverImgURL, 3, 3*time.Second)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": "invalid image: " + err.Error()})
@@ -1131,7 +1127,7 @@ func UpdateMultiMangaLastReadChapter(c *gin.Context) {
 // UpdateMangaChapterRequest is the request body for updating a manga chapter
 type UpdateMangaChapterRequest struct {
 	Chapter           string `json:"chapter,omitempty"`
-	ChapterURL        string `json:"chapter_url,omitempty"`
+	ChapterURL        string `json:"chapter_url,omitempty" binding:"omitempty,http_url"`
 	ChapterInternalID string `json:"chapter_internal_id,omitempty"`
 }
 
@@ -1285,11 +1281,6 @@ func AddMangaToMultiManga(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid JSON fields, refer to the API documentation"})
 		return
 	}
-	_, err = url.ParseRequestURI(requestData.MangaURL)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid manga URL"})
-		return
-	}
 
 	mangaAdd, err := sources.GetMangaMetadata(requestData.MangaURL, requestData.MangaInternalID)
 	if err != nil {
@@ -1320,7 +1311,7 @@ func AddMangaToMultiManga(c *gin.Context) {
 
 // AddMangaToMultiMangaRequest is the request body for the AddManga route
 type AddMangaToMultiMangaRequest struct {
-	MangaURL        string `json:"manga_url" binding:"required"`
+	MangaURL        string `json:"manga_url" binding:"required,http_url"`
 	MangaInternalID string `json:"manga_internal_id"`
 }
 
@@ -2326,7 +2317,7 @@ func getMangaIDAndURL(mangaIDStr string, mangaURL string) (manga.ID, string, err
 	if mangaURL != "" {
 		_, err := url.ParseRequestURI(mangaURL)
 		if err != nil {
-			return -1, "", err
+			return -1, "", util.AddErrorContext("invalid manga url", err)
 		}
 	}
 
