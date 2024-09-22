@@ -904,7 +904,7 @@ func UpdateCustomMangaMoreChapters(c *gin.Context) {
 		if mangaToUpdate.LastReadChapter != nil {
 			chapter := *mangaToUpdate.LastReadChapter
 			chapter.Type = 1
-            chapter.UpdatedAt = currentTime.Truncate(time.Second)
+			chapter.UpdatedAt = currentTime.Truncate(time.Second)
 			err = mangaToUpdate.UpsertChapterIntoDB(&chapter)
 		}
 	}
@@ -1841,6 +1841,37 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
         }
       }
 
+      function setCustomMangaNoHasMoreChapter(mangaId) {
+        try {
+            var xhr = new XMLHttpRequest();
+            var url = '{{ .APIURL }}/v1/custom_manga/has_more_chapters?has_more_chapters=false&id=' + encodeURIComponent(mangaId);
+            xhr.open('PATCH', url, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+
+            xhr.onload = function () {
+              if (xhr.status >= 200 && xhr.status < 300) {
+                console.log('Request to update custom manga', mangaId, ' has no more chapters finished with success:', xhr.responseText);
+                location.reload();
+              } else {
+                console.log('Request to update manga', mangaId, ' has no more chapters failed:', xhr.responseText);
+                handleSetLastReadChapterError("manga-" + mangaId)
+              }
+            };
+
+            xhr.onerror = function () {
+              console.log('Request to update manga', mangaId, ' has no more chapters failed:', xhr.responseText);
+              handleSetLastReadChapterError(mangaId)
+            };
+
+            var body = {};
+
+            xhr.send(JSON.stringify(body));
+        } catch (error) {
+            console.log('Request to update manga', mangaId, ' has no more chapters failed:', error);
+            handleSetLastReadChapterError("manga-" + mangaId)
+        }
+      }
+
       function handleSetLastReadChapterError(buttonId) {
         var button = document.getElementById(buttonId);
         button.textContent = "! ERROR !";
@@ -1941,25 +1972,33 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
         />
 
         <div class="text-wrap">
-            <a href="{{ .URL }}" target="_blank" class="manga-name">{{ .Name }}</a>
+            <a {{ if not (isCustomMangaURL .URL) }} href="{{ .URL }}" {{ end }} target="_blank" class="manga-name">{{ .Name }}</a>
         </div>
 
         <div class="new-chapter-container">
-            {{ if .LastReadChapter }}
-                <a href="{{ .LastReadChapter.URL }}" class="chapter-label last-read-chapter-label" target="_blank">{{ .LastReadChapter.Chapter }}</a>
-            {{ else }}
-                <a href="{{ .URL }}" class="chapter-label last-read-chapter-label" target="_blank">N/A</a>
-            {{ end }}
-            <span class="chapter-label chapter-gt-label"> &lt; </span>
-            {{ if .LastReleasedChapter }}
-                <a href="{{ .LastReleasedChapter.URL }}" class="chapter-label last-released-chapter-label" target="_blank">{{ .LastReleasedChapter.Chapter }}</a>
-            {{ else }}
-                <a href="{{ .URL }}" class="chapter-label last-released-chapter-label" target="_blank">N/A</a>
-            {{ end }}
+            {{ if not (isCustomManga .Source) }}
+                {{ if .LastReadChapter }}
+                    <a href="{{ .LastReadChapter.URL }}" class="chapter-label last-read-chapter-label" target="_blank">{{ .LastReadChapter.Chapter }}</a>
+                {{ else }}
+                    <a href="{{ .URL }}" class="chapter-label last-read-chapter-label" target="_blank">N/A</a>
+                {{ end }}
+                <span class="chapter-label chapter-gt-label"> &lt; </span>
+                {{ if .LastReleasedChapter }}
+                    <a href="{{ .LastReleasedChapter.URL }}" class="chapter-label last-released-chapter-label" target="_blank">{{ .LastReleasedChapter.Chapter }}</a>
+                {{ else }}
+                    <a href="{{ .URL }}" class="chapter-label last-released-chapter-label" target="_blank">N/A</a>
+                {{ end }}
 
-            <div>
-                <button id="manga-{{ .ID }}" onclick="{{ if eq .MultiMangaID 0 }}setMangaLastReadChapter('{{ .ID }}'){{ else }}setMultiMangaLastReadChapter('{{ .MultiMangaID }}', '{{ .ID }}'){{ end }}" class="set-last-read-button" onmouseenter="this.style.cursor='pointer';">Set last read</button>
-            </div>
+                <div>
+                    <button id="manga-{{ .ID }}" onclick="{{ if eq .MultiMangaID 0 }}setMangaLastReadChapter('{{ .ID }}'){{ else }}setMultiMangaLastReadChapter('{{ .MultiMangaID }}', '{{ .ID }}'){{ end }}" class="set-last-read-button" onmouseenter="this.style.cursor='pointer';">Set last read</button>
+                </div>
+            {{ else }}
+                <a {{ if not (isCustomMangaURL .LastReadChapter.URL) }} href="{{ .LastReadChapter.URL }}"{{end}} class="chapter-label last-read-chapter-label" target="_blank">{{ .LastReadChapter.Chapter }}</a>
+
+                <div>
+                    <button id="manga-{{ .ID }}" onclick="setCustomMangaNoHasMoreChapter('{{ .ID }}')" class="set-last-read-button" onmouseenter="this.style.cursor='pointer';">No more chapters</button>
+                </div>
+            {{ end }}
         </div>
 
     </div>
@@ -1988,9 +2027,17 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
 		templateData.BackgroundErrorTime = lastBackgroundError.Time
 	}
 
-	encodeImageF := template.FuncMap{"encodeImage": func(bytes []byte) string {
-		return base64.StdEncoding.EncodeToString(bytes)
-	}}
+	encodeImageF := template.FuncMap{
+		"encodeImage": func(bytes []byte) string {
+			return base64.StdEncoding.EncodeToString(bytes)
+		},
+		"isCustomManga": func(source string) bool {
+			return source == manga.CustomMangaSource
+		},
+		"isCustomMangaURL": func(url string) bool {
+			return strings.HasPrefix(url, manga.CustomMangaURLPrefix)
+		},
+	}
 
 	tmpl := template.Must(template.New("mangas").Funcs(encodeImageF).Parse(html))
 
