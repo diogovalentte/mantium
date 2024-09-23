@@ -1509,11 +1509,11 @@ func GetMangas(c *gin.Context) {
 }
 
 // @Summary Mangas iFrame
-// @Description Returns an iFrame with mangas. Only mangas with unread chapters, and status reading or completed. Sort by last released chapter date. Designed to be used with [Homarr](https://github.com/ajnart/homarr).
+// @Description Returns an iFrame with mangas. Only mangas with unread chapters, and status reading or completed. Sort by last released chapter date.
 // @Success 200 {string} string "HTML content"
 // @Produce html
 // @Param api_url query string true "API URL used by your browser. Used for the button that updates the last read chater, as your browser needs to send a request to the API to update the chapter." Example(https://sub.domain.com)
-// @Param theme query string false "Homarr theme, defaults to light. If it's different from your Homarr theme, the background turns white" Example(light)
+// @Param theme query string false "IFrame theme, defaults to light. If it's different from your dashboard theme, the background turns may turn white" Example(light)
 // @Param limit query int false "Limits the number of items in the iFrame." Example(5)
 // @Param showBackgroundErrorWarning query bool false "If true, shows a warning in the iFrame if an error occurred in the background. Defaults to true." Example(true)
 // @Router /mangas/iframe [get]
@@ -2006,7 +2006,6 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
 </body>
 </html>
 	`
-	// Homarr theme
 	scrollbarThumbBackgroundColor := "rgba(209, 219, 227, 1)"
 	scrollbarTrackBackgroundColor := "#ffffff"
 	if theme == "dark" {

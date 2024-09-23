@@ -736,7 +736,7 @@ const docTemplate = `{
         },
         "/mangas/iframe": {
             "get": {
-                "description": "Returns an iFrame with mangas. Only mangas with unread chapters, and status reading or completed. Sort by last released chapter date. Designed to be used with [Homarr](https://github.com/ajnart/homarr).",
+                "description": "Returns an iFrame with mangas. Only mangas with unread chapters, and status reading or completed. Sort by last released chapter date.",
                 "produces": [
                     "text/html"
                 ],
@@ -753,7 +753,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "example": "light",
-                        "description": "Homarr theme, defaults to light. If it's different from your Homarr theme, the background turns white",
+                        "description": "IFrame theme, defaults to light. If it's different from your dashboard theme, the background turns may turn white",
                         "name": "theme",
                         "in": "query"
                     },
