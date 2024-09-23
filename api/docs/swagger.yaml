@@ -178,7 +178,7 @@ definitions:
         properties:
           chapter:
             type: string
-          chapter_url:
+          url:
             type: string
         type: object
       status:

@@ -26,7 +26,7 @@ class CustomMangaAPIClient:
             "name": manga_name,
             "url": manga_url,
             "status": manga_status,
-            "mangas_has_more_chapters": mangas_has_more_chapters,
+            "manga_has_more_chapters": mangas_has_more_chapters,
             "cover_img_url": cover_img_url,
             "cover_img": cover_img,
         }

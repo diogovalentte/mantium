@@ -529,9 +529,12 @@ def show_add_custom_manga_form():
                         ss["add_custom_manga_manga_to_add"]["next_chapter"]["url"],
                     )
                 except APIException as e:
-                    if "manga already exists in DB".lower() in str(e).lower():
+                    resp_text = str(e.response_text).lower()
+                    if "manga already exists in DB".lower() in resp_text:
                         ss["add_manga_warning_message"] = "Manga already in Mantium"
                         st.rerun()
+                    if 'duplicate key value violates unique constraint' in resp_text and "chapters_pkey" in resp_text:
+                        ss["add_manga_error_message"] = "Next chapter URL already in Mantium"
                     else:
                         logger.exception(e)
                         ss["add_manga_error_message"] = "Error while adding manga"

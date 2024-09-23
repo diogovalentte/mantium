@@ -1327,7 +1327,7 @@ const docTemplate = `{
                         "chapter": {
                             "type": "string"
                         },
-                        "chapter_url": {
+                        "url": {
                             "type": "string"
                         }
                     }

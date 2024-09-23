@@ -847,7 +847,7 @@ func AddCustomManga(c *gin.Context) {
 type AddCustomMangaRequest struct {
 	NextChapter *struct {
 		Chapter string `json:"chapter"`
-		URL     string `json:"chapter_url" binding:"omitempty,http_url"`
+		URL     string `json:"url" binding:"omitempty,http_url"`
 	} `json:"next_chapter"`
 	Name                 string `json:"name" binding:"required"`
 	URL                  string `json:"url" binding:"omitempty,http_url"`
