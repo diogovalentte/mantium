@@ -1993,7 +1993,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
                     <button id="manga-{{ .ID }}" onclick="{{ if eq .MultiMangaID 0 }}setMangaLastReadChapter('{{ .ID }}'){{ else }}setMultiMangaLastReadChapter('{{ .MultiMangaID }}', '{{ .ID }}'){{ end }}" class="set-last-read-button" onmouseenter="this.style.cursor='pointer';">Set last read</button>
                 </div>
             {{ else }}
-                <a {{ if not (isCustomMangaURL .LastReadChapter.URL) }} href="{{ .LastReadChapter.URL }}"{{end}} class="chapter-label last-read-chapter-label" target="_blank">{{ .LastReadChapter.Chapter }}</a>
+                <a {{ if not (isCustomMangaURL .LastReadChapter.URL) }} href="{{ .LastReadChapter.URL }}"{{end}} class="chapter-label last-released-chapter-label" target="_blank">{{ .LastReadChapter.Chapter }}</a>
 
                 <div>
                     <button id="manga-{{ .ID }}" onclick="setCustomMangaNoHasMoreChapter('{{ .ID }}')" class="set-last-read-button" onmouseenter="this.style.cursor='pointer';">No more chapters</button>
