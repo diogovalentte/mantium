@@ -607,10 +607,9 @@ var addCustomMangaRequest = &routes.AddCustomMangaRequest{
 	Status:               2,
 	MangaHasMoreChapters: false,
 	CoverImgURL:          "",
-	CoverImg:             []byte{},
 	NextChapter: &struct {
 		Chapter string `json:"chapter"`
-		URL     string `json:"chapter_url" binding:"omitempty,http_url"`
+		URL     string `json:"url" binding:"omitempty,http_url"`
 	}{
 		Chapter: "10",
 		URL:     "https://customsite.com/title/custom_manga123/chapter/10",
