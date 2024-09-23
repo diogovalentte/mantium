@@ -1,3 +1,4 @@
+import base64
 from urllib.parse import urljoin
 
 import requests
@@ -28,7 +29,7 @@ class CustomMangaAPIClient:
             "status": manga_status,
             "manga_has_more_chapters": mangas_has_more_chapters,
             "cover_img_url": cover_img_url,
-            "cover_img": cover_img,
+            "cover_img": base64.b64encode(cover_img).decode("utf-8") if cover_img else "",
         }
 
         if next_chapter_chapter:
