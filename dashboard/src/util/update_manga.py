@@ -269,7 +269,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
             "Next Chapter",
         ):
             st.text_input(
-                "New Chapter to Read",
+                "Next Chapter to Read",
                 value=manga["LastReadChapter"]["Chapter"],
                 placeholder="1000",
                 help="Can be a number or text",
@@ -294,9 +294,6 @@ def show_update_custom_manga(manga: dict[str, Any]):
         with st.expander(
             "Cover Image",
         ):
-            st.info(
-                "Provide only a cover image URL or a file. If neither are provided, Mantium will use a default cover image."
-            )
             st.text_input(
                 "Cover Image URL",
                 placeholder="https://example.com/image.jpg",

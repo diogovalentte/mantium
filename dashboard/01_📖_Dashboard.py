@@ -625,7 +625,7 @@ class MainDashboard:
                 api_client.update_custom_manga_has_more_chapters(False, manga["ID"], "")
 
             st.button(
-                "No more chapter",
+                "No more chapters",
                 use_container_width=True,
                 on_click=set_no_more_chapters,
                 key=f"set_no_more_chapters_{manga['ID']}",
