@@ -408,7 +408,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
                                     True,
                                 )
                         case _:
-                            st.warning(
+                            ss["update_manga_warning_message"] = (
                                 "To update the cover image, provide either an URL, upload a file, or check the box to use the Mantium default cover image. The other fields were updated successfully"
                             )
 
