@@ -2130,7 +2130,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 			}
 			updatedManga.CoverImgResized = true
 		}
-		updatedManga.Status = 1
+		updatedManga.Status = mangaToUpdate.Status
 		updatedManga.ID = mangaToUpdate.ID
 
 		mangaHasNewReleasedChapter := isNewChapterDifferentFromOld(mangaToUpdate.LastReleasedChapter, updatedManga.LastReleasedChapter)
