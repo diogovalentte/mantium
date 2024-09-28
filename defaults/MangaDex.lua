@@ -85,7 +85,7 @@ function MangaChapters(mangaURL)
         .. "/manga/"
         .. mangaId
         ..
-        "/feed?contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&translatedLanguage[]=en&limit=500&offset=0&order[chapter]=asc"
+        "/feed?contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&translatedLanguage[]=en&limit=500&offset=0&order[chapter]=asc&includeExternalUrl=0"
     )
     local result = Client:do_request(request)
     local result_body = Json.decode(result["body"])
