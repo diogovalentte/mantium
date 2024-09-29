@@ -45,13 +45,13 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
         CREATE TABLE IF NOT EXISTS "mangas" (
           "id" serial UNIQUE,
           "source" varchar(30) NOT NULL,
-          "url" varchar(255) NOT NULL PRIMARY KEY,
+          "url" text NOT NULL PRIMARY KEY,
           "name" varchar(255) NOT NULL,
           "status" smallint NOT NULL,
           "internal_id" VARCHAR(100) NOT NULL DEFAULT '',
           "cover_img" bytea,
           "cover_img_resized" bool,
-          "cover_img_url" varchar(255),
+          "cover_img_url" text,
           "preferred_group" varchar(30),
           "last_released_chapter" integer,
           "last_read_chapter" integer
@@ -64,7 +64,7 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
           "last_read_chapter" integer,
           "cover_img" bytea NOT NULL DEFAULT '',
           "cover_img_resized" bool NOT NULL DEFAULT FALSE,
-          "cover_img_url" varchar(255) NOT NULL DEFAULT '',
+          "cover_img_url" text NOT NULL DEFAULT '',
           "cover_img_fixed" boolean NOT NULL DEFAULT FALSE
         );
 
@@ -72,7 +72,7 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
           "id" serial UNIQUE,
           "manga_id" integer,
           "multimanga_id" integer,
-          "url" varchar(255),
+          "url" text,
           "chapter" varchar(255),
           "name" varchar(255),
           "internal_id" VARCHAR(100) NOT NULL DEFAULT '',
@@ -162,9 +162,13 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
         ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "multimanga_id" integer REFERENCES multimangas(id) ON DELETE CASCADE DEFAULT NULL;
         ALTER TABLE "mangas" ALTER COLUMN "last_released_chapter" TYPE integer;
         ALTER TABLE "mangas" ALTER COLUMN "last_read_chapter" TYPE integer;
+        ALTER TABLE "mangas" ALTER COLUMN "url" TYPE text;
+        ALTER TABLE "mangas" ALTER COLUMN "cover_img_url" TYPE text;
         ALTER TABLE "chapters" ADD COLUMN IF NOT EXISTS "internal_id" VARCHAR(100) NOT NULL DEFAULT '';
         ALTER TABLE "chapters" ADD COLUMN IF NOT EXISTS "multimanga_id" integer DEFAULT NULL;
         ALTER TABLE "chapters" ALTER COLUMN "manga_id" DROP NOT NULL;
+        ALTER TABLE "chapters" ALTER COLUMN "url" TYPE text;
+        ALTER TABLE "multimangas" ALTER COLUMN "cover_img_url" TYPE text;
 
         do $$
        	begin
