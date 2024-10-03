@@ -10,4 +10,7 @@ ENV TZ=UTC
 RUN pip install virtualenv && python3 -m venv venv
 RUN . venv/bin/activate && pip install --no-cache-dir -r requirements.txt
 
+RUN rm -rf venv/lib/python3.10/site-packages/streamlit/static
+COPY ./defaults/streamlit_fix/build venv/lib/python3.10/site-packages/streamlit/static
+
 CMD ["sh", "-c", ". venv/bin/activate && streamlit run --server.port=$DASHBOARD_PORT 01_📖_Dashboard.py"]

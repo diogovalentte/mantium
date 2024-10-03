@@ -198,7 +198,7 @@ class MainDashboard:
             ss[base_key + "_mangaupdates"] = {}
             ss["add_manga_search_go_back_to_tab"] = 0
 
-            @st.experimental_dialog("Search Manga", width="large")
+            @st.dialog("Search Manga", width="large")
             def show_add_manga_form_dialog():
                 show_add_manga_form_search()
 
@@ -211,7 +211,7 @@ class MainDashboard:
             if ss.get("add_manga_chapter_options", None) is not None:
                 del ss["add_manga_chapter_options"]
 
-            @st.experimental_dialog("Add Manga Using URL")
+            @st.dialog("Add Manga Using URL")
             def show_add_manga_form_dialog():
                 show_add_manga_form_url()
 
@@ -222,7 +222,7 @@ class MainDashboard:
             ss["add_manga_warning_message"] = ""
             ss["add_manga_error_message"] = ""
 
-            @st.experimental_dialog("Add Custom Manga")
+            @st.dialog("Add Custom Manga")
             def show_add_manga_form_dialog():
                 show_add_custom_manga_form()
 
@@ -233,7 +233,7 @@ class MainDashboard:
             ss["configs_update_warning_message"] = ""
             ss["configs_update_error_message"] = ""
 
-            @st.experimental_dialog("Settings")
+            @st.dialog("Settings")
             def show_settings_dialog():
                 self.show_settings()
 
@@ -242,15 +242,15 @@ class MainDashboard:
         elif ss.get("highlighted_manga", None) is not None:
             manga = ss["highlighted_manga"]
 
-            @st.experimental_dialog(manga["Name"])
+            @st.dialog(manga["Name"])
             def show_highlighted_manga_dialog():
                 show_update_manga(manga)
 
-            @st.experimental_dialog(manga["Name"])
+            @st.dialog(manga["Name"])
             def show_highlighted_custom_manga_dialog():
                 show_update_custom_manga(manga)
 
-            @st.experimental_dialog(manga["Name"], width="large")
+            @st.dialog(manga["Name"], width="large")
             def show_highlighted_multimanga_dialog():
                 show_update_multimanga(manga["MultiMangaID"])
 
@@ -264,7 +264,7 @@ class MainDashboard:
             ss["highlighted_manga"] = None
         elif ss.get("update_manga_success_message", "") != "":
 
-            @st.experimental_dialog("Manga Updated")
+            @st.dialog("Manga Updated")
             def show_update_manga_message():
                 if ss.get("update_manga_success_message", "") != "":
                     st.success(ss["update_manga_success_message"])
@@ -274,7 +274,7 @@ class MainDashboard:
             ss["update_manga_success_message"] = ""
         elif ss.get("update_multimanga_success_message", "") != "":
 
-            @st.experimental_dialog("Multimanga Updated")
+            @st.dialog("Multimanga Updated")
             def show_update_multimanga_message():
                 if ss.get("update_multimanga_success_message", "") != "":
                     st.success(ss["update_multimanga_success_message"])
@@ -287,7 +287,7 @@ class MainDashboard:
             or ss.get("add_manga_warning_message", "") != ""
         ):
 
-            @st.experimental_dialog("Add Manga")
+            @st.dialog("Add Manga")
             def show_add_manga_message():
                 if ss.get("add_manga_success_message", "") != "":
                     st.success(ss["add_manga_success_message"])
@@ -303,7 +303,7 @@ class MainDashboard:
             or ss.get("configs_update_warning_message", "") != ""
         ):
 
-            @st.experimental_dialog("Settings")
+            @st.dialog("Settings")
             def show_settings_message():
                 if ss.get("configs_update_success_message", "") != "":
                     st.success(ss["configs_update_success_message"])
@@ -325,9 +325,7 @@ class MainDashboard:
                     )
                     st.info(f"Time: {last_background_error['time']}")
 
-                    @st.experimental_dialog(
-                        "Last Background Error Message", width="large"
-                    )
+                    @st.dialog("Last Background Error Message", width="large")
                     def show_error_message_dialog():
                         st.write(last_background_error["message"])
                         with stylable_container(
@@ -412,7 +410,7 @@ class MainDashboard:
         improve_headers = """
             <style>
                 /* Hide the header link button */
-                h1.manga_header > div > a {
+                h1.manga_header > span {
                     display: none !important;
                 }
                 /* Add ellipsis (...) if the manga name is to long */
@@ -451,7 +449,11 @@ class MainDashboard:
         st.markdown(
             f"""<h1
                 class="manga_header" style='text-align: center; {"animation: pulse 2s infinite alternate;" if unread else ""} margin-top: {margin}px; margin-bottom: {margin}px; font-size: {font_size}px;'>
-                    {'<a class="manga_header" href="{}" target="_blank">{}</a>'.format(manga["URL"], manga["Name"]) if manga["URL"] != "" else f'<span class="manga_header">{manga["Name"]}</span>'}
+                    <div style='position: relative; display: flex; box-sizing: border-box;'>
+                        <span>
+                            {'<a class="manga_header" href="{}" target="_blank">{}</a>'.format(manga["URL"], manga["Name"]) if manga["URL"] != "" else f'<span class="manga_header">{manga["Name"]}</span>'}
+                        </span>
+                    </div>
                 </h1>
             """,
             unsafe_allow_html=True,
@@ -700,7 +702,7 @@ class MainDashboard:
             ss["dashboard_error"] = False
             st.stop()
 
-    @st.experimental_fragment(run_every=5)
+    @st.fragment(run_every=5)
     def update_dashboard_job(self):
         last_update = self.api_client.check_for_updates()
         if last_update != ss["system_last_update_time"]:
@@ -726,12 +728,8 @@ def main(api_client):
                 display: none;
             }
 
-            div[data-testid="stAppViewBlockContainer"] {
+            div[data-testid="stMainBlockContainer"] {
                 padding-top: 50px !important;
-            }
-
-            div[data-testid="stSidebarUserContent"] {
-                padding-top: 58px !important;
             }
         </style>
     """
