@@ -2108,6 +2108,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 					time.Sleep(retryInterval)
 					continue
 				}
+				break
 			}
 			if len(updatedManga.CoverImg) == 0 {
 				continue
@@ -2168,6 +2169,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 						time.Sleep(retryInterval)
 						continue
 					}
+                    break
 				}
 				if len(updatedManga.CoverImg) == 0 {
 					continue
