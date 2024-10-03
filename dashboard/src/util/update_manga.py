@@ -25,16 +25,19 @@ logger = get_logger()
 
 def show_update_manga(manga: dict[str, Any]):
     api_client = get_api_client()
+    error_while_getting_chapters = False
     try:
         with st.spinner("Getting manga chapters..."):
             ss["update_manga_chapter_options"] = api_client.get_cached_manga_chapters(
                 manga["ID"], manga["URL"], manga["InternalID"]
             )
     except APIException as e:
+        error_while_getting_chapters = True
+        ss["update_manga_chapter_options"] = []
         logger.exception(e)
-        st.error("Error while getting manga chapters")
-        st.stop()
-
+        st.error(
+            "Error while getting manga chapters. Maybe the source site is down or the manga URL changed in the source site. You still can update the other fields"
+        )
     with st.form(key="update_manga_form", border=False):
         st.selectbox(
             "Status",
@@ -46,7 +49,7 @@ def show_update_manga(manga: dict[str, Any]):
             key="update_manga_form_status",
         )
 
-        if manga["LastReadChapter"]["Chapter"] != "":
+        if manga["LastReadChapter"]["Chapter"] != "" and ss["update_manga_chapter_options"] != []:
             try:
                 last_read_chapter_idx = list(
                     map(
@@ -73,6 +76,7 @@ def show_update_manga(manga: dict[str, Any]):
         if (
             ss.get("update_manga_chapter_options") is not None
             and len(ss.get("update_manga_chapter_options", [])) < 1
+            and not error_while_getting_chapters
         ):
             st.warning(
                 "Manga has no released chapters. You still can update the other fields."
@@ -362,16 +366,20 @@ def show_update_custom_manga(manga: dict[str, Any]):
                         )
 
                     if (
-                        manga_has_more_chapters
-                        and manga["LastReadChapter"]["Chapter"] != ""
-                        and manga["LastReadChapter"]["Chapter"]
-                        == manga["LastReleasedChapter"]["Chapter"]
-                    ) or (
-                        not manga_has_more_chapters
-                        and manga["LastReadChapter"]["Chapter"] != ""
-                        and manga["LastReadChapter"]["Chapter"]
-                        != manga["LastReleasedChapter"]["Chapter"]
-                    ) or next_chapter != manga["LastReadChapter"]["Chapter"]:
+                        (
+                            manga_has_more_chapters
+                            and manga["LastReadChapter"]["Chapter"] != ""
+                            and manga["LastReadChapter"]["Chapter"]
+                            == manga["LastReleasedChapter"]["Chapter"]
+                        )
+                        or (
+                            not manga_has_more_chapters
+                            and manga["LastReadChapter"]["Chapter"] != ""
+                            and manga["LastReadChapter"]["Chapter"]
+                            != manga["LastReleasedChapter"]["Chapter"]
+                        )
+                        or next_chapter != manga["LastReadChapter"]["Chapter"]
+                    ):
                         api_client.update_custom_manga_has_more_chapters(
                             manga_has_more_chapters, manga["ID"], ""
                         )
@@ -466,6 +474,8 @@ def show_update_multimanga(multimangaID):
         logger.exception(e)
         st.error("Error while getting multimanga")
         st.stop()
+
+    error_while_getting_chapters = False
     try:
         with st.spinner("Getting multimanga chapters..."):
             ss["update_multimanga_chapter_options"] = (
@@ -474,9 +484,10 @@ def show_update_multimanga(multimangaID):
                 )
             )
     except APIException as e:
+        error_while_getting_chapters = True
+        ss["update_multimanga_chapter_options"] = []
         logger.exception(e)
-        st.error("Error while getting multimanga chapters")
-        st.stop()
+        st.error("Error while getting multimanga chapters. Maybe the current manga's source site is down or the manga URL changed in the source site. You still can update the other fields")
 
     if ss.get("show_update_multimanga_add_manga_search", False):
         show_update_multimanga_add_manga_search(multimanga)
@@ -485,7 +496,7 @@ def show_update_multimanga(multimangaID):
     elif ss.get("show_update_multimanga_manage_mangas", False):
         show_update_multimanga_manage_mangas(multimanga)
     else:
-        show_update_multimanga_default_form(multimanga)
+        show_update_multimanga_default_form(multimanga, error_while_getting_chapters)
 
 
 def show_update_multimanga_add_manga_search(multimanga):
@@ -614,7 +625,7 @@ def show_update_multimanga_manage_mangas(multimanga):
             ss["update_multimanga_warning_message"] = ""
 
 
-def show_update_multimanga_default_form(multimanga):
+def show_update_multimanga_default_form(multimanga, error_while_getting_chapters):
     api_client = get_api_client()
     with st.form(key="update_multimanga_form", border=False):
         st.selectbox(
@@ -627,7 +638,7 @@ def show_update_multimanga_default_form(multimanga):
             key="update_multimanga_form_status",
         )
 
-        if multimanga["LastReadChapter"]["Chapter"] != "":
+        if multimanga["LastReadChapter"]["Chapter"] != "" and ss["update_multimanga_chapter_options"] != []:
             try:
                 last_read_chapter_idx = list(
                     map(
@@ -654,6 +665,7 @@ def show_update_multimanga_default_form(multimanga):
         if (
             ss.get("update_multimanga_chapter_options") is not None
             and len(ss.get("update_multimanga_chapter_options", [])) < 1
+            and not error_while_getting_chapters
         ):
             st.warning(
                 "Multimanga's current manga has no released chapters. You still can update the other fields."
