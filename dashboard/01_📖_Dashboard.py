@@ -129,56 +129,47 @@ class MainDashboard:
             st.toggle("Reverse Sort", key="mangas_sort_reverse")
             st.divider()
 
-            if not ss.get("show_more_sidebar_options", False):
+            with st.expander("More Options"):
 
-                def on_click():
-                    ss["show_more_sidebar_options"] = True
+                def on_search_click():
+                    ss["show_add_manga_search_form"] = True
 
-                st.button("More Options", on_click=on_click, use_container_width=True)
-            else:
-                with st.expander("More Options", expanded=True):
+                st.button(
+                    "Add Manga by Searching",
+                    type="primary",
+                    use_container_width=True,
+                    on_click=on_search_click,
+                )
 
-                    def on_search_click():
-                        ss["show_add_manga_search_form"] = True
+                def on_url_click():
+                    ss["show_add_manga_url_form"] = True
 
-                    st.button(
-                        "Add Manga by Searching",
-                        type="primary",
-                        use_container_width=True,
-                        on_click=on_search_click,
-                    )
+                st.button(
+                    "Add Manga Using URL",
+                    type="primary",
+                    use_container_width=True,
+                    on_click=on_url_click,
+                )
 
-                    def on_url_click():
-                        ss["show_add_manga_url_form"] = True
+                def on_custom_magna_click():
+                    ss["show_add_custom_manga_form"] = True
 
-                    st.button(
-                        "Add Manga Using URL",
-                        type="primary",
-                        use_container_width=True,
-                        on_click=on_url_click,
-                    )
+                st.button(
+                    "Add Custom Manga",
+                    type="primary",
+                    use_container_width=True,
+                    on_click=on_custom_magna_click,
+                )
 
-                    def on_custom_magna_click():
-                        ss["show_add_custom_manga_form"] = True
+                def on_settings_click():
+                    ss["show_settings_form"] = True
 
-                    st.button(
-                        "Add Custom Manga",
-                        type="primary",
-                        use_container_width=True,
-                        on_click=on_custom_magna_click,
-                    )
-
-                    def on_settings_click():
-                        ss["show_settings_form"] = True
-
-                    st.button(
-                        "Settings",
-                        type="primary",
-                        use_container_width=True,
-                        on_click=on_settings_click,
-                    )
-
-                ss["show_more_sidebar_options"] = False
+                st.button(
+                    "Settings",
+                    type="primary",
+                    use_container_width=True,
+                    on_click=on_settings_click,
+                )
 
     def show_dialogs(self):
         """Only one dialog at the time can be shown."""
@@ -394,25 +385,13 @@ class MainDashboard:
             != manga["LastReleasedChapter"]["Chapter"]
         )
 
-        # Try to make the title fit in the container the best way
-        # Also try to make the containers the same size
-        default_title_font_size = 36
-        title_len = len(manga["Name"])
-        if title_len < 15:
-            font_size = default_title_font_size
-            margin = 0
-        elif title_len < 30:
-            font_size = 20
-            margin = (default_title_font_size - font_size) / 2 + 1.6
-        else:
-            font_size = 15
-            margin = (default_title_font_size - font_size) / 2 + 1.6
         improve_headers = """
             <style>
                 /* Hide the header link button */
                 h1.manga_header > span {
                     display: none !important;
                 }
+
                 /* Add ellipsis (...) if the manga name is to long */
                 h1.manga_header > div > span {
                     white-space: nowrap !important;
@@ -422,6 +401,10 @@ class MainDashboard:
 
                 h1.manga_header {
                     padding: 0px 0px 1rem;
+                    text-align: center;
+                    margin-top: 0px;
+                    margin-bottom: 0px;
+                    font-size: 30px;
                 }
 
                 a.manga_header {
@@ -448,7 +431,7 @@ class MainDashboard:
         st.markdown(improve_headers, unsafe_allow_html=True)
         st.markdown(
             f"""<h1
-                class="manga_header" style='text-align: center; {"animation: pulse 2s infinite alternate;" if unread else ""} margin-top: {margin}px; margin-bottom: {margin}px; font-size: {font_size}px;'>
+                class="manga_header" style='{"animation: pulse 2s infinite alternate;" if unread else ""}'>
                     <div style='position: relative; display: flex; box-sizing: border-box;'>
                         <span>
                             {'<a class="manga_header" href="{}" target="_blank">{}</a>'.format(manga["URL"], manga["Name"]) if manga["URL"] != "" else f'<span class="manga_header">{manga["Name"]}</span>'}
