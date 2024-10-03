@@ -910,6 +910,30 @@ paths:
               $ref: '#/definitions/manga.Chapter'
             type: array
       summary: Get multimanga current manga chapters
+  /multimanga/choose_current_manga:
+    get:
+      description: Check a multimanga mangas and returns which manga should be the
+        current manga.
+      parameters:
+      - description: Multimanga ID
+        example: 1
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: Manga IDs to exclude from the check
+        example: '"1,2,3"'
+        in: query
+        name: exclude_manga_ids
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"manga": mangaObj}'
+          schema:
+            $ref: '#/definitions/manga.Manga'
+      summary: Choose current manga
   /multimanga/cover_img:
     patch:
       description: 'Updates a multimanga cover image in the database. You must provide

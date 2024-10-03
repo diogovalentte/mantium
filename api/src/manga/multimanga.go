@@ -342,7 +342,7 @@ func (mm *MultiManga) UpsertChapterIntoDB(chapter *Chapter) error {
 // and updates the current manga in the database.
 func (mm *MultiManga) UpdateCurrentMangaInDB() error {
 	contextError := "error updating multimanga '%s' current manga"
-	m, err := getLatestManga(mm.Mangas)
+	m, err := GetLatestManga(mm.Mangas)
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, mm), err)
 	}
@@ -441,7 +441,7 @@ func (mm *MultiManga) AddManga(m *Manga) error {
 	m.ID = mangaID
 	mm.Mangas = append(mm.Mangas, m)
 
-	currentManga, err := getLatestManga(mm.Mangas)
+	currentManga, err := GetLatestManga(mm.Mangas)
 	if err != nil {
 		tx.Rollback()
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), err)
@@ -494,7 +494,7 @@ func (mm *MultiManga) RemoveManga(m *Manga) error {
 
 	mangas := append(mm.Mangas[:mangaIdx], mm.Mangas[mangaIdx+1:]...)
 
-	currentManga, err := getLatestManga(mangas)
+	currentManga, err := GetLatestManga(mangas)
 	if err != nil {
 		tx.Rollback()
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), err)
@@ -763,7 +763,7 @@ func validateMultiManga(mm *MultiManga) error {
 }
 
 // Tries to return the manga with the latest chapter.
-func getLatestManga(mangas []*Manga) (*Manga, error) {
+func GetLatestManga(mangas []*Manga) (*Manga, error) {
 	if len(mangas) == 0 {
 		return nil, errordefs.ErrMultiMangaMangaListIsEmpty
 	}

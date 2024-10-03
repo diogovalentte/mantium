@@ -926,6 +926,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/multimanga/choose_current_manga": {
+            "get": {
+                "description": "Check a multimanga mangas and returns which manga should be the current manga.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Choose current manga",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Multimanga ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "example": "\"1,2,3\"",
+                        "description": "Manga IDs to exclude from the check",
+                        "name": "exclude_manga_ids",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"manga\": mangaObj}",
+                        "schema": {
+                            "$ref": "#/definitions/manga.Manga"
+                        }
+                    }
+                }
+            }
+        },
         "/multimanga/cover_img": {
             "patch": {
                 "description": "Updates a multimanga cover image in the database. You must provide only one of the following: cover_img, cover_img_url, use_current_manga_cover_img.",

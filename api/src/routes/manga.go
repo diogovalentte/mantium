@@ -52,6 +52,7 @@ func MangaRoutes(group *gin.RouterGroup) {
 
 		group.DELETE("/multimanga", DeleteMultiManga)
 		group.GET("/multimanga", GetMultiManga)
+		group.GET("/multimanga/choose_current_manga", ChooseCurrentManga)
 		group.GET("/multimanga/chapters", GetMultiMangaChapters)
 		group.PATCH("/multimanga/status", UpdateMultiMangaStatus)
 		group.PATCH("/multimanga/last_read_chapter", UpdateMultiMangaLastReadChapter)
@@ -987,6 +988,83 @@ func GetMultiManga(c *gin.Context) {
 	}
 
 	resMap := map[string]manga.MultiManga{"multimanga": *multimangaGet}
+	c.JSON(http.StatusOK, resMap)
+}
+
+// @Summary Choose current manga
+// @Description Check a multimanga mangas and returns which manga should be the current manga.
+// @Produce json
+// @Param id query int true "Multimanga ID" Example(1)
+// @Param exclude_manga_ids query string false "Manga IDs to exclude from the check" Example("1,2,3")
+// @Success 200 {object} manga.Manga "{"manga": mangaObj}"
+// @Router /multimanga/choose_current_manga [get]
+func ChooseCurrentManga(c *gin.Context) {
+	multimangaIDStr := c.Query("id")
+	if multimangaIDStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "id must be provided"})
+		return
+	}
+	multimangaID, err := strconv.Atoi(multimangaIDStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "id must be a number"})
+		return
+	}
+
+	multimanga, err := manga.GetMultiMangaFromDB(manga.ID(multimangaID))
+	if err != nil {
+		if strings.Contains(err.Error(), errordefs.ErrMangaNotFoundDB.Error()) {
+			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	queryExcludeMangaIDs := c.Query("exclude_manga_ids")
+	var excludeMangaIDs []int
+	if queryExcludeMangaIDs != "" {
+		excludeMangaIDsStr := strings.Split(queryExcludeMangaIDs, ",")
+		if len(excludeMangaIDsStr) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "exclude_manga_ids must be a comma separated list of numbers"})
+			return
+		}
+		for _, excludeMangaIDStr := range excludeMangaIDsStr {
+			excludeMangaID, err := strconv.Atoi(excludeMangaIDStr)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"message": "exclude_manga_ids must be a comma separated list of numbers"})
+				return
+			}
+			excludeMangaIDs = append(excludeMangaIDs, excludeMangaID)
+		}
+	}
+
+	for _, excludeMangaID := range excludeMangaIDs {
+		found := false
+		for i, m := range multimanga.Mangas {
+			if m.ID == manga.ID(excludeMangaID) {
+				multimanga.Mangas = append(multimanga.Mangas[:i], multimanga.Mangas[i+1:]...)
+				found = true
+				break
+			}
+		}
+		if !found {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "exclude_manga_ids must be a list of multimanga manga IDs"})
+			return
+		}
+	}
+
+	if len(multimanga.Mangas) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "multimanga must have at least one manga after excluding the manga IDs"})
+		return
+	}
+
+	returnManga, err := manga.GetLatestManga(multimanga.Mangas)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	resMap := map[string]*manga.Manga{"manga": returnManga}
 	c.JSON(http.StatusOK, resMap)
 }
 
@@ -2169,7 +2247,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 						time.Sleep(retryInterval)
 						continue
 					}
-                    break
+					break
 				}
 				if len(updatedManga.CoverImg) == 0 {
 					continue

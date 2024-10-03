@@ -1285,6 +1285,7 @@ func TestEmptyCustomMangaLifeCycle(t *testing.T) {
 
 func TestMultiMangaLifeCycle(t *testing.T) {
 	multimanga := &manga.MultiManga{}
+	multimanga.ID = 54
 
 	t.Run("Add valid manga with read chapter to turn into multimanga", func(t *testing.T) {
 		body, err := json.Marshal(mangasRequestsTestTable["valid manga with read chapter"])
@@ -1400,6 +1401,18 @@ func TestMultiMangaLifeCycle(t *testing.T) {
 		multimanga = &actual
 		if len(multimanga.Mangas) != 2 {
 			t.Fatalf(`expected multimanga to have 2 manga, got %d`, len(multimanga.Mangas))
+		}
+	})
+	t.Run("Get which manga should be current", func(t *testing.T) {
+		var resMap map[string]*manga.Manga
+		err := requestHelper(http.MethodGet, fmt.Sprintf("/v1/multimanga/choose_current_manga?id=%d", multimanga.ID), nil, &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["manga"]
+		if actual == nil {
+			t.Fatalf(`expected a manga to be chosen, got nil`)
 		}
 	})
 	t.Run("Remove manga from multimanga's manga list", func(t *testing.T) {
