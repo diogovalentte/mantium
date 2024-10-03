@@ -16,7 +16,7 @@
 
 # Dashboard
 
-By default, the dashboard shows the mangas with unread chapters first, ordering by last released chapter. Unread manga names have a animation effect that changes the name color to catch your attention.
+By default, the dashboard shows the mangas with unread chapters first, ordering by last released chapter. Unread manga names have an animation effect that changes the name color to catch your attention.
 
 <p align="center">
   <img src="https://github.com/user-attachments/assets/0c696396-fc78-4843-bdad-710888c0d016">
@@ -71,9 +71,9 @@ When you read the last available chapter from a custom manga, check the "**No mo
 
 # Multimanga
 
-The **multimanga** feature solves the issue of when you want to track the same manga in multiples sources so that you are notified whenever a new chapter is released as soon as possible in whenever source. Normally, you would need to add the same manga from different sources, but they would act as completely different mangas. You would need to manually set the last read chapter for all of them and be notified for all of them.
+The **multimanga** feature solves the issue of when you want to track the same manga in multiple sources so that you are notified whenever a new chapter is released as soon as possible in whatever source. Normally, you would need to add the same manga from different sources, but they would act as completely different mangas. You would need to manually set the last read chapter for all of them and be notified for all of them.
 
-The multimanga feature solves this issue by allowing you to **track the same manga from multiple sources, with them being treated as the same manga.** No multiple notifications or setting the last read chapter for all of them!
+The multimanga feature solves this issue by allowing you to **track the same manga from multiple sources, with them being treated as the same.** No multiple notifications or setting the last read chapter for all of them!
 
 - A deeper explanation of the multimanga feature and a demo video can be found [here](https://github.com/diogovalentte/mantium/blob/main/multimanga.md).
 
@@ -226,10 +226,12 @@ export API_ADDRESS=http://localhost:8081
 pip install -r requirements.txt
 ```
 
-8. Start the dashboard:
+8. Currently, there is an issue with one of the dashboard dependencies, refer to [this markdown file](https://github.com/diogovalentte/mantium/blob/main/defaults/streamlit_fix/help.md) explaining more about it.
+
+9. Start the dashboard:
 
 ```bash
 streamlit run 01_📖_Dashboard.py
 ```
 
-9. Access the dashboard on `http://localhost:8501`
+10. Access the dashboard on `http://localhost:8501`
