@@ -3,6 +3,7 @@ from typing import Any
 from urllib.parse import urljoin
 
 import requests
+import src.util.defaults as defaults
 from src.exceptions import APIException
 from src.util.util import get_updated_at_datetime
 
@@ -93,6 +94,56 @@ class MultiMangaAPIClient:
                 }
 
         return multimanga
+
+    def choose_current_manga(
+        self, multimanga_id: int, exclude_manga_ids: list[int] = []
+    ) -> dict[str, Any]:
+        url = self.base_multimanga_url
+        url = f"{url}/choose_current_manga?id={multimanga_id}"
+
+        if exclude_manga_ids:
+            url = f"{url}&exclude_manga_ids={','.join(map(str, exclude_manga_ids))}"
+
+        res = requests.get(url)
+
+        if res.status_code not in self.acceptable_status_codes:
+            raise APIException(
+                "error while getting choose current manga from multimanga",
+                url,
+                "GET",
+                res.status_code,
+                res.text,
+            )
+
+        manga = res.json().get("manga")
+        manga["CoverImg"] = bytes(manga["CoverImg"], "utf-8")
+
+        if manga["LastReleasedChapter"] is not None:
+            manga["LastReleasedChapter"]["UpdatedAt"] = get_updated_at_datetime(
+                manga["LastReleasedChapter"]["UpdatedAt"]
+            )
+        else:
+            manga["LastReleasedChapter"] = {
+                "Chapter": "",
+                "UpdatedAt": datetime(1970, 1, 1),
+                "URL": manga["URL"]
+                if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
+                else "",
+            }
+        if manga["LastReadChapter"] is not None:
+            manga["LastReadChapter"]["UpdatedAt"] = get_updated_at_datetime(
+                manga["LastReadChapter"]["UpdatedAt"]
+            )
+        else:
+            manga["LastReadChapter"] = {
+                "Chapter": "",
+                "UpdatedAt": datetime(1970, 1, 1),
+                "URL": manga["URL"]
+                if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
+                else "",
+            }
+
+        return manga
 
     def add_manga_to_multimanga(
         self,

@@ -41,10 +41,3 @@ class APIClient(
         chapters = api_client.get_manga_chapters(id, url, internal_id)
 
         return chapters
-
-    @st.cache_data(show_spinner=False, max_entries=5, ttl=600)
-    def get_cached_multimanga_chapters(_, id: int, manga_id: int):
-        api_client = get_api_client()
-        chapters = api_client.get_multimanga_chapters(id, manga_id)
-
-        return chapters

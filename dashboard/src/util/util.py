@@ -120,7 +120,7 @@ def fix_streamlit_index_html():
     return
 
 
-def get_source_name_and_color(source: str):
+def get_source_name_and_colors(source: str):
     """Returns the source name, text color, and background color.
 
     Args:
@@ -139,8 +139,6 @@ def get_source_name_and_color(source: str):
         case "mangahub.io":
             return "MangaHub", "white", "#dc98f1"
         case "mangaupdates":
-            return "MangaUpdates", "white", "#f69731"
+            return "Manga Updates", "white", "#f69731"
         case _:
             return source, "black", "white"
-
-
