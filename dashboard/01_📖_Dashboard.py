@@ -107,7 +107,7 @@ class MainDashboard:
                 st_javascript(js)
 
             st.selectbox(
-                "Filter Status",
+                "Status",
                 defaults.manga_status_options,
                 index=self.sort_option_index,
                 on_change=status_filter_callback,
