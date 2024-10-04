@@ -95,7 +95,7 @@ Mantium has integrations, like:
 - [Kaizoku](https://github.com/oae/kaizoku) and [Tranga](https://github.com/C9Glax/tranga/tree/master).
 - [Ntfy](https://github.com/binwiederhier/ntfy).
 
-More about the integrations [here](https://github.com/diogovalentte/mantium/blob/main/kaizoku-integration.md).
+More about the integrations [here](https://github.com/diogovalentte/mantium/blob/main/integrations.md).
 
 # Running
 
