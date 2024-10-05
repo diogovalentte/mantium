@@ -1,5 +1,6 @@
 {
   "dashboard": {
+    "columns": 5,
     "showBackgroundErrorWarning": true,
     "searchResultsLimit": 20
   }
