@@ -1,0 +1,6 @@
+{
+  "dashboard": {
+    "showBackgroundErrorWarning": true,
+    "searchResultsLimit": 20
+  }
+}
