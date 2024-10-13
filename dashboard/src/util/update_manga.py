@@ -857,7 +857,7 @@ def show_update_multimanga_default_form(multimanga):
 
     st.divider()
 
-    with st.expander("Manga Multimanga Mangas"):
+    with st.expander("Multimanga Mangas"):
 
         def add_search_callback():
             ss["show_update_multimanga_add_manga_search"] = True
