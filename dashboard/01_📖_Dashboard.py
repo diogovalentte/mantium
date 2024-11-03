@@ -7,13 +7,23 @@ import streamlit as st
 from PIL import Image
 from src.api.api_client import get_api_client
 from src.util import defaults
-from src.util.add_manga import (show_add_custom_manga_form,
-                                show_add_manga_form_search,
-                                show_add_manga_form_url)
-from src.util.update_manga import (show_update_custom_manga, show_update_manga,
-                                   show_update_multimanga)
-from src.util.util import (centered_container, fix_streamlit_index_html,
-                           get_logger, get_relative_time, tagger)
+from src.util.add_manga import (
+    show_add_custom_manga_form,
+    show_add_manga_form_search,
+    show_add_manga_form_url,
+)
+from src.util.update_manga import (
+    show_update_custom_manga,
+    show_update_manga,
+    show_update_multimanga,
+)
+from src.util.util import (
+    centered_container,
+    fix_streamlit_index_html,
+    get_logger,
+    get_relative_time,
+    tagger,
+)
 from streamlit import session_state as ss
 from streamlit_extras.stylable_container import stylable_container
 from streamlit_javascript import st_javascript
@@ -309,6 +319,10 @@ class MainDashboard:
     def show_background_error(self):
         if ss["settings_show_background_error_warning"]:
             last_background_error = self.api_client.get_last_background_error()
+            if len(last_background_error["message"]) > 3000:
+                last_background_error["message"] = (
+                    last_background_error["message"][:3000] + "..."
+                )
             if last_background_error["message"] != "":
                 with st.expander("An error occurred in the background!", expanded=True):
                     logger.error(
@@ -485,9 +499,11 @@ class MainDashboard:
 
             chapter = chapter_tag_content.format(
                 manga["LastReleasedChapter"]["URL"],
-                f'Ch. {manga["LastReleasedChapter"]["Chapter"]}'
-                if manga["LastReleasedChapter"]["Chapter"] != ""
-                else "N/A",
+                (
+                    f'Ch. {manga["LastReleasedChapter"]["Chapter"]}'
+                    if manga["LastReleasedChapter"]["Chapter"] != ""
+                    else "N/A"
+                ),
             )
             release_date = (
                 manga["LastReleasedChapter"]["UpdatedAt"]
@@ -512,9 +528,11 @@ class MainDashboard:
 
             chapter = chapter_tag_content.format(
                 manga["LastReadChapter"]["URL"],
-                f'Ch. {manga["LastReadChapter"]["Chapter"]}'
-                if manga["LastReadChapter"]["Chapter"] != ""
-                else "N/A",
+                (
+                    f'Ch. {manga["LastReadChapter"]["Chapter"]}'
+                    if manga["LastReadChapter"]["Chapter"] != ""
+                    else "N/A"
+                ),
             )
             read_date = (
                 manga["LastReadChapter"]["UpdatedAt"]
