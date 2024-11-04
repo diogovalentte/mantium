@@ -116,15 +116,8 @@ func TestMultiMangaDBLifeCycle(t *testing.T) {
 					err = multiManga.CreateIntoDB()
 					if util.ErrorContains(err, "chapter type should be 1 (last release) or 2 (last read)") {
 						multiManga.LastReadChapter.Type = multiMangaTest.LastReadChapter.Type
-						multiManga.LastReadChapter.URL = ""
 						err = multiManga.CreateIntoDB()
-						if util.ErrorContains(err, "chapter URL is empty") {
-							multiManga.LastReadChapter.URL = multiMangaTest.LastReadChapter.URL
-							err = multiManga.CreateIntoDB()
-							if err != nil {
-								t.Fatal(err)
-							}
-						} else {
+						if err != nil {
 							t.Fatal(err)
 						}
 					} else {

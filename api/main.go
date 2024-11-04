@@ -14,6 +14,7 @@ import (
 	"github.com/diogovalentte/mantium/api/src/config"
 	"github.com/diogovalentte/mantium/api/src/dashboard"
 	"github.com/diogovalentte/mantium/api/src/db"
+	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
@@ -42,6 +43,11 @@ func init() {
 	defer _db.Close()
 
 	err = db.CreateTables(_db, log)
+	if err != nil {
+		panic(err)
+	}
+
+	err = turnMangasIntoMultiMangas()
 	if err != nil {
 		panic(err)
 	}
@@ -117,4 +123,23 @@ func setUpdateMangasMetadataPeriodicallyJob(log *zerolog.Logger) {
 	} else {
 		log.Info().Msg("Not updating mangas metadata periodically")
 	}
+}
+
+func turnMangasIntoMultiMangas() error {
+	contextError := "error turning all mangas into multimangas"
+	mangas, err := manga.GetMangasDB()
+	if err != nil {
+		return util.AddErrorContext(contextError, err)
+	}
+
+	for _, m := range mangas {
+		if m.MultiMangaID == 0 && m.Source != manga.CustomMangaSource {
+			_, err = manga.TurnIntoMultiManga(m)
+			if err != nil {
+				return util.AddErrorContext(contextError, err)
+			}
+		}
+	}
+
+	return nil
 }

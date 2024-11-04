@@ -88,15 +88,8 @@ func TestMangaDBLifeCycle(t *testing.T) {
 					err = manga.InsertIntoDB()
 					if util.ErrorContains(err, "chapter type should be 1 (last release) or 2 (last read)") {
 						manga.LastReleasedChapter.Type = mangaTest.LastReleasedChapter.Type
-						manga.LastReadChapter.URL = ""
 						err = manga.InsertIntoDB()
-						if util.ErrorContains(err, "chapter URL is empty") {
-							manga.LastReadChapter.URL = mangaTest.LastReadChapter.URL
-							err = manga.InsertIntoDB()
-							if err != nil {
-								t.Fatal(err)
-							}
-						} else {
+						if err != nil {
 							t.Fatal(err)
 						}
 					} else {
