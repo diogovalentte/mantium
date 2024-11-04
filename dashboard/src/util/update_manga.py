@@ -195,15 +195,13 @@ def show_update_multimanga(multimanga_id):
             )
 
         with st.expander(
-            "Update Cover Image",
+            "Cover Image",
         ):
             st.info(
-                "By default, the cover image of the current manga is used. It's fetched from the manga's source site and it's automatically updated when the source site changes it, but you can manually provide an image URL or upload a file."
+                "By default, the cover image of the current manga is used. It's fetched from the manga's source site and it's automatically updated when the source site changes it, but you can manually change it by providing an image URL or uploading a file."
             )
             if multimanga["CoverImgFixed"]:
-                st.warning(
-                    "You changed the cover image of the multimanga to a custom image."
-                )
+                st.warning("You changed the cover image to a custom image.")
             st.text_input(
                 "Cover Image URL",
                 placeholder="https://example.com/image.jpg",
@@ -224,7 +222,7 @@ def show_update_multimanga(multimanga_id):
             )
 
         if st.form_submit_button(
-            "Update Multimanga",
+            "Update",
             use_container_width=True,
             type="primary",
         ):
@@ -296,7 +294,7 @@ def show_update_multimanga(multimanga_id):
             ss["update_multimanga_delete_multimanga_id"] = multimanga["ID"]
 
         st.button(
-            "Delete Multimanga",
+            "Delete",
             use_container_width=True,
             on_click=on_click,
         )
@@ -310,7 +308,7 @@ def show_update_multimanga(multimanga_id):
 
     st.divider()
 
-    with st.expander("Multimanga Mangas"):
+    with st.expander("Manage Mangas"):
 
         if st.button(
             "Add Manga by Searching",
@@ -333,7 +331,7 @@ def show_update_multimanga(multimanga_id):
             st.rerun()
 
         if st.button(
-            "Manage Multimanga Mangas",
+            "Manage Mangas",
             use_container_width=True,
             type="primary",
             key="update_multimanga_mangas_show_manage_mangas_button",

@@ -162,7 +162,7 @@ def show_bottom_add_manga_form(manga_url: str, manga_internal_id: str):
             del ss["add_manga_chapter_options"]
 
         st.form_submit_button(
-            "Add Manga",
+            "Add",
             on_click=add_manga_callback,
             use_container_width=True,
             type="primary",
@@ -552,7 +552,7 @@ def show_add_custom_manga_form():
             )
 
         if st.form_submit_button(
-            "Add Manga",
+            "Add",
             use_container_width=True,
             type="primary",
         ):
