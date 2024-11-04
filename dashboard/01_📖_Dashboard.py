@@ -193,6 +193,15 @@ class MainDashboard:
                 ss["update_manga_success_message"] = ""
 
             show()
+        elif ss.get("add_manga_success_message", "") != "":
+
+            @st.dialog("Add Manga")
+            def show():
+                ss["is_dialog_open"] = True
+                st.success(ss["add_manga_success_message"])
+                ss["add_manga_success_message"] = ""
+
+            show()
         elif ss.get("show_settings_form", False):
             self.show_settings()
             ss["show_settings_form"] = False

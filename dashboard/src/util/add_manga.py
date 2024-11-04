@@ -111,9 +111,10 @@ def add_manga():
             logger.exception(ex)
             st.error("Error while adding manga")
     else:
-        st.success("Manga added successfully")
+        ss["add_manga_success_message"] = "Manga added successfully"
         ss["add_manga_search_selected_manga"] = None
         ss["add_manga_form_url"] = ""
+        st.rerun()
 
 
 def show_bottom_add_manga_form(manga_url: str, manga_internal_id: str):
@@ -614,5 +615,6 @@ def add_custom_manga():
             logger.exception(ex)
             st.error("Error while adding manga")
     else:
-        st.success("Manga added successfully")
+        ss["add_manga_success_message"] = "Manga added successfully"
         ss["add_manga_search_selected_manga"] = None
+        st.rerun()
