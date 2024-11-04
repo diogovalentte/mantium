@@ -195,6 +195,10 @@ def show_update_multimanga(multimanga_id):
             st.info(
                 "By default, the cover image of the current manga is used. It's fetched from the manga's source site and it's automatically updated when the source site changes it, but you can manually provide an image URL or upload a file."
             )
+            if multimanga["CoverImgFixed"]:
+                st.warning(
+                    "You changed the cover image of the multimanga to a custom image."
+                )
             st.text_input(
                 "Cover Image URL",
                 placeholder="https://example.com/image.jpg",
