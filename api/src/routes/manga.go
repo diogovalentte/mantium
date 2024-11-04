@@ -50,6 +50,7 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.POST("/custom_manga", AddCustomManga)
 		group.PATCH("/custom_manga/has_more_chapters", UpdateCustomMangaMoreChapters)
 
+		group.POST("/multimanga", AddMultiManga)
 		group.DELETE("/multimanga", DeleteMultiManga)
 		group.GET("/multimanga", GetMultiManga)
 		group.GET("/multimanga/choose_current_manga", ChooseCurrentManga)
@@ -918,6 +919,97 @@ func UpdateCustomMangaMoreChapters(c *gin.Context) {
 	dashboard.UpdateDashboard()
 
 	c.JSON(http.StatusOK, gin.H{"message": "Custom manga updated successfully"})
+}
+
+// @Summary Add multimanga
+// @Description Gets a manga metadata from source and inserts it as the current manga of a new multimanga into the database.
+// @Accept json
+// @Produce json
+// @Param manga body AddMangaRequest true "Current manga data"
+// @Success 200 {object} responseMessage
+// @Router /multimanga [post]
+func AddMultiManga(c *gin.Context) {
+	currentTime := time.Now()
+
+	var requestData AddMangaRequest
+	if err := c.ShouldBindJSON(&requestData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid JSON fields, refer to the API documentation"})
+		return
+	}
+
+	currentManga, err := sources.GetMangaMetadata(requestData.URL, requestData.MangaInternalID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	currentManga.Status = manga.Status(requestData.Status)
+
+	if requestData.LastReadChapter != "" || requestData.LastReadChapterURL != "" {
+		currentManga.LastReadChapter, err = sources.GetChapterMetadata(requestData.URL, requestData.MangaInternalID, requestData.LastReadChapter, requestData.LastReadChapterURL, requestData.LastReadChapterInternalID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		currentManga.LastReadChapter.Type = 2
+		currentManga.LastReadChapter.UpdatedAt = currentTime.Truncate(time.Second)
+	}
+
+	if len(currentManga.CoverImg) == 0 {
+		currentManga.CoverImg, err = util.GetDefaultCoverImg()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		currentManga.CoverImgResized = true
+	}
+
+	multiManga := &manga.MultiManga{
+		CurrentManga:    currentManga,
+		LastReadChapter: currentManga.LastReadChapter,
+		Mangas:          []*manga.Manga{currentManga},
+		Status:          currentManga.Status,
+	}
+
+	err = multiManga.InsertIntoDB()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	var integrationsErrors []error
+	if config.GlobalConfigs.Kaizoku.Valid {
+		kaizoku := kaizoku.Kaizoku{}
+		kaizoku.Init()
+		err = kaizoku.AddManga(currentManga, config.GlobalConfigs.Kaizoku.TryOtherSources)
+		if err != nil {
+			integrationsErrors = append(integrationsErrors, util.AddErrorContext("multimanga added to DB, but error while adding current manga to Kaizoku", err))
+		}
+	}
+
+	if config.GlobalConfigs.Tranga.Valid {
+		tranga := tranga.Tranga{}
+		tranga.Init()
+		err = tranga.AddManga(currentManga)
+		if err != nil {
+			integrationsErrors = append(integrationsErrors, util.AddErrorContext("multimanga added to DB, but error while adding current manga to Tranga", err))
+		}
+	}
+
+	if len(integrationsErrors) > 0 {
+		fullMsg := "multimang added to DB, but error executing integrations: "
+		for _, err := range integrationsErrors {
+			zerolog.Ctx(c.Request.Context()).Error().Err(err).Msg("error while adding multimanga's current manga to at least one integration")
+			fullMsg += err.Error() + " "
+		}
+		dashboard.UpdateDashboard()
+		c.JSON(http.StatusInternalServerError, gin.H{"message": fullMsg})
+		return
+	}
+
+	dashboard.UpdateDashboard()
+
+	c.JSON(http.StatusOK, gin.H{"message": "Multimanga added successfully"})
 }
 
 // @Summary Delete multimanga

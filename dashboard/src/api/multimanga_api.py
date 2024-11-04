@@ -13,6 +13,39 @@ class MultiMangaAPIClient:
         self.base_multimanga_url: str = urljoin(base_api_url, "/v1/multimanga")
         self.acceptable_status_codes: tuple = (200,)
 
+    def add_multimanga(
+        self,
+        manga_url: str,
+        manga_status: int,
+        manga_internal_id: str,
+        last_read_chapter: str,
+        last_read_chapter_url: str,
+        last_read_chapter_internal_id: str,
+    ) -> dict[str, str]:
+        url = self.base_multimanga_url
+
+        request_body = {
+            "url": manga_url,
+            "status": manga_status,
+            "manga_internal_id": manga_internal_id,
+            "last_read_chapter": last_read_chapter,
+            "last_read_chapter_url": last_read_chapter_url,
+            "last_read_chapter_internal_id": last_read_chapter_internal_id,
+        }
+
+        res = requests.post(url, json=request_body)
+
+        if res.status_code not in self.acceptable_status_codes:
+            raise APIException(
+                "error while adding multimanga",
+                url,
+                "POST",
+                res.status_code,
+                res.text,
+            )
+
+        return res.json()
+
     def get_multimanga(self, multimanga_id: int) -> dict[str, Any]:
         url = self.base_multimanga_url
         url = f"{url}?id={multimanga_id}"
@@ -126,9 +159,11 @@ class MultiMangaAPIClient:
             manga["LastReleasedChapter"] = {
                 "Chapter": "",
                 "UpdatedAt": datetime(1970, 1, 1),
-                "URL": manga["URL"]
-                if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
-                else "",
+                "URL": (
+                    manga["URL"]
+                    if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
+                    else ""
+                ),
             }
         if manga["LastReadChapter"] is not None:
             manga["LastReadChapter"]["UpdatedAt"] = get_updated_at_datetime(
@@ -138,9 +173,11 @@ class MultiMangaAPIClient:
             manga["LastReadChapter"] = {
                 "Chapter": "",
                 "UpdatedAt": datetime(1970, 1, 1),
-                "URL": manga["URL"]
-                if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
-                else "",
+                "URL": (
+                    manga["URL"]
+                    if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
+                    else ""
+                ),
             }
 
         return manga

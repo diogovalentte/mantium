@@ -44,9 +44,9 @@ func (mm MultiManga) String() string {
 	return returnStr
 }
 
-// CreateIntoDB creates the multimanga and its mangas into the database.
+// InsertIntoDB creates the multimanga and its mangas into the database.
 // It's a method to create a multimanga from scratch.
-func (mm *MultiManga) CreateIntoDB() error {
+func (mm *MultiManga) InsertIntoDB() error {
 	contextError := "error creating multimanga '%s' into DB"
 
 	db, err := db.OpenConn()

@@ -859,6 +859,35 @@
                     }
                 }
             },
+            "post": {
+                "description": "Gets a manga metadata from source and inserts it as the current manga of a new multimanga into the database.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Add multimanga",
+                "parameters": [
+                    {
+                        "description": "Current manga data",
+                        "name": "manga",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.AddMangaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "description": "Deletes a multimanga from the database.",
                 "produces": [

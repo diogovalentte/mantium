@@ -1285,7 +1285,6 @@ func TestEmptyCustomMangaLifeCycle(t *testing.T) {
 
 func TestMultiMangaLifeCycle(t *testing.T) {
 	multimanga := &manga.MultiManga{}
-	multimanga.ID = 54
 
 	t.Run("Add valid manga with read chapter to turn into multimanga", func(t *testing.T) {
 		body, err := json.Marshal(mangasRequestsTestTable["valid manga with read chapter"])
@@ -1314,6 +1313,36 @@ func TestMultiMangaLifeCycle(t *testing.T) {
 
 		actual := resMap["message"]
 		expected := "Manga turned into multimanga successfully"
+		if actual != expected {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
+		}
+	})
+	t.Run("Delete multimanga", func(t *testing.T) {
+		var resMap map[string]string
+		err := requestHelper(http.MethodDelete, fmt.Sprintf("/v1/multimanga?id=%d", multimanga.ID), nil, &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["message"]
+		expected := "Multimanga deleted successfully"
+		if actual != expected {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
+		}
+	})
+	t.Run("Add valid multimanga", func(t *testing.T) {
+		body, err := json.Marshal(mangasRequestsTestTable["valid manga with read chapter"])
+		if err != nil {
+			t.Fatal(err)
+		}
+		var resMap map[string]string
+		err = requestHelper(http.MethodPost, "/v1/multimanga", bytes.NewBuffer(body), &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["message"]
+		expected := "Multimanga added successfully"
 		if actual != expected {
 			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
 		}

@@ -104,19 +104,19 @@ func TestMultiMangaDBLifeCycle(t *testing.T) {
 
 	t.Run("Should insert a multimanga into DB", func(t *testing.T) {
 		multiManga.Status = 0
-		err = multiManga.CreateIntoDB()
+		err = multiManga.InsertIntoDB()
 		if err != nil {
 			if util.ErrorContains(err, "status should be >= 1 && <= 5") {
 				multiManga.Status = multiMangaTest.Status
 				multiManga.LastReadChapter.Name = ""
-				err = multiManga.CreateIntoDB()
+				err = multiManga.InsertIntoDB()
 				if util.ErrorContains(err, "chapter name is empty") {
 					multiManga.LastReadChapter.Name = multiMangaTest.LastReadChapter.Name
 					multiManga.LastReadChapter.Type = 0
-					err = multiManga.CreateIntoDB()
+					err = multiManga.InsertIntoDB()
 					if util.ErrorContains(err, "chapter type should be 1 (last release) or 2 (last read)") {
 						multiManga.LastReadChapter.Type = multiMangaTest.LastReadChapter.Type
-						err = multiManga.CreateIntoDB()
+						err = multiManga.InsertIntoDB()
 						if err != nil {
 							t.Fatal(err)
 						}

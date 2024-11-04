@@ -890,6 +890,26 @@ paths:
           schema:
             $ref: '#/definitions/manga.MultiManga'
       summary: Get multimanga
+    post:
+      consumes:
+      - application/json
+      description: Gets a manga metadata from source and inserts it as the current
+        manga of a new multimanga into the database.
+      parameters:
+      - description: Current manga data
+        in: body
+        name: manga
+        required: true
+        schema:
+          $ref: '#/definitions/routes.AddMangaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Add multimanga
   /multimanga/chapters:
     get:
       description: Get chapters of the current manga of a multimanga from the source.
