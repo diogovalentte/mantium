@@ -28,12 +28,14 @@ def show_update_multimanga_form(manga: dict[str, Any]):
 
         @st.dialog(manga["Name"])
         def show():
+            ss["is_dialog_open"] = True
             show_update_custom_manga(manga)
 
     else:
 
         @st.dialog(manga["Name"])
         def show():
+            ss["is_dialog_open"] = True
             e = st.empty()
             if ss.get("update_multimanga_updated_parts", None) is not None:
                 with e.container():
@@ -57,6 +59,7 @@ def show_update_multimanga_mangas_form(multimanga: dict[str, Any]):
 
         @st.dialog("Add Manga", width="large")
         def show():
+            ss["is_dialog_open"] = True
             show_update_multimanga_add_manga_search(multimanga)
             ss["show_update_multimanga_add_manga_search"] = False
 
@@ -64,6 +67,7 @@ def show_update_multimanga_mangas_form(multimanga: dict[str, Any]):
 
         @st.dialog("Add Manga")
         def show():
+            ss["is_dialog_open"] = True
             show_update_multimanga_add_manga_url(multimanga)
             ss["show_update_multimanga_add_manga_url"] = False
 
@@ -71,6 +75,7 @@ def show_update_multimanga_mangas_form(multimanga: dict[str, Any]):
 
         @st.dialog("Manage Mangas", width="large")
         def show():
+            ss["is_dialog_open"] = True
             show_update_multimanga_manage_mangas(multimanga)
             ss["show_update_multimanga_manage_mangas"] = False
 

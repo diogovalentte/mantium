@@ -36,6 +36,7 @@ def show_add_manga_form(form_type: str):
 
         @st.dialog("Add Manga")
         def show():
+            ss["is_dialog_open"] = True
             e = st.empty()
             if ss.get("add_manga_manga_to_add", None) is not None:
                 with e:
@@ -49,6 +50,7 @@ def show_add_manga_form(form_type: str):
 
         @st.dialog("Add Manga", width="large")
         def show():
+            ss["is_dialog_open"] = True
             e = st.empty()
             if ss.get("add_manga_manga_to_add", None) is not None:
                 with e:
@@ -62,6 +64,7 @@ def show_add_manga_form(form_type: str):
 
         @st.dialog("Add Custom Manga")
         def show():
+            ss["is_dialog_open"] = True
             e = st.empty()
             if ss.get("add_custom_manga_manga_to_add", None) is not None:
                 with e:

@@ -39,6 +39,7 @@ class MainDashboard:
         self.sort_option_index = 1
 
     def show(self):
+        ss["is_dialog_open"] = True
         self.check_dashboard_error()
 
         self.sidebar()
@@ -187,6 +188,7 @@ class MainDashboard:
 
             @st.dialog("Update Manga")
             def show():
+                ss["is_dialog_open"] = True
                 st.success(ss["update_manga_success_message"])
                 ss["update_manga_success_message"] = ""
 
@@ -201,6 +203,7 @@ class MainDashboard:
 
             @st.dialog("Settings")
             def show_configs_update_message():
+                ss["is_dialog_open"] = True
                 if ss.get("configs_update_error_message", "") != "":
                     st.error(ss["configs_update_error_message"])
                 else:
@@ -226,6 +229,7 @@ class MainDashboard:
 
                     @st.dialog("Last Background Error Message", width="large")
                     def show_error_message_dialog():
+                        ss["is_dialog_open"] = True
                         st.write(last_background_error["message"])
                         with stylable_container(
                             key="delete_background_error_button",
@@ -536,6 +540,7 @@ class MainDashboard:
 
     @st.dialog("Settings")
     def show_settings(self):
+        ss["is_dialog_open"] = True
         with st.form(key="configs_update_configs", border=False):
             st.slider(
                 "Columns:",
@@ -596,7 +601,10 @@ class MainDashboard:
     @st.fragment(run_every=5)
     def update_dashboard_job(self):
         last_update = self.api_client.check_for_updates()
-        if last_update != ss["system_last_update_time"]:
+        # ss["is_dialog_open"] is used to prevent the dialog from closing when the user is interacting with it
+        # It's not the perfect solution, but it's the best I could come up with.
+        # It's reseted to True when the app reruns
+        if last_update != ss["system_last_update_time"] and not ss["is_dialog_open"]:
             ss["system_last_update_time"] = last_update
             st.rerun()
 
