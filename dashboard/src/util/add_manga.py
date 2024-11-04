@@ -17,8 +17,103 @@ from streamlit_javascript import st_javascript
 logger = get_logger()
 
 
-def show_add_manga_form(manga_url: str, manga_internal_id: str):
+def show_add_manga_form(form_type: str):
+    if ss.get("add_manga_chapter_options", None) is not None:
+        del ss["add_manga_chapter_options"]
+    if ss.get("add_manga_search_selected_manga", None) is not None:
+        del ss["add_manga_search_selected_manga"]
+    if ss.get("add_manga_form_url", "") != "":
+        ss["add_manga_form_url"] = ""
+    base_key = "add_manga_search_selected_manga_search_results"
+    ss[base_key + "_mangadex"] = {}
+    ss[base_key + "_comick"] = {}
+    ss[base_key + "_mangaplus"] = {}
+    ss[base_key + "_mangahub"] = {}
+    ss[base_key + "_mangaupdates"] = {}
+    ss["add_manga_search_go_back_to_tab"] = 0
+
+    if form_type == "url":
+
+        @st.dialog("Add Manga")
+        def show():
+            e = st.empty()
+            if ss.get("add_manga_manga_to_add", None) is not None:
+                with e:
+                    add_manga()
+                    del ss["add_manga_manga_to_add"]
+            else:
+                with e.container():
+                    show_add_manga_form_url()
+
+    elif form_type == "search":
+
+        @st.dialog("Add Manga", width="large")
+        def show():
+            e = st.empty()
+            if ss.get("add_manga_manga_to_add", None) is not None:
+                with e:
+                    add_manga()
+                    del ss["add_manga_manga_to_add"]
+            else:
+                with e.container():
+                    show_add_manga_form_search()
+
+    elif form_type == "custom":
+
+        @st.dialog("Add Custom Manga")
+        def show():
+            e = st.empty()
+            if ss.get("add_custom_manga_manga_to_add", None) is not None:
+                with e:
+                    add_custom_manga()
+                    del ss["add_custom_manga_manga_to_add"]
+            else:
+                with e.container():
+                    show_add_custom_manga_form()
+
+    else:
+        st.stop()
+
+    show()
+
+
+def add_manga():
     api_client = get_api_client()
+    ex = None
+    with st.spinner("Adding manga..."):
+        try:
+            api_client.add_multimanga(
+                ss["add_manga_manga_to_add"]["manga_url"],
+                ss["add_manga_manga_to_add"]["status"],
+                ss["add_manga_manga_to_add"]["manga_internal_id"],
+                ss["add_manga_manga_to_add"]["chapter"],
+                ss["add_manga_manga_to_add"]["chapter_url"],
+                ss["add_manga_manga_to_add"]["chapter_internal_id"],
+            )
+        except Exception as e:
+            ex = e
+
+    if ex is not None:
+        if (
+            "multimang added to DB, but error executing integrations:".lower()
+            in str(ex).lower()
+        ):
+            logger.exception(ex)
+            st.warning(
+                "Manga added to DB, but couldn't add it to at least one integration"
+            )
+        elif "manga already exists in DB".lower() in str(ex).lower():
+            st.warning("Manga already in Mantium")
+        else:
+            logger.exception(ex)
+            st.error("Error while adding manga")
+    else:
+        st.success("Manga added successfully")
+        ss["add_manga_search_selected_manga"] = None
+        ss["add_manga_form_url"] = ""
+
+
+def show_bottom_add_manga_form(manga_url: str, manga_internal_id: str):
     with st.form(key="add_manga_form", border=False, clear_on_submit=True):
         st.selectbox(
             "Status",
@@ -35,9 +130,11 @@ def show_add_manga_form(manga_url: str, manga_internal_id: str):
             options=ss.get("add_manga_chapter_options", []),
             index=None,
             key="add_manga_form_chapter",
-            format_func=lambda chapter: f"Ch. {chapter['Chapter']} --- {get_relative_time(get_updated_at_datetime(chapter['UpdatedAt']))}"
-            if chapter is not None
-            else "N/A",
+            format_func=lambda chapter: (
+                f"Ch. {chapter['Chapter']} --- {get_relative_time(get_updated_at_datetime(chapter['UpdatedAt']))}"
+                if chapter is not None
+                else "N/A"
+            ),
         )
 
         if (
@@ -60,48 +157,12 @@ def show_add_manga_form(manga_url: str, manga_internal_id: str):
             }
             del ss["add_manga_chapter_options"]
 
-        if st.form_submit_button(
+        st.form_submit_button(
             "Add Manga",
             on_click=add_manga_callback,
             use_container_width=True,
             type="primary",
-        ):
-            if ss.get("add_manga_manga_to_add", None) is None:
-                st.warning("Provide a manga URL and select the last read chapter first")
-            else:
-                try:
-                    api_client.add_manga(
-                        ss["add_manga_manga_to_add"]["manga_url"],
-                        ss["add_manga_manga_to_add"]["status"],
-                        ss["add_manga_manga_to_add"]["manga_internal_id"],
-                        ss["add_manga_manga_to_add"]["chapter"],
-                        ss["add_manga_manga_to_add"]["chapter_url"],
-                        ss["add_manga_manga_to_add"]["chapter_internal_id"],
-                    )
-                except APIException as e:
-                    if (
-                        "manga added to DB, but error executing integrations".lower()
-                        in str(e).lower()
-                    ):
-                        logger.exception(e)
-                        ss["add_manga_warning_message"] = (
-                            "Manga added to DB, but couldn't add it to at least one integration"
-                        )
-                        st.rerun()
-                    elif "manga already exists in DB".lower() in str(e).lower():
-                        ss["add_manga_warning_message"] = "Manga already in Mantium"
-                        st.rerun()
-                    else:
-                        logger.exception(e)
-                        ss["add_manga_error_message"] = "Error while adding manga"
-                else:
-                    ss["add_manga_success_message"] = "Manga added successfully"
-                    ss["add_manga_search_selected_manga"] = None
-                    st.rerun()
-
-    if ss.get("add_manga_error_message", "") != "":
-        st.error(ss["add_manga_error_message"])
-        ss["add_manga_error_message"] = ""
+        )
 
 
 def show_add_manga_form_url():
@@ -137,7 +198,7 @@ def show_add_manga_form_url():
                 st.error("Error while getting manga chapters.")
                 st.stop()
         else:
-            show_add_manga_form(ss.add_manga_form_url, "")
+            show_bottom_add_manga_form(ss.add_manga_form_url, "")
 
 
 def show_add_manga_form_search():
@@ -159,7 +220,7 @@ def show_add_manga_form_search():
                 st.error("Error while getting manga chapters.")
                 st.stop()
 
-            show_add_manga_form(
+            show_bottom_add_manga_form(
                 ss["add_manga_search_selected_manga"]["URL"],
                 ss["add_manga_search_selected_manga"]["InternalID"],
             )
@@ -236,9 +297,11 @@ def show_search_manga_term_form(
 
     term = st.text_input(
         "Term to Search",
-        value=ss[search_term_key]
-        if ss.get(search_term_key, "") != ""
-        else ss.get(search_results_key, {}).get("term", ""),
+        value=(
+            ss[search_term_key]
+            if ss.get(search_term_key, "") != ""
+            else ss.get(search_results_key, {}).get("term", "")
+        ),
         key=search_term_key,
     )
 
@@ -484,65 +547,69 @@ def show_add_custom_manga_form():
                 key="add_custom_manga_form_cover_img_file",
             )
 
-        def add_custom_manga_callback():
-            if ss.add_custom_manga_form_cover_img_file is not None:
-                cover_img = ss.add_custom_manga_form_cover_img_file.getvalue()
-            else:
-                cover_img = None
-
-            ss["add_custom_manga_manga_to_add"] = {
-                "name": ss.add_custom_manga_form_name,
-                "url": ss.add_custom_manga_form_url,
-                "status": ss.add_custom_manga_form_status,
-                "manga_has_more_chapters": not ss.add_custom_manga_form_no_more_chapters,
-                "cover_img_url": ss.add_custom_manga_form_cover_img_url,
-                "cover_img": cover_img,
-                "next_chapter": {
-                    "chapter": ss.add_custom_manga_form_chapter,
-                    "url": ss.add_custom_manga_form_chapter_url,
-                },
-            }
-
         if st.form_submit_button(
             "Add Manga",
-            on_click=add_custom_manga_callback,
             use_container_width=True,
             type="primary",
         ):
-            if ss["add_custom_manga_manga_to_add"]["name"] == "":
+            if ss.add_custom_manga_form_name == "":
                 st.warning("Provide a manga name")
             elif (
-                ss["add_custom_manga_manga_to_add"]["next_chapter"]["chapter"] == ""
-                and ss["add_custom_manga_manga_to_add"]["next_chapter"]["url"] != ""
+                ss.add_custom_manga_form_chapter == ""
+                and ss.add_custom_manga_form_chapter_url != ""
             ):
                 st.warning("If providing a chapter URL, also provide a chapter number")
             else:
-                try:
-                    api_client.add_custom_manga(
-                        ss["add_custom_manga_manga_to_add"]["name"],
-                        ss["add_custom_manga_manga_to_add"]["url"],
-                        ss["add_custom_manga_manga_to_add"]["status"],
-                        ss["add_custom_manga_manga_to_add"]["manga_has_more_chapters"],
-                        ss["add_custom_manga_manga_to_add"]["cover_img_url"],
-                        ss["add_custom_manga_manga_to_add"]["cover_img"],
-                        ss["add_custom_manga_manga_to_add"]["next_chapter"]["chapter"],
-                        ss["add_custom_manga_manga_to_add"]["next_chapter"]["url"],
-                    )
-                except APIException as e:
-                    resp_text = str(e.response_text).lower()
-                    if "manga already exists in DB".lower() in resp_text:
-                        ss["add_manga_warning_message"] = "Manga already in Mantium"
-                        st.rerun()
-                    if 'duplicate key value violates unique constraint' in resp_text and "chapters_pkey" in resp_text:
-                        ss["add_manga_error_message"] = "Next chapter URL already in Mantium"
-                    else:
-                        logger.exception(e)
-                        ss["add_manga_error_message"] = "Error while adding manga"
+                if ss.add_custom_manga_form_cover_img_file is not None:
+                    cover_img = ss.add_custom_manga_form_cover_img_file.getvalue()
                 else:
-                    ss["add_manga_success_message"] = "Manga added successfully"
-                    ss["add_manga_search_selected_manga"] = None
-                    st.rerun()
+                    cover_img = None
 
-    if ss.get("add_manga_error_message", "") != "":
-        st.error(ss["add_manga_error_message"])
-        ss["add_manga_error_message"] = ""
+                ss["add_custom_manga_manga_to_add"] = {
+                    "name": ss.add_custom_manga_form_name,
+                    "url": ss.add_custom_manga_form_url,
+                    "status": ss.add_custom_manga_form_status,
+                    "manga_has_more_chapters": not ss.add_custom_manga_form_no_more_chapters,
+                    "cover_img_url": ss.add_custom_manga_form_cover_img_url,
+                    "cover_img": cover_img,
+                    "next_chapter": {
+                        "chapter": ss.add_custom_manga_form_chapter,
+                        "url": ss.add_custom_manga_form_chapter_url,
+                    },
+                }
+                st.rerun(scope="fragment")
+
+
+def add_custom_manga():
+    api_client = get_api_client()
+    ex = None
+    with st.spinner("Adding manga..."):
+        try:
+            api_client.add_custom_manga(
+                ss["add_custom_manga_manga_to_add"]["name"],
+                ss["add_custom_manga_manga_to_add"]["url"],
+                ss["add_custom_manga_manga_to_add"]["status"],
+                ss["add_custom_manga_manga_to_add"]["manga_has_more_chapters"],
+                ss["add_custom_manga_manga_to_add"]["cover_img_url"],
+                ss["add_custom_manga_manga_to_add"]["cover_img"],
+                ss["add_custom_manga_manga_to_add"]["next_chapter"]["chapter"],
+                ss["add_custom_manga_manga_to_add"]["next_chapter"]["url"],
+            )
+        except Exception as e:
+            ex = e
+
+    if ex is not None:
+        resp_text = str(ex).lower()
+        if "manga already exists in DB".lower() in resp_text:
+            st.warning("Manga already in Mantium")
+        if (
+            "duplicate key value violates unique constraint" in resp_text
+            and "chapters_pkey" in resp_text
+        ):
+            st.warning("Next chapter URL already in Mantium")
+        else:
+            logger.exception(ex)
+            st.error("Error while adding manga")
+    else:
+        st.success("Manga added successfully")
+        ss["add_manga_search_selected_manga"] = None

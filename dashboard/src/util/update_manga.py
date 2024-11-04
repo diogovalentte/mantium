@@ -9,53 +9,159 @@ from PIL import Image
 from src.api.api_client import get_api_client
 from src.exceptions import APIException
 from src.util.add_manga import show_search_manga_term_form
-from src.util.util import (centered_container, get_logger, get_relative_time,
-                           get_source_name_and_colors, get_updated_at_datetime,
-                           tagger)
+from src.util.util import (
+    centered_container,
+    get_logger,
+    get_relative_time,
+    get_source_name_and_colors,
+    get_updated_at_datetime,
+    tagger,
+)
 from streamlit import session_state as ss
 from streamlit_extras.stylable_container import stylable_container
 
 logger = get_logger()
 
 
-def show_update_manga(manga: dict[str, Any]):
-    api_client = get_api_client()
-    error_while_getting_chapters = False
+def show_update_multimanga_form(manga: dict[str, Any]):
+    if manga["Source"] == defaults.CUSTOM_MANGA_SOURCE:
+
+        @st.dialog(manga["Name"])
+        def show():
+            show_update_custom_manga(manga)
+
+    else:
+
+        @st.dialog(manga["Name"])
+        def show():
+            e = st.empty()
+            if ss.get("update_multimanga_updated_parts", None) is not None:
+                with e.container():
+                    updated_parts = ss["update_multimanga_updated_parts"]
+                    del ss["update_multimanga_updated_parts"]
+                    update_multimanga(updated_parts)
+            elif ss.get("update_multimanga_delete_multimanga_id", None) is not None:
+                with e.container():
+                    id = ss["update_multimanga_delete_multimanga_id"]
+                    del ss["update_multimanga_delete_multimanga_id"]
+                    delete_manga(id)
+            else:
+                with st.container():
+                    show_update_multimanga(manga["MultiMangaID"])
+
+    show()
+
+
+def show_update_multimanga_mangas_form(multimanga: dict[str, Any]):
+    if ss.get("show_update_multimanga_add_manga_search", False):
+
+        @st.dialog("Add Manga", width="large")
+        def show():
+            show_update_multimanga_add_manga_search(multimanga)
+            ss["show_update_multimanga_add_manga_search"] = False
+
+    elif ss.get("show_update_multimanga_add_manga_url", False):
+
+        @st.dialog("Add Manga")
+        def show():
+            show_update_multimanga_add_manga_url(multimanga)
+            ss["show_update_multimanga_add_manga_url"] = False
+
+    else:
+
+        @st.dialog("Manage Mangas", width="large")
+        def show():
+            show_update_multimanga_manage_mangas(multimanga)
+            ss["show_update_multimanga_manage_mangas"] = False
+
+    show()
+
+
+def show_update_multimanga(multimanga_id):
+    try:
+        api_client = get_api_client()
+        multimanga = api_client.get_multimanga(multimanga_id)
+    except Exception as e:
+        logger.exception(e)
+        st.error("Error while getting manga")
+        st.stop()
+
+    get_chapters_success = False
+    get_other_manga_chapters = False
+    other_manga_source_name = ""
     try:
         with st.spinner("Getting manga chapters..."):
-            ss["update_manga_chapter_options"] = api_client.get_cached_manga_chapters(
-                manga["ID"], manga["URL"], manga["InternalID"]
+            ss["update_multimanga_chapter_options"] = (
+                api_client.get_cached_manga_chapters(
+                    multimanga["CurrentManga"]["ID"],
+                    multimanga["CurrentManga"]["URL"],
+                    multimanga["CurrentManga"]["InternalID"],
+                )
             )
+        get_chapters_success = True
     except APIException as e:
-        error_while_getting_chapters = True
-        ss["update_manga_chapter_options"] = []
         logger.exception(e)
-        st.error(
-            "Error while getting manga chapters. Maybe the source site is down or the manga URL changed in the source site. You still can update the other fields."
-        )
-    with st.form(key="update_manga_form", border=False):
+        try:
+            with st.spinner("Current manga unavailable. Choosing another manga..."):
+                used_ids = []
+                used_ids.append(multimanga["CurrentManga"]["ID"])
+                for manga in multimanga["Mangas"]:
+                    if manga["ID"] == multimanga["CurrentManga"]["ID"]:
+                        continue
+                    try:
+                        manga = api_client.choose_current_manga(
+                            multimanga["ID"], exclude_manga_ids=used_ids
+                        )
+                        ss["update_multimanga_chapter_options"] = (
+                            api_client.get_cached_manga_chapters(
+                                manga["ID"], manga["URL"], manga["InternalID"]
+                            )
+                        )
+                        get_other_manga_chapters = True
+                        other_manga_source_name, _, _ = get_source_name_and_colors(
+                            manga["Source"]
+                        )
+                        break
+                    except APIException:
+                        logger.exception(e)
+                    used_ids.append(manga["ID"])
+        except APIException:
+            logger.exception(e)
+
+    if not get_chapters_success:
+        if get_other_manga_chapters:
+            st.warning(
+                f"Could not get the current manga's chapters. Maybe the source site is down or the manga URL changed in the source site. Using {other_manga_source_name} chapters instead."
+            )
+        else:
+            ss["update_multimanga_chapter_options"] = []
+            st.error(
+                "Could not get get chapters from any of the multimanga's mangas. You still can update the other fields."
+            )
+
+    with st.form(key="update_multimanga_form", border=False):
         st.selectbox(
             "Status",
-            index=manga["Status"] - 1,
+            index=multimanga["Status"] - 1,
             options=list(defaults.manga_status_options.keys())[
                 1:
             ],  # Exclude the "All" option
             format_func=lambda index: defaults.manga_status_options[index],
-            key="update_manga_form_status",
+            key="update_multimanga_form_status",
         )
 
         show_chapter_not_found_warning = False
         if (
-            manga["LastReadChapter"]["Chapter"] != ""
-            and ss["update_manga_chapter_options"] != []
+            multimanga["LastReadChapter"]["Chapter"] != ""
+            and ss["update_multimanga_chapter_options"] != []
         ):
             try:
                 last_read_chapter_idx = list(
                     map(
                         lambda chapter: chapter["Chapter"],
-                        ss["update_manga_chapter_options"],
+                        ss["update_multimanga_chapter_options"],
                     )
-                ).index(manga["LastReadChapter"]["Chapter"])
+                ).index(multimanga["LastReadChapter"]["Chapter"])
             except ValueError:
                 show_chapter_not_found_warning = True
                 last_read_chapter_idx = None
@@ -64,152 +170,111 @@ def show_update_manga(manga: dict[str, Any]):
         st.selectbox(
             "Last Read Chapter",
             index=last_read_chapter_idx,
-            options=ss["update_manga_chapter_options"],
+            options=ss["update_multimanga_chapter_options"],
             format_func=lambda chapter: f"Ch. {chapter['Chapter']} --- {get_relative_time(get_updated_at_datetime(chapter['UpdatedAt']))}",
-            key="update_manga_form_chapter" + str(manga["ID"]),
+            key="update_multimanga_form_chapter" + str(multimanga["ID"]),
         )
 
         if show_chapter_not_found_warning:
             st.warning(
-                "Last read chapter not found in the manga chapters. Select it again or leave empty to not update it."
+                "Last read chapter not found chapters list. Select it again or leave empty to not update it."
             )
 
         if (
-            ss.get("update_manga_chapter_options") is not None
-            and len(ss.get("update_manga_chapter_options", [])) < 1
-            and not error_while_getting_chapters
+            ss.get("update_multimanga_chapter_options") is not None
+            and len(ss.get("update_multimanga_chapter_options", [])) < 1
+            and get_chapters_success
         ):
             st.warning(
-                "Manga has no released chapters. You still can update the other fields."
+                "Current manga has no released chapters. You still can update the other fields."
             )
 
         with st.expander(
             "Update Cover Image",
         ):
             st.info(
-                "By default, the cover image is fetched from the source site and it's automatically updated when the source site changes it, but you can manually provide an image URL or upload a file."
+                "By default, the cover image of the current manga is used. It's fetched from the manga's source site and it's automatically updated when the source site changes it, but you can manually provide an image URL or upload a file."
             )
             st.text_input(
                 "Cover Image URL",
                 placeholder="https://example.com/image.jpg",
-                key="update_manga_form_cover_img_url",
+                key="update_multimanga_form_cover_img_url",
             )
             st.file_uploader(
                 "Upload Cover Image",
                 type=["png", "jpg", "jpeg"],
-                key="update_manga_form_cover_img_upload",
+                key="update_multimanga_form_cover_img_upload",
             )
             st.divider()
             st.info(
-                "If you manually changed the cover image and want to go back and let the Mantium fetch the cover image from the source site, check the box below."
+                "If you manually changed the cover image and want to go back and use the current manga's cover image, check the box below."
             )
             st.checkbox(
-                "Get cover image from source site",
-                key="update_manga_form_get_cover_img_from_source",
-            )
-
-        with st.expander(
-            "Turn into MultiManga",
-        ):
-            st.checkbox(
-                "Turn into MultiManga",
-                key="update_manga_form_turn_into_multimanga",
-            )
-            st.markdown(
-                "- More about multimangas [here](https://github.com/diogovalentte/mantium/blob/main/multimanga.md)."
+                "Use current manga's current image.",
+                key="update_multimanga_form_use_current_manga_cover_img",
             )
 
         if st.form_submit_button(
-            "Update Manga",
+            "Update Multimanga",
             use_container_width=True,
             type="primary",
         ):
             try:
-                status = ss.update_manga_form_status
-                if status != manga["Status"]:
-                    api_client.update_manga_status(status, manga["ID"])
-
-                chapter = ss["update_manga_form_chapter" + str(manga["ID"])]
-                if chapter is not None and (
-                    manga["LastReadChapter"] is None
-                    or chapter["URL"] != manga["LastReadChapter"]["URL"]
-                    or chapter["Chapter"] != manga["LastReadChapter"]["Chapter"]
-                ):
-                    api_client.update_manga_last_read_chapter(
-                        manga["ID"],
-                        manga["URL"],
-                        manga["InternalID"],
-                        chapter["Chapter"],
-                        chapter["URL"],
-                        chapter["InternalID"],
-                    )
-
-                cover_url = ss.update_manga_form_cover_img_url
+                cover_url = ss.update_multimanga_form_cover_img_url
                 cover_upload = (
-                    ss.update_manga_form_cover_img_upload.getvalue()
-                    if ss.update_manga_form_cover_img_upload
+                    ss.update_multimanga_form_cover_img_upload.getvalue()
+                    if ss.update_multimanga_form_cover_img_upload
                     else None
                 )
-                get_cover_img_from_source = (
-                    ss.update_manga_form_get_cover_img_from_source
+                use_current_manga_cover_img = (
+                    ss.update_multimanga_form_use_current_manga_cover_img
                 )
 
                 values_count = sum(
                     [
                         bool(cover_url),
                         bool(cover_upload),
-                        get_cover_img_from_source,
+                        use_current_manga_cover_img,
                     ]
                 )
 
-                match values_count:
-                    case 0:
-                        pass
-                    case 1:
-                        if cover_url != "" or cover_upload is not None:
-                            api_client.update_manga_cover_img(
-                                manga["ID"],
-                                manga["URL"],
-                                manga["InternalID"],
-                                cover_img_url=cover_url,
-                                cover_img=cover_upload if cover_upload else b"",
-                            )
-                        elif get_cover_img_from_source:
-                            api_client.update_manga_cover_img(
-                                manga["ID"],
-                                manga["URL"],
-                                manga["InternalID"],
-                                get_cover_img_from_source=get_cover_img_from_source,
-                            )
-                    case _:
-                        ss["update_manga_warning_message"] = (
-                            "To update the cover image, provide either an URL, upload a file, or check the box to get the image from the source site. The other fields were updated successfully"
-                        )
-
-                if ss.update_manga_form_turn_into_multimanga:
-                    api_client.turn_manga_into_multimanga(manga["ID"])
-
-                if not (
-                    ss.get("update_manga_error_message", "") != ""
-                    or ss.get("update_manga_warning_message", "") != ""
-                ):
-                    ss["update_manga_success_message"] = "Manga updated successfully"
-                    st.rerun()
-            except APIException as e:
-                error_message = str(e.response_text).lower()
-                logger.exception(e)
-                if "cover image not found in source" in error_message:
+                if values_count > 1:
                     ss["update_manga_warning_message"] = (
-                        "Could not get cover image from source. Other fields were updated successfully"
+                        "To update the cover image, provide either an URL, upload a file, or check the box to use the current manga's cover image."
                     )
                 else:
-                    ss["update_manga_error_message"] = "Error while updating manga"
-            except Exception as e:
+                    ss["update_multimanga_updated_parts"] = {}
+                    ss["update_multimanga_updated_parts"]["multimanga"] = multimanga
+
+                    ss["update_multimanga_updated_parts"][
+                        "status"
+                    ] = ss.update_multimanga_form_status
+
+                    ss["update_multimanga_updated_parts"]["chapter"] = ss[
+                        "update_multimanga_form_chapter" + str(multimanga["ID"])
+                    ]
+
+                    if values_count == 1:
+                        ss["update_multimanga_updated_parts"]["update_cover"] = True
+                        ss["update_multimanga_updated_parts"]["cover_url"] = cover_url
+                        ss["update_multimanga_updated_parts"][
+                            "cover_upload"
+                        ] = cover_upload
+                        ss["update_multimanga_updated_parts"][
+                            "use_current_manga_cover_img"
+                        ] = use_current_manga_cover_img
+
+                    else:
+                        ss["update_multimanga_updated_parts"]["update_cover"] = False
+
+                if ss.get("update_manga_warning_message", "") == "":
+                    st.rerun(scope="fragment")
+            except APIException as e:
                 logger.exception(e)
-                ss["update_manga_error_message"] = "Error while updating manga"
+                ss["update_manga_error_message"] = "Error while updating multimanga"
 
     with stylable_container(
-        key="update_manga_delete_button",
+        key="update_multimanga_delete_button",
         css_styles="""
             button {
                 background-color: red;
@@ -217,273 +282,121 @@ def show_update_manga(manga: dict[str, Any]):
             }
         """,
     ):
-        if st.button(
-            "Delete Manga",
-            use_container_width=True,
-        ):
-            try:
-                api_client.delete_manga(manga["ID"])
-            except Exception as e:
-                logger.exception(e)
-                ss["update_manga_error_message"] = "Error while deleting manga"
-            else:
-                ss["update_manga_success_message"] = "Manga deleted successfully"
-            if not (
-                ss.get("update_manga_error_message", "") != ""
-                or ss.get("update_manga_warning_message", "") != ""
-            ):
-                st.rerun()
 
-    if ss.get("update_manga_error_message", "") != "":
-        st.error(ss["update_manga_error_message"])
+        def on_click():
+            ss["update_multimanga_delete_multimanga_id"] = multimanga["ID"]
+
+        st.button(
+            "Delete Multimanga",
+            use_container_width=True,
+            on_click=on_click,
+        )
+
     if ss.get("update_manga_warning_message", "") != "":
         st.warning(ss["update_manga_warning_message"])
-    ss["update_manga_error_message"] = ""
+    if ss.get("update_manga_error_message", "") != "":
+        st.error(ss["update_manga_error_message"])
     ss["update_manga_warning_message"] = ""
+    ss["update_manga_error_message"] = ""
 
+    st.divider()
 
-def show_update_custom_manga(manga: dict[str, Any]):
-    api_client = get_api_client()
+    with st.expander("Multimanga Mangas"):
 
-    with st.form(key="update_custom_manga_form", border=False):
-        st.text_input(
-            "Manga Name (not optional)",
-            value=manga["Name"],
-            placeholder="One Piece",
-            key="update_custom_manga_form_name",
-        )
-
-        st.text_input(
-            "Manga URL",
-            value=manga["URL"],
-            placeholder="https://randomsite.com/title/one-piece",
-            key="update_custom_manga_form_url",
-        )
-
-        st.selectbox(
-            "Status",
-            index=manga["Status"] - 1,
-            options=list(defaults.manga_status_options.keys())[
-                1:
-            ],  # Exclude the "All" option
-            format_func=lambda index: defaults.manga_status_options[index],
-            key="update_custom_manga_form_status",
-        )
-
-        with st.expander(
-            "Next Chapter",
-        ):
-            st.text_input(
-                "Next Chapter to Read",
-                value=manga["LastReadChapter"]["Chapter"],
-                placeholder="1000",
-                help="Can be a number or text",
-                key="update_custom_manga_form_chapter",
-            )
-
-            st.text_input(
-                "Chapter URL",
-                value=manga["LastReadChapter"]["URL"],
-                placeholder="https://randomsite.com/title/one-piece/chapter/1000",
-                key="update_custom_manga_form_chapter_url",
-            )
-
-            st.checkbox(
-                "No more chapters available",
-                value=manga["LastReadChapter"]["Chapter"]
-                == manga["LastReleasedChapter"]["Chapter"],
-                help="Check this if there are no more chapters available. By default, if next chapter is empty, it's checked, even if you changed it previously. You can change it anytime.",
-                key="update_custom_manga_form_no_more_chapters",
-            )
-
-        with st.expander(
-            "Cover Image",
-        ):
-            st.text_input(
-                "Cover Image URL",
-                placeholder="https://example.com/image.jpg",
-                key="update_custom_manga_form_cover_img_url",
-            )
-            st.file_uploader(
-                "Upload Cover Image",
-                type=["png", "jpg", "jpeg"],
-                key="update_custom_manga_form_cover_img_file",
-            )
-            st.checkbox(
-                "Use Mantium default cover image",
-                key="update_custom_manga_form_use_mantim_default_cover_img",
-            )
-
-        if st.form_submit_button(
-            "Add Manga",
+        if st.button(
+            "Add Manga by Searching",
             use_container_width=True,
             type="primary",
+            key="update_multimanga_mangas_show_add_manga_search_button",
         ):
-            try:
-                name = ss.update_custom_manga_form_name
-                url = ss.update_custom_manga_form_url
-                status = ss.update_custom_manga_form_status
-                next_chapter = ss.update_custom_manga_form_chapter
-                next_chapter_url = ss.update_custom_manga_form_chapter_url
-                manga_has_more_chapters = (
-                    not ss.update_custom_manga_form_no_more_chapters
-                )
-                cover_img_url = ss.update_custom_manga_form_cover_img_url
-                cover_img = (
-                    ss.update_custom_manga_form_cover_img_file.getvalue()
-                    if ss.update_custom_manga_form_cover_img_file
-                    else None
-                )
-                use_mantium_default_cover_img = (
-                    ss.update_custom_manga_form_use_mantim_default_cover_img
-                )
-                if name == "":
-                    st.warning("Provide a manga name")
-                elif next_chapter == "" and next_chapter_url != "":
-                    ss["update_manga_warning_message"] = (
-                        "Provide a chapter number to go with the chapter URL"
-                    )
-                else:
-                    if name != manga["Name"]:
-                        api_client.update_manga_name(name, manga["ID"])
+            ss["show_update_multimanga_add_manga_search"] = True
+            ss["highlighted_multimanga"] = multimanga
+            st.rerun()
 
-                    if url != manga["URL"]:
-                        api_client.update_manga_url(url, manga["ID"])
-
-                    if status != manga["Status"]:
-                        api_client.update_manga_status(status, manga["ID"])
-
-                    if (
-                        next_chapter != manga["LastReadChapter"]["Chapter"]
-                        or next_chapter_url != manga["LastReadChapter"]["URL"]
-                    ):
-                        api_client.update_manga_last_read_chapter(
-                            manga["ID"],
-                            "",
-                            "",
-                            next_chapter,
-                            next_chapter_url,
-                            "",
-                        )
-
-                    if (
-                        (
-                            manga_has_more_chapters
-                            and manga["LastReadChapter"]["Chapter"] != ""
-                            and manga["LastReadChapter"]["Chapter"]
-                            == manga["LastReleasedChapter"]["Chapter"]
-                        )
-                        or (
-                            not manga_has_more_chapters
-                            and manga["LastReadChapter"]["Chapter"] != ""
-                            and manga["LastReadChapter"]["Chapter"]
-                            != manga["LastReleasedChapter"]["Chapter"]
-                        )
-                        or next_chapter != manga["LastReadChapter"]["Chapter"]
-                    ):
-                        api_client.update_custom_manga_has_more_chapters(
-                            manga_has_more_chapters, manga["ID"], ""
-                        )
-
-                    values_count = sum(
-                        [
-                            bool(cover_img_url),
-                            bool(cover_img),
-                            use_mantium_default_cover_img,
-                        ]
-                    )
-                    match values_count:
-                        case 0:
-                            pass
-                        case 1:
-                            if cover_img_url != "" or cover_img is not None:
-                                api_client.update_manga_cover_img(
-                                    manga["ID"],
-                                    "",
-                                    "",
-                                    cover_img_url,
-                                    cover_img if cover_img else b"",
-                                    False,
-                                    False,
-                                )
-                            elif use_mantium_default_cover_img:
-                                api_client.update_manga_cover_img(
-                                    manga["ID"],
-                                    "",
-                                    "",
-                                    "",
-                                    b"",
-                                    False,
-                                    True,
-                                )
-                        case _:
-                            ss["update_manga_warning_message"] = (
-                                "To update the cover image, provide either an URL, upload a file, or check the box to use the Mantium default cover image. The other fields were updated successfully"
-                            )
-
-                    if not (
-                        ss.get("update_manga_error_message", "") != ""
-                        or ss.get("update_manga_warning_message", "") != ""
-                    ):
-                        ss["update_manga_success_message"] = (
-                            "Manga updated successfully"
-                        )
-                        st.rerun()
-            except Exception as e:
-                logger.exception(e)
-                ss["update_manga_error_message"] = "Error while updating manga"
-
-    with stylable_container(
-        key="update_custom_manga_delete_button",
-        css_styles="""
-            button {
-                background-color: red;
-                color: white;
-            }
-        """,
-    ):
         if st.button(
-            "Delete Manga",
+            "Add Manga Using URL",
             use_container_width=True,
+            type="primary",
+            key="update_multimanga_mangas_show_add_manga_url_button",
         ):
-            try:
-                api_client.delete_manga(manga["ID"])
-            except Exception as e:
-                logger.exception(e)
-                ss["update_manga_error_message"] = "Error while deleting manga"
-            else:
-                ss["update_manga_success_message"] = "Manga deleted successfully"
-            if not (
-                ss.get("update_manga_error_message", "") != ""
-                or ss.get("update_manga_warning_message", "") != ""
-            ):
-                st.rerun()
+            ss["show_update_multimanga_add_manga_url"] = True
+            ss["highlighted_multimanga"] = multimanga
+            st.rerun()
 
-    if ss.get("update_manga_error_message", "") != "":
-        st.error(ss["update_manga_error_message"])
-    if ss.get("update_manga_warning_message", "") != "":
-        st.warning(ss["update_manga_warning_message"])
-    ss["update_manga_error_message"] = ""
-    ss["update_manga_warning_message"] = ""
+        if st.button(
+            "Manage Multimanga Mangas",
+            use_container_width=True,
+            type="primary",
+            key="update_multimanga_mangas_show_manage_mangas_button",
+        ):
+            ss["show_update_multimanga_manage_mangas"] = True
+            ss["highlighted_multimanga"] = multimanga
+            st.rerun()
 
 
-def show_update_multimanga(multimangaID):
+def update_multimanga(updated_parts):
     api_client = get_api_client()
+    st.info("Updating manga...")
     try:
-        multimanga = api_client.get_multimanga(multimangaID)
+        multimanga = updated_parts["multimanga"]
+        status = updated_parts["status"]
+        if status != multimanga["Status"]:
+            api_client.update_multimanga_status(status, multimanga["ID"])
+
+        chapter = updated_parts["chapter"]
+        if chapter is not None and (
+            multimanga["LastReadChapter"] is None
+            or chapter["URL"] != multimanga["LastReadChapter"]["URL"]
+            or chapter["Chapter"] != multimanga["LastReadChapter"]["Chapter"]
+        ):
+            api_client.update_multimanga_last_read_chapter(
+                multimanga["ID"],
+                multimanga["CurrentManga"]["ID"],
+                chapter["Chapter"],
+                chapter["URL"],
+                chapter["InternalID"],
+            )
+
+        if updated_parts["update_cover"]:
+            cover_url = updated_parts.get("cover_url", "")
+            cover_upload = updated_parts.get("cover_upload", None)
+            use_current_manga_cover_img = updated_parts.get(
+                "use_current_manga_cover_img", False
+            )
+
+            if cover_url != "" or cover_upload is not None:
+                api_client.update_multimanga_cover_img(
+                    multimanga["ID"],
+                    cover_img_url=cover_url,
+                    cover_img=cover_upload if cover_upload else b"",
+                )
+            elif use_current_manga_cover_img:
+                api_client.update_multimanga_cover_img(
+                    multimanga["ID"],
+                    use_current_manga_cover_img=use_current_manga_cover_img,
+                )
+    except Exception as ex:
+        logger.exception(ex)
+        st.error("Error while updating manga")
+        st.stop()
+    else:
+        ss["update_manga_success_message"] = "Multimanga updated successfully"
+        st.rerun()
+
+
+def delete_manga(multimanga_id: int):
+    st.info("Deleting manga...")
+    try:
+        with st.spinner("Deleting multimanga..."):
+            api_client = get_api_client()
+            api_client.delete_multimanga(multimanga_id)
     except Exception as e:
         logger.exception(e)
-        st.error("Error while getting multimanga")
+        st.error("Error while deleting multimanga")
         st.stop()
-
-    if ss.get("show_update_multimanga_add_manga_search", False):
-        show_update_multimanga_add_manga_search(multimanga)
-    elif ss.get("show_update_multimanga_add_manga_url", False):
-        show_update_multimanga_add_manga_url(multimanga)
-    elif ss.get("show_update_multimanga_manage_mangas", False):
-        show_update_multimanga_manage_mangas(multimanga)
     else:
-        show_update_multimanga_default_form(multimanga)
+        ss["update_manga_success_message"] = "Multimanga deleted successfully"
+        st.rerun()
 
 
 def show_update_multimanga_add_manga_search(multimanga):
@@ -514,7 +427,7 @@ def show_update_multimanga_add_manga_search(multimanga):
                     logger.exception(e)
                     st.error("Error while adding manga to multimanga")
             else:
-                ss["update_multimanga_success_message"] = (
+                ss["update_manga_success_message"] = (
                     "Manga added to multimanga successfully"
                 )
                 st.rerun()
@@ -588,7 +501,7 @@ def show_update_multimanga_add_manga_url(multimanga):
                 logger.exception(e)
                 st.error("Error while adding manga to multimanga")
         else:
-            ss["update_multimanga_success_message"] = (
+            ss["update_manga_success_message"] = (
                 "Manga added to multimanga successfully"
             )
             st.rerun()
@@ -603,294 +516,21 @@ def show_update_multimanga_manage_mangas(multimanga):
         cols_list, mangas, multimanga["CurrentManga"]["ID"], multimanga["ID"]
     )
 
-    with message_container.container():
-        if ss.get("update_multimanga_error_message", "") != "":
-            st.error(ss["update_multimanga_error_message"])
-            ss["update_multimanga_error_message"] = ""
-        if ss.get("update_multimanga_warning_message", "") != "":
-            st.warning(ss["update_multimanga_warning_message"])
-            ss["update_multimanga_warning_message"] = ""
-
-
-def show_update_multimanga_default_form(multimanga):
-    api_client = get_api_client()
-    get_chapters_success = False
-    get_other_manga_chapters = False
-    other_manga_source_name = ""
-    try:
-        with st.spinner("Getting multimanga chapters..."):
-            ss["update_multimanga_chapter_options"] = (
-                api_client.get_cached_manga_chapters(
-                    multimanga["CurrentManga"]["ID"],
-                    multimanga["CurrentManga"]["URL"],
-                    multimanga["CurrentManga"]["InternalID"],
-                )
-            )
-        get_chapters_success = True
-    except APIException as e:
-        logger.exception(e)
-        try:
-            with st.spinner("Current manga unavailable. Choosing another manga..."):
-                used_ids = []
-                used_ids.append(multimanga["CurrentManga"]["ID"])
-                for manga in multimanga["Mangas"]:
-                    if manga["ID"] == multimanga["CurrentManga"]["ID"]:
-                        continue
-                    try:
-                        manga = api_client.choose_current_manga(
-                            multimanga["ID"], exclude_manga_ids=used_ids
-                        )
-                        ss["update_multimanga_chapter_options"] = (
-                            api_client.get_cached_manga_chapters(
-                                manga["ID"], manga["URL"], manga["InternalID"]
-                            )
-                        )
-                        get_other_manga_chapters = True
-                        other_manga_source_name, _, _ = (
-                            get_source_name_and_colors(manga["Source"])
-                        )
-                        break
-                    except APIException:
-                        logger.exception(e)
-                    used_ids.append(manga["ID"])
-        except APIException:
-            logger.exception(e)
-
-    if not get_chapters_success:
-        if get_other_manga_chapters:
-            st.warning(
-                f"Could not get the current manga's chapters. Maybe the source site is down or the manga URL changed in the source site. Using {other_manga_source_name} chapters instead."
-            )
-        else:
-            ss["update_multimanga_chapter_options"] = []
-            st.error(
-                "Could not get get chapters from any of the multimanga's mangas. You still can update the other fields."
-            )
-
-    with st.form(key="update_multimanga_form", border=False):
-        st.selectbox(
-            "Status",
-            index=multimanga["Status"] - 1,
-            options=list(defaults.manga_status_options.keys())[
-                1:
-            ],  # Exclude the "All" option
-            format_func=lambda index: defaults.manga_status_options[index],
-            key="update_multimanga_form_status",
-        )
-
-        show_chapter_not_found_warning = False
-        if (
-            multimanga["LastReadChapter"]["Chapter"] != ""
-            and ss["update_multimanga_chapter_options"] != []
-        ):
-            try:
-                last_read_chapter_idx = list(
-                    map(
-                        lambda chapter: chapter["Chapter"],
-                        ss["update_multimanga_chapter_options"],
-                    )
-                ).index(multimanga["LastReadChapter"]["Chapter"])
-            except ValueError:
-                show_chapter_not_found_warning = True
-                last_read_chapter_idx = None
-        else:
-            last_read_chapter_idx = None
-        st.selectbox(
-            "Last Read Chapter",
-            index=last_read_chapter_idx,
-            options=ss["update_multimanga_chapter_options"],
-            format_func=lambda chapter: f"Ch. {chapter['Chapter']} --- {get_relative_time(get_updated_at_datetime(chapter['UpdatedAt']))}",
-            key="update_multimanga_form_chapter" + str(multimanga["ID"]),
-        )
-
-        if show_chapter_not_found_warning:
-            st.warning(
-                "Last read chapter not found chapters list. Select it again or leave empty to not update it."
-            )
-
-        if (
-            ss.get("update_multimanga_chapter_options") is not None
-            and len(ss.get("update_multimanga_chapter_options", [])) < 1
-            and get_chapters_success
-        ):
-            st.warning(
-                "Multimanga's current manga has no released chapters. You still can update the other fields."
-            )
-
-        with st.expander(
-            "Update Cover Image",
-        ):
-            st.info(
-                "By default, the cover image of the current manga is used. It's fetched from the manga's source site and it's automatically updated when the source site changes it, but you can manually provide an image URL or upload a file."
-            )
-            st.text_input(
-                "Cover Image URL",
-                placeholder="https://example.com/image.jpg",
-                key="update_multimanga_form_cover_img_url",
-            )
-            st.file_uploader(
-                "Upload Cover Image",
-                type=["png", "jpg", "jpeg"],
-                key="update_multimanga_form_cover_img_upload",
-            )
-            st.divider()
-            st.info(
-                "If you manually changed the cover image and want to go back and use the current manga's cover image, check the box below."
-            )
-            st.checkbox(
-                "Use current manga's current image.",
-                key="update_multimanga_form_use_current_manga_cover_img",
-            )
-
-        if st.form_submit_button(
-            "Update MultiManga",
-            use_container_width=True,
-            type="primary",
-        ):
-            try:
-                status = ss.update_multimanga_form_status
-                if status != multimanga["Status"]:
-                    api_client.update_multimanga_status(status, multimanga["ID"])
-
-                chapter = ss["update_multimanga_form_chapter" + str(multimanga["ID"])]
-                if chapter is not None and (
-                    multimanga["LastReadChapter"] is None
-                    or chapter["URL"] != multimanga["LastReadChapter"]["URL"]
-                    or chapter["Chapter"] != multimanga["LastReadChapter"]["Chapter"]
-                ):
-                    api_client.update_multimanga_last_read_chapter(
-                        multimanga["ID"],
-                        multimanga["CurrentManga"]["ID"],
-                        chapter["Chapter"],
-                        chapter["URL"],
-                        chapter["InternalID"],
-                    )
-
-                cover_url = ss.update_multimanga_form_cover_img_url
-                cover_upload = (
-                    ss.update_multimanga_form_cover_img_upload.getvalue()
-                    if ss.update_multimanga_form_cover_img_upload
-                    else None
-                )
-                use_current_manga_cover_img = (
-                    ss.update_multimanga_form_use_current_manga_cover_img
-                )
-
-                values_count = sum(
-                    [
-                        bool(cover_url),
-                        bool(cover_upload),
-                        use_current_manga_cover_img,
-                    ]
-                )
-
-                match values_count:
-                    case 0:
-                        pass
-                    case 1:
-                        if cover_url != "" or cover_upload is not None:
-                            api_client.update_multimanga_cover_img(
-                                multimanga["ID"],
-                                cover_img_url=cover_url,
-                                cover_img=cover_upload if cover_upload else b"",
-                            )
-                        elif use_current_manga_cover_img:
-                            api_client.update_multimanga_cover_img(
-                                multimanga["ID"],
-                                use_current_manga_cover_img=use_current_manga_cover_img,
-                            )
-                    case _:
-                        ss["update_multimanga_warning_message"] = (
-                            "To update the cover image, provide either an URL, upload a file, or check the box to use the current manga's cover image. The other fields were updated successfully"
-                        )
-
-                if not (
-                    ss.get("update_multimanga_error_message", "") != ""
-                    or ss.get("update_multimanga_warning_message", "") != ""
-                ):
-                    ss["update_multimanga_success_message"] = (
-                        "Multimanga updated successfully"
-                    )
-                    st.rerun()
-            except APIException as e:
-                logger.exception(e)
-                ss["update_multimanga_error_message"] = (
-                    "Error while updating multimanga"
-                )
-
-    with stylable_container(
-        key="update_multimanga_delete_button",
-        css_styles="""
-            button {
-                background-color: red;
-                color: white;
-            }
-        """,
+    if st.button(
+        "Back",
+        key="update_multimanga_mangas_manage_mangas_back_button",
+        use_container_width=True,
     ):
-        if st.button(
-            "Delete Multimanga",
-            use_container_width=True,
-        ):
-            try:
-                api_client.delete_multimanga(multimanga["ID"])
-            except Exception as e:
-                logger.exception(e)
-                ss["update_multimanga_error_message"] = (
-                    "Error while deleting multimanga"
-                )
-            else:
-                ss["update_multimanga_success_message"] = (
-                    "Multimanga deleted successfully"
-                )
-            if not (
-                ss.get("update_multimanga_error_message", "") != ""
-                or ss.get("update_multimanga_warning_message", "") != ""
-            ):
-                st.rerun()
+        ss["highlighted_manga"] = multimanga["CurrentManga"]
+        st.rerun()
 
-    if ss.get("update_multimanga_error_message", "") != "":
-        st.error(ss["update_multimanga_error_message"])
-    if ss.get("update_multimanga_warning_message", "") != "":
-        st.warning(ss["update_multimanga_warning_message"])
-    ss["update_multimanga_error_message"] = ""
-    ss["update_multimanga_warning_message"] = ""
-
-    st.divider()
-
-    with st.expander("Multimanga Mangas"):
-
-        def add_search_callback():
-            ss["show_update_multimanga_add_manga_search"] = True
-
-        st.button(
-            "Add Manga by Searching",
-            use_container_width=True,
-            on_click=add_search_callback,
-            type="primary",
-            key="update_multimanga_mangas_show_add_manga_search_button",
-        )
-
-        def add_url_callback():
-            ss["show_update_multimanga_add_manga_url"] = True
-
-        st.button(
-            "Add Manga Using URL",
-            use_container_width=True,
-            on_click=add_url_callback,
-            type="primary",
-            key="update_multimanga_mangas_show_add_manga_url_button",
-        )
-
-        def manage_callback():
-            ss["show_update_multimanga_manage_mangas"] = True
-
-        st.button(
-            "Manage Multimanga Mangas",
-            use_container_width=True,
-            on_click=manage_callback,
-            type="primary",
-            key="update_multimanga_mangas_show_manage_mangas_button",
-        )
+    with message_container.container():
+        if ss.get("update_manga_error_message", "") != "":
+            st.error(ss["update_manga_error_message"])
+            ss["update_manga_error_message"] = ""
+        if ss.get("update_manga_warning_message", "") != "":
+            st.warning(ss["update_manga_warning_message"])
+            ss["update_manga_warning_message"] = ""
 
 
 def show_multimanga_mangas(
@@ -1064,16 +704,241 @@ def show_multimanga_manga(
                     "attempted to remove the last manga from a multimanga"
                     in str(e).lower()
                 ):
-                    ss["update_multimanga_warning_message"] = (
+                    ss["update_manga_warning_message"] = (
                         "Can't remove the last manga from a multimanga. Delete the multimanga instead"
                     )
                 else:
                     logger.exception(e)
-                    ss["update_multimanga_error_message"] = "Error while removing manga"
+                    ss["update_manga_error_message"] = "Error while removing manga"
             else:
-                ss["update_multimanga_success_message"] = "Manga removed successfully"
+                ss["update_manga_success_message"] = "Manga removed successfully"
             if not (
-                ss.get("update_multimanga_error_message", "") != ""
-                or ss.get("update_multimanga_warning_message", "") != ""
+                ss.get("update_manga_error_message", "") != ""
+                or ss.get("update_manga_warning_message", "") != ""
             ):
                 st.rerun()
+
+
+def show_update_custom_manga(manga: dict[str, Any]):
+    api_client = get_api_client()
+
+    with st.form(key="update_custom_manga_form", border=False):
+        st.text_input(
+            "Manga Name (not optional)",
+            value=manga["Name"],
+            placeholder="One Piece",
+            key="update_custom_manga_form_name",
+        )
+
+        st.text_input(
+            "Manga URL",
+            value=manga["URL"],
+            placeholder="https://randomsite.com/title/one-piece",
+            key="update_custom_manga_form_url",
+        )
+
+        st.selectbox(
+            "Status",
+            index=manga["Status"] - 1,
+            options=list(defaults.manga_status_options.keys())[
+                1:
+            ],  # Exclude the "All" option
+            format_func=lambda index: defaults.manga_status_options[index],
+            key="update_custom_manga_form_status",
+        )
+
+        with st.expander(
+            "Next Chapter",
+        ):
+            st.text_input(
+                "Next Chapter to Read",
+                value=manga["LastReadChapter"]["Chapter"],
+                placeholder="1000",
+                help="Can be a number or text",
+                key="update_custom_manga_form_chapter",
+            )
+
+            st.text_input(
+                "Chapter URL",
+                value=manga["LastReadChapter"]["URL"],
+                placeholder="https://randomsite.com/title/one-piece/chapter/1000",
+                key="update_custom_manga_form_chapter_url",
+            )
+
+            st.checkbox(
+                "No more chapters available",
+                value=manga["LastReadChapter"]["Chapter"]
+                == manga["LastReleasedChapter"]["Chapter"],
+                help="Check this if there are no more chapters available. By default, if next chapter is empty, it's checked, even if you changed it previously. You can change it anytime.",
+                key="update_custom_manga_form_no_more_chapters",
+            )
+
+        with st.expander(
+            "Cover Image",
+        ):
+            st.text_input(
+                "Cover Image URL",
+                placeholder="https://example.com/image.jpg",
+                key="update_custom_manga_form_cover_img_url",
+            )
+            st.file_uploader(
+                "Upload Cover Image",
+                type=["png", "jpg", "jpeg"],
+                key="update_custom_manga_form_cover_img_file",
+            )
+            st.checkbox(
+                "Use Mantium default cover image",
+                key="update_custom_manga_form_use_mantim_default_cover_img",
+            )
+
+        if st.form_submit_button(
+            "Update Manga",
+            use_container_width=True,
+            type="primary",
+        ):
+            try:
+                name = ss.update_custom_manga_form_name
+                url = ss.update_custom_manga_form_url
+                status = ss.update_custom_manga_form_status
+                next_chapter = ss.update_custom_manga_form_chapter
+                next_chapter_url = ss.update_custom_manga_form_chapter_url
+                manga_has_more_chapters = (
+                    not ss.update_custom_manga_form_no_more_chapters
+                )
+                cover_img_url = ss.update_custom_manga_form_cover_img_url
+                cover_img = (
+                    ss.update_custom_manga_form_cover_img_file.getvalue()
+                    if ss.update_custom_manga_form_cover_img_file
+                    else None
+                )
+                use_mantium_default_cover_img = (
+                    ss.update_custom_manga_form_use_mantim_default_cover_img
+                )
+                if name == "":
+                    st.warning("Provide a manga name")
+                elif next_chapter == "" and next_chapter_url != "":
+                    ss["update_manga_warning_message"] = (
+                        "Provide a chapter number to go with the chapter URL"
+                    )
+                else:
+                    if name != manga["Name"]:
+                        api_client.update_manga_name(name, manga["ID"])
+
+                    if url != manga["URL"]:
+                        api_client.update_manga_url(url, manga["ID"])
+
+                    if status != manga["Status"]:
+                        api_client.update_manga_status(status, manga["ID"])
+
+                    if (
+                        next_chapter != manga["LastReadChapter"]["Chapter"]
+                        or next_chapter_url != manga["LastReadChapter"]["URL"]
+                    ):
+                        api_client.update_manga_last_read_chapter(
+                            manga["ID"],
+                            "",
+                            "",
+                            next_chapter,
+                            next_chapter_url,
+                            "",
+                        )
+
+                    if (
+                        (
+                            manga_has_more_chapters
+                            and manga["LastReadChapter"]["Chapter"] != ""
+                            and manga["LastReadChapter"]["Chapter"]
+                            == manga["LastReleasedChapter"]["Chapter"]
+                        )
+                        or (
+                            not manga_has_more_chapters
+                            and manga["LastReadChapter"]["Chapter"] != ""
+                            and manga["LastReadChapter"]["Chapter"]
+                            != manga["LastReleasedChapter"]["Chapter"]
+                        )
+                        or next_chapter != manga["LastReadChapter"]["Chapter"]
+                    ):
+                        api_client.update_custom_manga_has_more_chapters(
+                            manga_has_more_chapters, manga["ID"], ""
+                        )
+
+                    values_count = sum(
+                        [
+                            bool(cover_img_url),
+                            bool(cover_img),
+                            use_mantium_default_cover_img,
+                        ]
+                    )
+                    match values_count:
+                        case 0:
+                            pass
+                        case 1:
+                            if cover_img_url != "" or cover_img is not None:
+                                api_client.update_manga_cover_img(
+                                    manga["ID"],
+                                    "",
+                                    "",
+                                    cover_img_url,
+                                    cover_img if cover_img else b"",
+                                    False,
+                                    False,
+                                )
+                            elif use_mantium_default_cover_img:
+                                api_client.update_manga_cover_img(
+                                    manga["ID"],
+                                    "",
+                                    "",
+                                    "",
+                                    b"",
+                                    False,
+                                    True,
+                                )
+                        case _:
+                            ss["update_manga_warning_message"] = (
+                                "To update the cover image, provide either an URL, upload a file, or check the box to use the Mantium default cover image. The other fields were updated successfully"
+                            )
+
+                    if not (
+                        ss.get("update_manga_error_message", "") != ""
+                        or ss.get("update_manga_warning_message", "") != ""
+                    ):
+                        ss["update_manga_success_message"] = (
+                            "Manga updated successfully"
+                        )
+                        st.rerun()
+            except Exception as e:
+                logger.exception(e)
+                ss["update_manga_error_message"] = "Error while updating manga"
+
+    with stylable_container(
+        key="update_custom_manga_delete_button",
+        css_styles="""
+            button {
+                background-color: red;
+                color: white;
+            }
+        """,
+    ):
+        if st.button(
+            "Delete Manga",
+            use_container_width=True,
+        ):
+            try:
+                api_client.delete_manga(manga["ID"])
+            except Exception as e:
+                logger.exception(e)
+                ss["update_manga_error_message"] = "Error while deleting manga"
+            else:
+                ss["update_manga_success_message"] = "Manga deleted successfully"
+            if not (
+                ss.get("update_manga_error_message", "") != ""
+                or ss.get("update_manga_warning_message", "") != ""
+            ):
+                st.rerun()
+
+    if ss.get("update_manga_error_message", "") != "":
+        st.error(ss["update_manga_error_message"])
+    if ss.get("update_manga_warning_message", "") != "":
+        st.warning(ss["update_manga_warning_message"])
+    ss["update_manga_error_message"] = ""
+    ss["update_manga_warning_message"] = ""

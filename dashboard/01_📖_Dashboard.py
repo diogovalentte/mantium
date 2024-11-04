@@ -7,15 +7,10 @@ import streamlit as st
 from PIL import Image
 from src.api.api_client import get_api_client
 from src.util import defaults
-from src.util.add_manga import (
-    show_add_custom_manga_form,
-    show_add_manga_form_search,
-    show_add_manga_form_url,
-)
+from src.util.add_manga import show_add_manga_form
 from src.util.update_manga import (
-    show_update_custom_manga,
-    show_update_manga,
-    show_update_multimanga,
+    show_update_multimanga_form,
+    show_update_multimanga_mangas_form,
 )
 from src.util.util import (
     centered_container,
@@ -102,7 +97,7 @@ class MainDashboard:
 
         self.update_dashboard_job()
 
-        self.show_dialogs()
+        self.show_forms()
 
     def sidebar(self) -> None:
         with st.sidebar:
@@ -141,34 +136,31 @@ class MainDashboard:
 
             with st.expander("More Options"):
 
-                def on_search_click():
-                    ss["show_add_manga_search_form"] = True
+                def on_add_manga_click(form_type: str):
+                    ss["show_add_manga_form"] = form_type
 
                 st.button(
                     "Add Manga by Searching",
                     type="primary",
                     use_container_width=True,
-                    on_click=on_search_click,
+                    on_click=on_add_manga_click,
+                    args=("search",),
                 )
-
-                def on_url_click():
-                    ss["show_add_manga_url_form"] = True
 
                 st.button(
                     "Add Manga Using URL",
                     type="primary",
                     use_container_width=True,
-                    on_click=on_url_click,
+                    on_click=on_add_manga_click,
+                    args=("url",),
                 )
-
-                def on_custom_magna_click():
-                    ss["show_add_custom_manga_form"] = True
 
                 st.button(
                     "Add Custom Manga",
                     type="primary",
                     use_container_width=True,
-                    on_click=on_custom_magna_click,
+                    on_click=on_add_manga_click,
+                    args=("custom",),
                 )
 
                 def on_settings_click():
@@ -181,140 +173,42 @@ class MainDashboard:
                     on_click=on_settings_click,
                 )
 
-    def show_dialogs(self):
-        """Only one dialog at the time can be shown."""
-        if ss.get("show_add_manga_search_form", False):
-            ss["add_manga_success_message"] = ""
-            ss["add_manga_warning_message"] = ""
-            ss["add_manga_error_message"] = ""
-            if ss.get("add_manga_chapter_options", None) is not None:
-                del ss["add_manga_chapter_options"]
-            if ss.get("add_manga_search_selected_manga", None) is not None:
-                del ss["add_manga_search_selected_manga"]
-            base_key = "add_manga_search_selected_manga_search_results"
-            ss[base_key + "_mangadex"] = {}
-            ss[base_key + "_comick"] = {}
-            ss[base_key + "_mangaplus"] = {}
-            ss[base_key + "_mangahub"] = {}
-            ss[base_key + "_mangaupdates"] = {}
-            ss["add_manga_search_go_back_to_tab"] = 0
-
-            @st.dialog("Search Manga", width="large")
-            def show_add_manga_form_dialog():
-                show_add_manga_form_search()
-
-            show_add_manga_form_dialog()
-            ss["show_add_manga_search_form"] = False
-        elif ss.get("show_add_manga_url_form", False):
-            ss["add_manga_success_message"] = ""
-            ss["add_manga_warning_message"] = ""
-            ss["add_manga_error_message"] = ""
-            if ss.get("add_manga_chapter_options", None) is not None:
-                del ss["add_manga_chapter_options"]
-
-            @st.dialog("Add Manga Using URL")
-            def show_add_manga_form_dialog():
-                show_add_manga_form_url()
-
-            show_add_manga_form_dialog()
-            ss["show_add_manga_url_form"] = False
-        elif ss.get("show_add_custom_manga_form", False):
-            ss["add_manga_success_message"] = ""
-            ss["add_manga_warning_message"] = ""
-            ss["add_manga_error_message"] = ""
-
-            @st.dialog("Add Custom Manga")
-            def show_add_manga_form_dialog():
-                show_add_custom_manga_form()
-
-            show_add_manga_form_dialog()
-            ss["show_add_custom_manga_form"] = False
-        elif ss.get("show_settings_form", False):
-            ss["configs_update_success_message"] = ""
-            ss["configs_update_warning_message"] = ""
-            ss["configs_update_error_message"] = ""
-
-            @st.dialog("Settings")
-            def show_settings_dialog():
-                self.show_settings()
-
-            show_settings_dialog()
-            ss["show_settings_form"] = False
+    def show_forms(self):
+        if ss.get("show_add_manga_form", "") != "":
+            show_add_manga_form(ss["show_add_manga_form"])
+            ss["show_add_manga_form"] = ""
         elif ss.get("highlighted_manga", None) is not None:
-            manga = ss["highlighted_manga"]
-
-            @st.dialog(manga["Name"])
-            def show_highlighted_manga_dialog():
-                show_update_manga(manga)
-
-            @st.dialog(manga["Name"])
-            def show_highlighted_custom_manga_dialog():
-                show_update_custom_manga(manga)
-
-            @st.dialog(manga["Name"], width="large")
-            def show_highlighted_multimanga_dialog():
-                show_update_multimanga(manga["MultiMangaID"])
-
-            if manga["MultiMangaID"] == 0:
-                if manga["Source"] == defaults.CUSTOM_MANGA_SOURCE:
-                    show_highlighted_custom_manga_dialog()
-                else:
-                    show_highlighted_manga_dialog()
-            else:
-                show_highlighted_multimanga_dialog()
+            show_update_multimanga_form(ss["highlighted_manga"])
             ss["highlighted_manga"] = None
+        elif ss.get("highlighted_multimanga", None) is not None:
+            show_update_multimanga_mangas_form(ss["highlighted_multimanga"])
+            ss["highlighted_multimanga"] = None
         elif ss.get("update_manga_success_message", "") != "":
 
-            @st.dialog("Manga Updated")
-            def show_update_manga_message():
-                if ss.get("update_manga_success_message", "") != "":
-                    st.success(ss["update_manga_success_message"])
+            @st.dialog("Update Manga")
+            def show():
+                st.success(ss["update_manga_success_message"])
+                ss["update_manga_success_message"] = ""
 
-            show_update_manga_message()
-
-            ss["update_manga_success_message"] = ""
-        elif ss.get("update_multimanga_success_message", "") != "":
-
-            @st.dialog("Multimanga Updated")
-            def show_update_multimanga_message():
-                if ss.get("update_multimanga_success_message", "") != "":
-                    st.success(ss["update_multimanga_success_message"])
-
-            show_update_multimanga_message()
-
-            ss["update_multimanga_success_message"] = ""
+            show()
+        elif ss.get("show_settings_form", False):
+            self.show_settings()
+            ss["show_settings_form"] = False
         elif (
-            ss.get("add_manga_success_message", "") != ""
-            or ss.get("add_manga_warning_message", "") != ""
-        ):
-
-            @st.dialog("Add Manga")
-            def show_add_manga_message():
-                if ss.get("add_manga_success_message", "") != "":
-                    st.success(ss["add_manga_success_message"])
-                if ss.get("add_manga_warning_message", "") != "":
-                    st.warning(ss["add_manga_warning_message"])
-
-            show_add_manga_message()
-
-            ss["add_manga_success_message"] = ""
-            ss["add_manga_warning_message"] = ""
-        elif (
-            ss.get("configs_update_success_message", "") != ""
-            or ss.get("configs_update_warning_message", "") != ""
+            ss.get("configs_update_error_message", "") != ""
+            or ss.get("configs_update_success_message", "") != ""
         ):
 
             @st.dialog("Settings")
-            def show_settings_message():
-                if ss.get("configs_update_success_message", "") != "":
+            def show_configs_update_message():
+                if ss.get("configs_update_error_message", "") != "":
+                    st.error(ss["configs_update_error_message"])
+                else:
                     st.success(ss["configs_update_success_message"])
-                if ss.get("configs_update_warning_message", "") != "":
-                    st.warning(ss["configs_update_warning_message"])
+                ss["configs_update_error_message"] = ""
+                ss["configs_update_success_message"] = ""
 
-            show_settings_message()
-
-            ss["configs_update_success_message"] = ""
-            ss["configs_update_warning_message"] = ""
+            show_configs_update_message()
 
     def show_background_error(self):
         if ss["settings_show_background_error_warning"]:
@@ -486,9 +380,6 @@ class MainDashboard:
 
         def highlight_manga():
             ss["highlighted_manga"] = manga
-            ss["show_update_multimanga_add_manga_search"] = False
-            ss["show_update_multimanga_add_manga_url"] = False
-            ss["show_update_multimanga_manage_mangas"] = False
 
         if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE:
             chapter_tag_content = f"""
@@ -643,6 +534,7 @@ class MainDashboard:
                 on_click=highlight_manga,
             )
 
+    @st.dialog("Settings")
     def show_settings(self):
         with st.form(key="configs_update_configs", border=False):
             st.slider(
@@ -692,9 +584,7 @@ class MainDashboard:
                 except Exception as e:
                     logger.exception(e)
                     ss["configs_update_error_message"] = "Error while saving settings"
-
-        if ss.get("configs_update_error_message", "") != "":
-            st.error(ss["configs_update_error_message"])
+                    st.rerun()
 
     def check_dashboard_error(self):
         if ss.get("dashboard_error", False):
