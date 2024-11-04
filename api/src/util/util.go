@@ -41,6 +41,10 @@ func AddErrorContext(context string, err error) error {
 
 // ErrorContains checks if an error contains a specific string
 func ErrorContains(err error, s string) bool {
+	if err == nil {
+		return false
+	}
+
 	return strings.Contains(err.Error(), s)
 }
 
