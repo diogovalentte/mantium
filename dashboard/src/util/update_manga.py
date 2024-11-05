@@ -88,7 +88,7 @@ def show_update_multimanga(multimanga_id):
         multimanga = api_client.get_multimanga(multimanga_id)
     except Exception as e:
         logger.exception(e)
-        st.error("Error while getting manga")
+        st.error("Error while getting multimanga")
         st.stop()
 
     get_chapters_success = False
@@ -191,17 +191,17 @@ def show_update_multimanga(multimanga_id):
             and get_chapters_success
         ):
             st.warning(
-                "Current manga has no released chapters. You still can update the other fields."
+                "No released chapters available. You still can update the other fields."
             )
 
         with st.expander(
             "Cover Image",
         ):
             st.info(
-                "By default, the cover image of the current manga is used. It's fetched from the manga's source site and it's automatically updated when the source site changes it, but you can manually change it by providing an image URL or uploading a file."
+                "By default, the cover image of the current manga is used. It's fetched from the manga's source site and it's automatically updated when the source site changes it, but you can manually provide an image URL or upload a file."
             )
             if multimanga["CoverImgFixed"]:
-                st.warning("You changed the cover image to a custom image.")
+                st.warning("The cover image is set to a custom image provided by you.")
             st.text_input(
                 "Cover Image URL",
                 placeholder="https://example.com/image.jpg",
@@ -278,7 +278,7 @@ def show_update_multimanga(multimanga_id):
                     st.rerun(scope="fragment")
             except APIException as e:
                 logger.exception(e)
-                ss["update_manga_error_message"] = "Error while updating multimanga"
+                ss["update_manga_error_message"] = "Error while updating"
 
     with stylable_container(
         key="update_multimanga_delete_button",
@@ -308,7 +308,7 @@ def show_update_multimanga(multimanga_id):
 
     st.divider()
 
-    with st.expander("Manage Mangas"):
+    with st.expander("Multimanga Mangas"):
 
         if st.button(
             "Add Manga by Searching",
@@ -343,7 +343,7 @@ def show_update_multimanga(multimanga_id):
 
 def update_multimanga(updated_parts):
     api_client = get_api_client()
-    st.info("Updating manga...")
+    st.info("Updating...")
     try:
         multimanga = updated_parts["multimanga"]
         status = updated_parts["status"]
@@ -392,11 +392,10 @@ def update_multimanga(updated_parts):
 
 
 def delete_manga(multimanga_id: int):
-    st.info("Deleting manga...")
+    st.info("Deleting...")
     try:
-        with st.spinner("Deleting multimanga..."):
-            api_client = get_api_client()
-            api_client.delete_multimanga(multimanga_id)
+        api_client = get_api_client()
+        api_client.delete_multimanga(multimanga_id)
     except Exception as e:
         logger.exception(e)
         st.error("Error while deleting multimanga")
@@ -427,16 +426,12 @@ def show_update_multimanga_add_manga_search(multimanga):
                     )
             except APIException as e:
                 if "manga already exists in DB" in str(e):
-                    st.warning(
-                        "Manga already exists in multimanga or as a normal manga"
-                    )
+                    st.warning("Manga already exists")
                 else:
                     logger.exception(e)
                     st.error("Error while adding manga to multimanga")
             else:
-                ss["update_manga_success_message"] = (
-                    "Manga added to multimanga successfully"
-                )
+                ss["update_manga_success_message"] = "Manga added successfully"
                 st.rerun()
         else:
             (
@@ -494,7 +489,7 @@ def show_update_multimanga_add_manga_url(multimanga):
         except APIException as e:
             resp_text = str(e.response_text).lower()
             if "manga already exists in db" in resp_text:
-                st.warning("Manga already exists in multimanga or as a normal manga")
+                st.warning("Manga already exists")
             elif (
                 "error while getting source: source '" in resp_text
                 and "not found" in resp_text
@@ -508,9 +503,7 @@ def show_update_multimanga_add_manga_url(multimanga):
                 logger.exception(e)
                 st.error("Error while adding manga to multimanga")
         else:
-            ss["update_manga_success_message"] = (
-                "Manga added to multimanga successfully"
-            )
+            ss["update_manga_success_message"] = "Manga added successfully"
             st.rerun()
 
 
