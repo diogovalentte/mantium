@@ -1,9 +1,22 @@
+# Ntfy
+Mantium can send a notification to a Ntfy topic when a new chapter from a manga with the status "reading" or "completed" is released. To activate the Ntfy integration, use the environment variables in the [docker-compose.yml](https://github.com/diogovalentte/mantium/blob/main/docker-compose.yml) file or in the [.env.examples](https://github.com/diogovalentte/mantium/blob/main/.env.example) file.
 
+# Tranga
+Using environment variables, you can enable the [Tranga](https://github.com/c9glax/tranga) integration. The integration will:
+
+- Try to add the manga to Tranga when you add it to the dashboard.
+  - Only the original manga of a multimanga will be added to Tranga. Mangas added to a multimanga are not automatically added to the Tranga. But when Mantium detects a new chapter of one of the multimanga's mangas, it still triggers Tranga to check and download new chapters.
+- If the background job to update the mangas metadata detects newly released chapters, it will trigger Tranga to check and download new chapters of the mangas that have new chapters.
+- If there are already mangas on your dashboard, the API has a route to add the mangas on your dashboard to Tranga. To know more, check the [API docs](https://github.com/diogovalentte/mantium?tab=readme-ov-file#api).
+
+## Limitations
+Tranga can download chapters from mangas from many sources (called connectors in Tranga). They are like Mantium source sites, like MangaDex and ComicK. Currently, the only connector/source site that Mantium and Tranga both share is MangaDex. This means that only mangas from MangaDex will work with this integration.
 
 # Kaizoku
 Using environment variables, you can enable the [Kaizoku](https://github.com/oae/kaizoku) integration. The integration will:
 
 - Try to add the manga to Kaizoku when you add it to the dashboard.
+  - Only the original manga of a multimanga will be added to Kaizoku. Mangas added to a multimanga are not automatically added to the Kaizoku. But when Mantium detects a new chapter of one of the multimanga's mangas, it still triggers Kaizoku to check and download new chapters.
 - If the background job to update the mangas metadata detects newly released chapters, it will trigger Kaizoku to check and download new chapters.
 - If there are already mangas on your dashboard, the API has a route to add the mangas on your dashboard to Kaizoku. To know more, check the [API docs](https://github.com/diogovalentte/mantium?tab=readme-ov-file#api).
 
@@ -48,16 +61,3 @@ The process of waiting until Kaizoku finishes the jobs in the queues has a timeo
 But, the more mangas you have in Kaizoku, the longer Kaizoku will take to empty its queues. I have 100 mangas and it takes +- 3 minutes. You can adjust how much time Mantium should wait for Kaizoku before timeout if you're seeing too many errors due to timeout.
 
 You can do this by setting the `KAIZOKU_WAIT_UNTIL_EMPTY_QUEUES_TIMEOUT_MINUTES` environment variable to the number of minutes that Mantium should wait, like `KAIZOKU_WAIT_UNTIL_EMPTY_QUEUES_TIMEOUT_MINUTES=10` to wait for 10 minutes each of the `checkOutOfSyncChaptersQueue` and `fixOutOfSyncChaptersQueue` queues.
-
-# Tranga
-Using environment variables, you can enable the [Tranga](https://github.com/c9glax/tranga) integration. The integration will:
-
-- Try to add the manga to Tranga when you add it to the dashboard.
-- If the background job to update the mangas metadata detects newly released chapters, it will trigger Tranga to check and download new chapters of the mangas that have new chapters.
-- If there are already mangas on your dashboard, the API has a route to add the mangas on your dashboard to Tranga. To know more, check the [API docs](https://github.com/diogovalentte/mantium?tab=readme-ov-file#api).
-
-## Limitations
-Tranga can download chapters from mangas from many sources (called connectors in Tranga). They are like Mantium source sites, like MangaDex and ComicK. Currently, the only connector/source site that Mantium and Tranga both share is MangaDex. This means that only mangas from MangaDex will work with this integration.
-
-# Ntfy
-Mantium can send a notification to a Ntfy topic when a new chapter from a manga with the status "reading" or "completed" is released. To activate the Ntfy integration, use the environment variables in the [docker-compose.yml](https://github.com/diogovalentte/mantium/blob/main/docker-compose.yml) file or in the [.env.examples](https://github.com/diogovalentte/mantium/blob/main/.env.example) file.
