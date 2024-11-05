@@ -71,6 +71,7 @@ The images below show the popup that appears when you click the "**Highlight**" 
 # Custom Manga
 
 Mantium allows you to add mangas, manhwa, light novels, etc. that aren't from one of the supported source sites. You must manually track these manga, providing info about them like name, URL, cover image, etc. You **can** also provide the **next chapter** you should read from the manga, and update it every time you read a chapter.
+- Custom mangas are not treated as **multimangas**.
 
 When you read the last available chapter from a custom manga, check the "**No more chapters available**" checkbox so the manga is considered read instead of unread.
 
