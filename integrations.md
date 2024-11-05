@@ -5,9 +5,9 @@ Mantium can send a notification to a Ntfy topic when a new chapter from a manga 
 Using environment variables, you can enable the [Tranga](https://github.com/c9glax/tranga) integration. The integration will:
 
 - Try to add the manga to Tranga when you add it to the dashboard.
-  - Only the original manga of a multimanga will be added to Tranga. Mangas added to a multimanga are not automatically added to the Tranga. But when Mantium detects a new chapter of one of the multimanga's mangas, it still triggers Tranga to check and download new chapters.
-- If the background job to update the mangas metadata detects newly released chapters, it will trigger Tranga to check and download new chapters of the mangas that have new chapters.
-- If there are already mangas on your dashboard, the API has a route to add the mangas on your dashboard to Tranga. To know more, check the [API docs](https://github.com/diogovalentte/mantium?tab=readme-ov-file#api).
+  - Only the original manga of a multimanga will be added to Tranga. Mangas added to a multimanga later are not automatically added to Tranga.
+- If the background job to update the mangas metadata detects newly released chapters, it will trigger Tranga to check and download new chapters.
+- If there are already mangas on your dashboard, the API has a route to add the your mangas to Tranga. To know more, check the [API docs](https://github.com/diogovalentte/mantium?tab=readme-ov-file#api).
 
 ## Limitations
 Tranga can download chapters from mangas from many sources (called connectors in Tranga). They are like Mantium source sites, like MangaDex and ComicK. Currently, the only connector/source site that Mantium and Tranga both share is MangaDex. This means that only mangas from MangaDex will work with this integration.
@@ -16,9 +16,9 @@ Tranga can download chapters from mangas from many sources (called connectors in
 Using environment variables, you can enable the [Kaizoku](https://github.com/oae/kaizoku) integration. The integration will:
 
 - Try to add the manga to Kaizoku when you add it to the dashboard.
-  - Only the original manga of a multimanga will be added to Kaizoku. Mangas added to a multimanga are not automatically added to the Kaizoku. But when Mantium detects a new chapter of one of the multimanga's mangas, it still triggers Kaizoku to check and download new chapters.
+  - Only the original manga of a multimanga will be added to Kaizoku. Mangas added to a multimanga later are not automatically added to Kaizoku.
 - If the background job to update the mangas metadata detects newly released chapters, it will trigger Kaizoku to check and download new chapters.
-- If there are already mangas on your dashboard, the API has a route to add the mangas on your dashboard to Kaizoku. To know more, check the [API docs](https://github.com/diogovalentte/mantium?tab=readme-ov-file#api).
+- If there are already mangas on your dashboard, the API has a route to add your mangas to Kaizoku. To know more, check the [API docs](https://github.com/diogovalentte/mantium?tab=readme-ov-file#api).
 
 ## Limitations
 
