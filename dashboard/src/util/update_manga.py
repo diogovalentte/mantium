@@ -176,7 +176,7 @@ def show_update_multimanga(multimanga_id):
             "Last Read Chapter",
             index=last_read_chapter_idx,
             options=ss["update_multimanga_chapter_options"],
-            format_func=lambda chapter: f"Ch. {chapter['Chapter']} --- {get_relative_time(get_updated_at_datetime(chapter['UpdatedAt']))}",
+            format_func=lambda chapter: f"Ch. {chapter['Chapter']}{(' --- ' + get_relative_time(get_updated_at_datetime(chapter['UpdatedAt']))) if chapter['UpdatedAt'] != '0001-01-01T00:00:00Z' else ''}",
             key="update_multimanga_form_chapter" + str(multimanga["ID"]),
         )
 
@@ -441,6 +441,7 @@ def show_update_multimanga_add_manga_search(multimanga):
                 mangahub_tab,
                 mangaupdates_tab,
                 rawkuma_tab,
+                klmanga_tab,
             ) = st.tabs(
                 [
                     "Mangadex",
@@ -449,6 +450,7 @@ def show_update_multimanga_add_manga_search(multimanga):
                     "Mangahub",
                     "MangaUpdates",
                     "Raw Kuma",
+                    "KLManga",
                 ]
             )
 
@@ -459,6 +461,7 @@ def show_update_multimanga_add_manga_search(multimanga):
             ss[base_key + "_mangahub"] = {}
             ss[base_key + "_mangaupdates"] = {}
             ss[base_key + "_rawkuma"] = {}
+            ss[base_key + "_klmanga"] = {}
 
             with mangadex_tab:
                 show_search_manga_term_form(
@@ -483,6 +486,10 @@ def show_update_multimanga_add_manga_search(multimanga):
             with rawkuma_tab:
                 show_search_manga_term_form(
                     "https://rawkuma.com", button_name, key_to_save_manga
+                )
+            with klmanga_tab:
+                show_search_manga_term_form(
+                    "https://klmanga.rs", button_name, key_to_save_manga
                 )
 
 
@@ -653,7 +660,7 @@ def show_multimanga_manga(
 
     release_date = (
         manga["LastReleasedChapter"]["UpdatedAt"]
-        if manga["LastReleasedChapter"]["UpdatedAt"] != datetime(1970, 1, 1)
+        if manga["LastReleasedChapter"]["UpdatedAt"] != datetime.min
         else "N/A"
     )
     if release_date != "N/A":

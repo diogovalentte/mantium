@@ -272,14 +272,8 @@ func (k *Kaizoku) getKaizokuSource(source string) (string, error) {
 		returnSource = "ComicK"
 	case "rawkuma.com":
 		returnSource = "RawKuma"
-	case "mangahub.io":
-		return "", util.AddErrorContext(errorContext, fmt.Errorf("MangaHub source is not implemented"))
-	case "mangaplus.shueisha.co.jp":
-		return "", util.AddErrorContext(errorContext, fmt.Errorf("Manga Plus source is not implemented"))
-	case "mangaupdates":
-		return "", util.AddErrorContext(errorContext, fmt.Errorf("MangaUpdates source is not implemented"))
 	default:
-		return "", util.AddErrorContext(errorContext, fmt.Errorf("unknown source"))
+		return "", util.AddErrorContext(errorContext, fmt.Errorf("unknown/not implemented source: %s", source))
 	}
 
 	for _, s := range kaizokuSources {

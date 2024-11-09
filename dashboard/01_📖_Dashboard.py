@@ -411,7 +411,7 @@ class MainDashboard:
             )
             release_date = (
                 manga["LastReleasedChapter"]["UpdatedAt"]
-                if manga["LastReleasedChapter"]["UpdatedAt"] != datetime(1970, 1, 1)
+                if manga["LastReleasedChapter"]["UpdatedAt"] != datetime.min
                 else "N/A"
             )
             if release_date != "N/A":
@@ -440,7 +440,7 @@ class MainDashboard:
             )
             read_date = (
                 manga["LastReadChapter"]["UpdatedAt"]
-                if manga["LastReadChapter"]["UpdatedAt"] != datetime(1970, 1, 1)
+                if manga["LastReadChapter"]["UpdatedAt"] != datetime.min
                 else "N/A"
             )
             if read_date != "N/A":
@@ -505,7 +505,7 @@ class MainDashboard:
 
             read_date = (
                 manga["LastReadChapter"]["UpdatedAt"]
-                if manga["LastReadChapter"]["UpdatedAt"] != datetime(1970, 1, 1)
+                if manga["LastReadChapter"]["UpdatedAt"] != datetime.min
                 else "N/A"
             )
             if read_date != "N/A":

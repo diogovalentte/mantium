@@ -77,7 +77,7 @@ class MultiMangaAPIClient:
         else:
             multimanga["CurrentManga"]["LastReleasedChapter"] = {
                 "Chapter": "",
-                "UpdatedAt": datetime(1970, 1, 1),
+                "UpdatedAt": datetime.min,
                 "URL": multimanga["CurrentManga"]["URL"],
             }
         if multimanga["CurrentManga"]["LastReadChapter"] is not None:
@@ -89,7 +89,7 @@ class MultiMangaAPIClient:
         else:
             multimanga["CurrentManga"]["LastReadChapter"] = {
                 "Chapter": "",
-                "UpdatedAt": datetime(1970, 1, 1),
+                "UpdatedAt": datetime.min,
                 "URL": multimanga["CurrentManga"]["URL"],
             }
         if multimanga["LastReadChapter"] is not None:
@@ -99,7 +99,7 @@ class MultiMangaAPIClient:
         else:
             multimanga["LastReadChapter"] = {
                 "Chapter": "",
-                "UpdatedAt": datetime(1970, 1, 1),
+                "UpdatedAt": datetime.min,
                 "URL": multimanga["CurrentManga"]["URL"],
             }
 
@@ -112,7 +112,7 @@ class MultiMangaAPIClient:
             else:
                 manga["LastReleasedChapter"] = {
                     "Chapter": "",
-                    "UpdatedAt": datetime(1970, 1, 1),
+                    "UpdatedAt": datetime.min,
                     "URL": manga["URL"],
                 }
             if manga["LastReadChapter"] is not None:
@@ -122,7 +122,7 @@ class MultiMangaAPIClient:
             else:
                 manga["LastReadChapter"] = {
                     "Chapter": "",
-                    "UpdatedAt": datetime(1970, 1, 1),
+                    "UpdatedAt": datetime.min,
                     "URL": manga["URL"],
                 }
 
@@ -158,7 +158,7 @@ class MultiMangaAPIClient:
         else:
             manga["LastReleasedChapter"] = {
                 "Chapter": "",
-                "UpdatedAt": datetime(1970, 1, 1),
+                "UpdatedAt": datetime.min,
                 "URL": (
                     manga["URL"]
                     if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
@@ -172,7 +172,7 @@ class MultiMangaAPIClient:
         else:
             manga["LastReadChapter"] = {
                 "Chapter": "",
-                "UpdatedAt": datetime(1970, 1, 1),
+                "UpdatedAt": datetime.min,
                 "URL": (
                     manga["URL"]
                     if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE

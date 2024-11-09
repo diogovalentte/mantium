@@ -24,6 +24,8 @@ def show_add_manga_form(form_type: str):
         del ss["add_manga_search_selected_manga"]
     if ss.get("add_manga_form_url", "") != "":
         ss["add_manga_form_url"] = ""
+    if ss.get("add_manga_manga_to_add", None) is not None:
+        del ss["add_manga_manga_to_add"]
     base_key = "add_manga_search_selected_manga_search_results"
     ss[base_key + "_mangadex"] = {}
     ss[base_key + "_comick"] = {}
@@ -31,6 +33,7 @@ def show_add_manga_form(form_type: str):
     ss[base_key + "_mangahub"] = {}
     ss[base_key + "_mangaupdates"] = {}
     ss[base_key + "_rawkuma"] = {}
+    ss[base_key + "_klmanga"] = {}
     ss["add_manga_search_go_back_to_tab"] = 0
 
     if form_type == "url":
@@ -136,7 +139,7 @@ def show_bottom_add_manga_form(manga_url: str, manga_internal_id: str):
             index=None,
             key="add_manga_form_chapter",
             format_func=lambda chapter: (
-                f"Ch. {chapter['Chapter']} --- {get_relative_time(get_updated_at_datetime(chapter['UpdatedAt']))}"
+                f"Ch. {chapter['Chapter']}{(' --- ' + get_relative_time(get_updated_at_datetime(chapter['UpdatedAt']))) if chapter['UpdatedAt'] != '0001-01-01T00:00:00Z' else ''}"
                 if chapter is not None
                 else "N/A"
             ),
@@ -256,6 +259,7 @@ def show_add_manga_form_search():
                 mangahub_tab,
                 mangaupdates_tab,
                 rawkuma_tab,
+                klmanga_tab,
             ) = st.tabs(
                 [
                     "Mangadex",
@@ -264,6 +268,7 @@ def show_add_manga_form_search():
                     "Mangahub",
                     "MangaUpdates",
                     "Raw Kuma",
+                    "KLManga",
                 ]
             )
 
@@ -293,6 +298,10 @@ def show_add_manga_form_search():
             with rawkuma_tab:
                 show_search_manga_term_form(
                     "https://rawkuma.com", button_name, key_to_save_manga
+                )
+            with klmanga_tab:
+                show_search_manga_term_form(
+                    "https://klmanga.rs", button_name, key_to_save_manga
                 )
 
         tab_index = ss["add_manga_search_go_back_to_tab"]

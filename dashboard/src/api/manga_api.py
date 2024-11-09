@@ -71,10 +71,12 @@ class MangaAPIClient:
         else:
             manga["LastReleasedChapter"] = {
                 "Chapter": "",
-                "UpdatedAt": datetime(1970, 1, 1),
-                "URL": manga["URL"]
-                if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
-                else "",
+                "UpdatedAt": datetime.min,
+                "URL": (
+                    manga["URL"]
+                    if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
+                    else ""
+                ),
             }
         if manga["LastReadChapter"] is not None:
             manga["LastReadChapter"]["UpdatedAt"] = get_updated_at_datetime(
@@ -83,10 +85,12 @@ class MangaAPIClient:
         else:
             manga["LastReadChapter"] = {
                 "Chapter": "",
-                "UpdatedAt": datetime(1970, 1, 1),
-                "URL": manga["URL"]
-                if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
-                else "",
+                "UpdatedAt": datetime.min,
+                "URL": (
+                    manga["URL"]
+                    if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
+                    else ""
+                ),
             }
 
         return manga
@@ -119,10 +123,12 @@ class MangaAPIClient:
             else:
                 manga["LastReleasedChapter"] = {
                     "Chapter": "",
-                    "UpdatedAt": datetime(1970, 1, 1),
-                    "URL": manga["URL"]
-                    if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
-                    else "",
+                    "UpdatedAt": datetime.min,
+                    "URL": (
+                        manga["URL"]
+                        if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
+                        else ""
+                    ),
                 }
             if manga["LastReadChapter"] is not None:
                 manga["LastReadChapter"]["UpdatedAt"] = get_updated_at_datetime(
@@ -131,10 +137,12 @@ class MangaAPIClient:
             else:
                 manga["LastReadChapter"] = {
                     "Chapter": "",
-                    "UpdatedAt": datetime(1970, 1, 1),
-                    "URL": manga["URL"]
-                    if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
-                    else "",
+                    "UpdatedAt": datetime.min,
+                    "URL": (
+                        manga["URL"]
+                        if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
+                        else ""
+                    ),
                 }
 
         return mangas
@@ -365,18 +373,19 @@ class MangaAPIClient:
                 0 = Unread chapters, sorted by last chapter release date (desc).
                 1 = Read chapters, sorted by last chapter release date (desc).
             Unread chapters are prioritized over read chapters."""
-            if manga["LastReadChapter"] is not None:
-                if (
-                    manga["LastReadChapter"]["Chapter"]
-                    != manga["LastReleasedChapter"]["Chapter"]
-                ):
-                    if manga["Source"] == defaults.CUSTOM_MANGA_SOURCE:
-                        return (0, -manga["LastReadChapter"]["UpdatedAt"].timestamp())
-                    return (0, -manga["LastReleasedChapter"]["UpdatedAt"].timestamp())
-                else:
-                    return (1, -manga["LastReleasedChapter"]["UpdatedAt"].timestamp())
-            else:
+            if (
+                manga["LastReadChapter"]["Chapter"]
+                != manga["LastReleasedChapter"]["Chapter"]
+            ):
+                if manga["Source"] == defaults.CUSTOM_MANGA_SOURCE:
+                    return (0, -manga["LastReadChapter"]["UpdatedAt"].timestamp())
+                if manga["LastReleasedChapter"]["UpdatedAt"] == datetime.min:
+                    return (0, -float("inf"))
                 return (0, -manga["LastReleasedChapter"]["UpdatedAt"].timestamp())
+            else:
+                if manga["LastReleasedChapter"]["UpdatedAt"] == datetime.min:
+                    return (1, float("inf"))
+                return (1, -manga["LastReleasedChapter"]["UpdatedAt"].timestamp())
 
         def chapters_released_sorting(manga: dict[str, Any]) -> float:
             chapter = manga["LastReleasedChapter"]["Chapter"]
@@ -389,9 +398,11 @@ class MangaAPIClient:
             mangas.sort(key=unread_sorting, reverse=reverse)
         elif sort_option == "Last Read":
             mangas.sort(
-                key=lambda manga: manga["LastReadChapter"]["UpdatedAt"]
-                if manga["LastReadChapter"] is not None
-                else datetime.min,
+                key=lambda manga: (
+                    manga["LastReadChapter"]["UpdatedAt"]
+                    if manga["LastReadChapter"] is not None
+                    else datetime.min
+                ),
                 reverse=not reverse,
             )
         elif sort_option == "Released Chapter Date":
