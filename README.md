@@ -43,21 +43,21 @@ Mantium also has an endpoint that returns an iFrame. It's a minimalist version o
 ![image](https://github.com/diogovalentte/mantium/assets/49578155/e88d85f2-0109-444a-b225-878a5db01400)
 
 # Multimanga
-A **Multimanga** is like a container for multiple mangas. When you add a manga to Mantium, it actually creates a multimanga and adds the manga to the multimanga. You actually never interact with the manga, only the multimanga. But why?
+A **Multimanga** is like a container for multiple mangas. When you add a manga to Mantium, it creates a multimanga and adds the manga to the multimanga. You actually never interact with the manga, only the multimanga. But why?
 
-The **multimanga** feature solves the issue of when you want to track the **same manga** in multiple source sites so that you are notified whenever a new chapter is released as soon as possible in whatever source. You could add the same manga from different sources, but they would act as **completely different mangas**. Each one would appear on a card in the dashboard/iframe, you would need to set the last read chapter for each of them and be notified of new chapters from each of them.
+The **multimanga** feature solves the issue of when you want to track the **same manga** in multiple source sites so that you are notified whenever a new chapter is released as soon as possible in whatever source. You could add the same manga for each source, but they would act as **completely different mangas**. Each one would appear on a card in the dashboard/iframe, you would need to set the last read chapter for each of them and be notified of new chapters from each of them.
 
-The multimanga feature solves this issue. With it, you add the same manga from multiple sources to the same multimanga and interact only with the multimanga. No multiple notifications or setting the last read chapter for all of them, you just set the multimanga last read chapter, and only one card will appear in the dashboard!
+The multimanga feature solves this issue. With it, you add the same manga from multiple sources to the same multimanga and interact only with the multimanga. No multiple notifications or setting the last read chapter for all of them, you just set the multimanga last read chapter, and only one card will appear in the dashboard/iframe!
 
 ## Current manga
 
-A multimanga always has a manga called **current manga**, which is one of the multimanga's mangas. The dashboard/iframe shows the current manga's name, cover image, and last released chapter. When you select the last read chapter, the current manga's chapters list is shown. When you're notified of a new chapter, the current manga's newest chapter is sent in the notification.
+A multimanga always has a manga called **current manga**, which is one of the multimanga's mangas. The dashboard/iframe shows the current manga's name, cover image, and last released chapter. When you select the last read chapter, the list of the current manga chapters is shown. When you're notified of a new chapter, the newest chapter of the current manga is sent in the notification.
 
 Based on the mangas' last released chapter, Mantium **tries** to set the current manga to the manga with the newest released chapter by using the following rules. Take for example a multimanga with two mangas, Mantium will compare the mangas' last released chapter this way:
 
 1. If the chapters' numbers are equal, Mantium sets the manga that released the chapter last as the current manga.
 2. If they're not equal, Mantium will pick the manga with the biggest chapter number.
-3. Depending on the manga and source, the chapter's number can not be a number at all. When one of the mangas' chapter number is not a number, Mantium will pick the manga that released the chapter last as the current manga.
+3. Depending on the manga and source, the chapter's number can not be a number at all. When one of the manga's chapter numbers is not a number, Mantium will pick the manga that released the chapter last as the current manga.
 
 Mantium decides which manga should be the current manga whenever you **add/remove** a manga from a multimanga and in the [periodic job that updates the mangas in the background](https://github.com/diogovalentte/mantium?tab=readme-ov-file#check-manga-updates-and-notify).
 
