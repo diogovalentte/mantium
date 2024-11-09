@@ -440,7 +440,17 @@ def show_update_multimanga_add_manga_search(multimanga):
                 mangaplus_tab,
                 mangahub_tab,
                 mangaupdates_tab,
-            ) = st.tabs(["Mangadex", "Comick", "Mangaplus", "Mangahub", "MangaUpdates"])
+                rawkuma_tab,
+            ) = st.tabs(
+                [
+                    "Mangadex",
+                    "Comick",
+                    "Mangaplus",
+                    "Mangahub",
+                    "MangaUpdates",
+                    "Raw Kuma",
+                ]
+            )
 
             base_key = key_to_save_manga + "_search_results"
             ss[base_key + "_mangadex"] = {}
@@ -448,6 +458,7 @@ def show_update_multimanga_add_manga_search(multimanga):
             ss[base_key + "_mangaplus"] = {}
             ss[base_key + "_mangahub"] = {}
             ss[base_key + "_mangaupdates"] = {}
+            ss[base_key + "_rawkuma"] = {}
 
             with mangadex_tab:
                 show_search_manga_term_form(
@@ -468,6 +479,10 @@ def show_update_multimanga_add_manga_search(multimanga):
             with mangaupdates_tab:
                 show_search_manga_term_form(
                     "https://mangaupdates.com", button_name, key_to_save_manga
+                )
+            with rawkuma_tab:
+                show_search_manga_term_form(
+                    "https://rawkuma.com", button_name, key_to_save_manga
                 )
 
 

@@ -30,6 +30,7 @@ def show_add_manga_form(form_type: str):
     ss[base_key + "_mangaplus"] = {}
     ss[base_key + "_mangahub"] = {}
     ss[base_key + "_mangaupdates"] = {}
+    ss[base_key + "_rawkuma"] = {}
     ss["add_manga_search_go_back_to_tab"] = 0
 
     if form_type == "url":
@@ -241,6 +242,8 @@ def show_add_manga_form_search():
                     ss["add_manga_search_go_back_to_tab"] = 3
                 case "mangaupdates":
                     ss["add_manga_search_go_back_to_tab"] = 4
+                case "rawkuma.com":
+                    ss["add_manga_search_go_back_to_tab"] = 5
             ss["add_manga_search_selected_manga"] = None
 
         st.button("Back", use_container_width=True, on_click=on_click)
@@ -252,7 +255,17 @@ def show_add_manga_form_search():
                 mangaplus_tab,
                 mangahub_tab,
                 mangaupdates_tab,
-            ) = st.tabs(["Mangadex", "Comick", "Mangaplus", "Mangahub", "MangaUpdates"])
+                rawkuma_tab,
+            ) = st.tabs(
+                [
+                    "Mangadex",
+                    "Comick",
+                    "Mangaplus",
+                    "Mangahub",
+                    "MangaUpdates",
+                    "Raw Kuma",
+                ]
+            )
 
             # if change key_to_save_manga, also change it in func show_dialogs in the 01_?.py main file
             button_name, key_to_save_manga = "Select", "add_manga_search_selected_manga"
@@ -276,6 +289,10 @@ def show_add_manga_form_search():
             with mangaupdates_tab:
                 show_search_manga_term_form(
                     "https://mangaupdates.com", button_name, key_to_save_manga
+                )
+            with rawkuma_tab:
+                show_search_manga_term_form(
+                    "https://rawkuma.com", button_name, key_to_save_manga
                 )
 
         tab_index = ss["add_manga_search_go_back_to_tab"]

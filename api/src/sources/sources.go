@@ -14,6 +14,7 @@ import (
 	"github.com/diogovalentte/mantium/api/src/sources/mangaplus"
 	"github.com/diogovalentte/mantium/api/src/sources/mangaupdates"
 	"github.com/diogovalentte/mantium/api/src/sources/models"
+	"github.com/diogovalentte/mantium/api/src/sources/rawkuma"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
@@ -24,6 +25,7 @@ var sources = map[string]models.Source{
 	"mangaplus.shueisha.co.jp": &mangaplus.Source{},
 	"www.mangaupdates.com":     &mangaupdates.Source{},
 	"mangaupdates.com":         &mangaupdates.Source{},
+	"rawkuma.com":              &rawkuma.Source{},
 }
 
 // RegisterSource registers a new source
