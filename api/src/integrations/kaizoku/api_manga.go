@@ -272,6 +272,8 @@ func (k *Kaizoku) getKaizokuSource(source string) (string, error) {
 		returnSource = "ComicK"
 	case "rawkuma.com":
 		returnSource = "RawKuma"
+	case "klmanga.rs":
+		returnSource = "KLManga"
 	default:
 		return "", util.AddErrorContext(errorContext, fmt.Errorf("unknown/not implemented source: %s", source))
 	}
