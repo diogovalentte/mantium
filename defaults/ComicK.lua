@@ -1,7 +1,7 @@
 ------------------------------
 -- @name    ComicK
 -- @url     https://comick.fun
--- @author  Sravan Balaji
+-- @author  diogovalentte
 -- @license MIT
 ------------------------------
 
@@ -26,11 +26,10 @@ Order = 0   -- Chapter Order: 0 = descending, 1 = ascending
 -- @param query Query to search for
 -- @return Table of tables with the following fields: name, url
 function SearchManga(query)
-    query = query:gsub(" ", "%%20")
+    query = query:gsub(" ", "+")
     local request_url = ApiBase .. "/v1.0/search/?tachiyomi=true&q=" .. query
-    local request = Http.request("GET", request_url)
-    local result = Client:do_request(request)
-    local result_body = Json.decode(result["body"])
+    local result = request(request_url)
+    local result_body = Json.decode(result)
 
     local mangas = {}
     local i = 1
@@ -61,18 +60,15 @@ function MangaChapters(mangaURL)
 
     local i = 1
 
-    local request = Http.request("GET", request_url)
-    local result = Client:do_request(request)
-
-    local result_body = Json.decode(result["body"])
+    local result = request(request_url)
+    local result_body = Json.decode(result)
     local num_chapters = result_body["total"]
     local num_pages = math.ceil(num_chapters / Limit)
 
     local occurence = {}
     for j = 1, num_pages do
-        request = Http.request("GET", request_url .. "&page=" .. j)
-        result = Client:do_request(request)
-        result_body = Json.decode(result["body"])
+        local result = request(request_url .. "&page=" .. j)
+        result_body = Json.decode(result)
 
         for _, val in pairs(result_body["chapters"]) do
             local hid = val["hid"]
@@ -131,9 +127,8 @@ end
 -- @param chapterURL URL of the chapter
 -- @return Table of tables with the following fields: url, index
 function ChapterPages(chapterURL)
-    local request = Http.request("GET", chapterURL)
-    local result = Client:do_request(request)
-    local result_body = Json.decode(result["body"])
+    local result = request(chapterURL)
+    local result_body = Json.decode(result)
     local chapter_table = result_body["chapter"]
 
     local pages = {}
@@ -154,6 +149,15 @@ end
 --- END MAIN ---
 
 ----- HELPERS -----
+function request(url)
+    local command = string.format('curl -s -H "User-Agent: %s" "%s"', UserAgent, url)
+    local handle = io.popen(command)
+    local response = handle:read("*a")
+    handle:close()
+
+    return response
+end
+
 --- END HELPERS ---
 
 -- ex: ts=4 sw=4 et filetype=lua
