@@ -270,6 +270,8 @@ func (k *Kaizoku) getKaizokuSource(source string) (string, error) {
 		returnSource = "ComicK"
 	case "comick.io":
 		returnSource = "ComicK"
+	case "mangahub.io":
+		returnSource = "MangaHub"
 	case "rawkuma.com":
 		returnSource = "RawKuma"
 	case "klmanga.rs":
