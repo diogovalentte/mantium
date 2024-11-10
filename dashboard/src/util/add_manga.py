@@ -100,15 +100,18 @@ def add_manga():
         except Exception as e:
             ex = e
 
+    ss["add_manga_search_selected_manga"] = None
+    ss["add_manga_form_url"] = ""
     if ex is not None:
         if (
             "multimang added to DB, but error executing integrations:".lower()
             in str(ex).lower()
         ):
-            logger.exception(ex)
-            st.warning(
+            logger.warning(ex)
+            ss["add_manga_warning_message"] = (
                 "Manga added to DB, but couldn't add it to at least one integration"
             )
+            st.rerun()
         elif "manga already exists in DB".lower() in str(ex).lower():
             st.warning("Manga already in Mantium")
         else:
@@ -116,8 +119,6 @@ def add_manga():
             st.error("Error while adding manga")
     else:
         ss["add_manga_success_message"] = "Manga added successfully"
-        ss["add_manga_search_selected_manga"] = None
-        ss["add_manga_form_url"] = ""
         st.rerun()
 
 
