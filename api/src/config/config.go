@@ -15,14 +15,15 @@ import (
 // It is used to access the configurations throughout the application.
 // Should be initialized by the SetConfigs function.
 var GlobalConfigs = &Configs{
-	API:                      &APIConfigs{},
-	DB:                       &DBConfigs{},
-	Ntfy:                     &NtfyConfigs{},
-	PeriodicallyUpdateMangas: &PeriodicallyUpdateMangasConfigs{},
-	Kaizoku:                  &KaizokuConfigs{},
-	Tranga:                   &TrangaConfigs{},
-	ConfigsFilePath:          "./configs/configs.json",
-	DefaultConfigsFilePath:   "../defaults/configs.json",
+	API:                       &APIConfigs{},
+	DB:                        &DBConfigs{},
+	Ntfy:                      &NtfyConfigs{},
+	PeriodicallyUpdateMangas:  &PeriodicallyUpdateMangasConfigs{},
+	Kaizoku:                   &KaizokuConfigs{},
+	Tranga:                    &TrangaConfigs{},
+	ConfigsFilePath:           "./configs/configs.json",
+	DefaultConfigsFilePath:    "../defaults/configs.json",
+	UpdateMangasJobGoRoutines: 1, // default value
 }
 
 // Configs is a struct that holds all the configurations.
@@ -35,8 +36,9 @@ type Configs struct {
 	Tranga                   *TrangaConfigs
 	// A file with configs that should be persisted
 	// Relative to main.go
-	ConfigsFilePath        string
-	DefaultConfigsFilePath string
+	ConfigsFilePath           string
+	DefaultConfigsFilePath    string
+	UpdateMangasJobGoRoutines int
 }
 
 // APIConfigs is a struct that holds the API configurations.
@@ -169,6 +171,16 @@ func SetConfigs(filePath string) error {
 		}
 	}
 	GlobalConfigs.PeriodicallyUpdateMangas.Minutes = minutes
+
+	updateMangasJobGoRoutines := 1
+	envUpdateMangasJobGoRoutines := os.Getenv("UPDATE_MANGAS_JOB_PARALLEL_JOBS")
+	if envUpdateMangasJobGoRoutines != "" {
+		updateMangasJobGoRoutines, err = strconv.Atoi(envUpdateMangasJobGoRoutines)
+		if err != nil {
+			return fmt.Errorf("error converting UPDATE_MANGAS_JOB_PARALLEL_JOBS '%s' to int: %s", envUpdateMangasJobGoRoutines, err)
+		}
+	}
+	GlobalConfigs.UpdateMangasJobGoRoutines = updateMangasJobGoRoutines
 
 	return nil
 }

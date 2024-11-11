@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/AnthonyHewins/gotfy"
@@ -2280,16 +2281,52 @@ func UpdateMangasMetadata(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	for _, multimangaToUpdate := range multimangas {
-		mangaWithNewChapters, multimangaNewMetadata, multimangaErrors := updateMultiMangaMetadata(multimangaToUpdate, retries, retryInterval, logger)
-		if multimangaNewMetadata {
-			newMetadata = true
+
+	type result struct {
+		mangaWithNewChapters *manga.Manga
+		multimangaErrors     []string
+	}
+
+	results := make(chan result, len(multimangas))
+	var wg sync.WaitGroup
+
+	chunkSize := (len(multimangas) + config.GlobalConfigs.UpdateMangasJobGoRoutines - 1) / config.GlobalConfigs.UpdateMangasJobGoRoutines
+	for i := 0; i < config.GlobalConfigs.UpdateMangasJobGoRoutines; i++ {
+		start := i * chunkSize
+		end := start + chunkSize
+		if end > len(multimangas) {
+			end = len(multimangas)
 		}
-		if mangaWithNewChapters != nil {
-			mangasWithNewChapter = append(mangasWithNewChapter, mangaWithNewChapters)
+		chunk := multimangas[start:end]
+
+		wg.Add(1)
+		go func(chunk []*manga.MultiManga) {
+			defer wg.Done()
+			for _, multimangaToUpdate := range chunk {
+				mangaWithNewChapters, multimangaNewMetadata, multimangaErrors := updateMultiMangaMetadata(multimangaToUpdate, retries, retryInterval, logger)
+				if multimangaNewMetadata {
+					newMetadata = true
+				}
+				result := result{
+					mangaWithNewChapters: mangaWithNewChapters,
+					multimangaErrors:     multimangaErrors,
+				}
+				results <- result
+			}
+		}(chunk)
+	}
+
+	go func() {
+		wg.Wait()
+		close(results)
+	}()
+
+	for res := range results {
+		if res.mangaWithNewChapters != nil {
+			mangasWithNewChapter = append(mangasWithNewChapter, res.mangaWithNewChapters)
 		}
-		if len(multimangaErrors) > 0 {
-			errors["manga_metadata"] = append(errors["manga_metadata"], multimangaErrors...)
+		if len(res.multimangaErrors) > 0 {
+			errors["manga_metadata"] = append(errors["manga_metadata"], res.multimangaErrors...)
 		}
 	}
 
