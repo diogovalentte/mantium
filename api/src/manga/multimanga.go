@@ -543,6 +543,7 @@ func GetMultiMangaFromDB(multimangaID ID) (*MultiManga, error) {
 }
 
 // GetMultiMangasDB gets all multimangas from the database
+// Gets only the multimanga's current manga. Also add it to the multimanga.Mangas slice.
 func GetMultiMangasDB() ([]*MultiManga, error) {
 	contextError := "error getting multimangas from DB"
 
@@ -552,6 +553,15 @@ func GetMultiMangasDB() ([]*MultiManga, error) {
 	}
 	defer db.Close()
 
+	multimangas, err := getMultiMangasDB(db)
+	if err != nil {
+		return nil, util.AddErrorContext(contextError, err)
+	}
+
+	return multimangas, nil
+}
+
+func getMultiMangasDB(db *sql.DB) ([]*MultiManga, error) {
 	query := `
         SELECT 
             multimangas.id AS multimanga_id,
@@ -597,7 +607,7 @@ func GetMultiMangasDB() ([]*MultiManga, error) {
     `
 	rows, err := db.Query(query)
 	if err != nil {
-		return nil, util.AddErrorContext(contextError, err)
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -648,7 +658,7 @@ func GetMultiMangasDB() ([]*MultiManga, error) {
 			&multiLastReadChapterType,
 		)
 		if err != nil {
-			return nil, util.AddErrorContext(contextError, err)
+			return nil, err
 		}
 
 		if lastReleasedChapterURL.Valid {
@@ -678,7 +688,7 @@ func GetMultiMangasDB() ([]*MultiManga, error) {
 
 		err = validateMultiManga(&multimanga)
 		if err != nil {
-			return nil, util.AddErrorContext(contextError, err)
+			return nil, err
 		}
 
 		multiMangas = append(multiMangas, &multimanga)
