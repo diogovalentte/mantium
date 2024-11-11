@@ -715,8 +715,7 @@ paths:
       summary: Update manga URL
   /mangas:
     get:
-      description: Gets all mangas from the database in no particlar order. Return
-        only the current manga of multimangas.
+      description: Gets the current manga of multimangas and all custom mangas.
       produces:
       - application/json
       responses:
@@ -1069,4 +1068,19 @@ paths:
           schema:
             $ref: '#/definitions/routes.responseMessage'
       summary: Update multimanga status
+  /multimangas:
+    get:
+      description: Gets all multimangas. The multimanga's mangas will have only the
+        current manga. The current manga will have a possible wrong status, so use
+        the multimanga's status.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"multimangas": [multimangaObj]}'
+          schema:
+            items:
+              $ref: '#/definitions/manga.MultiManga'
+            type: array
+      summary: Get multimangas
 swagger: "2.0"

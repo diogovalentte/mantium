@@ -934,9 +934,10 @@ func GetMangaDBByURL(url string) (*Manga, error) {
 	return GetMangaDB(0, url)
 }
 
-// GetMangasDB gets all mangas (that are not part of a multimanga) from the database
-func GetMangasDB() ([]*Manga, error) {
-	contextError := "error getting mangas from DB"
+// GetMangasWithoutMultiMangasDB gets all mangas from the database that are not part of a multimanga or are not custom mangas.
+// Used only to get mangas to be transformed into multimangas.
+func GetMangasWithoutMultiMangasDB() ([]*Manga, error) {
+	contextError := "error getting mangas without multimangas from DB"
 
 	db, err := db.OpenConn()
 	if err != nil {
@@ -944,7 +945,7 @@ func GetMangasDB() ([]*Manga, error) {
 	}
 	defer db.Close()
 
-	mangas, err := getMangasFromDB(db)
+	mangas, err := getMangasWithoutMultiMangasFromDB(db)
 	if err != nil {
 		return nil, util.AddErrorContext(contextError, err)
 	}
@@ -952,7 +953,7 @@ func GetMangasDB() ([]*Manga, error) {
 	return mangas, nil
 }
 
-func getMangasFromDB(db *sql.DB) ([]*Manga, error) {
+func getMangasWithoutMultiMangasFromDB(db *sql.DB) ([]*Manga, error) {
 	query := `
         SELECT 
             mangas.id AS manga_id,
@@ -964,9 +965,131 @@ func getMangasFromDB(db *sql.DB) ([]*Manga, error) {
             mangas.cover_img_url,
             mangas.cover_img,
             mangas.cover_img_resized,
-            mangas.cover_img_fixed,
             mangas.status,
-            mangas.multimanga_id AS multi_manga_id,
+
+            last_released_chapter.url AS last_released_chapter_url,
+            last_released_chapter.chapter AS last_released_chapter,
+            last_released_chapter.name AS last_released_chapter_name,
+            last_released_chapter.internal_id AS last_released_chapter_internal_id,
+            last_released_chapter.updated_at AS last_released_chapter_updated_at,
+            last_released_chapter.type AS last_released_chapter_type,
+
+            last_read_chapter.url AS last_read_chapter_url,
+            last_read_chapter.chapter AS last_read_chapter,
+            last_read_chapter.name AS last_read_chapter_name,
+            last_read_chapter.internal_id AS last_read_chapter_internal_id,
+            last_read_chapter.updated_at AS last_read_chapter_updated_at,
+            last_read_chapter.type AS last_read_chapter_type
+        FROM 
+            mangas
+        LEFT JOIN 
+            chapters AS last_released_chapter ON last_released_chapter.id = mangas.last_released_chapter
+        LEFT JOIN 
+            chapters AS last_read_chapter ON last_read_chapter.id = mangas.last_read_chapter
+        WHERE
+            mangas.multimanga_id is NULL
+            AND mangas.source <> $1
+        ;
+    `
+	rows, err := db.Query(query, CustomMangaSource)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var mangas []*Manga
+	for rows.Next() {
+		var currentManga Manga
+		var lastReadChapter, lastReleasedChapter Chapter
+
+		var (
+			lastReleasedChapterURL, lastReleasedChapterChapter, lastReleasedChapterName, lastReleasedChapterInternalID sql.NullString
+			lastReleasedChapterUpdatedAt                                                                               sql.NullTime
+			lastReleasedChapterType                                                                                    sql.NullInt32
+
+			lastReadChapterURL, lastReadChapterChapter, lastReadChapterName, lastReadChapterInternalID sql.NullString
+			lastReadChapterUpdatedAt                                                                   sql.NullTime
+			lastReadChapterType                                                                        sql.NullInt32
+		)
+
+		err := rows.Scan(
+			&currentManga.ID, &currentManga.Source, &currentManga.URL, &currentManga.Name,
+			&currentManga.InternalID, &currentManga.PreferredGroup, &currentManga.CoverImgURL,
+			&currentManga.CoverImg, &currentManga.CoverImgResized, &currentManga.Status,
+
+			&lastReleasedChapterURL, &lastReleasedChapterChapter, &lastReleasedChapterName,
+			&lastReleasedChapterInternalID, &lastReleasedChapterUpdatedAt, &lastReleasedChapterType,
+
+			&lastReadChapterURL, &lastReadChapterChapter, &lastReadChapterName,
+			&lastReadChapterInternalID, &lastReadChapterUpdatedAt, &lastReadChapterType,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if lastReleasedChapterURL.Valid {
+			lastReleasedChapter.URL = lastReleasedChapterURL.String
+			lastReleasedChapter.Chapter = lastReleasedChapterChapter.String
+			lastReleasedChapter.Name = lastReleasedChapterName.String
+			lastReleasedChapter.InternalID = lastReleasedChapterInternalID.String
+			lastReleasedChapter.UpdatedAt = lastReleasedChapterUpdatedAt.Time
+			lastReleasedChapter.Type = Type(lastReleasedChapterType.Int32)
+			currentManga.LastReleasedChapter = &lastReleasedChapter
+
+		}
+
+		if lastReadChapterURL.Valid {
+			lastReadChapter.URL = lastReadChapterURL.String
+			lastReadChapter.Chapter = lastReadChapterChapter.String
+			lastReadChapter.Name = lastReadChapterName.String
+			lastReadChapter.InternalID = lastReadChapterInternalID.String
+			lastReadChapter.UpdatedAt = lastReadChapterUpdatedAt.Time
+			lastReadChapter.Type = Type(lastReadChapterType.Int32)
+			currentManga.LastReadChapter = &lastReadChapter
+		}
+
+		err = validateManga(&currentManga)
+		if err != nil {
+			return nil, err
+		}
+
+		mangas = append(mangas, &currentManga)
+	}
+
+	return mangas, nil
+}
+
+// GetCustomMangasDB gets all custom mangas from the database
+func GetCustomMangasDB() ([]*Manga, error) {
+	contextError := "error getting custom mangas from DB"
+
+	db, err := db.OpenConn()
+	if err != nil {
+		return nil, util.AddErrorContext(contextError, err)
+	}
+	defer db.Close()
+
+	mangas, err := getCustomMangasFromDB(db)
+	if err != nil {
+		return nil, util.AddErrorContext(contextError, err)
+	}
+
+	return mangas, nil
+}
+
+func getCustomMangasFromDB(db *sql.DB) ([]*Manga, error) {
+	query := `
+        SELECT 
+            mangas.id AS manga_id,
+            mangas.source,
+            mangas.url,
+            mangas.name,
+            mangas.internal_id,
+            mangas.preferred_group,
+            mangas.cover_img_url,
+            mangas.cover_img,
+            mangas.cover_img_resized,
+            mangas.status,
             
             last_released_chapter.url AS last_released_chapter_url,
             last_released_chapter.chapter AS last_released_chapter,
@@ -988,9 +1111,10 @@ func getMangasFromDB(db *sql.DB) ([]*Manga, error) {
         LEFT JOIN 
             chapters AS last_read_chapter ON last_read_chapter.id = mangas.last_read_chapter
         WHERE
-            mangas.multimanga_id IS NULL;
+            mangas.source = $1
+        ;
     `
-	rows, err := db.Query(query)
+	rows, err := db.Query(query, CustomMangaSource)
 	if err != nil {
 		return nil, err
 	}
@@ -1004,7 +1128,7 @@ func getMangasFromDB(db *sql.DB) ([]*Manga, error) {
 		var (
 			lastReleasedChapterURL, lastReleasedChapterChapter, lastReleasedChapterName, lastReleasedChapterInternalID sql.NullString
 			lastReleasedChapterUpdatedAt                                                                               sql.NullTime
-			lastReleasedChapterType, multiMangaID                                                                      sql.NullInt32
+			lastReleasedChapterType                                                                                    sql.NullInt32
 
 			lastReadChapterURL, lastReadChapterChapter, lastReadChapterName, lastReadChapterInternalID sql.NullString
 			lastReadChapterUpdatedAt                                                                   sql.NullTime
@@ -1014,7 +1138,7 @@ func getMangasFromDB(db *sql.DB) ([]*Manga, error) {
 		err := rows.Scan(
 			&currentManga.ID, &currentManga.Source, &currentManga.URL, &currentManga.Name,
 			&currentManga.InternalID, &currentManga.PreferredGroup, &currentManga.CoverImgURL,
-			&currentManga.CoverImg, &currentManga.CoverImgResized, &currentManga.CoverImgFixed, &currentManga.Status, &multiMangaID,
+			&currentManga.CoverImg, &currentManga.CoverImgResized, &currentManga.Status,
 
 			&lastReleasedChapterURL, &lastReleasedChapterChapter, &lastReleasedChapterName,
 			&lastReleasedChapterInternalID, &lastReleasedChapterUpdatedAt, &lastReleasedChapterType,
@@ -1024,10 +1148,6 @@ func getMangasFromDB(db *sql.DB) ([]*Manga, error) {
 		)
 		if err != nil {
 			return nil, err
-		}
-
-		if multiMangaID.Valid {
-			currentManga.MultiMangaID = ID(multiMangaID.Int32)
 		}
 
 		if lastReleasedChapterURL.Valid {

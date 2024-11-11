@@ -658,7 +658,7 @@ const docTemplate = `{
         },
         "/mangas": {
             "get": {
-                "description": "Gets all mangas from the database in no particlar order. Return only the current manga of multimangas.",
+                "description": "Gets the current manga of multimangas and all custom mangas.",
                 "produces": [
                     "application/json"
                 ],
@@ -1150,6 +1150,26 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/multimangas": {
+            "get": {
+                "description": "Gets all multimangas. The multimanga's mangas will have only the current manga. The current manga will have a possible wrong status, so use the multimanga's status.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get multimangas",
+                "responses": {
+                    "200": {
+                        "description": "{\"multimangas\": [multimangaObj]}",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/manga.MultiManga"
+                            }
                         }
                     }
                 }

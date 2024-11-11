@@ -542,9 +542,10 @@ func GetMultiMangaFromDB(multimangaID ID) (*MultiManga, error) {
 	return mm, nil
 }
 
-// GetMultiMangasDB gets all multimangas from the database
-// Gets only the multimanga's current manga. Also add it to the multimanga.Mangas slice.
-func GetMultiMangasDB() ([]*MultiManga, error) {
+// GetMultiMangasDB gets all multimangas from the database.
+// If getMangas is false, gets only the multimanga's current manga. Also add it to the multimanga.Mangas slice.
+// If true, gets all mangas in the multimanga, and set one of them as the current manga (slow).
+func GetMultiMangasDB(getMangas bool) ([]*MultiManga, error) {
 	contextError := "error getting multimangas from DB"
 
 	db, err := db.OpenConn()
@@ -553,7 +554,12 @@ func GetMultiMangasDB() ([]*MultiManga, error) {
 	}
 	defer db.Close()
 
-	multimangas, err := getMultiMangasDB(db)
+	var multimangas []*MultiManga
+	if !getMangas {
+		multimangas, err = getMultiMangasWithoutMangasDB(db)
+	} else {
+		multimangas, err = getMultiMangasWithMangasDB(db)
+	}
 	if err != nil {
 		return nil, util.AddErrorContext(contextError, err)
 	}
@@ -561,7 +567,7 @@ func GetMultiMangasDB() ([]*MultiManga, error) {
 	return multimangas, nil
 }
 
-func getMultiMangasDB(db *sql.DB) ([]*MultiManga, error) {
+func getMultiMangasWithoutMangasDB(db *sql.DB) ([]*MultiManga, error) {
 	query := `
         SELECT 
             multimangas.id AS multimanga_id,
@@ -685,6 +691,108 @@ func getMultiMangasDB(db *sql.DB) ([]*MultiManga, error) {
 		currentManga.Status = multimanga.Status
 		multimanga.CurrentManga = &currentManga
 		multimanga.Mangas = append(multimanga.Mangas, &currentManga)
+
+		err = validateMultiManga(&multimanga)
+		if err != nil {
+			return nil, err
+		}
+
+		multiMangas = append(multiMangas, &multimanga)
+	}
+
+	return multiMangas, nil
+}
+
+func getMultiMangasWithMangasDB(db *sql.DB) ([]*MultiManga, error) {
+	query := `
+        SELECT 
+            multimangas.id AS multimanga_id,
+            multimangas.status AS multimanga_status,
+            multimangas.cover_img AS multimanga_cover_img,
+            multimangas.cover_img_url AS multimanga_cover_img_url,
+            multimangas.cover_img_resized AS multimanga_cover_img_resized,
+            multimangas.cover_img_fixed AS multimanga_cover_img_fixed,
+            multimangas.current_manga AS multimanga_current_manga,
+
+            -- last read chapter
+            last_read_chapter.url AS last_read_chapter_url,
+            last_read_chapter.chapter AS last_read_chapter,
+            last_read_chapter.name AS last_read_chapter_name,
+            last_read_chapter.internal_id AS last_read_chapter_internal_id,
+            last_read_chapter.updated_at AS last_read_chapter_updated_at,
+            last_read_chapter.type AS last_read_chapter_type
+        FROM 
+            multimangas
+        LEFT JOIN 
+            mangas ON multimangas.current_manga = mangas.id
+        LEFT JOIN
+            chapters AS last_read_chapter ON last_read_chapter.id = multimangas.last_read_chapter
+    ;
+    `
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var multiMangas []*MultiManga
+
+	for rows.Next() {
+		var multimanga MultiManga
+		var multiLastReadChapter Chapter
+		var currentMangaID int
+
+		var (
+			multiLastReadChapterURL, multiLastReadChapterChapter, multiLastReadChapterName, multiLastReadChapterInternalID sql.NullString
+			multiLastReadChapterUpdatedAt                                                                                  sql.NullTime
+			multiLastReadChapterType                                                                                       sql.NullInt32
+		)
+
+		err = rows.Scan(
+			&multimanga.ID,
+			&multimanga.Status,
+			&multimanga.CoverImg,
+			&multimanga.CoverImgURL,
+			&multimanga.CoverImgResized,
+			&multimanga.CoverImgFixed,
+			&currentMangaID,
+			&multiLastReadChapterURL,
+			&multiLastReadChapterChapter,
+			&multiLastReadChapterName,
+			&multiLastReadChapterInternalID,
+			&multiLastReadChapterUpdatedAt,
+			&multiLastReadChapterType,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if multiLastReadChapterURL.Valid {
+			multiLastReadChapter.URL = multiLastReadChapterURL.String
+			multiLastReadChapter.Chapter = multiLastReadChapterChapter.String
+			multiLastReadChapter.Name = multiLastReadChapterName.String
+			multiLastReadChapter.InternalID = multiLastReadChapterInternalID.String
+			multiLastReadChapter.UpdatedAt = multiLastReadChapterUpdatedAt.Time
+			multiLastReadChapter.Type = Type(multiLastReadChapterType.Int32)
+			multimanga.LastReadChapter = &multiLastReadChapter
+		}
+
+		mangas, err := getMultiMangaMangasFromDB(multimanga.ID, db)
+		if err != nil {
+			return nil, err
+		}
+		multimanga.Mangas = mangas
+
+		for _, manga := range mangas {
+			if manga.ID == ID(currentMangaID) {
+				multimanga.CurrentManga = manga
+				break
+			}
+		}
+
+		if multimanga.CurrentManga == nil {
+			return nil, fmt.Errorf("current manga of multimanga with ID '%d' not found in DB", multimanga.ID)
+		}
 
 		err = validateMultiManga(&multimanga)
 		if err != nil {

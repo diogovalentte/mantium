@@ -127,17 +127,15 @@ func setUpdateMangasMetadataPeriodicallyJob(log *zerolog.Logger) {
 
 func turnMangasIntoMultiMangas() error {
 	contextError := "error turning all mangas into multimangas"
-	mangas, err := manga.GetMangasDB()
+	mangas, err := manga.GetMangasWithoutMultiMangasDB()
 	if err != nil {
 		return util.AddErrorContext(contextError, err)
 	}
 
 	for _, m := range mangas {
-		if m.MultiMangaID == 0 && m.Source != manga.CustomMangaSource {
-			_, err = manga.TurnIntoMultiManga(m)
-			if err != nil {
-				return util.AddErrorContext(contextError, err)
-			}
+		_, err = manga.TurnIntoMultiManga(m)
+		if err != nil {
+			return util.AddErrorContext(contextError, err)
 		}
 	}
 

@@ -228,7 +228,7 @@ func TestMultiMangaDBLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Should get all multimangas from DB", func(t *testing.T) {
-		multimangas, err := GetMultiMangasDB()
+		multimangas, err := GetMultiMangasDB(true)
 		if err != nil {
 			t.Fatal(err)
 		}

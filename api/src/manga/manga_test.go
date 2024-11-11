@@ -165,17 +165,6 @@ func TestMangaDBLifeCycle(t *testing.T) {
 			t.Fatal("no errors while getting the invalid manga from DB")
 		}
 	})
-	t.Run("Should get all mangas from DB", func(t *testing.T) {
-		mangas, err := GetMangasDB()
-		if err != nil {
-			t.Error(err)
-			return
-		}
-
-		if len(mangas) < 1 {
-			t.Fatal("DB should have at the least one manga, instead it has:", len(mangas))
-		}
-	})
 	t.Run("Should update a manga's status in DB", func(t *testing.T) {
 		err := manga.UpdateStatusInDB(6)
 		if err != nil {
@@ -353,16 +342,6 @@ func TestMangaWithoutChaptersDBLifeCycle(t *testing.T) {
 			}
 		} else {
 			t.Fatal("no errors while getting the invalid manga from DB")
-		}
-	})
-	t.Run("Should get all mangas from DB", func(t *testing.T) {
-		mangas, err := GetMangasDB()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if len(mangas) < 1 {
-			t.Fatal("DB should have at the least one manga, instead it has:", len(mangas))
 		}
 	})
 	t.Run("Should update a manga's status in DB", func(t *testing.T) {

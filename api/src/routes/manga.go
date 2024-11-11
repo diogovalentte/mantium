@@ -63,6 +63,7 @@ func MangaRoutes(group *gin.RouterGroup) {
 
 		group.POST("/mangas/search", SearchManga)
 		group.GET("/mangas", GetMangas)
+		group.GET("/multimangas", GetMultiMangas)
 		group.GET("/mangas/iframe", GetMangasiFrame)
 		group.PATCH("/mangas/metadata", UpdateMangasMetadata)
 		group.POST("/mangas/add_to_kaizoku", AddMangasToKaizoku)
@@ -1633,31 +1634,29 @@ type SearchMangaRequest struct {
 }
 
 // @Summary Get mangas
-// @Description Gets all mangas from the database in no particlar order. Return only the current manga of multimangas.
+// @Description Gets the current manga of multimangas and all custom mangas.
 // @Produce json
 // @Success 200 {array} manga.Manga "{"mangas": [mangaObj]}"
 // @Router /mangas [get]
 func GetMangas(c *gin.Context) {
-	mangas, err := manga.GetMangasDB()
+	mangas, err := manga.GetCustomMangasDB()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 	for _, m := range mangas {
-		if m.Source == manga.CustomMangaSource {
-			if strings.HasPrefix(m.URL, manga.CustomMangaURLPrefix) {
-				m.URL = ""
-			}
-			if m.LastReadChapter != nil && strings.HasPrefix(m.LastReadChapter.URL, manga.CustomMangaURLPrefix) {
-				m.LastReadChapter.URL = ""
-			}
-			if m.LastReleasedChapter != nil && strings.HasPrefix(m.LastReleasedChapter.URL, manga.CustomMangaURLPrefix) {
-				m.LastReadChapter.URL = ""
-			}
+		if strings.HasPrefix(m.URL, manga.CustomMangaURLPrefix) {
+			m.URL = ""
+		}
+		if m.LastReadChapter != nil && strings.HasPrefix(m.LastReadChapter.URL, manga.CustomMangaURLPrefix) {
+			m.LastReadChapter.URL = ""
+		}
+		if m.LastReleasedChapter != nil && strings.HasPrefix(m.LastReleasedChapter.URL, manga.CustomMangaURLPrefix) {
+			m.LastReadChapter.URL = ""
 		}
 	}
 
-	multimangas, err := manga.GetMultiMangasDB()
+	multimangas, err := manga.GetMultiMangasDB(false)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -1675,6 +1674,22 @@ func GetMangas(c *gin.Context) {
 	}
 
 	resMap := map[string][]*manga.Manga{"mangas": mangas}
+	c.JSON(http.StatusOK, resMap)
+}
+
+// @Summary Get multimangas
+// @Description Gets all multimangas. The multimanga's mangas will have only the current manga. The current manga will have a possible wrong status, so use the multimanga's status.
+// @Produce json
+// @Success 200 {array} manga.MultiManga "{"multimangas": [multimangaObj]}"
+// @Router /multimangas [get]
+func GetMultiMangas(c *gin.Context) {
+	multimangas, err := manga.GetMultiMangasDB(false)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	resMap := map[string][]*manga.MultiManga{"multimangas": multimangas}
 	c.JSON(http.StatusOK, resMap)
 }
 
@@ -1725,12 +1740,12 @@ func GetMangasiFrame(c *gin.Context) {
 		}
 	}
 
-	allMangas, err := manga.GetMangasDB()
+	allMangas, err := manga.GetCustomMangasDB()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	multimangas, err := manga.GetMultiMangasDB()
+	multimangas, err := manga.GetMultiMangasDB(false)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -2243,11 +2258,6 @@ func UpdateMangasMetadata(c *gin.Context) {
 	}
 
 	var mangasWithNewChapter []*manga.Manga
-	mangas, err := manga.GetMangasDB()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
 
 	logger := util.GetLogger(zerolog.Level(config.GlobalConfigs.API.LogLevelInt))
 	errors := map[string][]string{
@@ -2264,141 +2274,22 @@ func UpdateMangasMetadata(c *gin.Context) {
 	}
 	retries := 3
 	retryInterval := 3 * time.Second
-	for _, mangaToUpdate := range mangas {
-		if mangaToUpdate.Source == manga.CustomMangaSource {
-			continue
-		}
 
-		var updatedManga *manga.Manga
-		for i := 0; i < retries; i++ {
-			updatedManga, err = sources.GetMangaMetadata(mangaToUpdate.URL, mangaToUpdate.InternalID)
-			if err != nil {
-				if i != retries-1 {
-					logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msgf("Error getting manga metadata, retrying in %.2f seconds...", retryInterval.Seconds())
-					time.Sleep(retryInterval)
-					continue
-				}
-				break
-			}
-			if len(updatedManga.CoverImg) == 0 {
-				continue
-			}
-			break
-		}
-		if updatedManga == nil {
-			logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error getting manga metadata, will continue with the next manga...")
-			errors["manga_metadata"] = append(errors["manga_metadata"], err.Error())
-			continue
-		}
-
-		// Turn manga into valid manga to update DB
-		if len(updatedManga.CoverImg) == 0 {
-			updatedManga.CoverImg, err = util.GetDefaultCoverImg()
-			if err != nil {
-				logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error getting default cover image, will continue with the next manga...")
-				errors["manga_metadata"] = append(errors["manga_metadata"], err.Error())
-				continue
-			}
-			updatedManga.CoverImgResized = true
-		}
-		updatedManga.Status = mangaToUpdate.Status
-		updatedManga.ID = mangaToUpdate.ID
-
-		mangaHasNewReleasedChapter := isNewChapterDifferentFromOld(mangaToUpdate.LastReleasedChapter, updatedManga.LastReleasedChapter)
-		if mangaHasNewReleasedChapter || (!mangaToUpdate.CoverImgFixed && (mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg))) || mangaToUpdate.Name != updatedManga.Name {
-			newMetadata = true
-			updatedManga.CoverImgFixed = mangaToUpdate.CoverImgFixed
-			err = manga.UpdateMangaMetadataDB(updatedManga)
-			if err != nil {
-				logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error saving manga new metadata to DB, will continue with the next manga...")
-				errors["manga_metadata"] = append(errors["manga_metadata"], err.Error())
-				continue
-			}
-
-			if mangaHasNewReleasedChapter {
-				mangasWithNewChapter = append(mangasWithNewChapter, updatedManga)
-			}
-		}
-	}
-
-	multimangas, err := manga.GetMultiMangasDB()
+	multimangas, err := manga.GetMultiMangasDB(true)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-
-	for _, multimanga := range multimangas {
-		var mangasHaveNewChapter bool
-		for _, mangaToUpdate := range multimanga.Mangas {
-			var updatedManga *manga.Manga
-			for i := 0; i < retries; i++ {
-				updatedManga, err = sources.GetMangaMetadata(mangaToUpdate.URL, mangaToUpdate.InternalID)
-				if err != nil {
-					if i != retries-1 {
-						logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msgf("Error getting manga metadata, retrying in %.2f seconds...", retryInterval.Seconds())
-						time.Sleep(retryInterval)
-						continue
-					}
-					break
-				}
-				if len(updatedManga.CoverImg) == 0 {
-					continue
-				}
-				break
-			}
-			if updatedManga == nil {
-				logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error getting manga metadata, will continue with the next manga...")
-				errors["manga_metadata"] = append(errors["manga_metadata"], err.Error())
-				continue
-			}
-
-			// Turn manga into valid manga to update DB
-			if len(updatedManga.CoverImg) == 0 {
-				updatedManga.CoverImg, err = util.GetDefaultCoverImg()
-				if err != nil {
-					logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error getting default cover image, will continue with the next manga...")
-					errors["manga_metadata"] = append(errors["manga_metadata"], err.Error())
-					continue
-				}
-				updatedManga.CoverImgResized = true
-			}
-			updatedManga.Status = multimanga.Status
-			updatedManga.ID = mangaToUpdate.ID
-
-			mangaHasNewReleasedChapter := isNewChapterDifferentFromOld(mangaToUpdate.LastReleasedChapter, updatedManga.LastReleasedChapter)
-			if mangaHasNewReleasedChapter || (!mangaToUpdate.CoverImgFixed && (mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg))) || mangaToUpdate.Name != updatedManga.Name {
-				newMetadata = true
-				if mangaHasNewReleasedChapter {
-					mangasHaveNewChapter = true
-				}
-				err = manga.UpdateMangaMetadataDB(updatedManga)
-				if err != nil {
-					logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error saving manga new metadata to DB, will continue with the next manga...")
-					errors["manga_metadata"] = append(errors["manga_metadata"], err.Error())
-					continue
-				}
-			}
+	for _, multimangaToUpdate := range multimangas {
+		mangaWithNewChapters, multimangaNewMetadata, multimangaErrors := updateMultiMangaMetadata(multimangaToUpdate, retries, retryInterval, logger)
+		if multimangaNewMetadata {
+			newMetadata = true
 		}
-		if mangasHaveNewChapter {
-			updatedMultimanga, err := manga.GetMultiMangaFromDB(multimanga.ID)
-			if err != nil {
-				logger.Error().Err(err).Str("multimanga_id", multimanga.ID.String()).Msg("Error getting multimanga from DB")
-				errors["manga_metadata"] = append(errors["manga_metadata"], err.Error())
-				continue
-			}
-			err = updatedMultimanga.UpdateCurrentMangaInDB()
-			if err != nil {
-				logger.Error().Err(err).Str("multimanga_id", multimanga.ID.String()).Msg("Error updating multimanga current manga in DB")
-				errors["manga_metadata"] = append(errors["manga_metadata"], err.Error())
-				continue
-			}
-			if updatedMultimanga.CurrentManga.LastReleasedChapter != nil {
-				if multimanga.CurrentManga.LastReleasedChapter == nil {
-					mangasWithNewChapter = append(mangasWithNewChapter, updatedMultimanga.CurrentManga)
-				} else if updatedMultimanga.CurrentManga.LastReleasedChapter.Chapter != multimanga.CurrentManga.LastReleasedChapter.Chapter {
-					mangasWithNewChapter = append(mangasWithNewChapter, updatedMultimanga.CurrentManga)
-				}
-			}
+		if mangaWithNewChapters != nil {
+			mangasWithNewChapter = append(mangasWithNewChapter, mangaWithNewChapters)
+		}
+		if len(multimangaErrors) > 0 {
+			errors["manga_metadata"] = append(errors["manga_metadata"], multimangaErrors...)
 		}
 	}
 
@@ -2478,7 +2369,7 @@ func AddMangasToKaizoku(c *gin.Context) {
 	}
 
 	mangas := []*manga.Manga{}
-	multimangas, err := manga.GetMultiMangasDB()
+	multimangas, err := manga.GetMultiMangasDB(false)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -2552,7 +2443,7 @@ func AddMangasToTranga(c *gin.Context) {
 	}
 
 	mangas := []*manga.Manga{}
-	multimangas, err := manga.GetMultiMangasDB()
+	multimangas, err := manga.GetMultiMangasDB(false)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
@@ -2784,4 +2675,88 @@ func getCheckFixOutOfSyncChaptersActiveWaitingJobs(kaizoku *kaizoku.Kaizoku) (in
 	}
 
 	return jobsCount, nil
+}
+
+// updateMultiMangaMetadata gets the manga metadata from the sources for all the multimanga' mangas and updates it in the database.
+// Returns the updated current manga if the current manga has a new released chapter, else nil.
+// Also returns a bool indicating if any metadata was updated and a slice of errors.
+func updateMultiMangaMetadata(multimanga *manga.MultiManga, retries int, retryInterval time.Duration, logger *zerolog.Logger) (*manga.Manga, bool, []string) {
+	var err error
+	var errors []string
+	var newMetadata bool
+	var mangasHaveNewChapter bool
+
+	for _, mangaToUpdate := range multimanga.Mangas {
+		var updatedManga *manga.Manga
+		for i := 0; i < retries; i++ {
+			updatedManga, err = sources.GetMangaMetadata(mangaToUpdate.URL, mangaToUpdate.InternalID)
+			if err != nil {
+				if i != retries-1 {
+					logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msgf("Error getting manga metadata, retrying in %.2f seconds...", retryInterval.Seconds())
+					time.Sleep(retryInterval)
+					continue
+				}
+				break
+			}
+			if len(updatedManga.CoverImg) == 0 {
+				continue
+			}
+			break
+		}
+		if updatedManga == nil {
+			logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error getting manga metadata, will continue with the next manga...")
+			errors = append(errors, err.Error())
+			continue
+		}
+
+		// Turn manga into valid manga to update DB
+		if len(updatedManga.CoverImg) == 0 {
+			updatedManga.CoverImg, err = util.GetDefaultCoverImg()
+			if err != nil {
+				logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error getting default cover image, will continue with the next manga...")
+				errors = append(errors, err.Error())
+				continue
+			}
+			updatedManga.CoverImgResized = true
+		}
+		updatedManga.Status = multimanga.Status
+		updatedManga.ID = mangaToUpdate.ID
+
+		mangaHasNewReleasedChapter := isNewChapterDifferentFromOld(mangaToUpdate.LastReleasedChapter, updatedManga.LastReleasedChapter)
+		if mangaHasNewReleasedChapter || (!mangaToUpdate.CoverImgFixed && (mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg))) || mangaToUpdate.Name != updatedManga.Name {
+			err = manga.UpdateMangaMetadataDB(updatedManga)
+			if err != nil {
+				logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error saving manga new metadata to DB, will continue with the next manga...")
+				errors = append(errors, err.Error())
+				continue
+			}
+			newMetadata = true
+			if mangaHasNewReleasedChapter {
+				mangasHaveNewChapter = true
+			}
+		}
+	}
+	if mangasHaveNewChapter {
+		updatedMultimanga, err := manga.GetMultiMangaFromDB(multimanga.ID)
+		if err != nil {
+			logger.Error().Err(err).Str("multimanga_id", multimanga.ID.String()).Msg("Error getting multimanga from DB")
+			errors = append(errors, err.Error())
+			return nil, newMetadata, errors
+		}
+		err = updatedMultimanga.UpdateCurrentMangaInDB()
+		if err != nil {
+			logger.Error().Err(err).Str("multimanga_id", multimanga.ID.String()).Msg("Error updating multimanga current manga in DB")
+			errors = append(errors, err.Error())
+			return nil, newMetadata, errors
+		}
+		if updatedMultimanga.CurrentManga.LastReleasedChapter != nil {
+			if multimanga.CurrentManga.LastReleasedChapter == nil {
+				return updatedMultimanga.CurrentManga, newMetadata, errors
+			} else if updatedMultimanga.CurrentManga.LastReleasedChapter.Chapter != multimanga.CurrentManga.LastReleasedChapter.Chapter {
+				return updatedMultimanga.CurrentManga, newMetadata, errors
+			}
+		}
+	}
+
+	return nil, newMetadata, errors
 }
