@@ -1062,8 +1062,9 @@ func GetLatestManga(mangas []*Manga) (*Manga, error) {
 		if currentChapterInt < newChapterInt {
 			currentManga = manga
 			continue
-		}
-		if currentChapter.UpdatedAt.Before(newChapter.UpdatedAt) {
+		} else if currentChapterInt > newChapterInt {
+			continue
+		} else if currentChapter.UpdatedAt.Before(newChapter.UpdatedAt) {
 			currentManga = manga
 		}
 	}
