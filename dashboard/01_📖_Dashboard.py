@@ -657,7 +657,7 @@ def main(api_client):
 
 
 if __name__ == "__main__":
-    fix_streamlit_index_html()
+    # fix_streamlit_index_html() # not needed anymore. It's done in the Dockerfile by copying the fixed index.html file
     api_client = get_api_client()
     api_client.check_health()
 
