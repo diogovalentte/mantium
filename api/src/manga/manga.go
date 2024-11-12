@@ -1314,12 +1314,19 @@ func SortMangasByLastReleasedChapterUpdatedAt(mangas []*Manga) {
 		if jChapter == nil {
 			if mangas[j].Source == CustomMangaSource {
 				if mangas[j].LastReadChapter == nil {
-					return false
+					return true
 				}
 				jChapter = mangas[j].LastReadChapter
 			} else {
-				return false
+				return true
 			}
+		}
+
+		if iChapter.UpdatedAt.IsZero() && !jChapter.UpdatedAt.IsZero() {
+			return true
+		}
+		if jChapter.UpdatedAt.IsZero() && !iChapter.UpdatedAt.IsZero() {
+			return false
 		}
 
 		return iChapter.UpdatedAt.After(jChapter.UpdatedAt)
