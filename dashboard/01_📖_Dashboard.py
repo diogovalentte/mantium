@@ -12,13 +12,7 @@ from src.util.update_manga import (
     show_update_multimanga_form,
     show_update_multimanga_mangas_form,
 )
-from src.util.util import (
-    centered_container,
-    fix_streamlit_index_html,
-    get_logger,
-    get_relative_time,
-    tagger,
-)
+from src.util.util import centered_container, get_logger, get_relative_time, tagger
 from streamlit import session_state as ss
 from streamlit_extras.stylable_container import stylable_container
 from streamlit_javascript import st_javascript
@@ -39,7 +33,7 @@ class MainDashboard:
         self.sort_option_index = 1
 
     def show(self):
-        ss["is_dialog_open"] = True
+        ss["is_dialog_open"] = False
         self.check_dashboard_error()
 
         self.sidebar()
@@ -657,7 +651,6 @@ def main(api_client):
 
 
 if __name__ == "__main__":
-    # fix_streamlit_index_html() # not needed anymore. It's done in the Dockerfile by copying the fixed index.html file
     api_client = get_api_client()
     api_client.check_health()
 
