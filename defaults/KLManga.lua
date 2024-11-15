@@ -34,7 +34,9 @@ function SearchManga(query)
     doc:find("div.row > div.col-sm-4 > div.entry"):each(function(i, el)
         local name = trim(el:find("h2 > a"):text())
         name = trimSuffix(name, " (RAW – Free)")
+        name = trimSuffix(name, " (RAW - Free)")
         name = trimSuffix(name, " (Raw – Free)")
+        name = trimSuffix(name, " (Raw - Free)")
         local url = trim(el:find("h2 > a"):attr("href"))
         local manga = { url = url, name = name }
         mangas[i + 1] = manga
