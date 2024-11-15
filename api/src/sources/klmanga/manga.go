@@ -38,11 +38,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 		var coverImg []byte
 		var resized bool
 		var err error
-		if strings.HasSuffix(coverURL, ".webp") {
-			coverImg, resized, err = getImageFromURL(coverURL, 3, 1*time.Second)
-		} else {
-			coverImg, resized, err = util.GetImageFromURL(coverURL, 3, 1*time.Second)
-		}
+		coverImg, resized, err = util.GetImageFromURL(coverURL, 3, 1*time.Second)
 		if err == nil {
 			mangaReturn.CoverImgURL = coverURL
 			mangaReturn.CoverImgResized = resized

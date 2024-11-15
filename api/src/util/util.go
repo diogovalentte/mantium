@@ -16,6 +16,7 @@ import (
 
 	"github.com/nfnt/resize"
 	"github.com/rs/zerolog"
+	"golang.org/x/image/webp"
 
 	"github.com/diogovalentte/mantium/api/src/config"
 )
@@ -127,6 +128,13 @@ func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgB
 		}
 	}
 
+	if strings.HasSuffix(url, ".webp") {
+		imageBytes, err = webpToJPEG(imageBytes)
+		if err != nil {
+			return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), AddErrorContext("could not convert webp image to jpeg", err))
+		}
+	}
+
 	if !IsImageValid(imageBytes) {
 		return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), fmt.Errorf("invalid image"))
 	}
@@ -146,6 +154,22 @@ func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgB
 	}
 
 	return img, resized, nil
+}
+
+func webpToJPEG(webpImgBytes []byte) ([]byte, error) {
+	webpReader := bytes.NewReader(webpImgBytes)
+	img, err := webp.Decode(webpReader)
+	if err != nil {
+		return nil, fmt.Errorf("could not decode webp image")
+	}
+
+	var jpegImgBytes bytes.Buffer
+	err = jpeg.Encode(&jpegImgBytes, img, nil)
+	if err != nil {
+		return nil, fmt.Errorf("could not encode image to jpeg")
+	}
+
+	return jpegImgBytes.Bytes(), nil
 }
 
 // ResizeImage resizes an image to the specified width and height
