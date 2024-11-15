@@ -1045,14 +1045,14 @@ func GetLatestManga(mangas []*Manga) (*Manga, error) {
 			continue
 		}
 
-		currentChapterInt, err := strconv.Atoi(currentChapter.Chapter)
+		currentChapterInt, err := strconv.ParseFloat(currentChapter.Chapter, 64)
 		if err != nil {
 			if currentChapter.UpdatedAt.Before(newChapter.UpdatedAt) {
 				currentManga = manga
 			}
 			continue
 		}
-		newChapterInt, err := strconv.Atoi(newChapter.Chapter)
+		newChapterInt, err := strconv.ParseFloat(newChapter.Chapter, 64)
 		if err != nil {
 			if currentChapter.UpdatedAt.Before(newChapter.UpdatedAt) {
 				currentManga = manga
