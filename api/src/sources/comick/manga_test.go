@@ -26,7 +26,7 @@ var mangasTestTable = []mangaTestType{
 			LastReleasedChapter: &manga.Chapter{
 				Chapter:   "114",
 				Name:      "How to Create",
-				URL:       "https://comick.io/comic/death-note/oZUGR_hb",
+				URL:       "https://comick.io/comic/death-note/w6iydB9b",
 				UpdatedAt: time.Date(2024, 9, 6, 14, 17, 54, 0, time.UTC),
 				Type:      1,
 			},

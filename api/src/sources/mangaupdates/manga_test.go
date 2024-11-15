@@ -63,7 +63,6 @@ func TestGetMangaMetadata(t *testing.T) {
 	t.Run("Should get the metadata of multiple mangas using their manga internal ID", func(t *testing.T) {
 		for _, test := range mangasTestTable {
 			expected := test.expected
-			expected.LastReleasedChapter.UpdatedAt = expected.LastReleasedChapter.UpdatedAt.In(time.Local)
 
 			manga, err := source.GetMangaMetadata("", test.mangaInternalID)
 			if err != nil {
@@ -83,7 +82,6 @@ func TestGetMangaMetadata(t *testing.T) {
 	t.Run("Should get the metadata of multiple mangas using their manga URL", func(t *testing.T) {
 		for _, test := range mangasTestTable {
 			expected := test.expected
-			expected.LastReleasedChapter.UpdatedAt = expected.LastReleasedChapter.UpdatedAt.In(time.Local)
 
 			manga, err := source.GetMangaMetadata(test.url, "")
 			if err != nil {
