@@ -28,7 +28,9 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	s.c.OnHTML("h1.name", func(e *colly.HTMLElement) {
 		name := e.Text
 		name = strings.TrimSuffix(name, " (RAW – Free)")
-		mangaReturn.Name = strings.TrimSuffix(name, " (Raw – Free)")
+		name = strings.TrimSuffix(name, " (RAW - Free)")
+		name = strings.TrimSuffix(name, " (Raw – Free)")
+		mangaReturn.Name = strings.TrimSuffix(name, " (Raw - Free)")
 	})
 
 	// manga cover
@@ -94,7 +96,9 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 
 		name := e.DOM.Find("h2 > a").Text()
 		name = strings.TrimSuffix(name, " (RAW – Free)")
-		mangaSearchResult.Name = strings.TrimSuffix(name, " (Raw – Free)")
+		name = strings.TrimSuffix(name, " (RAW - Free)")
+		name = strings.TrimSuffix(name, " (Raw – Free)")
+		mangaSearchResult.Name = strings.TrimSuffix(name, " (Raw - Free)")
 		mangaSearchResult.Description = e.DOM.Find("div.genres").Text()
 		mangaSearchResult.CoverURL = e.DOM.Find("div.thumb > a.thumb > img").AttrOr("src", "")
 		chapter, err := extractChapter(e.DOM.Find("div.thumb > a.meta-info").Text())
