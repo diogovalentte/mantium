@@ -15,6 +15,7 @@ Json = require("json")
 Debug = false
 Client = Http.client({ timeout = 20, insecure_ssl = true, debug = Debug })
 Base = "https://klmanga.rs"
+ChapterHasNoImagesDefaultImage = "https://i.imgur.com/jMy7evE.jpeg"
 --- END VARIABLES ---
 
 ----- MAIN -----
@@ -134,6 +135,10 @@ function ChapterPages(chapterURL)
             end
         end
     end)
+
+    if #pages == 0 then
+        table.insert(pages, { url = ChapterHasNoImagesDefaultImage, index = 1 })
+    end
 
     return pages
 end
