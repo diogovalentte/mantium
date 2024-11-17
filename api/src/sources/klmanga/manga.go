@@ -101,6 +101,10 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 		mangaSearchResult.Name = strings.TrimSuffix(name, " (Raw - Free)")
 		mangaSearchResult.Description = e.DOM.Find("div.genres").Text()
 		mangaSearchResult.CoverURL = e.DOM.Find("div.thumb > a.thumb > img").AttrOr("src", "")
+		if mangaSearchResult.CoverURL == "" {
+			mangaSearchResult.CoverURL = models.DefaultCoverImgURL
+		}
+
 		chapter, err := extractChapter(e.DOM.Find("div.thumb > a.meta-info").Text())
 		if err != nil {
 			sharedErr = err

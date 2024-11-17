@@ -97,6 +97,10 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 		mangaSearchResult.LastChapter = strings.TrimPrefix(e.DOM.Find("a > div.bigor > div.adds > div.epxs").Text(), "Chapter ")
 		mangaSearchResult.CoverURL = e.DOM.Find("a > div.limit > img").AttrOr("src", "")
 
+		if mangaSearchResult.CoverURL == "" {
+			mangaSearchResult.CoverURL = models.DefaultCoverImgURL
+		}
+
 		mangaSearchResults = append(mangaSearchResults, mangaSearchResult)
 	})
 
