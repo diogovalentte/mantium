@@ -4,6 +4,7 @@ from datetime import datetime
 
 import streamlit as st
 from bs4 import BeautifulSoup
+from dateutil.parser import parse
 from streamlit_extras.stylable_container import stylable_container
 
 
@@ -18,8 +19,7 @@ def get_logger():
 
 
 def get_updated_at_datetime(updated_at: str) -> datetime:
-    # updated_at = remove_nano_from_datetime(updated_at)
-    return datetime.strptime(updated_at, "%Y-%m-%dT%H:%M:%SZ")
+    return parse(updated_at)
 
 
 def remove_nano_from_datetime(datetime_string: str):
@@ -76,7 +76,7 @@ def tagger(
 
 def get_relative_time(past_date):
     current_date = datetime.now()
-    time_difference = current_date - past_date
+    time_difference = current_date - past_date.replace(tzinfo=None)
 
     total_days = time_difference.days
     total_weeks = total_days // 7

@@ -51,6 +51,7 @@ func TestGetChapterMetadata(t *testing.T) {
 	t.Run("Should scrape the metadata of a chapter from multiple mangas", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
+			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
 			mangaURL := test.url
 
 			actualChapter, err := source.GetChapterMetadata(mangaURL, "", expected.Chapter, "", "")
@@ -90,6 +91,7 @@ func TestGetLastChapterMetadata(t *testing.T) {
 	t.Run("Should scrape the metadata of the last chapter of multiple mangas", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
+			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
 			mangaURL := test.url
 
 			actualChapter, err := source.GetLastChapterMetadata(mangaURL, "")

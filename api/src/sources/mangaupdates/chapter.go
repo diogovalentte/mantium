@@ -209,7 +209,8 @@ type releaseAPIResp struct {
 func getChapterFromResp(release releaseAPIResp, mangaInternalID string) *manga.Chapter {
 	var releaseDate time.Time
 	if release.ReleaseDate != "" {
-        releaseDate, _ = time.Parse("2006-01-02", release.ReleaseDate)
+		releaseDate, _ = time.Parse("2006-01-02", release.ReleaseDate)
+		releaseDate = releaseDate.Truncate(time.Second)
 	}
 	url := fmt.Sprintf("https://www.mangaupdates.com/releases.html?stype=series&search=%s", mangaInternalID)
 

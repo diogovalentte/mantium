@@ -45,7 +45,6 @@ func TestGetChapterMetadata(t *testing.T) {
 	t.Run("Should get the metadata of a chapter from multiple mangas using manga and chapter internal IDs", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
-			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
 
 			actualChapter, err := source.GetChapterMetadata("", test.mangaInternalID, "", "", test.expected.InternalID)
 			if err != nil {
@@ -60,7 +59,6 @@ func TestGetChapterMetadata(t *testing.T) {
 	t.Run("Should get the metadata of a chapter from multiple mangas using manga URL and chapter internal ID", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
-			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
 
 			actualChapter, err := source.GetChapterMetadata(test.mangaURL, "", "", "", test.expected.InternalID)
 			if err != nil {
@@ -75,7 +73,6 @@ func TestGetChapterMetadata(t *testing.T) {
 	t.Run("Should get the metadata of a chapter from multiple mangas using manga internal ID and chapter", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
-			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
 
 			actualChapter, err := source.GetChapterMetadata("", test.mangaInternalID, expected.Chapter, "", "")
 			if err != nil {
@@ -90,7 +87,6 @@ func TestGetChapterMetadata(t *testing.T) {
 	t.Run("Should get the metadata of a chapter from multiple mangas using manga URL and chapter", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
-			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
 
 			actualChapter, err := source.GetChapterMetadata(test.mangaURL, "", expected.Chapter, "", "")
 			if err != nil {
@@ -152,7 +148,6 @@ func TestGetLastChapterMetadata(t *testing.T) {
 	t.Run("Should get the metadata of a chapter from multiple mangas using manga internal ID and chapter", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
-			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
 
 			actualChapter, err := source.GetChapterMetadata("", test.mangaInternalID, expected.Chapter, "", "")
 			if err != nil {
@@ -167,7 +162,6 @@ func TestGetLastChapterMetadata(t *testing.T) {
 	t.Run("Should get the metadata of a chapter from multiple mangas using manga URL and chapter", func(t *testing.T) {
 		for _, test := range chapterTestTable {
 			expected := test.expected
-			expected.UpdatedAt = expected.UpdatedAt.In(time.Local)
 
 			actualChapter, err := source.GetChapterMetadata(test.mangaURL, "", expected.Chapter, "", "")
 			if err != nil {

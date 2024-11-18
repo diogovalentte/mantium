@@ -59,6 +59,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 			sharedErr = err
 			return
 		}
+		releaseTime = releaseTime.Truncate(time.Second)
 
 		mangaReturn.LastReleasedChapter = &manga.Chapter{
 			URL:       chapterURL,

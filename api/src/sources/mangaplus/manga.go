@@ -144,7 +144,7 @@ func getChapterFromAPIChapter(protoChapter *Chapter) *manga.Chapter {
 		chapterName = chapter
 	}
 
-	updatedAt := time.Unix(int64(protoChapter.GetStartTimeStamp()), 0).In(time.Local)
+	updatedAt := time.Unix(int64(protoChapter.GetStartTimeStamp()), 0).Truncate(time.Second).In(time.Local)
 
 	return &manga.Chapter{
 		URL:       url,

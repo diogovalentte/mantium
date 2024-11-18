@@ -65,6 +65,7 @@ func (s *Source) getChapterMetadataByChapter(mangaURL string, chapter string) (*
 			sharedErr = err
 			return
 		}
+		releaseTime = releaseTime.Truncate(time.Second)
 
 		chapterFound = true
 
@@ -114,6 +115,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL string, _ string) (*manga.Chapt
 			sharedErr = err
 			return
 		}
+		releaseTime = releaseTime.Truncate(time.Second)
 
 		chapterReturn.URL = chapterURL
 		chapterReturn.Chapter = chapter
@@ -158,6 +160,7 @@ func (s *Source) GetChaptersMetadata(mangaURL, _ string) ([]*manga.Chapter, erro
 			sharedErr = err
 			return
 		}
+		releaseTime = releaseTime.Truncate(time.Second)
 
 		chapterAdd := &manga.Chapter{
 			URL:       chapterURL,

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/manga"
@@ -198,8 +197,7 @@ func (s *Source) GetChaptersMetadata(mangaURL, _ string) ([]*manga.Chapter, erro
 
 func getChapterFromResponse(chapter *getMangaAPIChapter, mangaSlug string) (*manga.Chapter, error) {
 	errorContext := "error while getting chapter from response"
-	layout := time.RFC3339
-	updatedAt, err := time.Parse(layout, chapter.Date)
+	updatedAt, err := util.GetRFC3339Datetime(chapter.Date)
 	if err != nil {
 		return nil, util.AddErrorContext(errorContext, err)
 	}
