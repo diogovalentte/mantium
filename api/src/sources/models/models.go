@@ -17,15 +17,16 @@ type Source interface {
 }
 
 type MangaSearchResult struct {
-	URL         string
-	Name        string
-	Source      string
-	CoverURL    string
-	Description string
-	Status      string
-	LastChapter string
-	InternalID  string
-	Year        int
+	URL            string
+	Name           string
+	Source         string
+	CoverURL       string
+	Description    string
+	Status         string
+	LastChapter    string
+	LastChapterURL string
+	InternalID     string
+	Year           int
 }
 
 var DefaultCoverImgURL = "https://i.imgur.com/jMy7evE.jpeg"

@@ -1,6 +1,7 @@
 package rawkuma
 
 import (
+	"path"
 	"strings"
 	"time"
 
@@ -94,11 +95,15 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 		mangaSearchResult.URL = e.DOM.Find("a").AttrOr("href", "")
 		mangaSearchResult.Description = e.DOM.Find("a > div.limit > span.type").Text()
 		mangaSearchResult.Name = strings.TrimSpace(e.DOM.Find("a > div.bigor > div.tt").Text())
-		mangaSearchResult.LastChapter = strings.TrimPrefix(e.DOM.Find("a > div.bigor > div.adds > div.epxs").Text(), "Chapter ")
 		mangaSearchResult.CoverURL = e.DOM.Find("a > div.limit > img").AttrOr("src", "")
-
 		if mangaSearchResult.CoverURL == "" {
 			mangaSearchResult.CoverURL = models.DefaultCoverImgURL
+		}
+
+		mangaSearchResult.LastChapter = strings.TrimPrefix(e.DOM.Find("a > div.bigor > div.adds > div.epxs").Text(), "Chapter ")
+		baseURL := path.Base(strings.TrimSuffix(mangaSearchResult.URL, "/"))
+		if mangaSearchResult.LastChapter != "" {
+			mangaSearchResult.LastChapterURL = baseSiteURL + "/" + baseURL + "-chapter-" + mangaSearchResult.LastChapter
 		}
 
 		mangaSearchResults = append(mangaSearchResults, mangaSearchResult)

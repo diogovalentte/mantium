@@ -74,13 +74,14 @@ type Error struct {
 }
 
 type mangaAttributes struct {
-	Title       localisedStrings   `json:"title"`
-	Description localisedStrings   `json:"description"`
-	Links       localisedStrings   `json:"links"`
-	LastChapter string             `json:"lastChapter"`
-	Status      string             `json:"status"`
-	AltTitles   []localisedStrings `json:"altTitles"`
-	Year        int                `json:"year"`
+	Title                 localisedStrings   `json:"title"`
+	Description           localisedStrings   `json:"description"`
+	Links                 localisedStrings   `json:"links"`
+	LastChapter           string             `json:"lastChapter"`
+	Status                string             `json:"status"`
+	AltTitles             []localisedStrings `json:"altTitles"`
+	Year                  int                `json:"year"`
+	LatestUploadedChapter string             `json:"latestUploadedChapter"`
 }
 
 type coverAttributes map[string]interface{}

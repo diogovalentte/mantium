@@ -120,11 +120,12 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 	mangaSearchResults := make([]*models.MangaSearchResult, 0, len(searchAPIResp.Data.Search.Rows))
 	for _, row := range searchAPIResp.Data.Search.Rows {
 		mangaSearchResult := &models.MangaSearchResult{
-			Source:      "mangahub.io",
-			URL:         baseSiteURL + "/manga/" + row.Slug,
-			Name:        row.Title,
-			Status:      row.Status,
-			LastChapter: strconv.FormatFloat(row.LastestChapter, 'f', -1, 64),
+			Source:         "mangahub.io",
+			URL:            baseSiteURL + "/manga/" + row.Slug,
+			Name:           row.Title,
+			Status:         row.Status,
+			LastChapter:    strconv.FormatFloat(row.LastestChapter, 'f', -1, 64),
+			LastChapterURL: fmt.Sprintf("%s/chapter/%s/chapter-%s", baseSiteURL, row.Slug, strconv.FormatFloat(row.LastestChapter, 'f', -1, 64)),
 		}
 		mangaSearchResult.CoverURL = baseUploadsURL + "/" + row.Image
 		if row.Image != "" {
@@ -132,6 +133,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 		} else {
 			mangaSearchResult.CoverURL = models.DefaultCoverImgURL
 		}
+
 		mangaSearchResults = append(mangaSearchResults, mangaSearchResult)
 	}
 

@@ -105,12 +105,14 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 			mangaSearchResult.CoverURL = models.DefaultCoverImgURL
 		}
 
-		chapter, err := extractChapter(e.DOM.Find("div.thumb > a.meta-info").Text())
+		lastChapter := e.DOM.Find("div.thumb > a.meta-info")
+		chapter, err := extractChapter(lastChapter.Text())
 		if err != nil {
 			sharedErr = err
 			return
 		}
 		mangaSearchResult.LastChapter = chapter
+		mangaSearchResult.LastChapterURL = lastChapter.AttrOr("href", "")
 
 		mangaSearchResults = append(mangaSearchResults, mangaSearchResult)
 	})

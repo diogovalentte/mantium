@@ -122,7 +122,16 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 		mangaSearchResult.Year = mangaData.Attributes.Year
 		mangaSearchResult.LastChapter = mangaData.Attributes.LastChapter
 		if mangaSearchResult.LastChapter == "0" || mangaSearchResult.LastChapter == "" {
-			mangaSearchResult.LastChapter = "N/A"
+			if mangaData.Attributes.LatestUploadedChapter != "" {
+				mangaSearchResult.LastChapter = "?"
+				mangaSearchResult.LastChapterURL = fmt.Sprintf("%s/chapter/%s", baseSiteURL, mangaData.Attributes.LatestUploadedChapter)
+			} else {
+				mangaSearchResult.LastChapter = "N/A"
+			}
+		} else {
+			if mangaData.Attributes.LatestUploadedChapter != "" {
+				mangaSearchResult.LastChapterURL = fmt.Sprintf("%s/chapter/%s", baseSiteURL, mangaData.Attributes.LatestUploadedChapter)
+			}
 		}
 
 		mangaSearchResult.Name = mangaData.Attributes.Title.get()
