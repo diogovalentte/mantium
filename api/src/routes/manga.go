@@ -115,6 +115,10 @@ func AddManga(c *gin.Context) {
 		mangaAdd.CoverImgResized = true
 	}
 
+	if mangaAdd.LastReleasedChapter != nil && mangaAdd.LastReleasedChapter.UpdatedAt.IsZero() {
+		mangaAdd.LastReleasedChapter.UpdatedAt = time.Now().Truncate(time.Second)
+	}
+
 	err = mangaAdd.InsertIntoDB()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -965,6 +969,10 @@ func AddMultiManga(c *gin.Context) {
 		}
 		currentManga.CoverImgURL = models.DefaultCoverImgURL
 		currentManga.CoverImgResized = true
+	}
+
+	if currentManga.LastReleasedChapter != nil && currentManga.LastReleasedChapter.UpdatedAt.IsZero() {
+		currentManga.LastReleasedChapter.UpdatedAt = time.Now().Truncate(time.Second)
 	}
 
 	multiManga := &manga.MultiManga{
@@ -2762,6 +2770,12 @@ func updateMultiMangaMetadata(multimanga *manga.MultiManga, retries int, retryIn
 
 		mangaHasNewReleasedChapter := isNewChapterDifferentFromOld(mangaToUpdate.LastReleasedChapter, updatedManga.LastReleasedChapter)
 		if mangaHasNewReleasedChapter || (!mangaToUpdate.CoverImgFixed && (mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg))) || mangaToUpdate.Name != updatedManga.Name {
+			if mangaHasNewReleasedChapter {
+				if updatedManga.LastReleasedChapter != nil && updatedManga.LastReleasedChapter.UpdatedAt.IsZero() {
+					updatedManga.LastReleasedChapter.UpdatedAt = time.Now().Truncate(time.Second)
+				}
+				mangasHaveNewChapter = true
+			}
 			err = manga.UpdateMangaMetadataDB(updatedManga)
 			if err != nil {
 				logger.Error().Err(err).Str("manga_url", mangaToUpdate.URL).Msg("Error saving manga new metadata to DB, will continue with the next manga...")
@@ -2769,9 +2783,6 @@ func updateMultiMangaMetadata(multimanga *manga.MultiManga, retries int, retryIn
 				continue
 			}
 			newMetadata = true
-			if mangaHasNewReleasedChapter {
-				mangasHaveNewChapter = true
-			}
 		}
 	}
 	if mangasHaveNewChapter {
