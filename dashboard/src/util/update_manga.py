@@ -176,7 +176,7 @@ def show_update_multimanga(multimanga_id):
             "Last Read Chapter",
             index=last_read_chapter_idx,
             options=ss["update_multimanga_chapter_options"],
-            format_func=lambda chapter: f"Ch. {chapter['Chapter']}{(' --- ' + get_relative_time(get_updated_at_datetime(chapter['UpdatedAt']))) if chapter['UpdatedAt'] != '0001-01-01T00:00:00Z' else ''}",
+            format_func=lambda chapter: f"Ch. {chapter['Chapter']}{(' (' + get_relative_time(get_updated_at_datetime(chapter['UpdatedAt']))) + ')' if chapter['UpdatedAt'] != '0001-01-01T00:00:00Z' else ''}",
             key="update_multimanga_form_chapter" + str(multimanga["ID"]),
         )
 

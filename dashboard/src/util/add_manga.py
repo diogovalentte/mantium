@@ -140,7 +140,7 @@ def show_bottom_add_manga_form(manga_url: str, manga_internal_id: str):
             index=None,
             key="add_manga_form_chapter",
             format_func=lambda chapter: (
-                f"Ch. {chapter['Chapter']}{(' --- ' + get_relative_time(get_updated_at_datetime(chapter['UpdatedAt']))) if chapter['UpdatedAt'] != '0001-01-01T00:00:00Z' else ''}"
+                f"Ch. {chapter['Chapter']}{(' (' + get_relative_time(get_updated_at_datetime(chapter['UpdatedAt']))) + ')' if chapter['UpdatedAt'] != '0001-01-01T00:00:00Z' else ''}"
                 if chapter is not None
                 else "N/A"
             ),
