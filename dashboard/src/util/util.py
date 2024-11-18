@@ -19,6 +19,8 @@ def get_logger():
 
 
 def get_updated_at_datetime(updated_at: str) -> datetime:
+    if updated_at == "0001-01-01T00:00:00Z":
+        return datetime.min
     return parse(updated_at)
 
 
