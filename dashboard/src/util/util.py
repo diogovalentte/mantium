@@ -18,7 +18,7 @@ def get_logger():
 
 
 def get_updated_at_datetime(updated_at: str) -> datetime:
-    updated_at = remove_nano_from_datetime(updated_at)
+    # updated_at = remove_nano_from_datetime(updated_at)
     return datetime.strptime(updated_at, "%Y-%m-%dT%H:%M:%SZ")
 
 

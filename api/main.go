@@ -47,7 +47,14 @@ func init() {
 		panic(err)
 	}
 
+	log.Info().Msg("Turning mangas into multimangas...")
 	err = turnMangasIntoMultiMangas()
+	if err != nil {
+		panic(err)
+	}
+
+	log.Info().Msg("Truncating dates to second...")
+	err = truncateDatesToSecond()
 	if err != nil {
 		panic(err)
 	}
@@ -136,6 +143,62 @@ func turnMangasIntoMultiMangas() error {
 		_, err = manga.TurnIntoMultiManga(m)
 		if err != nil {
 			return util.AddErrorContext(contextError, err)
+		}
+	}
+
+	return nil
+}
+
+func truncateDatesToSecond() error {
+	multimangas, err := manga.GetMultiMangasDB(true)
+	if err != nil {
+		return err
+	}
+
+	for _, mm := range multimangas {
+		for _, m := range mm.Mangas {
+			if m.LastReleasedChapter != nil {
+				m.LastReleasedChapter.UpdatedAt = m.LastReleasedChapter.UpdatedAt.Truncate(time.Second)
+				err = m.UpsertChapterIntoDB(m.LastReleasedChapter)
+				if err != nil {
+					return err
+				}
+			}
+			if m.LastReadChapter != nil {
+				m.LastReadChapter.UpdatedAt = m.LastReadChapter.UpdatedAt.Truncate(time.Second)
+				err = m.UpsertChapterIntoDB(m.LastReadChapter)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		if mm.LastReadChapter != nil {
+			mm.LastReadChapter.UpdatedAt = mm.LastReadChapter.UpdatedAt.Truncate(time.Second)
+			err = mm.UpsertChapterIntoDB(mm.LastReadChapter)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	customMangas, err := manga.GetCustomMangasDB()
+	if err != nil {
+		return err
+	}
+	for _, cm := range customMangas {
+		if cm.LastReleasedChapter != nil {
+			cm.LastReleasedChapter.UpdatedAt = cm.LastReleasedChapter.UpdatedAt.Truncate(time.Second)
+			err = cm.UpsertChapterIntoDB(cm.LastReleasedChapter)
+			if err != nil {
+				return err
+			}
+		}
+		if cm.LastReadChapter != nil {
+			cm.LastReadChapter.UpdatedAt = cm.LastReadChapter.UpdatedAt.Truncate(time.Second)
+			err = cm.UpsertChapterIntoDB(cm.LastReadChapter)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
