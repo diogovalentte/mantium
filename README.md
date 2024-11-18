@@ -43,6 +43,7 @@ Mantium also has an endpoint that returns an iFrame. It's a minimalist version o
 ![image](https://github.com/diogovalentte/mantium/assets/49578155/e88d85f2-0109-444a-b225-878a5db01400)
 
 # Multimanga
+
 A **Multimanga** is like a container for multiple mangas. When you add a manga to Mantium, it creates a multimanga and adds the manga to the multimanga. You actually never interact with the manga, only the multimanga. But why?
 
 The **multimanga** feature solves the issue of when you want to track the **same manga** in multiple source sites so that you are notified whenever a new chapter is released as soon as possible in whatever source. You could add the same manga for each source, but they would act as **completely different mangas**. Each one would appear on a card in the dashboard/iframe, you would need to set the last read chapter for each of them and be notified of new chapters from each of them.
@@ -63,14 +64,14 @@ Mantium decides which manga should be the current manga whenever you **add/remov
 
 The images below show the popup that appears when you click the "**Highlight**" button of one of the mangas in the dashboard. It shows a form to delete the multimanga, update its status, last read chapter, and cover image, add mangas to the multimanga by searching by name or using an URL, and manage the multimanga's mangas.
 
-| Edit Multimanga | Edit Multimanga Cover Image | Manage Multimanga Mangas |
-| :---: | :---: | :---: |
+|                                   Edit Multimanga                                    |                             Edit Multimanga Cover Image                              |                               Manage Multimanga Mangas                               |
+| :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: |
 | ![](https://github.com/user-attachments/assets/441d2423-2276-4512-ab6c-edfc80e909f2) | ![](https://github.com/user-attachments/assets/e0c4acb1-6840-4824-817c-cd208867a04a) | ![](https://github.com/user-attachments/assets/020681aa-8e59-4f2f-aefe-c92a89251fe8) |
-
 
 # Custom Manga
 
 Mantium allows you to add mangas, manhwa, light novels, etc. that aren't from one of the supported source sites. You must manually track these manga, providing info about them like name, URL, cover image, etc. You **can** also provide the **next chapter** you should read from the manga, and update it every time you read a chapter.
+
 - Custom mangas are not treated as **multimangas**.
 
 When you read the last available chapter from a custom manga, check the "**No more chapters available**" checkbox so the manga is considered read instead of unread.
@@ -117,6 +118,7 @@ The steps are at the [bottom of this README](https://github.com/diogovalentte/ma
 # Notes:
 
 ### iFrame usage
+
 The **Mantium API** has the endpoint `/v1/mangas/iframe` that returns an iFrame. When you add an iFrame to your dashboard, it's **>your<** web browser that fetches the iFrame from the API and shows it to you, not your dashboard service running on your server. So your browser needs to be able to access the Mantium API.
 
 - **Examples**:
@@ -145,6 +147,10 @@ The API docs are under the path `/v1/swagger/index.html`.
 ### Manga Plus source
 
 Only the first and last chapters are available on the Manga Plus site, so most chapters do not show on Mantium. I recommend reading the manga in the other source sites and when you get to the last chapter, remove the manga and add it again from the Manga Plus source.
+
+### KLManga source
+
+The KLManga source doesn't shows when the chapters were released, so when you add a manga to Mantium, it sets the last released chapter's release date to the current time. In the background job that updates the mangas' metadata, if it detects that the last released chapter's release date is the current time, it sets the release date to the current time.
 
 ### Manga Updates source
 
