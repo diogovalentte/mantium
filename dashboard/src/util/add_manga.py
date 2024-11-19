@@ -34,6 +34,7 @@ def show_add_manga_form(form_type: str):
     ss[base_key + "_mangaupdates"] = {}
     ss[base_key + "_rawkuma"] = {}
     ss[base_key + "_klmanga"] = {}
+    ss[base_key + "_jmanga"] = {}
     ss["add_manga_search_go_back_to_tab"] = 0
 
     if form_type == "url":
@@ -261,6 +262,7 @@ def show_add_manga_form_search():
                 mangaupdates_tab,
                 rawkuma_tab,
                 klmanga_tab,
+                jmanga_tab,
             ) = st.tabs(
                 [
                     "Mangadex",
@@ -268,8 +270,9 @@ def show_add_manga_form_search():
                     "Mangaplus",
                     "Mangahub",
                     "MangaUpdates",
-                    "Raw Kuma",
+                    "RawKuma",
                     "KLManga",
+                    "JManga",
                 ]
             )
 
@@ -303,6 +306,10 @@ def show_add_manga_form_search():
             with klmanga_tab:
                 show_search_manga_term_form(
                     "https://klmanga.rs", button_name, key_to_save_manga
+                )
+            with jmanga_tab:
+                show_search_manga_term_form(
+                    "https://jmanga.is", button_name, key_to_save_manga
                 )
 
         tab_index = ss["add_manga_search_go_back_to_tab"]
@@ -516,7 +523,7 @@ def show_search_result_manga(
         type="primary",
         use_container_width=True,
         on_click=on_click,
-        key=key_to_save_manga + "_search_result_" + manga["URL"],
+        key=key_to_save_manga + "_search_result_" + manga["URL"] + manga["CoverURL"],
     )
 
 

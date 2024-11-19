@@ -146,5 +146,7 @@ def get_source_name_and_colors(source: str):
             return "Raw Kuma", "white", "#0c70de"
         case "klmanga.rs":
             return "KLManga", "white", "#ee2631"
+        case "jmanga":
+            return "JManga", "white", "#7b36ce"
         case _:
             return source, "black", "white"

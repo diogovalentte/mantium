@@ -8,6 +8,7 @@ var (
 	ErrMangaNotFoundInMultiManga   = &CustomError{Message: "manga not found in multimanga"}
 	ErrChapterNotFound             = &CustomError{Message: "chapter not found in source"}
 	ErrChapterURLNotFound          = &CustomError{Message: "chapter URL not found"}
+	ErrMangaURLNotFound            = &CustomError{Message: "manga URL not found"}
 
 	ErrMangaNotFoundDB                      = &CustomError{Message: "manga not found in DB"}
 	ErrMultiMangaNotFoundDB                 = &CustomError{Message: "multimanga not found in DB"}

@@ -9,6 +9,7 @@ import (
 
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/sources/comick"
+	"github.com/diogovalentte/mantium/api/src/sources/jmanga"
 	"github.com/diogovalentte/mantium/api/src/sources/klmanga"
 	"github.com/diogovalentte/mantium/api/src/sources/mangadex"
 	"github.com/diogovalentte/mantium/api/src/sources/mangahub"
@@ -28,6 +29,7 @@ var sources = map[string]models.Source{
 	"mangaupdates.com":         &mangaupdates.Source{},
 	"rawkuma.com":              &rawkuma.Source{},
 	"klmanga.rs":               &klmanga.Source{},
+	"jmanga.is":                &jmanga.Source{},
 }
 
 // RegisterSource registers a new source
