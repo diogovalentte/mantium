@@ -464,6 +464,7 @@ def show_update_multimanga_add_manga_search(multimanga):
             ss[base_key + "_mangaupdates"] = {}
             ss[base_key + "_rawkuma"] = {}
             ss[base_key + "_klmanga"] = {}
+            ss[base_key + "_jmanga"] = {}
 
             with mangadex_tab:
                 show_search_manga_term_form(
