@@ -148,16 +148,16 @@ The API docs are under the path `/v1/swagger/index.html`.
 
 Only the first and last chapters are available on the Manga Plus site, so most chapters do not show on Mantium. I recommend reading the manga in the other source sites and when you get to the last chapter, remove the manga and add it again from the Manga Plus source.
 
-### KLManga source
+### KLManga and JManga sources
 
-The KLManga source doesn't shows when the chapters were released, so when you add a manga to Mantium, it sets the last released chapter's release date to the current time. In the background job that updates the mangas' metadata, if it detects that the last released chapter's release date is the current time, it sets the release date to the current time.
+The KLManga and JManga sources don't show the time when the chapters are released, so when you add a manga to Mantium, it sets the last released chapter's release date to the current time. In the background job that updates the mangas' metadata, if it detects that the last released chapter's release date is the current time, it sets the release date to the current time.
 
 ### Manga Updates source
 
 The Manga Updates source is very different from the other sources:
 
-- Mantium tracks the releases instead of actual chapters. The same chapter can be released by different groups.
-- The chapters are listed by upload date. This means that if a group uploads chapter 2 from a manga that another group already uploaded 50 chapters, chapter 2 will be considered the last chapter released. This is a limitation of MangaUpdates that can't properly sort the chapters by chapter number.
+- Mantium tracks the releases instead of actual chapters. Different groups can release the same chapter.
+- The chapters are listed by upload date. This means that if a group uploads chapter 2 from a manga and another group uploads 50 chapters, chapter 2 will be considered the last chapter released. This is a limitation of MangaUpdates that can't properly sort the chapters by chapter number.
 
 ### Source site down
 
