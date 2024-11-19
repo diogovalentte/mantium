@@ -1,5 +1,5 @@
 --------------------------------------
--- @name    Raw Kuma
+-- @name    RawKuma
 -- @url     https://rawkuma.com
 -- @author  diogovalentte
 -- @license MIT
