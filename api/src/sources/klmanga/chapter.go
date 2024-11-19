@@ -117,9 +117,11 @@ func (s *Source) getChapterMetadataByChapter(mangaURL string, chapter string) (*
 		}
 		return nil, fmt.Errorf("error while visiting manga URL")
 	}
-
 	if sharedErr != nil {
 		return nil, sharedErr
+	}
+	if !chapterFound {
+		return nil, errordefs.ErrChapterNotFound
 	}
 
 	return chapterReturn, nil
@@ -156,6 +158,9 @@ func (s *Source) GetLastChapterMetadata(mangaURL string, _ string) (*manga.Chapt
 	}
 	if sharedErr != nil {
 		return nil, util.AddErrorContext(errorContext, sharedErr)
+	}
+	if chapterReturn.Chapter == "" {
+		return nil, util.AddErrorContext(errorContext, errordefs.ErrChapterNotFound)
 	}
 
 	return chapterReturn, nil

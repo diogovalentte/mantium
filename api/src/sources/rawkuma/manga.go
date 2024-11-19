@@ -80,6 +80,9 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	if sharedErr != nil {
 		return nil, util.AddErrorContext(errorContext, sharedErr)
 	}
+	if mangaReturn.Name == "" {
+		return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
+	}
 
 	return mangaReturn, nil
 }
