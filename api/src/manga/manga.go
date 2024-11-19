@@ -1228,6 +1228,75 @@ func UpdateCustomMangaLastReadChapterInDB(m *Manga, chapter *Chapter) error {
 	return nil
 }
 
+func (m *Manga) UpdateSourceInDB(source string) error {
+	contextError := "error updating manga '%s' source to '%s' in DB"
+
+	db, err := db.OpenConn()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, source), err)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, source), err)
+	}
+
+	err = updateMangaSourceDB(m, source, tx)
+	if err != nil {
+		tx.Rollback()
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, source), err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, source), err)
+	}
+	m.Source = source
+
+	return nil
+}
+
+func updateMangaSourceDB(m *Manga, source string, tx *sql.Tx) error {
+	err := validateManga(m)
+	if err != nil {
+		return err
+	}
+
+	var result sql.Result
+	if m.ID > 0 {
+		result, err = tx.Exec(`
+            UPDATE mangas
+            SET source = $1
+            WHERE id = $2;
+        `, source, m.ID)
+		if err != nil {
+			return err
+		}
+	} else if m.URL != "" {
+		result, err = tx.Exec(`
+            UPDATE mangas
+            SET source = $1
+            WHERE url = $2;
+        `, source, m.URL)
+		if err != nil {
+			return err
+		}
+	} else {
+		return errordefs.ErrMangaHasNoIDOrURL
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return errordefs.ErrMangaNotFoundDB
+	}
+
+	return nil
+}
+
 // validateManga should be used every time the API interacts with the mangas table in the database
 func validateManga(m *Manga) error {
 	contextError := "error validating manga"

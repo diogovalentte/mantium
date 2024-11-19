@@ -1,6 +1,5 @@
 // Package comick provides the implementation of the manga.Source interface for the Comick source.
-// The text "comick.xyz" is used in some parts to indicate the source without specifing the URL TLD, as it changes constantly.
-// API doc: https://api.comick.xyz/docs/static/index.html
+// API doc: https://api.comick.fun/docs/static/index.html
 // The site and API URL can change without any warning!!! Because of that, the site and API URLs need to be updated manually!
 package comick
 
@@ -14,6 +13,10 @@ var (
 // Source is the implementation of the manga.Source interface for the Comick source
 type Source struct {
 	client *Client
+}
+
+func (Source) GetName() string {
+	return "comick"
 }
 
 func (s *Source) checkClient() {

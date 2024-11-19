@@ -179,7 +179,7 @@ func (t *Tranga) getTrangaConnector(source string) (string, error) {
 
 	var returnConnector string
 	switch source {
-	case "mangadex.org":
+	case "mangadex":
 		returnConnector = "MangaDex"
 	default:
 		return "", util.AddErrorContext(errorContext, fmt.Errorf("%s connector is not implemented in Tranga", source))

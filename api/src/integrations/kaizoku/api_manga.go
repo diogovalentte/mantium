@@ -264,18 +264,18 @@ func (k *Kaizoku) getKaizokuSource(source string) (string, error) {
 
 	var returnSource string
 	switch source {
-	case "mangadex.org":
+	case "mangadex":
 		returnSource = "MangaDex"
-	case "comick.xyz":
+	case "comick":
 		returnSource = "ComicK"
-	case "comick.io":
-		returnSource = "ComicK"
-	case "mangahub.io":
+	case "mangahub":
 		returnSource = "MangaHub"
-	case "rawkuma.com":
+	case "rawkuma":
 		returnSource = "RawKuma"
-	case "klmanga.rs":
+	case "klmanga":
 		returnSource = "KLManga"
+	case "jmanga":
+		returnSource = "JManga"
 	default:
 		return "", util.AddErrorContext(errorContext, fmt.Errorf("unknown/not implemented source: %s", source))
 	}

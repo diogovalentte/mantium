@@ -25,7 +25,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	}
 
 	mangaReturn := &manga.Manga{}
-	mangaReturn.Source = "mangahub.io"
+	mangaReturn.Source = "mangahub"
 	mangaReturn.URL = mangaURL
 
 	query := `
@@ -120,7 +120,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 	mangaSearchResults := make([]*models.MangaSearchResult, 0, len(searchAPIResp.Data.Search.Rows))
 	for _, row := range searchAPIResp.Data.Search.Rows {
 		mangaSearchResult := &models.MangaSearchResult{
-			Source:         "mangahub.io",
+			Source:         "mangahub",
 			URL:            baseSiteURL + "/manga/" + row.Slug,
 			Name:           row.Title,
 			Status:         row.Status,

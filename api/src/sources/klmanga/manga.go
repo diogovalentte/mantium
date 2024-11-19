@@ -19,7 +19,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	errorContext := "error while getting manga metadata"
 
 	mangaReturn := &manga.Manga{}
-	mangaReturn.Source = "klmanga.rs"
+	mangaReturn.Source = "klmanga"
 	mangaReturn.URL = mangaURL
 
 	var sharedErr error
@@ -93,7 +93,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 	mangaSearchResults := []*models.MangaSearchResult{}
 	s.c.OnHTML("div.row > div.col-sm-4 > div.entry", func(e *colly.HTMLElement) {
 		mangaSearchResult := &models.MangaSearchResult{}
-		mangaSearchResult.Source = "klmanga.rs"
+		mangaSearchResult.Source = "klmanga"
 		mangaSearchResult.URL = e.DOM.Find("h2 > a").AttrOr("href", "")
 
 		name := e.DOM.Find("h2 > a").Text()

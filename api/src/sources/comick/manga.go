@@ -20,7 +20,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	errorContext := "error while getting manga metadata"
 
 	mangaReturn := &manga.Manga{}
-	mangaReturn.Source = "comick.xyz"
+	mangaReturn.Source = "comick"
 	mangaReturn.URL = mangaURL
 
 	mangaID, err := getMangaSlug(mangaURL)
@@ -109,7 +109,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 	mangaSearchResults := make([]*models.MangaSearchResult, 0, len(searchAPIResp))
 	for _, comic := range searchAPIResp {
 		mangaSearchResult := &models.MangaSearchResult{}
-		mangaSearchResult.Source = "comick.xyz"
+		mangaSearchResult.Source = "comick"
 		mangaSearchResult.URL = fmt.Sprintf("%s/comic/%s", baseSiteURL, comic.HID)
 		mangaSearchResult.Description = comic.Description
 		mangaSearchResult.Year = comic.Year
@@ -131,7 +131,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 }
 
 // getMangaHID returns the HID of a manga given its URL.
-// URL should be like: https://comick.xyz/comic/00-jujutsu-kaisen
+// URL should be like: https://comick.io/comic/00-jujutsu-kaisen
 func (s *Source) getMangaHID(mangaURL string) (string, error) {
 	s.checkClient()
 
@@ -156,7 +156,7 @@ func (s *Source) getMangaHID(mangaURL string) (string, error) {
 }
 
 // getMangaSlug returns the slug of a manga given its URL.
-// URL should be like: https://comick.xyz/comic/00-jujutsu-kaisen
+// URL should be like: https://comick.io/comic/00-jujutsu-kaisen
 func getMangaSlug(mangaURL string) (string, error) {
 	errorContext := "error while getting manga slug from URL"
 

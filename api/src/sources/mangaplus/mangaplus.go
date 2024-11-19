@@ -5,8 +5,12 @@ type Source struct {
 	client *Client
 }
 
+func (Source) GetName() string {
+	return "mangaplus"
+}
+
 var (
-	sourceName      = "mangaplus.shueisha.co.jp"
+	sourceName      = "mangaplus"
 	baseSiteURL     = "https://mangaplus.shueisha.co.jp"
 	baseAPIURL      = "https://jumpg-webapi.tokyo-cdn.com/api"
 	mangaplusClient = NewMangaPlusClient()

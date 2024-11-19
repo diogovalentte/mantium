@@ -19,7 +19,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	errorContext := "error while getting manga metadata"
 
 	mangaReturn := &manga.Manga{}
-	mangaReturn.Source = "mangadex.org"
+	mangaReturn.Source = "mangadex"
 	mangaReturn.URL = mangaURL
 
 	mangadexMangaID, err := getMangaID(mangaURL)
@@ -115,7 +115,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 	mangaSearchResults := make([]*models.MangaSearchResult, 0, len(searchAPIResp.Data))
 	for _, mangaData := range searchAPIResp.Data {
 		mangaSearchResult := &models.MangaSearchResult{}
-		mangaSearchResult.Source = "mangadex.org"
+		mangaSearchResult.Source = "mangadex"
 		mangaSearchResult.URL = fmt.Sprintf("%s/title/%s", baseSiteURL, mangaData.ID)
 		mangaSearchResult.Description = mangaData.Attributes.Description.get()
 		mangaSearchResult.Status = mangaData.Attributes.Status

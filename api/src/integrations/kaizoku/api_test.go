@@ -32,7 +32,7 @@ func TestMain(m *testing.M) {
 var mangasTest = []*manga.Manga{
 	{
 		Name:   "Tower Dungeon",
-		Source: "mangadex.org",
+		Source: "mangadex",
 	},
 }
 

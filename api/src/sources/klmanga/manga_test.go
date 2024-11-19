@@ -18,7 +18,7 @@ var mangasTestTable = []mangaTestType{
 	{
 		expected: &manga.Manga{
 			Name:            "アンチロマンス",
-			Source:          "klmanga.rs",
+			Source:          "klmanga",
 			URL:             "https://klmanga.rs/manga-raw/%e3%82%a2%e3%83%b3%e3%83%81%e3%83%ad%e3%83%9e%e3%83%b3%e3%82%b9-raw-free/",
 			CoverImgURL:     "https://klmanga.rs/wp-content/uploads/2024/04/001-100.webp",
 			CoverImgResized: true,
@@ -34,7 +34,7 @@ var mangasTestTable = []mangaTestType{
 	{
 		expected: &manga.Manga{
 			Name:            "アイマイミーマイン",
-			Source:          "klmanga.rs",
+			Source:          "klmanga",
 			URL:             "https://klmanga.rs/manga-raw/%e3%82%a2%e3%82%a4%e3%83%9e%e3%82%a4%e3%83%9f%e3%83%bc%e3%83%9e%e3%82%a4%e3%83%b3-raw-free/",
 			CoverImgURL:     "https://klmanga.rs/wp-content/uploads/2024/03/1245784.jpg",
 			CoverImgResized: true,
@@ -50,7 +50,7 @@ var mangasTestTable = []mangaTestType{
 	{
 		expected: &manga.Manga{
 			Name:            "思えば遠くにオブスクラ",
-			Source:          "klmanga.rs",
+			Source:          "klmanga",
 			URL:             "https://klmanga.rs/manga-raw/%e6%80%9d%e3%81%88%e3%81%b0%e9%81%a0%e3%81%8f%e3%81%ab%e3%82%aa%e3%83%96%e3%82%b9%e3%82%af%e3%83%a9-raw-free/",
 			CoverImgURL:     "https://klmanga.rs/wp-content/uploads/2024/04/DL-Raw.Se_0001-10.jpg",
 			CoverImgResized: true,

@@ -19,7 +19,7 @@ var mangasTestTable = []mangaTestType{
 	{
 		expected: &manga.Manga{
 			Name:            "Death Note",
-			Source:          "comick.xyz",
+			Source:          "comick",
 			URL:             "https://comick.io/comic/death-note",
 			CoverImgURL:     "https://meo.comick.pictures/a0yXD.jpg",
 			CoverImgResized: true,
@@ -36,7 +36,7 @@ var mangasTestTable = []mangaTestType{
 	{
 		expected: &manga.Manga{
 			Name:            "Vagabond",
-			Source:          "comick.xyz",
+			Source:          "comick",
 			URL:             "https://comick.io/comic/00-vagabond",
 			CoverImgURL:     "https://meo.comick.pictures/marne.jpg",
 			CoverImgResized: true,
@@ -53,7 +53,7 @@ var mangasTestTable = []mangaTestType{
 	{
 		expected: &manga.Manga{
 			Name:            "Mob Psycho 100",
-			Source:          "comick.xyz",
+			Source:          "comick",
 			URL:             "https://comick.io/comic/mob-psycho-100",
 			CoverImgURL:     "https://meo.comick.pictures/NR1xz.jpg",
 			CoverImgResized: true,

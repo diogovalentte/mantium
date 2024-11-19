@@ -12,6 +12,10 @@ type Source struct {
 	client *Client
 }
 
+func (Source) GetName() string {
+	return "mangaupdates"
+}
+
 func (s *Source) checkClient() {
 	if s.client == nil {
 		s.client = mangaUpdatesClient

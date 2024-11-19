@@ -19,7 +19,7 @@ var mangasTestTable = []mangaTestType{
 	{
 		expected: &manga.Manga{
 			Name:            "Go-Toubun no Hanayome",
-			Source:          "rawkuma.com",
+			Source:          "rawkuma",
 			URL:             "https://rawkuma.com/manga/go-toubun-no-hanayome",
 			CoverImgURL:     "https://rawkuma.com/wp-content/uploads/2020/06/Go-Toubun-no-Hanayome-cover.jpg",
 			CoverImgResized: true,
@@ -36,7 +36,7 @@ var mangasTestTable = []mangaTestType{
 	{
 		expected: &manga.Manga{
 			Name:            "Shingeki no Kyojin",
-			Source:          "rawkuma.com",
+			Source:          "rawkuma",
 			URL:             "https://rawkuma.com/manga/shingeki-no-kyojin",
 			CoverImgURL:     "https://rawkuma.com/wp-content/uploads/2020/07/Shingeki-no-Kyojin-33.jpg",
 			CoverImgResized: true,
@@ -53,7 +53,7 @@ var mangasTestTable = []mangaTestType{
 	{
 		expected: &manga.Manga{
 			Name:            "Darling in the FRANXX",
-			Source:          "rawkuma.com",
+			Source:          "rawkuma",
 			URL:             "https://rawkuma.com/manga/darling-in-the-franxx",
 			CoverImgURL:     "https://rawkuma.com/wp-content/uploads/2020/02/Darling-in-the-FRANXX.jpg",
 			CoverImgResized: true,

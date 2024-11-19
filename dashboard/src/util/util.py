@@ -132,19 +132,19 @@ def get_source_name_and_colors(source: str):
         (str, str, str): Source name, text color, background color.
     """
     match source:
-        case "mangadex.org":
+        case "mangadex":
             return "MangaDex", "white", "#ff6740"
-        case "comick.io" | "comick.xyz":
+        case "comick":
             return "ComicK", "white", "#1f2937"
-        case "mangaplus.shueisha.co.jp":
+        case "mangaplus":
             return "MangaPlus", "white", "#d40a15"
-        case "mangahub.io":
+        case "mangahub":
             return "MangaHub", "white", "#dc98f1"
         case "mangaupdates":
             return "Manga Updates", "white", "#f69731"
-        case "rawkuma.com":
-            return "Raw Kuma", "white", "#0c70de"
-        case "klmanga.rs":
+        case "rawkuma":
+            return "RawKuma", "white", "#0c70de"
+        case "klmanga":
             return "KLManga", "white", "#ee2631"
         case "jmanga":
             return "JManga", "white", "#7b36ce"

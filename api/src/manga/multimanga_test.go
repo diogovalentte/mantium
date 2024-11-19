@@ -11,7 +11,7 @@ import (
 
 var multimangaMangasTest = []*Manga{
 	{
-		Source:         "mangahub.io",
+		Source:         "mangahub",
 		URL:            "https://mangahub.io/manga/yotsubato",
 		Name:           "Yotsuba&!",
 		Status:         1,
@@ -27,7 +27,7 @@ var multimangaMangasTest = []*Manga{
 		},
 	},
 	{
-		Source:         "comick.io",
+		Source:         "comick",
 		URL:            "https://comick.io/title/yotsubato",
 		Name:           "Yotsuba to!",
 		Status:         1,
@@ -43,7 +43,7 @@ var multimangaMangasTest = []*Manga{
 		},
 	},
 	{
-		Source:         "mangadex.org",
+		Source:         "mangadex",
 		URL:            "https://mangadex.org/title/yotsubato",
 		Name:           "Yotsubato!",
 		Status:         1,
@@ -59,7 +59,7 @@ var multimangaMangasTest = []*Manga{
 		},
 	},
 	{
-		Source:         "mangaupdates.com",
+		Source:         "mangaupdates",
 		URL:            "https://mangaupdates.com/manga/fas45a4",
 		Name:           "Yotsubato",
 		Status:         1,

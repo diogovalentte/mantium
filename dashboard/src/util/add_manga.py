@@ -237,18 +237,22 @@ def show_add_manga_form_search():
 
         def on_click():
             match ss["add_manga_search_selected_manga"]["Source"]:
-                case "mangadex.org":
+                case "mangadex":
                     ss["add_manga_search_go_back_to_tab"] = 0
-                case "comick.xyz":
+                case "comick":
                     ss["add_manga_search_go_back_to_tab"] = 1
-                case "mangaplus.shueisha.co.jp":
+                case "mangaplus":
                     ss["add_manga_search_go_back_to_tab"] = 2
-                case "mangahub.io":
+                case "mangahub":
                     ss["add_manga_search_go_back_to_tab"] = 3
                 case "mangaupdates":
                     ss["add_manga_search_go_back_to_tab"] = 4
-                case "rawkuma.com":
+                case "rawkuma":
                     ss["add_manga_search_go_back_to_tab"] = 5
+                case "klmanga":
+                    ss["add_manga_search_go_back_to_tab"] = 6
+                case "jmanga":
+                    ss["add_manga_search_go_back_to_tab"] = 7
             ss["add_manga_search_selected_manga"] = None
 
         st.button("Back", use_container_width=True, on_click=on_click)

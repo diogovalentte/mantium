@@ -14,6 +14,8 @@ type Source interface {
 	GetChaptersMetadata(mangaURL, mangaInternalID string) ([]*manga.Chapter, error)
 	// Search searches for a manga by its name.
 	Search(term string, limit int) ([]*MangaSearchResult, error)
+	// Get source name
+	GetName() string
 }
 
 type MangaSearchResult struct {

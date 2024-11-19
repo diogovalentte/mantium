@@ -215,8 +215,8 @@ func generateMangaChapters(s *Source, mangaURL string, chaptersChan chan *manga.
 }
 
 // getChapterHID returns the HID of a chapter given its URL.
-// URL should be like: https://comick.xyz/comic/jitsu-wa-watashi-wa/PZKrW
-// or https://comick.xyz/comic/jitsu-wa-watashi-wa/PZKrW-chapter-121-en
+// URL should be like: https://comick.io/comic/jitsu-wa-watashi-wa/PZKrW
+// or https://comick.io/comic/jitsu-wa-watashi-wa/PZKrW-chapter-121-en
 func getChapterHID(chapterURL string) (string, error) {
 	contextError := "error while getting chapter HID"
 
