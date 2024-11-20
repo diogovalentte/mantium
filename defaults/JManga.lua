@@ -8,17 +8,12 @@
 ----- IMPORTS -----
 Html = require("html")
 Http = require("http")
-Headless = require("headless")
 Json = require("json")
-Time = require("time")
 --- END IMPORTS ---
 
 ----- VARIABLES -----
 Debug = false
 Client = Http.client({ timeout = 20, insecure_ssl = true, debug = Debug })
-Browser = Headless.browser()
-Page = Browser:page()
-Delay = 5
 Base = "https://jmanga.is"
 ChapterHasNoImagesDefaultImage = "https://i.imgur.com/jMy7evE.jpeg"
 --- END VARIABLES ---
@@ -76,13 +71,34 @@ end
 -- @param chapterURL URL of the chapter
 -- @return Table of tables with the following fields: url, index
 function ChapterPages(chapterURL)
-    Page:navigate(chapterURL)
-    Time.sleep(Delay)
-
+    local request = Http.request("GET", chapterURL)
+    local result = Client:do_request(request)
+    local doc = Html.parse(result.body)
     local pages = {}
-    local doc = Html.parse(Page:html())
+
+    local chapter_number = extractChapterFromURL(chapterURL)
+    if chapter_number == "" then
+        pages[1] = { url = ChapterHasNoImagesDefaultImage, index = 1 }
+        return pages
+    end
+
+    local data_id = ""
+    doc:find('ul.reading-list > li[data-number="' .. chapter_number .. '"]'):each(function(_, el)
+        data_id = el:attr("data-id")
+    end)
+
+    if data_id == "" then
+        pages[1] = { url = ChapterHasNoImagesDefaultImage, index = 1 }
+        return pages
+    end
+
+    request = Http.request("GET", Base .. "/json/chapter?mode=vertical&id=" .. data_id)
+    result = Client:do_request(request)
+    local json = Json.decode(result.body)
+    doc = Html.parse(json["html"])
+
     local i = 1
-    doc:find("div#vertical-content > div.loader > img"):each(function(_, el)
+    doc:find("img"):each(function(_, el)
         local url = el:attr("data-src")
         if url == "" then
             url = ChapterHasNoImagesDefaultImage
@@ -117,6 +133,10 @@ function extractChapter(s)
         return match
     end
     return ""
+end
+
+function extractChapterFromURL(url)
+    return url:match("chapter%-(.-)%-raw")
 end
 
 function trim(s)
