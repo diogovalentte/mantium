@@ -144,5 +144,3 @@ end
 --- END HELPERS ---
 
 -- ex: ts=4 sw=4 et filetype=lua
--- SearchManga("fumetsu")
--- MangaChapters("https://mangahub.io/manga/fumetsu-no-anata-e")
