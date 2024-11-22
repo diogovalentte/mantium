@@ -23,7 +23,6 @@ var userAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox
 
 func newCollector() *colly.Collector {
 	c := colly.NewCollector(
-		colly.AllowedDomains("jmanga.is"),
 		colly.UserAgent(userAgent),
 	)
 
