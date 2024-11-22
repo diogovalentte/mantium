@@ -15,6 +15,7 @@ import (
 	"github.com/diogovalentte/mantium/api/src/dashboard"
 	"github.com/diogovalentte/mantium/api/src/db"
 	"github.com/diogovalentte/mantium/api/src/manga"
+	"github.com/diogovalentte/mantium/api/src/sources"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
@@ -55,6 +56,12 @@ func init() {
 
 	log.Info().Msg("Truncating dates to second...")
 	err = truncateDatesToSecond()
+	if err != nil {
+		panic(err)
+	}
+
+	log.Info().Msg("Updating mangas sources...")
+	err = updateMangasSources()
 	if err != nil {
 		panic(err)
 	}
@@ -198,6 +205,30 @@ func truncateDatesToSecond() error {
 			err = cm.UpsertChapterIntoDB(cm.LastReadChapter)
 			if err != nil {
 				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func updateMangasSources() error {
+	contextError := "error updating mangas sources"
+	multimangas, err := manga.GetMultiMangasDB(true)
+	if err != nil {
+		return err
+	}
+
+	for _, mm := range multimangas {
+		for _, m := range mm.Mangas {
+			source, err := sources.GetSource(m.URL)
+			if err != nil {
+				return util.AddErrorContext(contextError, err)
+			}
+
+			err = m.UpdateSourceInDB(source.GetName())
+			if err != nil {
+				return util.AddErrorContext(contextError, err)
 			}
 		}
 	}
