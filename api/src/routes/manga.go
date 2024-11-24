@@ -116,7 +116,7 @@ func AddManga(c *gin.Context) {
 	}
 
 	if mangaAdd.LastReleasedChapter != nil && mangaAdd.LastReleasedChapter.UpdatedAt.IsZero() {
-		mangaAdd.LastReleasedChapter.UpdatedAt = time.Now().Truncate(time.Second)
+		mangaAdd.LastReleasedChapter.UpdatedAt = currentTime.Truncate(time.Second)
 	}
 
 	err = mangaAdd.InsertIntoDB()
@@ -972,7 +972,7 @@ func AddMultiManga(c *gin.Context) {
 	}
 
 	if currentManga.LastReleasedChapter != nil && currentManga.LastReleasedChapter.UpdatedAt.IsZero() {
-		currentManga.LastReleasedChapter.UpdatedAt = time.Now().Truncate(time.Second)
+		currentManga.LastReleasedChapter.UpdatedAt = currentTime.Truncate(time.Second)
 	}
 
 	multiManga := &manga.MultiManga{
@@ -1486,6 +1486,8 @@ func UpdateMultiMangaCoverImg(c *gin.Context) {
 // @Success 200 {object} responseMessage
 // @Router /multimanga/manga [post]
 func AddMangaToMultiManga(c *gin.Context) {
+	currentTime := time.Now()
+
 	multimangaIDStr := c.Query("id")
 	if multimangaIDStr == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "id must be provided"})
@@ -1516,6 +1518,10 @@ func AddMangaToMultiManga(c *gin.Context) {
 			return
 		}
 		mangaAdd.CoverImgResized = true
+	}
+
+	if mangaAdd.LastReleasedChapter != nil && mangaAdd.LastReleasedChapter.UpdatedAt.IsZero() {
+		mangaAdd.LastReleasedChapter.UpdatedAt = currentTime.Truncate(time.Second)
 	}
 
 	multimanga, err := manga.GetMultiMangaFromDB(manga.ID(multimangaID))
