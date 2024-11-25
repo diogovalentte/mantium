@@ -1,6 +1,7 @@
 package klmanga
 
 import (
+	"fmt"
 	"strings"
 	"time"
 
@@ -84,52 +85,68 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 }
 
 func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, error) {
-	s.resetCollector()
-
 	errorContext := "error while searching manga"
-
-	var sharedErr error
-
 	mangaSearchResults := []*models.MangaSearchResult{}
-	s.c.OnHTML("div.row > div.col-sm-4 > div.entry", func(e *colly.HTMLElement) {
-		mangaSearchResult := &models.MangaSearchResult{}
-		mangaSearchResult.Source = "klmanga"
-		mangaSearchResult.URL = e.DOM.Find("h2 > a").AttrOr("href", "")
-
-		name := e.DOM.Find("h2 > a").Text()
-		name = strings.TrimSuffix(name, " (RAW – Free)")
-		name = strings.TrimSuffix(name, " (RAW - Free)")
-		name = strings.TrimSuffix(name, " (Raw – Free)")
-		mangaSearchResult.Name = strings.TrimSuffix(name, " (Raw - Free)")
-		mangaSearchResult.Description = e.DOM.Find("div.genres").Text()
-		mangaSearchResult.CoverURL = e.DOM.Find("div.thumb > a.thumb > img").AttrOr("src", "")
-		if mangaSearchResult.CoverURL == "" {
-			mangaSearchResult.CoverURL = models.DefaultCoverImgURL
-		}
-
-		lastChapter := e.DOM.Find("div.thumb > a.meta-info")
-		chapter, err := extractChapter(lastChapter.Text())
-		if err != nil {
-			sharedErr = err
-			return
-		}
-		mangaSearchResult.LastChapter = chapter
-		mangaSearchResult.LastChapterURL = lastChapter.AttrOr("href", "")
-
-		mangaSearchResults = append(mangaSearchResults, mangaSearchResult)
-	})
-
 	term = strings.ReplaceAll(term, " ", "+")
-	mangaURL := baseSiteURL + "/?s=" + term
-	err := s.c.Visit(mangaURL)
-	if err != nil {
-		if err.Error() == "Not Found" {
-			return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
+	pageNumber := 1
+	var mangaCount int
+
+	for mangaCount < limit {
+		s.resetCollector()
+		var sharedErr error
+		nextPage := false
+
+		s.c.OnHTML("div.row > div.col-sm-4 > div.entry", func(e *colly.HTMLElement) {
+			if mangaCount >= limit {
+				return
+			}
+			mangaSearchResult := &models.MangaSearchResult{}
+			mangaSearchResult.Source = "klmanga"
+			mangaSearchResult.URL = e.DOM.Find("h2 > a").AttrOr("href", "")
+
+			name := e.DOM.Find("h2 > a").Text()
+			name = strings.TrimSuffix(name, " (RAW – Free)")
+			name = strings.TrimSuffix(name, " (RAW - Free)")
+			name = strings.TrimSuffix(name, " (Raw – Free)")
+			mangaSearchResult.Name = strings.TrimSuffix(name, " (Raw - Free)")
+			mangaSearchResult.Description = e.DOM.Find("div.genres").Text()
+			mangaSearchResult.CoverURL = e.DOM.Find("div.thumb > a.thumb > img").AttrOr("src", "")
+			if mangaSearchResult.CoverURL == "" {
+				mangaSearchResult.CoverURL = models.DefaultCoverImgURL
+			}
+
+			lastChapter := e.DOM.Find("div.thumb > a.meta-info")
+			chapter, err := extractChapter(lastChapter.Text())
+			if err != nil {
+				sharedErr = err
+				return
+			}
+			mangaSearchResult.LastChapter = chapter
+			mangaSearchResult.LastChapterURL = lastChapter.AttrOr("href", "")
+
+			mangaSearchResults = append(mangaSearchResults, mangaSearchResult)
+			mangaCount++
+		})
+
+		s.c.OnHTML("span.page-numbers.current + a.page-numbers", func(_ *colly.HTMLElement) {
+			nextPage = true
+		})
+
+		mangaURL := fmt.Sprintf("%s/page/%d/?s=%s", baseSiteURL, pageNumber, term)
+		err := s.c.Visit(mangaURL)
+		if err != nil {
+			if err.Error() == "Not Found" {
+				return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
+			}
+			return nil, util.AddErrorContext(errorContext, util.AddErrorContext("error while visiting manga URL", err))
 		}
-		return nil, util.AddErrorContext(errorContext, util.AddErrorContext("error while visiting manga URL", err))
-	}
-	if sharedErr != nil {
-		return nil, util.AddErrorContext(errorContext, sharedErr)
+		if sharedErr != nil {
+			return nil, util.AddErrorContext(errorContext, sharedErr)
+		}
+		if !nextPage {
+			break
+		}
+		pageNumber++
 	}
 
 	return mangaSearchResults, nil
