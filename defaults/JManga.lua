@@ -1,6 +1,6 @@
 --------------------------------------
 -- @name    JManga
--- @url     https://jmanga.is
+-- @url     https://jmanga.ac
 -- @author  diogovalentte
 -- @license MIT
 --------------------------------------
@@ -14,8 +14,7 @@ Json = require("json")
 ----- VARIABLES -----
 Debug = false
 Client = Http.client({ timeout = 20, insecure_ssl = true, debug = Debug })
-Base = "https://jmanga.is"
-ChapterHasNoImagesDefaultImage = "https://i.imgur.com/jMy7evE.jpeg"
+Base = "https://jmanga.ac"
 --- END VARIABLES ---
 
 ----- MAIN -----
@@ -78,8 +77,7 @@ function ChapterPages(chapterURL)
 
     local chapter_number = extractChapterFromURL(chapterURL)
     if chapter_number == "" then
-        pages[1] = { url = ChapterHasNoImagesDefaultImage, index = 1 }
-        return pages
+        error("could not extract chapter number from URL")
     end
 
     local data_id = ""
@@ -88,8 +86,7 @@ function ChapterPages(chapterURL)
     end)
 
     if data_id == "" then
-        pages[1] = { url = ChapterHasNoImagesDefaultImage, index = 1 }
-        return pages
+        error("could not extract data-id")
     end
 
     request = Http.request("GET", Base .. "/json/chapter?mode=vertical&id=" .. data_id)
@@ -101,7 +98,7 @@ function ChapterPages(chapterURL)
     doc:find("img"):each(function(_, el)
         local url = el:attr("data-src")
         if url == "" then
-            url = ChapterHasNoImagesDefaultImage
+            error("could not extract image URL")
         end
         local page = { url = url, index = i }
         pages[i] = page
@@ -109,7 +106,7 @@ function ChapterPages(chapterURL)
     end)
 
     if #pages == 0 then
-        pages[1] = { url = ChapterHasNoImagesDefaultImage, index = 1 }
+        error("could not extract pages")
     end
 
     return pages
@@ -132,7 +129,7 @@ function extractChapter(s)
     if match then
         return match
     end
-    return ""
+    error("could not extract chapter")
 end
 
 function extractChapterFromURL(url)

@@ -15,7 +15,6 @@ Json = require("json")
 Debug = false
 Client = Http.client({ timeout = 20, insecure_ssl = true, debug = Debug })
 Base = "https://rawkuma.com"
-ChapterHasNoImagesDefaultImage = "https://i.imgur.com/jMy7evE.jpeg"
 --- END VARIABLES ---
 
 ----- MAIN -----
@@ -88,16 +87,14 @@ function ChapterPages(chapterURL)
         local json = Json.decode(json_text)
 
         local images = json["sources"][1]["images"]
-
         for i, image in ipairs(images) do
             local page = { url = image, index = i }
-
             pages[i] = page
         end
     end)
 
     if #pages == 0 then
-        table.insert(pages, { url = ChapterHasNoImagesDefaultImage, index = 1 })
+        error("could not extract pages")
     end
 
     return pages
