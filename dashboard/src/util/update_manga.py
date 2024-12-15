@@ -646,7 +646,7 @@ def show_multimanga_manga(
         st.image(img)
     elif manga["CoverImgURL"] != "":
         st.markdown(
-            f"""<img src="{manga["CoverURL"]}" width="250" height="355"/>""",
+            f"""<img src="{manga["CoverImgURL"]}" width="250" height="355"/>""",
             unsafe_allow_html=True,
         )
     # Hide the "View fullscreen" button from the image
