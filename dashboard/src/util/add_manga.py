@@ -466,6 +466,11 @@ def show_search_result_manga(
             f"""<img src="{manga["CoverURL"]}" width="250" height="355"/>""",
             unsafe_allow_html=True,
         )
+    else:
+        st.markdown(
+            f"""<img src="{defaults.DEFAULT_MANGA_COVER}" width="250" height="355"/>""",
+            unsafe_allow_html=True,
+        )
     # Hide the "View fullscreen" button from the image
     hide_img_fs = """
     <style>

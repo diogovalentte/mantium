@@ -17,3 +17,4 @@ chapter_link_tag_background_color = "rgb(219 233 254)"
 chapter_link_tag_text_color = "rgb(59 130 246)"
 default_number_of_rows_to_show_first = 3
 CUSTOM_MANGA_SOURCE = "custom_manga"
+DEFAULT_MANGA_COVER = "https://i.imgur.com/jMy7evE.jpeg"
