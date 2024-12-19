@@ -1,6 +1,6 @@
 --------------------------------------
 -- @name    KLManga
--- @url     https://klmanga.rs
+-- @url     https://klmanga.at
 -- @author  diogovalentte
 -- @license MIT
 --------------------------------------
@@ -14,7 +14,7 @@ Json = require("json")
 ----- VARIABLES -----
 Debug = false
 Client = Http.client({ timeout = 20, insecure_ssl = true, debug = Debug })
-Base = "https://klmanga.rs"
+Base = "https://klmanga.at"
 --- END VARIABLES ---
 
 ----- MAIN -----
