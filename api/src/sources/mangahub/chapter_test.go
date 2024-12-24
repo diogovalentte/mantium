@@ -20,7 +20,7 @@ var chapterTestTable = []chapterTestType{
 		expected: &manga.Chapter{
 			Chapter:   "155.2",
 			Name:      "Interview with Yagi Norihiro Extended",
-			URL:       "https://mangahub.io/chapter/claymore_116/interview-with-yagi-norihiro-extended",
+			URL:       "https://mangahub.io/chapter/claymore_116/chapter-155.2",
 			UpdatedAt: time.Date(2016, 1, 20, 0, 0, 0, 0, time.UTC), // in the site it's 01-19-2016 (maybe it uses JS or it have to wait a bit to update)
 		},
 		url: "https://mangahub.io/manga/claymore_116",
@@ -29,7 +29,7 @@ var chapterTestTable = []chapterTestType{
 		expected: &manga.Chapter{
 			Chapter:   "249",
 			Name:      "[End]",
-			URL:       "https://mangahub.io/chapter/20th-century-boys_116/end",
+			URL:       "https://mangahub.io/chapter/20th-century-boys_116/chapter-249",
 			UpdatedAt: time.Date(2016, 1, 20, 0, 0, 0, 0, time.UTC), // in the site it's 01-19-2016 (maybe it uses JS or it have to wait a bit to update)
 		},
 		url: "https://mangahub.io/manga/20th-century-boys_116",

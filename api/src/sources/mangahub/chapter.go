@@ -203,9 +203,11 @@ func getChapterFromResponse(chapter *getMangaAPIChapter, mangaSlug string) (*man
 	}
 
 	number := strconv.FormatFloat(chapter.Number, 'f', -1, 64)
-	slug := chapter.Slug
-	if slug == "" {
+	var slug string
+	if number != "" {
 		slug = "chapter-" + number
+	} else {
+		slug = chapter.Slug
 	}
 	title := chapter.Title
 	if title == "" {
