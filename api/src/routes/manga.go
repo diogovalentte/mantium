@@ -69,6 +69,7 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.PATCH("/mangas/metadata", UpdateMangasMetadata)
 		group.POST("/mangas/add_to_kaizoku", AddMangasToKaizoku)
 		group.POST("/mangas/add_to_tranga", AddMangasToTranga)
+		group.GET("/mangas/stats", GetLibraryStats)
 	}
 }
 
@@ -1558,7 +1559,7 @@ type AddMangaToMultiMangaRequest struct {
 // @Param id query int true "Multimanga ID" Example(1)
 // @Param manga_id query int true "Manga ID" Example(1)
 // @Success 200 {object} responseMessage
-// @Router /manga [post]
+// @Router /multimanga/manga [delete]
 func RemoveMangaFromMultiManga(c *gin.Context) {
 	multimangaIDStr := c.Query("id")
 	if multimangaIDStr == "" {
@@ -2540,6 +2541,21 @@ func AddMangasToTranga(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Mangas added to Tranga successfully"})
+}
+
+// @Summary Get library stats
+// @Description Get the library stats from all multimangas and custom mangas.
+// @Produce json
+// @Success 200 {map} map[string]int "{"property": value}"
+// @Router /mangas/stats [get]
+func GetLibraryStats(c *gin.Context) {
+	stats, err := manga.GetLibraryStats()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, stats)
 }
 
 func getMangaIDAndURL(mangaIDStr string, mangaURL string) (manga.ID, string, error) {

@@ -246,30 +246,23 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Removes a manga from a multimanga list in the database.",
+                "description": "Gets a manga metadata from source and inserts into the database.",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Remove manga from multimanga list",
+                "summary": "Add manga",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Multimanga ID",
-                        "name": "id",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Manga ID",
-                        "name": "manga_id",
-                        "in": "query",
-                        "required": true
+                        "description": "Manga data",
+                        "name": "manga",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.AddMangaRequest"
+                        }
                     }
                 ],
                 "responses": {
@@ -844,6 +837,23 @@ const docTemplate = `{
                 }
             }
         },
+        "/mangas/stats": {
+            "get": {
+                "description": "Get the library stats from all multimangas and custom mangas.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get library stats",
+                "responses": {
+                    "200": {
+                        "description": "{\"property\": value}",
+                        "schema": {
+                            "type": "map"
+                        }
+                    }
+                }
+            }
+        },
         "/multimanga": {
             "get": {
                 "description": "Gets a multimanga from the database.",
@@ -1117,6 +1127,42 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "delete": {
+                "description": "Removes a manga from a multimanga list in the database.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Remove manga from multimanga list",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Multimanga ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Manga ID",
+                        "name": "manga_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
             }
         },
         "/multimanga/status": {
@@ -1363,6 +1409,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "lastChapter": {
+                    "type": "string"
+                },
+                "lastChapterURL": {
                     "type": "string"
                 },
                 "name": {

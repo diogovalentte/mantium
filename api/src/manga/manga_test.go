@@ -202,6 +202,16 @@ func TestMangaDBLifeCycle(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
+	t.Run("Get library stats", func(t *testing.T) {
+		stats, err := GetLibraryStats()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(stats) == 0 {
+			t.Fatal("no stats returned")
+		}
+	})
 	t.Run("Should delete the last released chapter of manga from DB", func(t *testing.T) {
 		err := manga.DeleteLastReleasedChapterFromDB()
 		if err != nil {

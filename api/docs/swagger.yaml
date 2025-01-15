@@ -151,6 +151,8 @@ definitions:
         type: string
       lastChapter:
         type: string
+      lastChapterURL:
+        type: string
       name:
         type: string
       source:
@@ -444,20 +446,14 @@ paths:
     post:
       consumes:
       - application/json
-      description: Removes a manga from a multimanga list in the database.
+      description: Gets a manga metadata from source and inserts into the database.
       parameters:
-      - description: Multimanga ID
-        example: 1
-        in: query
-        name: id
+      - description: Manga data
+        in: body
+        name: manga
         required: true
-        type: integer
-      - description: Manga ID
-        example: 1
-        in: query
-        name: manga_id
-        required: true
-        type: integer
+        schema:
+          $ref: '#/definitions/routes.AddMangaRequest'
       produces:
       - application/json
       responses:
@@ -465,7 +461,7 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/routes.responseMessage'
-      summary: Remove manga from multimanga list
+      summary: Add manga
   /manga/chapters:
     get:
       description: Get a manga chapters from the source. You must provide either the
@@ -852,6 +848,17 @@ paths:
               type: array
             type: object
       summary: Search manga
+  /mangas/stats:
+    get:
+      description: Get the library stats from all multimangas and custom mangas.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"property": value}'
+          schema:
+            type: map
+      summary: Get library stats
   /multimanga:
     delete:
       description: Deletes a multimanga from the database.
@@ -1019,6 +1026,31 @@ paths:
             $ref: '#/definitions/routes.responseMessage'
       summary: Update multimanga last read chapter
   /multimanga/manga:
+    delete:
+      consumes:
+      - application/json
+      description: Removes a manga from a multimanga list in the database.
+      parameters:
+      - description: Multimanga ID
+        example: 1
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: Manga ID
+        example: 1
+        in: query
+        name: manga_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Remove manga from multimanga list
     post:
       consumes:
       - application/json

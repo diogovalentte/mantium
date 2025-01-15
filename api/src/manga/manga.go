@@ -1181,6 +1181,169 @@ func getCustomMangasFromDB(db *sql.DB) ([]*Manga, error) {
 	return mangas, nil
 }
 
+func GetLibraryStats() (map[string]int, error) {
+	contextError := "error getting library stats"
+
+	db, err := db.OpenConn()
+	if err != nil {
+		return nil, util.AddErrorContext(contextError, err)
+	}
+	defer db.Close()
+
+	stats, err := getLibraryStatsFromDB(db)
+	if err != nil {
+		return nil, util.AddErrorContext(contextError, err)
+	}
+
+	return stats, nil
+}
+
+func getLibraryStatsFromDB(db *sql.DB) (map[string]int, error) {
+	query := `
+        SELECT
+            COUNT(*) AS total_mangas, 
+            status
+        FROM
+            multimangas
+        GROUP BY
+            status
+        ;
+    `
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	stats := make(map[string]int)
+
+	for rows.Next() {
+		var totalMangas, statusInt int
+
+		err := rows.Scan(&totalMangas, &statusInt)
+		if err != nil {
+			return nil, err
+		}
+
+		status, err := getStatusStr(statusInt)
+		if err != nil {
+			return nil, err
+		}
+
+		stats[status] = totalMangas
+	}
+
+	query = `
+        SELECT
+            COUNT(*) AS total_mangas, 
+            status
+        FROM
+            mangas
+        WHERE
+            source = $1
+        GROUP BY
+            status
+        ;
+    `
+	rows, err = db.Query(query, CustomMangaSource)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var totalMangas, statusInt int
+
+		err := rows.Scan(&totalMangas, &statusInt)
+		if err != nil {
+			return nil, err
+		}
+
+		status, err := getStatusStr(statusInt)
+		if err != nil {
+			return nil, err
+		}
+
+		val, ok := stats[status]
+		if ok {
+			stats[status] = val + totalMangas
+		} else {
+			stats[status] = totalMangas
+		}
+	}
+
+	var unread, total, read int
+
+	query = `
+        WITH unread_mm AS (
+            SELECT
+                COUNT(mm.*) AS total_mangas
+            FROM
+                multimangas AS mm
+            LEFT JOIN 
+                chapters AS c ON c.id = mm.last_read_chapter
+            JOIN
+                mangas AS m ON m.id = mm.current_manga
+            LEFT JOIN
+                chapters AS cc ON cc.id = m.last_released_chapter 
+            WHERE
+                cc.chapter <> c.chapter
+        ),
+        no_last_read_chapter_mm AS (
+            SELECT
+                COUNT(*) AS total_mangas
+            FROM
+                multimangas
+            WHERE
+                last_read_chapter IS NULL
+        ),
+        total_mm AS (
+            SELECT
+                COUNT(*)
+            FROM
+                multimangas
+        ),
+        unread_custom_mangas AS (
+            SELECT
+                COUNT(*) AS total_mangas
+            FROM
+                mangas
+            WHERE
+                last_released_chapter IS NULL
+                AND last_read_chapter IS NOT NULL
+                AND source = $1
+        ),
+        total_custom_mangas AS (
+            SELECT
+                COUNT(*)
+            FROM
+                mangas
+            WHERE
+                source = $1
+        )
+
+        SELECT
+            (unread_mm.total_mangas + no_last_read_chapter_mm.total_mangas + unread_custom_mangas.total_mangas) AS unread_mangas,
+            (total_mm.count + total_custom_mangas.count) AS total_mangas,
+            ((total_mm.count - unread_mm.total_mangas - no_last_read_chapter_mm.total_mangas) + (total_custom_mangas.count - unread_custom_mangas.total_mangas)) AS read_mangas
+        FROM
+            unread_mm, no_last_read_chapter_mm, unread_custom_mangas, total_mm, total_custom_mangas
+        ;
+    `
+	err = db.QueryRow(query, CustomMangaSource).Scan(
+		&unread, &total, &read,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	stats["Unread"] = unread
+	stats["Total"] = total
+	stats["Read"] = read
+
+	return stats, nil
+}
+
 // UpdateCustomMangaLastReadChapterInDB updates the last read chapter of a custom manga in the database.
 // It also needs to delete the last released chapter.
 func UpdateCustomMangaLastReadChapterInDB(m *Manga, chapter *Chapter) error {
@@ -1400,4 +1563,21 @@ func SortMangasByLastReleasedChapterUpdatedAt(mangas []*Manga) {
 
 		return iChapter.UpdatedAt.After(jChapter.UpdatedAt)
 	})
+}
+
+func getStatusStr(status int) (string, error) {
+	switch status {
+	case 1:
+		return "Reading", nil
+	case 2:
+		return "Completed", nil
+	case 3:
+		return "On Hold", nil
+	case 4:
+		return "Dropped", nil
+	case 5:
+		return "Plan to Read", nil
+	default:
+		return "i", fmt.Errorf("invalid status: %d", status)
+	}
 }
