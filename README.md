@@ -18,8 +18,17 @@
 
 By default, the dashboard shows the mangas with unread chapters first, ordering by the last released chapter. Unread manga names have an animation effect that changes the name color to catch your attention.
 
+You have two display options: **grid view** and **list view**.
+
+## Grid View
+
 <p align="center">
   <img src="https://github.com/user-attachments/assets/0c696396-fc78-4843-bdad-710888c0d016">
+</p>
+
+## List View
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/8b0f810f-d2ce-4fe8-a9c5-bd215541d67b">
 </p>
 
 You can add a manga to Mantium using the manga URL or by searching it by name in Mantium:
@@ -34,7 +43,7 @@ You can add a manga to Mantium using the manga URL or by searching it by name in
   - Filter the mangas by name, and status (_reading, completed, dropped, on hold, plan to read, all_).
   - Order the mangas by name, last chapter read, last chapter upload, number of chapters, and unread (_shows unread mangas first, ordering by last upload chapter_), and reverse the sort.
   - Click to add a manga to Mantium.
-  - Set the dashboard configs like the number of columns in the dashboard.
+  - Set the dashboard configs like the display mode, number of columns in the dashboard, etc.
 
 # iFrame
 
@@ -62,7 +71,7 @@ Based on the mangas' last released chapter, Mantium **tries** to set the current
 
 Mantium decides which manga should be the current manga whenever you **add/remove** a manga from a multimanga and in the [periodic job that updates the mangas in the background](https://github.com/diogovalentte/mantium?tab=readme-ov-file#check-manga-updates-and-notify).
 
-The images below show the popup that appears when you click the "**Highlight**" button of one of the mangas in the dashboard. It shows a form to delete the multimanga, update its status, last read chapter, and cover image, add mangas to the multimanga by searching by name or using an URL, and manage the multimanga's mangas.
+The images below show the popup when you click the "**Highlight**" button of one of the mangas in the dashboard. It shows a form to delete the multimanga, update its status, last read chapter, and cover image, add mangas to the multimanga by searching by name or using an URL, and manage the multimanga's mangas.
 
 |                                   Edit Multimanga                                    |                             Edit Multimanga Cover Image                              |                               Manage Multimanga Mangas                               |
 | :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: |
