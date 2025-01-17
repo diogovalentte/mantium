@@ -57,6 +57,8 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
           "last_read_chapter" integer
         );
 
+        CREATE INDEX IF NOT EXISTS "mangas_id_idx" ON "mangas" ("id");
+
         CREATE TABLE IF NOT EXISTS "multimangas" (
           "id" serial UNIQUE,
           "status" smallint NOT NULL,
@@ -67,6 +69,8 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
           "cover_img_url" text NOT NULL DEFAULT '',
           "cover_img_fixed" boolean NOT NULL DEFAULT FALSE
         );
+
+        CREATE INDEX IF NOT EXISTS "multimangas_id_idx" ON "multimangas" ("id");
 
         CREATE TABLE IF NOT EXISTS "chapters" (
           "id" serial UNIQUE,
@@ -80,6 +84,8 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
           "type" smallint,
           PRIMARY KEY ("url", "type")
         );
+
+        CREATE INDEX IF NOT EXISTS "chapters_id_idx" ON "chapters" ("id");
     `)
 	if err != nil {
 		tx.Rollback()
