@@ -58,6 +58,7 @@ func GetLastUpdate(c *gin.Context) {
 // @Param columns query int true "New number of columns." Example(5)
 // @Param showBackgroundErrorWarning query bool true "Show the last background error warning in the dashboard."
 // @Param searchResultsLimit query int true "How many result will be shown in the dashboard search form. It'll be used by all site sources. The maximum allowed limit value varies per source." Example(20)
+// @Param displayMode query string false "The display mode of the dashboard. Can be 'Grid View' or 'List View'."
 // @Router /dashboard/configs [patch]
 func UpdateDashboardConfigs(c *gin.Context) {
 	var configs dashboard.Configs
@@ -85,6 +86,22 @@ func UpdateDashboardConfigs(c *gin.Context) {
 			return
 		}
 		configs.Dashboard.SearchResultsLimit = searchResultsLimit
+	}
+
+	displayMode := c.Query("displayMode")
+	if displayMode != "" {
+		var found bool
+		for _, validValue := range dashboard.ValidDisplayModeValues {
+			if displayMode == validValue {
+				found = true
+				break
+			}
+		}
+		if !found {
+			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("displayMode must be one of the following values: %v", dashboard.ValidDisplayModeValues)})
+			return
+		}
+		configs.Dashboard.DisplayMode = displayMode
 	}
 
 	var showBackgroundErrorWarning bool

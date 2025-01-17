@@ -33,6 +33,8 @@ class MainDashboard:
         self.sort_option_index = 1
 
     def show(self):
+        self.set_css()
+
         ss["is_dialog_open"] = False
         self.check_dashboard_error()
 
@@ -66,26 +68,52 @@ class MainDashboard:
             ss.get("mangas_sort_reverse", False),
         )
 
-        columns_number = ss["settings_columns_number"]
-        max_number_to_show = (
-            columns_number * defaults.default_number_of_rows_to_show_first
-        )
-        can_load_more = False
-        if len(mangas) > max_number_to_show:
-            self.show_mangas(st.columns(columns_number), mangas[:max_number_to_show])
-            can_load_more = True
-        else:
-            self.show_mangas(st.columns(columns_number), mangas)
-
         def callback():
             ss["show_more_manga"] = True
 
-        if not ss.get("show_more_manga", False) and can_load_more:
-            st.button(
-                "Show All", on_click=callback, use_container_width=True, type="primary"
+        can_load_more = False
+
+        if ss["settings_display_mode"] == "List View":
+            max_mangas_to_show = defaults.list_view_number_of_rows_to_show_first
+            if len(mangas) > max_mangas_to_show:
+                self.show_mangas_list_view(mangas[:max_mangas_to_show])
+                can_load_more = True
+            else:
+                self.show_mangas_list_view(mangas)
+
+            if not ss.get("show_more_manga", False) and can_load_more:
+                st.button(
+                    "Show All",
+                    on_click=callback,
+                    use_container_width=True,
+                    type="primary",
+                )
+            if ss.get("show_more_manga", False) and can_load_more:
+                self.show_mangas_list_view(mangas[max_mangas_to_show:])
+        else:
+            columns_number = ss["settings_columns_number"]
+            max_mangas_to_show = (
+                columns_number * defaults.grid_view_number_of_rows_to_show_first
             )
-        if ss.get("show_more_manga", False) and can_load_more:
-            self.show_mangas(st.columns(columns_number), mangas[max_number_to_show:])
+            if len(mangas) > max_mangas_to_show:
+                self.show_mangas_grid_view(
+                    st.columns(columns_number), mangas[:max_mangas_to_show]
+                )
+                can_load_more = True
+            else:
+                self.show_mangas_grid_view(st.columns(columns_number), mangas)
+
+            if not ss.get("show_more_manga", False) and can_load_more:
+                st.button(
+                    "Show All",
+                    on_click=callback,
+                    use_container_width=True,
+                    type="primary",
+                )
+            if ss.get("show_more_manga", False) and can_load_more:
+                self.show_mangas_grid_view(
+                    st.columns(columns_number), mangas[max_mangas_to_show:]
+                )
 
         if "system_last_update_time" not in ss:
             ss["system_last_update_time"] = self.api_client.check_for_updates()
@@ -93,6 +121,70 @@ class MainDashboard:
         self.update_dashboard_job()
 
         self.show_forms()
+
+    def set_css(self):
+        improve_css = """
+            <style>
+                /* Hide the header link button */
+                button[title="View fullscreen"]{
+                    display: none !important;
+                }
+            </style>
+
+            <style>
+                /* Hide the header link button */
+                h1.manga_header > span {
+                    display: none !important;
+                }
+
+                /* Add ellipsis (...) if the manga name is to long */
+                h1.manga_header > div > span {
+                    white-space: nowrap !important;
+                    overflow: hidden !important;
+                    text-overflow: ellipsis !important;
+                }
+
+                h1.manga_header {
+                    padding: 0px 0px 1rem;
+                    text-align: center;
+                    margin-top: 0px;
+                    margin-bottom: 0px;
+                    font-size: 30px;
+                }
+
+                a.manga_header {
+                    text-decoration: none;
+                    color: inherit;
+                }
+                a.manga_header:hover {
+                    color: #04c9b7;
+                }
+                span.manga_header:hover {
+                    color: #04c9b7;
+                }
+
+                @keyframes pulse {
+                    0% {
+                        color: white; /* Start color */
+                    }
+                    100% {
+                        color: #04c9b7; /* End color */
+                    }
+                }
+            </style>
+
+            <style>
+                /* General changes */
+                div[data-testid="stStatusWidget"] {
+                    display: none;
+                }
+
+                div[data-testid="stMainBlockContainer"] {
+                    padding-top: 50px !important;
+                }
+            </style>
+        """
+        st.markdown(improve_css, unsafe_allow_html=True)
 
     def sidebar(self) -> None:
         with st.sidebar:
@@ -286,8 +378,8 @@ class MainDashboard:
                         )
                 st.divider()
 
-    def show_mangas(self, cols_list: list, mangas: list[dict[str, Any]]):
-        """Show mangas in the cols_list columns.
+    def show_mangas_grid_view(self, cols_list: list, mangas: list[dict[str, Any]]):
+        """Show mangas in the cols_list columns in grid view.
 
         Args:
             cols_list (list): A list of streamlit.columns.
@@ -300,62 +392,18 @@ class MainDashboard:
             with cols_list[col_index]:
                 with st.container(border=True):
                     with centered_container("center_container"):
-                        self.show_manga(manga)
+                        self.show_manga_original(manga)
             col_index += 1
 
-    def show_manga(self, manga: dict[str, Any]):
+    def show_manga_original(self, manga: dict[str, Any]):
         unread = (
             manga["LastReadChapter"]["Chapter"]
             != manga["LastReleasedChapter"]["Chapter"]
         )
 
-        improve_headers = """
-            <style>
-                /* Hide the header link button */
-                h1.manga_header > span {
-                    display: none !important;
-                }
-
-                /* Add ellipsis (...) if the manga name is to long */
-                h1.manga_header > div > span {
-                    white-space: nowrap !important;
-                    overflow: hidden !important;
-                    text-overflow: ellipsis !important;
-                }
-
-                h1.manga_header {
-                    padding: 0px 0px 1rem;
-                    text-align: center;
-                    margin-top: 0px;
-                    margin-bottom: 0px;
-                    font-size: 30px;
-                }
-
-                a.manga_header {
-                    text-decoration: none;
-                    color: inherit;
-                }
-                a.manga_header:hover {
-                    color: #04c9b7;
-                }
-                span.manga_header:hover {
-                    color: #04c9b7;
-                }
-
-                @keyframes pulse {
-                    0% {
-                        color: white; /* Start color */
-                    }
-                    100% {
-                        color: #04c9b7; /* End color */
-                    }
-                }
-            </style>
-        """
-        st.markdown(improve_headers, unsafe_allow_html=True)
         st.markdown(
             f"""<h1
-                class="manga_header" style='{"animation: pulse 2s infinite alternate;" if unread else ""}'>
+                class="manga_header" style='margin-top: 16px; margin-bottom: 8px; {"animation: pulse 2s infinite alternate;" if unread else ""}'>
                     <div style='position: relative; display: flex; box-sizing: border-box;'>
                         <span>
                             {'<a class="manga_header" href="{}" target="_blank">{}</a>'.format(manga["URL"], manga["Name"]) if manga["URL"] != "" else f'<span class="manga_header">{manga["Name"]}</span>'}
@@ -383,15 +431,6 @@ class MainDashboard:
                 f"""<img src="{defaults.DEFAULT_MANGA_COVER}" width="250" height="355"/>""",
                 unsafe_allow_html=True,
             )
-        # Hide the "View fullscreen" button from the image
-        hide_img_fs = """
-        <style>
-            button[title="View fullscreen"]{
-                display: none !important;
-            }
-        </style>
-        """
-        st.markdown(hide_img_fs, unsafe_allow_html=True)
 
         if ss.get("status_filter", 1) == 0:
             st.write(
@@ -555,22 +594,327 @@ class MainDashboard:
                 on_click=highlight_manga,
             )
 
+    def show_mangas_list_view(self, mangas: list[dict[str, Any]]):
+        """Show mangas in the list view.
+
+        Args:
+            mangas (dict): A list of mangas.
+        """
+        for manga in mangas:
+            with st.container(border=True):
+                self.show_manga_list_view(manga)
+
+    def show_manga_list_view(self, manga: dict[str, Any]):
+        is_custom_manga = manga["Source"] == defaults.CUSTOM_MANGA_SOURCE
+        show_status = ss.get("status_filter", 1) == 0
+
+        if not is_custom_manga:
+            if not show_status:
+                (
+                    cover_col,
+                    name_col,
+                    last_released_chap_col,
+                    last_released_chap_date_col,
+                    last_read_chap_col,
+                    last_read_chap_date_col,
+                    set_last_read_col,
+                    highlight_col,
+                ) = st.columns(
+                    [9, 40, 22, 12, 22, 12, 20, 20],
+                    gap="small",
+                    vertical_alignment="center",
+                )
+            else:
+                (
+                    cover_col,
+                    name_col,
+                    status_col,
+                    last_released_chap_col,
+                    last_released_chap_date_col,
+                    last_read_chap_col,
+                    last_read_chap_date_col,
+                    set_last_read_col,
+                    highlight_col,
+                ) = st.columns(
+                    [9, 28, 12, 22, 12, 22, 12, 20, 20],
+                    gap="small",
+                    vertical_alignment="center",
+                )
+        else:
+            if not show_status:
+                (
+                    cover_col,
+                    name_col,
+                    last_read_chap_col,
+                    last_read_chap_date_col,
+                    set_last_read_col,
+                    highlight_col,
+                ) = st.columns(
+                    [9, 74, 22, 12, 20, 20],
+                    gap="small",
+                    vertical_alignment="center",
+                )
+            else:
+                (
+                    cover_col,
+                    name_col,
+                    status_col,
+                    last_read_chap_col,
+                    last_read_chap_date_col,
+                    set_last_read_col,
+                    highlight_col,
+                ) = st.columns(
+                    [9, 62, 12, 22, 12, 20, 20],
+                    gap="small",
+                    vertical_alignment="center",
+                )
+
+        unread = (
+            manga["LastReadChapter"]["Chapter"]
+            != manga["LastReleasedChapter"]["Chapter"]
+        )
+
+        with name_col:
+            st.markdown(
+                f"""<h1
+                    class="manga_header" style='font-size: 25px; {"animation: pulse 2s infinite alternate;" if unread else ""}'>
+                        <div style='position: relative; display: flex; box-sizing: border-box;'>
+                            <span>
+                                {'<a class="manga_header" href="{}" target="_blank">{}</a>'.format(manga["URL"], manga["Name"]) if manga["URL"] != "" else f'<span class="manga_header">{manga["Name"]}</span>'}
+                            </span>
+                        </div>
+                    </h1>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        with cover_col:
+            if manga["CoverImg"] is not None:
+                img_bytes = base64.b64decode(manga["CoverImg"])
+                img = BytesIO(img_bytes)
+                if True:
+                    img = Image.open(img)
+                    img = img.resize((52, 75))
+                st.image(img)
+            elif manga["CoverImgURL"] != "":
+                st.markdown(
+                    f"""<img src="{manga["CoverImgURL"]}" width="52" height="75"/>""",
+                    unsafe_allow_html=True,
+                )
+            else:
+                st.markdown(
+                    f"""<img src="{defaults.DEFAULT_MANGA_COVER}" width="52" height="75"/>""",
+                    unsafe_allow_html=True,
+                )
+
+        if show_status:
+            with status_col:
+                st.write("**Status**:", unsafe_allow_html=True)
+                st.write(
+                    f'<span style="color: #d6d6d9;">{defaults.manga_status_options[manga["Status"]]}</span>',
+                    unsafe_allow_html=True,
+                )
+
+        def highlight_manga():
+            ss["highlighted_manga"] = manga
+
+        if not is_custom_manga:
+            chapter_tag_content = f"""
+                <a href="{{}}" target="_blank" style="text-decoration: none; color: {defaults.chapter_link_tag_text_color}">
+                    <span>{{}}</span>
+                </a>
+            """
+
+            chapter = chapter_tag_content.format(
+                manga["LastReleasedChapter"]["URL"],
+                (
+                    f'Ch. {manga["LastReleasedChapter"]["Chapter"]}'
+                    if manga["LastReleasedChapter"]["Chapter"] != ""
+                    else "N/A"
+                ),
+            )
+            release_date = (
+                manga["LastReleasedChapter"]["UpdatedAt"]
+                if manga["LastReleasedChapter"]["UpdatedAt"] != datetime.min
+                else "N/A"
+            )
+            if release_date != "N/A":
+                relative_release_date = get_relative_time(release_date)
+            else:
+                relative_release_date = release_date
+
+            with last_released_chap_col:
+                st.write(
+                    "<strong>Last Released Chapter:</strong>", unsafe_allow_html=True
+                )
+                tagger(
+                    "",
+                    chapter,
+                    defaults.chapter_link_tag_background_color,
+                )
+            with last_released_chap_date_col:
+                st.caption("Release Date:")
+                st.caption(
+                    f'<span style="color: #d6d6d9" title="{release_date}">{relative_release_date}</span>',
+                    unsafe_allow_html=True,
+                )
+
+            chapter = chapter_tag_content.format(
+                manga["LastReadChapter"]["URL"],
+                (
+                    f'Ch. {manga["LastReadChapter"]["Chapter"]}'
+                    if manga["LastReadChapter"]["Chapter"] != ""
+                    else "N/A"
+                ),
+            )
+            read_date = (
+                manga["LastReadChapter"]["UpdatedAt"]
+                if manga["LastReadChapter"]["UpdatedAt"] != datetime.min
+                else "N/A"
+            )
+            if read_date != "N/A":
+                relative_read_date = get_relative_time(read_date)
+            else:
+                relative_read_date = read_date
+
+            with last_read_chap_col:
+                st.write("<strong>Last Read Chapter:</strong>", unsafe_allow_html=True)
+                tagger(
+                    "",
+                    chapter,
+                    defaults.chapter_link_tag_background_color,
+                )
+            with last_read_chap_date_col:
+                st.caption("Read Date:")
+                st.caption(
+                    f'<span style="color: #d6d6d9" title="{read_date}">{relative_read_date}</span>',
+                    unsafe_allow_html=True,
+                )
+
+            with set_last_read_col:
+
+                def set_last_read():
+                    if (
+                        manga.get("LastReadChapter", {}).get("Chapter")
+                        != manga["LastReleasedChapter"]["Chapter"]
+                    ):
+                        if manga["MultiMangaID"] == 0:
+                            self.api_client.update_manga_last_read_chapter(
+                                manga["ID"], manga["URL"], manga["InternalID"]
+                            )
+                        else:
+                            self.api_client.update_multimanga_last_read_chapter(
+                                manga["MultiMangaID"], manga["ID"]
+                            )
+
+                st.button(
+                    "Set last read",
+                    use_container_width=True,
+                    on_click=set_last_read,
+                    key=f"set_last_read_{manga['ID']}",
+                    disabled=not unread,
+                )
+            with highlight_col:
+                st.button(
+                    "Highlight",
+                    use_container_width=True,
+                    type="primary",
+                    key=f"highlight_{manga['ID']}",
+                    on_click=highlight_manga,
+                )
+        else:
+            if manga["LastReadChapter"]["URL"] != "":
+                chapter_tag_content = f"""
+                    <a href="{manga["LastReadChapter"]["URL"]}" target="_blank" style="text-decoration: none; color: {defaults.chapter_link_tag_text_color}">
+                        <span>{"Ch. {}".format(manga["LastReadChapter"]["Chapter"]) if manga["LastReadChapter"]["Chapter"] != "" else "N/A"}</span>
+                    </a>
+                """
+            else:
+                chapter_tag_content = f"""
+                    <span style="color: {defaults.chapter_link_tag_text_color}">{"Ch. {}".format(manga["LastReadChapter"]["Chapter"]) if manga["LastReadChapter"]["Chapter"] != "" else "N/A"}</span>
+                """
+
+            read_date = (
+                manga["LastReadChapter"]["UpdatedAt"]
+                if manga["LastReadChapter"]["UpdatedAt"] != datetime.min
+                else "N/A"
+            )
+            if read_date != "N/A":
+                relative_read_date = get_relative_time(read_date)
+            else:
+                relative_read_date = read_date
+
+            with last_read_chap_col:
+                st.write(
+                    f"<strong>{'Next' if manga['LastReadChapter']['Chapter'] != manga['LastReleasedChapter']['Chapter'] else 'Last Read'} Chapter:</strong>",
+                    unsafe_allow_html=True,
+                )
+                tagger(
+                    "",
+                    chapter_tag_content,
+                    defaults.chapter_link_tag_background_color,
+                )
+            with last_read_chap_date_col:
+                st.caption("Updated Date:")
+                st.caption(
+                    f"<span style='color: #d6d6d9;' title='{read_date}'>{relative_read_date}</span>",
+                    unsafe_allow_html=True,
+                )
+
+            def set_no_more_chapters():
+                api_client.update_custom_manga_has_more_chapters(False, manga["ID"], "")
+
+            with set_last_read_col:
+                st.button(
+                    "No more chapters",
+                    use_container_width=True,
+                    on_click=set_no_more_chapters,
+                    key=f"set_no_more_chapters_{manga['ID']}",
+                    disabled=not unread,
+                )
+
+            with highlight_col:
+                st.button(
+                    "Highlight",
+                    use_container_width=True,
+                    type="primary",
+                    key=f"highlight_{manga['ID']}",
+                    on_click=highlight_manga,
+                )
+
     @st.dialog("Settings")
     def show_settings(self):
         ss["is_dialog_open"] = True
         with st.form(key="configs_update_configs", border=False):
+            st.selectbox(
+                "Display Mode",
+                defaults.display_modes,
+                index=(
+                    defaults.display_modes.index(ss["settings_display_mode"])
+                    if ss["settings_display_mode"] in defaults.display_modes
+                    else 0
+                ),
+                help="Select the dashboard display mode",
+                key="configs_select_display_mode",
+            )
+
             st.slider(
-                "Columns:",
-                min_value=1,
-                max_value=10,
+                (
+                    "Columns:"
+                    if ss["settings_display_mode"] == "Grid View"
+                    else "Columns (available in Grid View only):"
+                ),
+                min_value=defaults.columns_min_value,
+                max_value=defaults.columns_max_value,
                 value=ss["settings_columns_number"],
+                disabled=ss["settings_display_mode"] == "List View",
                 key="configs_select_columns_number",
             )
 
             st.slider(
                 "Search Results Limit:",
-                min_value=1,
-                max_value=50,
+                min_value=defaults.search_results_limit_min_value,
+                max_value=defaults.search_results_limit_max_value,
                 value=ss["settings_search_results_limit"],
                 help="The maximum number of search results to show when searching for a manga to add to the dashboard. It doesn't work very well with MangaUpdates.",
                 key="configs_select_search_results_limit",
@@ -592,12 +936,14 @@ class MainDashboard:
                     self.api_client.update_dashboard_configs(
                         ss.configs_select_columns_number,
                         ss.configs_select_search_results_limit,
+                        ss.configs_select_display_mode,
                         ss.configs_select_show_background_error_warning,
                     )
                     ss["settings_columns_number"] = ss.configs_select_columns_number
                     ss["settings_show_background_error_warning"] = (
                         ss.configs_select_show_background_error_warning
                     )
+                    ss["settings_display_mode"] = ss.configs_select_display_mode
                     ss["settings_search_results_limit"] = (
                         ss.configs_select_search_results_limit
                     )
@@ -630,26 +976,15 @@ def main(api_client):
     if (
         "settings_columns_number" not in ss
         or "settings_show_background_error_warning" not in ss
+        or "settings_display_mode" not in ss
     ):
         configs = api_client.get_dashboard_configs()
+        ss["settings_display_mode"] = configs["displayMode"]
         ss["settings_columns_number"] = configs["columns"]
         ss["settings_search_results_limit"] = configs["searchResultsLimit"]
         ss["settings_show_background_error_warning"] = configs[
             "showBackgroundErrorWarning"
         ]
-
-    streamlit_general_changes = """
-        <style>
-            div[data-testid="stStatusWidget"] {
-                display: none;
-            }
-
-            div[data-testid="stMainBlockContainer"] {
-                padding-top: 50px !important;
-            }
-        </style>
-    """
-    st.markdown(streamlit_general_changes, unsafe_allow_html=True)
 
     dashboard = MainDashboard(api_client)
     dashboard.show()

@@ -50,11 +50,14 @@ func GetLastUpdateDashboard() time.Time {
 // restart and can be updated.
 type Configs struct {
 	Dashboard struct {
-		Columns                    int  `json:"columns"`
-		ShowBackgroundErrorWarning bool `json:"showBackgroundErrorWarning"`
-        SearchResultsLimit         int  `json:"searchResultsLimit"`
+		Columns                    int    `json:"columns"`
+		ShowBackgroundErrorWarning bool   `json:"showBackgroundErrorWarning"`
+		SearchResultsLimit         int    `json:"searchResultsLimit"`
+		DisplayMode                string `json:"displayMode"`
 	} `json:"dashboard"`
 }
+
+var ValidDisplayModeValues = []string{"Grid View", "List View"}
 
 // Note: Also add default values to the SetDefaultConfigsFile function and the default file defaults/configs.json
 
@@ -95,6 +98,10 @@ func SetDefaultConfigsFile() error {
 		_, ok = dashboard["searchResultsLimit"]
 		if !ok {
 			dashboard["searchResultsLimit"] = 20
+		}
+		_, ok = dashboard["displayMode"]
+		if !ok {
+			dashboard["displayMode"] = "Grid View"
 		}
 
 		updatedConfigs, err := json.MarshalIndent(configs, "", "  ")
