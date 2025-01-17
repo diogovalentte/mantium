@@ -24,6 +24,7 @@ Base = "https://rawkuma.com"
 -- @return Table of tables with the following fields: name, url
 function SearchManga(query)
     query = query:gsub(" ", "+")
+    query = query:gsub("–", "-")
     local req_url = Base .. "/?s=" .. query
     local request = Http.request("GET", req_url)
     local result = Client:do_request(request)
@@ -33,6 +34,7 @@ function SearchManga(query)
 
     doc:find("div.listupd > div > div"):each(function(i, el)
         local name = trim(el:find("a > div.bigor > div.tt"):text())
+        name = name:gsub("–", "-")
         local url = trim(el:find("a"):attr("href"))
         local manga = { url = url, name = name }
         mangas[i + 1] = manga
