@@ -137,6 +137,11 @@ class MainDashboard:
                 button[title="View fullscreen"]{
                     display: none !important;
                 }
+
+                /* Hide the browser detection engine div */
+                div.st-key-browser_engine {
+                    display: none !important;
+                }
             </style>
 
             <style>
