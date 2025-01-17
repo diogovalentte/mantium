@@ -4,6 +4,7 @@ from io import BytesIO
 from typing import Any
 
 import streamlit as st
+from browser_detection import browser_detection_engine
 from PIL import Image
 from src.api.api_client import get_api_client
 from src.util import defaults
@@ -91,10 +92,17 @@ class MainDashboard:
             if ss.get("show_more_manga", False) and can_load_more:
                 self.show_mangas_list_view(mangas[max_mangas_to_show:])
         else:
-            columns_number = ss["settings_columns_number"]
-            max_mangas_to_show = (
-                columns_number * defaults.grid_view_number_of_rows_to_show_first
-            )
+            if not ss["is_mobile"]:
+                columns_number = ss["settings_columns_number"]
+                max_mangas_to_show = (
+                    columns_number * defaults.grid_view_number_of_rows_to_show_first
+                )
+            else:
+                columns_number = 1
+                max_mangas_to_show = (
+                    ss["settings_columns_number"]
+                    * defaults.grid_view_number_of_rows_to_show_first
+                )
             if len(mangas) > max_mangas_to_show:
                 self.show_mangas_grid_view(
                     st.columns(columns_number), mangas[:max_mangas_to_show]
@@ -887,27 +895,36 @@ class MainDashboard:
         ss["is_dialog_open"] = True
         with st.form(key="configs_update_configs", border=False):
             st.selectbox(
-                "Display Mode",
+                (
+                    "Display Mode"
+                    if not ss["is_mobile"]
+                    else "Display Mode (only Grid View in mobile)"
+                ),
                 defaults.display_modes,
                 index=(
                     defaults.display_modes.index(ss["settings_display_mode"])
                     if ss["settings_display_mode"] in defaults.display_modes
                     else 0
                 ),
+                disabled=ss["is_mobile"],
                 help="Select the dashboard display mode",
                 key="configs_select_display_mode",
             )
 
+            if ss["is_mobile"]:
+                columns_settings_label = "Columns (not available in mobile):"
+            elif ss["settings_display_mode"] == "Grid View":
+                columns_settings_label = "Columns:"
+            else:
+                columns_settings_label = "Columns (available in Grid View only):"
+
             st.slider(
-                (
-                    "Columns:"
-                    if ss["settings_display_mode"] == "Grid View"
-                    else "Columns (available in Grid View only):"
-                ),
+                columns_settings_label,
                 min_value=defaults.columns_min_value,
                 max_value=defaults.columns_max_value,
                 value=ss["settings_columns_number"],
-                disabled=ss["settings_display_mode"] == "List View",
+                disabled=(ss["settings_display_mode"] == "List View")
+                or ss["is_mobile"],
                 key="configs_select_columns_number",
             )
 
@@ -973,13 +990,17 @@ class MainDashboard:
 
 
 def main(api_client):
+    ss["is_mobile"] = browser_detection_engine()["isMobile"]
+
     if (
         "settings_columns_number" not in ss
         or "settings_show_background_error_warning" not in ss
         or "settings_display_mode" not in ss
     ):
         configs = api_client.get_dashboard_configs()
-        ss["settings_display_mode"] = configs["displayMode"]
+        ss["settings_display_mode"] = (
+            configs["displayMode"] if not ss["is_mobile"] else defaults.display_modes[0]
+        )
         ss["settings_columns_number"] = configs["columns"]
         ss["settings_search_results_limit"] = configs["searchResultsLimit"]
         ss["settings_show_background_error_warning"] = configs[

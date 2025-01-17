@@ -540,7 +540,8 @@ def show_update_multimanga_manage_mangas(multimanga):
     message_container = st.empty()
 
     mangas = multimanga["Mangas"]
-    cols_list = st.columns(2)
+    columns_num = 2 if not ss["is_mobile"] else 1
+    cols_list = st.columns(columns_num)
     show_multimanga_mangas(
         cols_list, mangas, multimanga["CurrentManga"]["ID"], multimanga["ID"]
     )

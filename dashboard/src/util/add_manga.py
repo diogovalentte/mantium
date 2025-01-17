@@ -371,8 +371,9 @@ def show_search_manga_term_form(
     if len(results) == 0:
         st.warning("No results found.")
     else:
+        columns_num = 2 if not ss["is_mobile"] else 1
         show_search_result_mangas(
-            st.columns(2), results, button_name, key_to_save_manga
+            st.columns(columns_num), results, button_name, key_to_save_manga
         )
         st.info(
             "Did not find the manga you were looking for? Try another source site or using the URL directly."
