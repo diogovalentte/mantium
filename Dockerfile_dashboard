@@ -1,4 +1,4 @@
-FROM python:3.10.12
+FROM python:3.10.12-slim
 
 WORKDIR /app/dashboard
 
@@ -7,10 +7,18 @@ COPY ./dashboard .
 ENV DASHBOARD_PORT=8501
 ENV TZ=UTC
 
-RUN pip install virtualenv && python3 -m venv venv
-RUN . venv/bin/activate && pip install --no-cache-dir -r requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    curl \
+    && pip install --no-cache-dir -r requirements.txt \
+    && apt-get remove -y build-essential \
+    && apt-get autoremove -y \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN rm -rf venv/lib/python3.10/site-packages/streamlit/static
-COPY ./defaults/streamlit_fix/build venv/lib/python3.10/site-packages/streamlit/static
+RUN rm -rf /usr/local/lib/python3.10/site-packages/streamlit/static
+COPY ./defaults/streamlit_fix/build /usr/local/lib/python3.10/site-packages/streamlit/static
 
-CMD ["sh", "-c", ". venv/bin/activate && streamlit run --server.port=$DASHBOARD_PORT 01_📖_Dashboard.py"]
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD sh -c 'curl -f http://localhost:$DASHBOARD_PORT/healthz | grep ok || exit 1'
+
+CMD ["sh", "-c", "streamlit run --server.port=$DASHBOARD_PORT 01_📖_Dashboard.py"]
