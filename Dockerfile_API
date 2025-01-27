@@ -25,6 +25,9 @@ ENV GIN_MODE=release
 ENV API_PORT=8080
 ENV TZ=UTC
 
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+  CMD curl -f http://localhost:8080/v1/health | grep OK || exit
+ 
 # Copy the compiled binary from the build stage
 COPY --from=build /app/api/main .
 COPY --from=build /app/defaults ../defaults
