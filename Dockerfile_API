@@ -25,7 +25,7 @@ ENV GIN_MODE=release
 ENV API_PORT=8080
 ENV TZ=UTC
 
-RUN apk update && apk add --no-cache curl
+RUN apk update && apk add --no-cache curl tzdata
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
   CMD sh -c 'curl -f http://localhost:$API_PORT/v1/health | grep OK || exit 1'
