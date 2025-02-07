@@ -53,7 +53,7 @@ jobs:
           push: true
           provenance: false
           platforms: linux/amd64 #,linux/arm64
-          tags: $${ env.REGISTRY }}/${{ env.DASHBOARD_IMAGE_NAME }}:${{ github.ref_name }}
+          tags: ${{ env.REGISTRY }}/${{ env.DASHBOARD_IMAGE_NAME }}:${{ github.ref_name }}
           labels: ${{ steps.dashboard-image-meta.outputs.labels }}
 
       - name: Build and push API Docker image
@@ -64,5 +64,5 @@ jobs:
           push: true
           provenance: false
           platforms: linux/amd64 #,linux/arm64
-          tags: $${ env.REGISTRY }}/${{ env.API_IMAGE_NAME }}:${{ github.ref_name }}
+          tags: ${{ env.REGISTRY }}/${{ env.API_IMAGE_NAME }}:${{ github.ref_name }}
           labels: ${{ steps.api-image-meta.outputs.labels }}
