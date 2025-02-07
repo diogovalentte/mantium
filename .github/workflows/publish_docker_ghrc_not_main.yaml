@@ -1,11 +1,11 @@
-name: Create and publish a container image
+name: Create and publish a container image not on main
 
 on:
   push:
-    branches:
+    branches-ignore:
       - main
     tags:
-      - "v*"
+      - "*"
 
 env:
   REGISTRY: ghcr.io
@@ -15,7 +15,7 @@ env:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
-    if: github.ref_type == 'tag' && github.base_ref == 'refs/heads/main'
+    if: github.ref_type == 'tag' && github.base_ref != 'refs/heads/main'
     steps:
       - name: Check out
         uses: actions/checkout@v4
@@ -52,8 +52,8 @@ jobs:
           file: ./Dockerfile_dashboard
           push: true
           provenance: false
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.dashboard-image-meta.outputs.tags }}
+          platforms: linux/amd64 #,linux/arm64
+          tags: ${{ env.REGISTRY }}/${{ env.DASHBOARD_IMAGE_NAME }}:${{ github.ref_name }}
           labels: ${{ steps.dashboard-image-meta.outputs.labels }}
 
       - name: Build and push API Docker image
@@ -63,17 +63,6 @@ jobs:
           file: ./Dockerfile_API
           push: true
           provenance: false
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.api-image-meta.outputs.tags }}
+          platforms: linux/amd64 #,linux/arm64
+          tags: ${{ env.REGISTRY }}/${{ env.API_IMAGE_NAME }}:${{ github.ref_name }}
           labels: ${{ steps.api-image-meta.outputs.labels }}
-
-      - name: Set up Tailscale
-        uses: tailscale/github-action@v2
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci
-
-      - name: Update my portainer stack xD
-        run: |
-          python3 .github/workflows/update_portainer_stack.py ${{ secrets.PORTAINER_URL }} ${{ secrets.PORTAINER_USERNAME }} ${{ secrets.PORTAINER_PASSWORD }} ${{ secrets.PORTAINER_STACK_NAME }} ${{ secrets.GH_USERNAME }} ${{ secrets.GH_TOKEN }}
