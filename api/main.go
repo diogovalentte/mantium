@@ -166,6 +166,9 @@ func truncateDatesToSecond() error {
 		for _, m := range mm.Mangas {
 			if m.LastReleasedChapter != nil {
 				m.LastReleasedChapter.UpdatedAt = m.LastReleasedChapter.UpdatedAt.Truncate(time.Second)
+				if m.LastReleasedChapter.UpdatedAt.IsZero() {
+					m.LastReleasedChapter.UpdatedAt = time.Now().Truncate(time.Second)
+				}
 				err = m.UpsertChapterIntoDB(m.LastReleasedChapter)
 				if err != nil {
 					return err
@@ -181,6 +184,9 @@ func truncateDatesToSecond() error {
 		}
 		if mm.LastReadChapter != nil {
 			mm.LastReadChapter.UpdatedAt = mm.LastReadChapter.UpdatedAt.Truncate(time.Second)
+			if mm.LastReadChapter.UpdatedAt.IsZero() {
+				mm.LastReadChapter.UpdatedAt = time.Now().Truncate(time.Second)
+			}
 			err = mm.UpsertChapterIntoDB(mm.LastReadChapter)
 			if err != nil {
 				return err
