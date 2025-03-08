@@ -214,10 +214,10 @@ def show_update_multimanga(multimanga_id):
             )
             st.divider()
             st.info(
-                "If you manually changed the cover image and want to go back and use the current manga's cover image, check the box below."
+                "If you manually changed the cover image and want to go back and use the current manga image, check the box below."
             )
             st.checkbox(
-                "Use current manga's current image.",
+                "Use current manga image",
                 key="update_multimanga_form_use_current_manga_cover_img",
             )
 
