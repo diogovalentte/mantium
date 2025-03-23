@@ -182,7 +182,7 @@ def show_update_multimanga(multimanga_id):
 
         if show_chapter_not_found_warning:
             st.warning(
-                "Last read chapter not found chapters list. Select it again or leave empty to not update it."
+                "Last read chapter not found chapters list. Select it again or leave empty."
             )
 
         if (
@@ -190,9 +190,7 @@ def show_update_multimanga(multimanga_id):
             and len(ss.get("update_multimanga_chapter_options", [])) < 1
             and get_chapters_success
         ):
-            st.warning(
-                "No released chapters available. You still can update the other fields."
-            )
+            st.warning("No released chapters found.")
 
         with st.expander(
             "Cover Image",
@@ -827,7 +825,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
             )
 
         if st.form_submit_button(
-            "Update Manga",
+            "Update",
             use_container_width=True,
             type="primary",
         ):
@@ -955,7 +953,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
         """,
     ):
         if st.button(
-            "Delete Manga",
+            "Delete",
             use_container_width=True,
         ):
             try:
