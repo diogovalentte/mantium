@@ -2,6 +2,7 @@ package manga
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -570,21 +571,26 @@ func GetMultiMangasDB(getMangas bool) ([]*MultiManga, error) {
 func getMultiMangasWithoutMangasDB(db *sql.DB) ([]*MultiManga, error) {
 	query := `
         SELECT 
-            multimangas.id AS multimanga_id,
-            multimangas.status AS multimanga_status,
-            multimangas.cover_img AS multimanga_cover_img,
-            multimangas.cover_img_url AS multimanga_cover_img_url,
-            multimangas.cover_img_resized AS multimanga_cover_img_resized,
-            multimangas.cover_img_fixed AS multimanga_cover_img_fixed,
-            mangas.id AS manga_id,
-            mangas.source,
-            mangas.url,
-            mangas.name,
-            mangas.internal_id,
-            mangas.preferred_group,
-            mangas.cover_img_url AS manga_cover_img_url,
-            mangas.cover_img AS manga_cover_img,
-            mangas.cover_img_resized AS manga_cover_img_resized,
+            mm.id AS multimanga_id,
+            mm.status AS multimanga_status,
+            mm.cover_img AS multimanga_cover_img,
+            mm.cover_img_url AS multimanga_cover_img_url,
+            mm.cover_img_resized AS multimanga_cover_img_resized,
+            mm.cover_img_fixed AS multimanga_cover_img_fixed,
+
+            -- current manga
+            cm.id AS manga_id,
+            cm.source,
+            cm.url,
+            cm.name,
+            cm.internal_id,
+            cm.preferred_group,
+            cm.cover_img_url AS manga_cover_img_url,
+            cm.cover_img AS manga_cover_img,
+            cm.cover_img_resized AS manga_cover_img_resized,
+
+            -- other mangas
+            COALESCE(json_agg(DISTINCT om.name) FILTER (WHERE om.id IS NOT NULL)::TEXT, '[]') AS other_mangas,
 
             -- last released chapter
             last_released_chapter.url AS last_released_chapter_url,
@@ -602,13 +608,22 @@ func getMultiMangasWithoutMangasDB(db *sql.DB) ([]*MultiManga, error) {
             last_read_chapter.updated_at AS last_read_chapter_updated_at,
             last_read_chapter.type AS last_read_chapter_type
         FROM 
-            multimangas
+            multimangas AS mm
         LEFT JOIN 
-            mangas ON multimangas.current_manga = mangas.id
+            mangas AS cm ON cm.id = mm.current_manga
         LEFT JOIN 
-            chapters AS last_released_chapter ON last_released_chapter.id = mangas.last_released_chapter
+            mangas AS om ON om.multimanga_id = mm.id
+        LEFT JOIN 
+            chapters AS last_released_chapter ON last_released_chapter.id = cm.last_released_chapter
         LEFT JOIN
-            chapters AS last_read_chapter ON last_read_chapter.id = multimangas.last_read_chapter
+            chapters AS last_read_chapter ON last_read_chapter.id = mm.last_read_chapter
+        GROUP BY
+            mm.id, cm.id, mm.status, mm.cover_img, mm.cover_img_url, mm.cover_img_resized, mm.cover_img_fixed,
+            cm.source, cm.url, cm.name, cm.internal_id, cm.preferred_group, cm.cover_img_url, cm.cover_img, cm.cover_img_resized,
+            last_released_chapter.url, last_released_chapter.chapter, last_released_chapter.name, last_released_chapter.internal_id,
+            last_released_chapter.updated_at, last_released_chapter.type,
+            last_read_chapter.url, last_read_chapter.chapter, last_read_chapter.name, last_read_chapter.internal_id,
+            last_read_chapter.updated_at, last_read_chapter.type
     ;
     `
 	rows, err := db.Query(query)
@@ -634,6 +649,7 @@ func getMultiMangasWithoutMangasDB(db *sql.DB) ([]*MultiManga, error) {
 			multiLastReadChapterType                                                                                       sql.NullInt32
 		)
 
+		altNames := []byte{}
 		err = rows.Scan(
 			&multimanga.ID,
 			&multimanga.Status,
@@ -650,6 +666,7 @@ func getMultiMangasWithoutMangasDB(db *sql.DB) ([]*MultiManga, error) {
 			&currentManga.CoverImgURL,
 			&currentManga.CoverImg,
 			&currentManga.CoverImgResized,
+			&altNames,
 			&lastReleasedChapterURL,
 			&lastReleasedChapterChapter,
 			&lastReleasedChapterName,
@@ -665,6 +682,13 @@ func getMultiMangasWithoutMangasDB(db *sql.DB) ([]*MultiManga, error) {
 		)
 		if err != nil {
 			return nil, err
+		}
+
+		if len(altNames) > 0 {
+			err = json.Unmarshal(altNames, &currentManga.SearchNames)
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		if lastReleasedChapterURL.Valid {
@@ -916,6 +940,8 @@ func getMultiMangaMangasFromDB(multiMangaID ID, db *sql.DB) ([]*Manga, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		currentManga.SearchNames = []string{currentManga.Name}
 
 		if lastReleasedChapterURL.Valid {
 			lastReleasedChapter.URL = lastReleasedChapterURL.String

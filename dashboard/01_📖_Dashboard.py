@@ -42,25 +42,25 @@ class MainDashboard:
         self.sidebar()
 
         mangas = self.api_client.get_mangas()
-        mangas = [
-            manga
-            for manga in mangas
-            if ss.get(
-                "status_filter",
-                self.status_filter_key,
-            )
-            == 0
-            or manga["Status"]
-            == ss.get(
-                "status_filter",
-                self.status_filter_key,
-            )
-        ]
-        if ss.get("search_manga", "") != "":
+        filter_by_status = ss.get(
+            "status_filter",
+            self.status_filter_key,
+        )
+        filter_by_name_term = ss.get("search_manga", "").upper()
+        if filter_by_status != 0 and filter_by_name_term != "":
             mangas = [
                 manga
                 for manga in mangas
-                if ss.get("search_manga", "").upper() in manga["Name"].upper()
+                if manga["Status"] == filter_by_status
+                and filter_by_name_term in ("".join(manga["SearchNames"])).upper()
+            ]
+        elif filter_by_status != 0:
+            mangas = [manga for manga in mangas if manga["Status"] == filter_by_status]
+        elif filter_by_name_term != "":
+            mangas = [
+                manga
+                for manga in mangas
+                if filter_by_name_term in ("".join(manga["SearchNames"])).upper()
             ]
 
         mangas = self.api_client.sort_mangas(

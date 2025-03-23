@@ -45,6 +45,9 @@ type Manga struct {
 	URL string
 	// Name is the name of the manga
 	Name string
+	// SearchNames should be the multimanga's mangas names.
+	// Used for searching mangas by name.
+	SearchNames []string
 	// InteralID is a unique identifier for the manga in the source
 	InternalID string
 	// PreferredGroup is the preferred group that translates (and more) the manga.
@@ -73,8 +76,8 @@ type Manga struct {
 }
 
 func (m Manga) String() string {
-	return fmt.Sprintf("Manga{ID: %d, Source: %s, URL: %s, Name: %s, InternalID: %s, Status: %d, CoverImg: []byte, CoverImgResized: %v, CoverImgURL: %s, CoverImgFixed: %v, PreferredGroup: %s, MultiMangaID: %d, LastReleasedChapter: %s, LastReadChapter: %s}",
-		m.ID, m.Source, m.URL, m.Name, m.InternalID, m.Status, m.CoverImgResized, m.CoverImgURL, m.CoverImgFixed, m.PreferredGroup, m.MultiMangaID, m.LastReleasedChapter, m.LastReadChapter)
+	return fmt.Sprintf("Manga{ID: %d, Source: %s, URL: %s, Name: %s, SearchNames: %v, InternalID: %s, Status: %d, CoverImg: []byte, CoverImgResized: %v, CoverImgURL: %s, CoverImgFixed: %v, PreferredGroup: %s, MultiMangaID: %d, LastReleasedChapter: %s, LastReadChapter: %s}",
+		m.ID, m.Source, m.URL, m.Name, m.SearchNames, m.InternalID, m.Status, m.CoverImgResized, m.CoverImgURL, m.CoverImgFixed, m.PreferredGroup, m.MultiMangaID, m.LastReleasedChapter, m.LastReadChapter)
 }
 
 // InsertIntoDB saves the manga into the database
@@ -472,6 +475,7 @@ func (m *Manga) UpdateNameInDB(name string) error {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, name), err)
 	}
 	m.Name = name
+	m.SearchNames = []string{name}
 
 	return nil
 }
@@ -802,6 +806,7 @@ func getMangaFromDB(mangaID ID, mangaURL string, db *sql.DB) (*Manga, error) {
 			&lastReadChapterURL, &lastReadChapterChapter, &lastReadChapterName,
 			&lastReadChapterInternalID, &lastReadChapterUpdatedAt, &lastReadChapterType,
 		)
+		currentManga.SearchNames = []string{currentManga.Name}
 		if err != nil {
 			if err == sql.ErrNoRows {
 				return nil, errordefs.ErrMangaNotFoundDB
@@ -857,6 +862,7 @@ func getMangaFromDB(mangaID ID, mangaURL string, db *sql.DB) (*Manga, error) {
 			&lastReadChapterURL, &lastReadChapterChapter, &lastReadChapterName,
 			&lastReadChapterInternalID, &lastReadChapterUpdatedAt, &lastReadChapterType,
 		)
+		currentManga.SearchNames = []string{currentManga.Name}
 		if err != nil {
 			if err == sql.ErrNoRows {
 				return nil, errordefs.ErrMangaNotFoundDB
@@ -1026,6 +1032,7 @@ func getMangasWithoutMultiMangasFromDB(db *sql.DB) ([]*Manga, error) {
 		if err != nil {
 			return nil, err
 		}
+		currentManga.SearchNames = []string{currentManga.Name}
 
 		if lastReleasedChapterURL.Valid {
 			lastReleasedChapter.URL = lastReleasedChapterURL.String
@@ -1149,6 +1156,8 @@ func getCustomMangasFromDB(db *sql.DB) ([]*Manga, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		currentManga.SearchNames = []string{currentManga.Name}
 
 		if lastReleasedChapterURL.Valid {
 			lastReleasedChapter.URL = lastReleasedChapterURL.String

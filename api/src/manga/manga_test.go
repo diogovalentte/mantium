@@ -52,6 +52,7 @@ var mangaTest = &Manga{
 		UpdatedAt: time.Now(),
 		Type:      2,
 	},
+	SearchNames: []string{"one piece", "one piece manga"},
 }
 
 var chaptersTest = map[string]*Chapter{
@@ -67,6 +68,15 @@ var chaptersTest = map[string]*Chapter{
 		Chapter: "1000",
 		Type:    2,
 	},
+}
+
+func TestMangaString(t *testing.T) {
+	t.Run("TestString", func(t *testing.T) {
+		ss := mangaTest.String()
+		if ss == "" {
+			t.Errorf("Error: expected string to not be empty")
+		}
+	})
 }
 
 func TestMangaDBLifeCycle(t *testing.T) {
