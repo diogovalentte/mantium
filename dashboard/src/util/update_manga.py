@@ -152,7 +152,7 @@ def show_update_multimanga(multimanga_id):
                 1:
             ],  # Exclude the "All" option
             format_func=lambda index: defaults.manga_status_options[index],
-            key="update_multimanga_form_status",
+            key="update_multimanga_form_status_" + str(multimanga["ID"]),
         )
 
         show_chapter_not_found_warning = False
@@ -177,7 +177,7 @@ def show_update_multimanga(multimanga_id):
             index=last_read_chapter_idx,
             options=ss["update_multimanga_chapter_options"],
             format_func=lambda chapter: f"Ch. {chapter['Chapter']}{(' (' + get_relative_time(get_updated_at_datetime(chapter['UpdatedAt']))) + ')' if chapter['UpdatedAt'] != '0001-01-01T00:00:00Z' else ''}",
-            key="update_multimanga_form_chapter" + str(multimanga["ID"]),
+            key="update_multimanga_form_chapter_" + str(multimanga["ID"]),
         )
 
         if show_chapter_not_found_warning:
@@ -203,12 +203,12 @@ def show_update_multimanga(multimanga_id):
             st.text_input(
                 "Cover Image URL",
                 placeholder="https://example.com/image.jpg",
-                key="update_multimanga_form_cover_img_url",
+                key="update_multimanga_form_cover_img_url_" + str(multimanga["ID"]),
             )
             st.file_uploader(
                 "Upload Cover Image",
                 type=["png", "jpg", "jpeg"],
-                key="update_multimanga_form_cover_img_upload",
+                key="update_multimanga_form_cover_img_upload_" + str(multimanga["ID"]),
             )
             st.divider()
             st.info(
@@ -216,7 +216,8 @@ def show_update_multimanga(multimanga_id):
             )
             st.checkbox(
                 "Use current manga image",
-                key="update_multimanga_form_use_current_manga_cover_img",
+                key="update_multimanga_form_use_current_manga_cover_img_"
+                + str(multimanga["ID"]),
             )
 
         if st.form_submit_button(
@@ -225,15 +226,26 @@ def show_update_multimanga(multimanga_id):
             type="primary",
         ):
             try:
-                cover_url = ss.update_multimanga_form_cover_img_url
+                print(multimanga["ID"])
+
+                cover_url = ss[
+                    "update_multimanga_form_cover_img_url_" + str(multimanga["ID"])
+                ]
                 cover_upload = (
-                    ss.update_multimanga_form_cover_img_upload.getvalue()
-                    if ss.update_multimanga_form_cover_img_upload
+                    ss[
+                        "update_multimanga_form_cover_img_upload_"
+                        + str(multimanga["ID"])
+                    ].getvalue()
+                    if ss[
+                        "update_multimanga_form_cover_img_upload_"
+                        + str(multimanga["ID"])
+                    ]
                     else None
                 )
-                use_current_manga_cover_img = (
-                    ss.update_multimanga_form_use_current_manga_cover_img
-                )
+                use_current_manga_cover_img = ss[
+                    "update_multimanga_form_use_current_manga_cover_img_"
+                    + str(multimanga["ID"])
+                ]
 
                 values_count = sum(
                     [
@@ -251,12 +263,12 @@ def show_update_multimanga(multimanga_id):
                     ss["update_multimanga_updated_parts"] = {}
                     ss["update_multimanga_updated_parts"]["multimanga"] = multimanga
 
-                    ss["update_multimanga_updated_parts"][
-                        "status"
-                    ] = ss.update_multimanga_form_status
+                    ss["update_multimanga_updated_parts"]["status"] = ss[
+                        "update_multimanga_form_status_" + str(multimanga["ID"])
+                    ]
 
                     ss["update_multimanga_updated_parts"]["chapter"] = ss[
-                        "update_multimanga_form_chapter" + str(multimanga["ID"])
+                        "update_multimanga_form_chapter_" + str(multimanga["ID"])
                     ]
 
                     if values_count == 1:
