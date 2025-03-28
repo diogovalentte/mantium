@@ -83,12 +83,14 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 	s.resetCollector()
 
 	errorContext := "error while searching manga"
-
 	var sharedErr error
-
 	mangaSearchResults := []*models.MangaSearchResult{}
+	var mangaCount int
 
 	s.c.OnHTML("div.manga_list-sbs div.item", func(e *colly.HTMLElement) {
+		if mangaCount >= limit {
+			return
+		}
 		var err error
 		var exists bool
 		mangaSearchResult := &models.MangaSearchResult{}
@@ -118,6 +120,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 		mangaSearchResult.LastChapterURL = lastChapter.AttrOr("href", "")
 
 		mangaSearchResults = append(mangaSearchResults, mangaSearchResult)
+		mangaCount++
 	})
 
 	term = strings.ReplaceAll(term, " ", "+")
