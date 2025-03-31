@@ -2795,7 +2795,11 @@ func updateMultiMangaMetadata(multimanga *manga.MultiManga, retries int, retryIn
 				mangasHaveNewChapter = true
 			}
 			if updatedManga.LastReleasedChapter != nil && updatedManga.LastReleasedChapter.UpdatedAt.IsZero() {
-				updatedManga.LastReleasedChapter.UpdatedAt = time.Now().Truncate(time.Second)
+				if !mangaHasNewReleasedChapter && mangaToUpdate.LastReleasedChapter != nil {
+					updatedManga.LastReleasedChapter.UpdatedAt = mangaToUpdate.LastReleasedChapter.UpdatedAt
+				} else {
+					updatedManga.LastReleasedChapter.UpdatedAt = time.Now().Truncate(time.Second)
+				}
 			}
 			err = manga.UpdateMangaMetadataDB(updatedManga)
 			if err != nil {
