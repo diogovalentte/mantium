@@ -7,7 +7,7 @@
 **The basic workflow is:**
 
 1. You find an interesting manga on a site.
-2. Add the manga to Mantium. Set its status (reading, dropped, etc.), and (_optionally_) the last chapter you read from the list of the manga's released chapters.
+2. Add the manga to Mantium. Set its status (reading, dropped, etc.) and (_optionally_) the last chapter you read from the list of the manga's released chapters.
 3. You also configure Mantium to periodically check for new chapters (like every 30 minutes) in your mangas and notify you when they are released.
 4. After being notified that a new chapter has been released, you read it and set it in Mantium that you read the last released chapter.
 5. That's how you track a manga in Mantium.
@@ -63,7 +63,7 @@ The multimanga feature solves this issue. With it, you add the same manga from m
 
 A multimanga always has a manga called **current manga**, which is one of the multimanga's mangas. The dashboard/iframe shows the current manga's name, cover image, and last released chapter. When you select the last read chapter, the list of the current manga chapters is shown. When you're notified of a new chapter, the newest chapter of the current manga is sent in the notification.
 
-Based on the mangas' last released chapter, Mantium **tries** to set the current manga to the manga with the newest released chapter by using the following rules. Take for example a multimanga with two mangas, Mantium will compare the mangas' last released chapter this way:
+Based on the last released chapter, Mantium **tries** to set the current manga to the manga with the newest released chapter by using the following rules. Take, for example, a multimanga with two mangas. Mantium will compare the mangas last released chapter this way:
 
 1. If the chapters' numbers are equal, Mantium sets the manga that released the chapter last as the current manga.
 2. If they're not equal, Mantium will pick the manga with the biggest chapter number.
@@ -71,7 +71,7 @@ Based on the mangas' last released chapter, Mantium **tries** to set the current
 
 Mantium decides which manga should be the current manga whenever you **add/remove** a manga from a multimanga and in the [periodic job that updates the mangas in the background](https://github.com/diogovalentte/mantium?tab=readme-ov-file#check-manga-updates-and-notify).
 
-The images below show the popup when you click the "**Highlight**" button of one of the mangas in the dashboard. It shows a form to delete the multimanga, update its status, last read chapter, and cover image, add mangas to the multimanga by searching by name or using an URL, and manage the multimanga's mangas.
+The images below show the pop-up when you click the "**Highlight**" button of one of the mangas in the dashboard. It shows a form to delete the multimanga, update its status, last read chapter, and cover image, add mangas to the multimanga by searching by name or using a URL, and manage the multimanga's mangas.
 
 |                                   Edit Multimanga                                    |                             Edit Multimanga Cover Image                              |                               Manage Multimanga Mangas                               |
 | :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: |
@@ -79,7 +79,7 @@ The images below show the popup when you click the "**Highlight**" button of one
 
 # Custom Manga
 
-Mantium allows you to add mangas, manhwa, light novels, etc. that aren't from one of the supported source sites. You must manually track these manga, providing info about them like name, URL, cover image, etc. You **can** also provide the **next chapter** you should read from the manga, and update it every time you read a chapter.
+Mantium allows you to add manga, manhwa, light novels, etc., that aren't from one of the supported source sites. You must manually track these manga, providing info about them like name, URL, cover image, etc. You **can** also provide the **next chapter** you should read from the manga and update it every time you read a chapter.
 
 - Custom mangas are not treated as **multimangas**.
 
@@ -145,7 +145,7 @@ The iFrame has the following arguments:
 
 ### Mantium doesn't have any authentication system
 
-The dashboard and the API don't have any authentication system, so anyone who can access the dashboard or the API can do whatever they want. You can add an authentication portal like [Authelia](https://github.com/authelia/authelia) or [Authentik](https://github.com/goauthentik/authentik) in front of the dashboard to protect it and don't expose the API at all.
+The dashboard and the API don't have any authentication system, so anyone who can access the dashboard or the API can do whatever they want. You can add an authentication portal like [Authelia](https://github.com/authelia/authelia) or [Authentik](https://github.com/goauthentik/authentik) in front of the dashboard to protect it and not expose the API at all.
 
 - If you want to use the iFrame returned by the API, you can still put an authentication portal in front of the API if the API and dashboard containers are in the same Docker network. The dashboard will communicate with the API using the API's container name.
 
@@ -159,14 +159,15 @@ Only the first and last chapters are available on the Manga Plus site, so most c
 
 ### KLManga and JManga sources
 
-The KLManga and JManga sources don't show the time when the chapters are released, so when you add a manga to Mantium, it sets the last released chapter's release date to the current time. In the background job that updates the mangas' metadata, if it detects that the last released chapter's release date is the current time, it sets the release date to the current time.
+The KLManga and JManga sources don't show the time when the chapters are released, so when you add a manga to Mantium, it sets the last released chapter's release date to the current time. In the background job that updates the mangas metadata, if it detects that the last released chapter's release date is the current time, it sets the release date to the current time.
 
 ### Manga Updates source
 
 The Manga Updates source is very different from the other sources:
 
 - Mantium tracks the releases instead of actual chapters. Different groups can release the same chapter.
-- The chapters are listed by upload date. This means that if a group uploads chapter 2 from a manga and another group uploads 50 chapters, chapter 2 will be considered the last chapter released. This is a limitation of MangaUpdates that can't properly sort the chapters by chapter number.
+- The chapters are listed by upload date. This means that if a group releases chapters 1-50 and another group rereleases chapter 2, it'll be considered the latest chapter instead of chapter 50 of the other group.
+  - This is a limitation of MangaUpdates, which can't properly sort the chapters by chapter number.
 
 ### Source site down
 
@@ -184,7 +185,7 @@ To fix this, delete the manga and add it again from another source site or use i
 
 ### Source site URL changes
 
-Sometimes the URL of a source site changes (_like comick.fun to comick.io_). In this case, please open an issue if a new release with the updated URL is not released yet.
+Sometimes the URL of a source site changes (_like comick.fun to comick.io_). In this case, please open an issue if a new release with the updated URL has not been released yet.
 
 # Running manually
 
@@ -242,7 +243,7 @@ go run main.go
 
 ## Dashboard
 
-6. The dashboard expects to connect to the API on the address `http://localhost:8080`. If the API is running in a different address, export the API address environment variable:
+6. The dashboard expects to connect to the API on the address `http://localhost:8080`. If the API is running at a different address, export the API address environment variable:
 
 ```bash
 export API_ADDRESS=http://localhost:8081
@@ -254,7 +255,7 @@ export API_ADDRESS=http://localhost:8081
 pip install -r requirements.txt
 ```
 
-8. Currently, there is an issue with one of the dashboard dependencies, refer to [this guide](https://github.com/diogovalentte/mantium/blob/main/defaults/streamlit_fix/help.md) explaining more about it.
+8. Currently, there is an issue with one of the dashboard dependencies; refer to [this guide](https://github.com/diogovalentte/mantium/blob/main/defaults/streamlit_fix/help.md) explaining more about it.
 
 9. Start the dashboard:
 
