@@ -1,7 +1,7 @@
 package jmanga
 
 import (
-	"strings"
+	"net/url"
 	"time"
 
 	"github.com/gocolly/colly/v2"
@@ -123,7 +123,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 		mangaCount++
 	})
 
-	term = strings.ReplaceAll(term, " ", "+")
+	term = url.QueryEscape(term)
 	mangaURL := baseSiteURL + "/?q=" + term
 	err := s.c.Visit(mangaURL)
 	if err != nil {

@@ -2,6 +2,7 @@ package rawkuma
 
 import (
 	"fmt"
+	"net/url"
 	"path"
 	"strings"
 	"time"
@@ -93,7 +94,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 	mangaSearchResults := []*models.MangaSearchResult{}
 	pageNumber := 1
 	var mangaCount int
-	term = strings.ReplaceAll(term, " ", "+")
+	term = url.QueryEscape(term)
 
 	for mangaCount < limit {
 		s.resetCollector()

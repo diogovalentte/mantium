@@ -2,6 +2,7 @@ package klmanga
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -87,7 +88,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, error) {
 	errorContext := "error while searching manga"
 	mangaSearchResults := []*models.MangaSearchResult{}
-	term = strings.ReplaceAll(term, " ", "+")
+	term = url.QueryEscape(term)
 	pageNumber := 1
 	var mangaCount int
 
