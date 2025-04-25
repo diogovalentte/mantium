@@ -24,7 +24,7 @@ Base = "https://jmanga.ac"
 -- @return Table of tables with the following fields: name, url
 function SearchManga(query)
     query = query:gsub(" ", "+")
-    local req_url = Base .. "/?q=" .. query
+    local req_url = Base .. "/?q=" .. encode_query_args(query)
     local request = Http.request("GET", req_url)
     local result = Client:do_request(request)
     local doc = Html.parse(result.body)
@@ -138,6 +138,18 @@ end
 
 function trim(s)
     return (s:gsub("^%s*(.-)%s*$", "%1"))
+end
+
+function encode_query_args(str)
+    if str == nil then
+        return ""
+    end
+    str = tostring(str)
+    str = string.gsub(str, "\n", "\r\n")
+    str = string.gsub(str, "([^%w%-_%.%~])", function(c)
+        return string.format("%%%02X", string.byte(c))
+    end)
+    return str
 end
 
 --- END HELPERS ---
