@@ -20,7 +20,6 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 
 	mangaReturn := &manga.Manga{}
 	mangaReturn.Source = "mangadex"
-	mangaReturn.URL = mangaURL
 
 	mangadexMangaID, err := getMangaID(mangaURL)
 	if err != nil {
@@ -84,6 +83,13 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 			mangaReturn.CoverImg = coverImg
 		}
 	}
+
+	URLParts := strings.Split(mangaURL, "title/")
+	mangaID := URLParts[len(URLParts)-1]
+	mangaIDParts := strings.Split(mangaID, "/")
+	mangaID = mangaIDParts[0]
+
+	mangaReturn.URL = fmt.Sprintf("%s/title/%s", baseSiteURL, mangaID)
 
 	return mangaReturn, nil
 }

@@ -26,7 +26,6 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 
 	mangaReturn := &manga.Manga{}
 	mangaReturn.Source = "mangahub"
-	mangaReturn.URL = mangaURL
 
 	query := `
         {"query":"{manga(x:m01,slug:\"%s\"){title,image,latestChapter}}"}
@@ -79,6 +78,8 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 		}
 	}
 
+	mangaReturn.URL = baseSiteURL + "/manga/" + mangaSlug
+
 	return mangaReturn, nil
 }
 
@@ -92,6 +93,7 @@ type getMangaAPIResponse struct {
 			Image          string                `json:"image"`
 			LastestChapter float64               `json:"latestChapter"`
 			Chapters       []*getMangaAPIChapter `json:"chapters"`
+			Slug           string                `json:"slug"`
 		} `json:"manga"`
 	} `json:"data"`
 }

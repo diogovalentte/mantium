@@ -22,7 +22,7 @@ var mangasTestTable = []mangaTestType{
 		expected: &manga.Manga{
 			Name:            "Death Note",
 			Source:          "mangadex",
-			URL:             "https://mangadex.org/title/75ee72ab-c6bf-4b87-badd-de839156934c/death-note",
+			URL:             "https://mangadex.org/title/75ee72ab-c6bf-4b87-badd-de839156934c",
 			CoverImgURL:     "https://uploads.mangadex.org/covers/75ee72ab-c6bf-4b87-badd-de839156934c/d6555598-8202-477d-acde-303202cb3475.jpg",
 			CoverImgResized: true,
 			LastReleasedChapter: &manga.Chapter{
@@ -33,13 +33,13 @@ var mangasTestTable = []mangaTestType{
 				Type:      1,
 			},
 		},
-		url: "https://mangadex.org/title/75ee72ab-c6bf-4b87-badd-de839156934c/death-note",
+		url: "https://mangadex.org/title/75ee72ab-c6bf-4b87-badd-de839156934c",
 	},
 	{
 		expected: &manga.Manga{
 			Name:            "Vagabond",
 			Source:          "mangadex",
-			URL:             "https://mangadex.org/title/d1a9fdeb-f713-407f-960c-8326b586e6fd/vagabond",
+			URL:             "https://mangadex.org/title/d1a9fdeb-f713-407f-960c-8326b586e6fd",
 			CoverImgURL:     "https://uploads.mangadex.org/covers/d1a9fdeb-f713-407f-960c-8326b586e6fd/05f8dcb4-8ea1-48db-a0b1-3a8fbf695e5a.jpg",
 			CoverImgResized: true,
 			LastReleasedChapter: &manga.Chapter{
@@ -56,7 +56,7 @@ var mangasTestTable = []mangaTestType{
 		expected: &manga.Manga{
 			Name:            "Mob Psycho 100",
 			Source:          "mangadex",
-			URL:             "https://mangadex.org/title/736a2bf0-f875-4b52-a7b4-e8c40505b68a/mob-psycho-100",
+			URL:             "https://mangadex.org/title/736a2bf0-f875-4b52-a7b4-e8c40505b68a",
 			CoverImgURL:     "https://uploads.mangadex.org/covers/736a2bf0-f875-4b52-a7b4-e8c40505b68a/7f07f02e-39ba-4e38-a01d-6f74652013fa.jpg",
 			CoverImgResized: true,
 			LastReleasedChapter: &manga.Chapter{

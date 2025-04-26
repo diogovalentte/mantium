@@ -71,6 +71,8 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 		}
 	}
 
+	mangaReturn.URL = fmt.Sprintf("%s/comic/%s", baseSiteURL, comic.HID)
+
 	return mangaReturn, nil
 }
 
