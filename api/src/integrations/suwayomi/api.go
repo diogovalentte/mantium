@@ -21,6 +21,7 @@ func (s *Suwayomi) baseRequest(reqBody io.Reader, target any) (*http.Response, e
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(s.Username, s.Password)
 
 	resp, err := s.c.Do(req)
 	if err != nil {

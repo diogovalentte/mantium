@@ -55,7 +55,11 @@ func TestFetchSourceID(t *testing.T) {
 	s.Init()
 
 	t.Run("Test fetch source ID", func(t *testing.T) {
-		sourceID, err := s.fetchSourceID("Comick (ALL)")
+		source, err := s.translateSuwayomiSource(inputManga.Source)
+		if err != nil {
+			t.Fatalf("error while translating source: %v", err)
+		}
+		sourceID, err := s.fetchSourceID(source)
 		if err != nil {
 			t.Fatalf("error while fetching source ID: %v", err)
 		}
@@ -71,14 +75,24 @@ func TestFetchManga(t *testing.T) {
 	s.Init()
 
 	t.Run("Test fetch manga", func(t *testing.T) {
-		sourceID, err := s.fetchSourceID("MangaDex (EN)")
+		source, err := s.translateSuwayomiSource(inputManga.Source)
+		if err != nil {
+			t.Fatalf("error while translating source: %v", err)
+		}
+		sourceID, err := s.fetchSourceID(source)
 		if err != nil {
 			t.Fatalf("error while fetching source ID: %v", err)
 		}
-
-		_, err = s.fetchSourceManga(sourceID, "Neighborhood Craftsmen: Stories from Kanda’s Gokura-chou", "https://mangadex.org/title/c1b61cc0-7bb1-4280-a35a-c30a9ee0ff56/kanda-gokura-chou-shokunin-banashi", 1)
+		manga, err := s.fetchSourceManga(sourceID, inputManga, 1)
 		if err != nil {
 			t.Fatalf("error while fetching manga: %v", err)
+		}
+
+		if manga.ID == 0 {
+			t.Fatal("no manga ID found")
+		}
+		if manga.URL == "" {
+			t.Fatal("no manga URL found")
 		}
 	})
 }

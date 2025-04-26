@@ -90,8 +90,10 @@ type TrangaConfigs struct {
 
 // SuwayomiConfigs is a struct that holds the configurations for the Suwayomi integration.
 type SuwayomiConfigs struct {
-	Address string
-	Valid   bool
+	Address  string
+	Username string
+	Password string
+	Valid    bool
 }
 
 // SetConfigs sets the configurations based on a .env file if provided or using environment variables.
@@ -168,6 +170,8 @@ func SetConfigs(filePath string) error {
 	if GlobalConfigs.Suwayomi.Address != "" {
 		GlobalConfigs.Suwayomi.Valid = true
 	}
+	GlobalConfigs.Suwayomi.Username = os.Getenv("SUWAYOMI_USERNAME")
+	GlobalConfigs.Suwayomi.Password = os.Getenv("SUWAYOMI_PASSWORD")
 
 	if os.Getenv("UPDATE_MANGAS_PERIODICALLY") == "true" {
 		GlobalConfigs.PeriodicallyUpdateMangas.Update = true
