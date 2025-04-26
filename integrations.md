@@ -1,10 +1,12 @@
+> Integrations are optional and disabled by default. You can be enabled them using environment variables. Check the [.env.example](https://github.com/diogovalentte/mantium/blob/main/.env.example) file for more information.
+
 # Ntfy
 
-Mantium can notify a Ntfy topic when a new chapter from a manga with the status "reading" or "completed" is released. To activate the Ntfy integration, use the environment variables in the [docker-compose.yml](https://github.com/diogovalentte/mantium/blob/main/docker-compose.yml) file or in the [.env.examples](https://github.com/diogovalentte/mantium/blob/main/.env.example) file.
+Mantium can notify a Ntfy topic when a new chapter from a manga with the status "reading" or "completed" is released.
 
 # Tranga
 
-You can enable the [Tranga](https://github.com/c9glax/tranga) integration using environment variables. The integration will:
+The [Tranga](https://github.com/c9glax/tranga) integration will:
 
 - Try to add the manga to Tranga when you add it to the dashboard.
   - Only the original manga of a multimanga will be added to Tranga. Mangas added to a multimanga later are not automatically added to Tranga.
@@ -13,24 +15,25 @@ You can enable the [Tranga](https://github.com/c9glax/tranga) integration using 
 
 ## Limitations
 
-Tranga can download chapters from mangas from many sources (called connectors in Tranga). They are like Mantium source sites (*MangaDex, ComicK, etc.*). Currently, the only connector/source site that Mantium and Tranga both share is MangaDex. This means that only mangas from MangaDex will work with this integration.
+Tranga can download chapters from mangas from many sources (called connectors in Tranga). They are like Mantium source sites (_MangaDex, ComicK, etc._). Currently, the only connector/source site that Mantium and Tranga both share is MangaDex. This means that only mangas from MangaDex will work with this integration.
 
 # Suwayomi
 
-You can enable the [Suwayomi](https://github.com/Suwayomi) integration using environment variables. The integration will:
+The [Suwayomi](https://github.com/Suwayomi) integration will:
 
 - Try to add the manga to Suwayomi when you add it to the dashboard.
   - Only the original manga of a multimanga will be added to Suwayomi. Mangas added to a multimanga later are not automatically added to Suwayomi.
 - If there are already mangas on your dashboard, the API has a route to add your mangas to Suwayomi. To know more, check the [API docs](https://github.com/diogovalentte/mantium?tab=readme-ov-file#api).
 
 ## Extensions repositories and sources
+
 Mantium expects that you installed both the [keiyoushi](https://github.com/keiyoushi/extensions) and [zosetsu-repo](https://github.com/zosetsu-repo/tachi-repo) extension repositories on your Suwayomi server.
 
 It also expects that you have installed the ComicK, MANGA Plus by SHUEISHA, MangaDex, and MangaHub sources on your server. The integration will only work with these sources, as I didn't find Suwayomi-compatible sources for the other Mantium sources.
 
 # Kaizoku
 
-You can enable the [Kaizoku](https://github.com/oae/kaizoku) integration using environment variables. The integration will:
+The [Kaizoku](https://github.com/oae/kaizoku) integration will:
 
 - Try to add the manga to Kaizoku when you add it to the dashboard.
   - Only the original manga of a multimanga will be added to Kaizoku. Mangas added to a multimanga later are not automatically added to Kaizoku.
