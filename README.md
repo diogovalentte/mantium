@@ -100,7 +100,7 @@ You can also set Mantium to notify you when a manga with the status "reading" or
 Mantium has integrations, like:
 
 - [Ntfy](https://github.com/binwiederhier/ntfy) to notify you of new chapters.
-- [Kaizoku](https://github.com/oae/kaizoku) and [Tranga](https://github.com/C9Glax/tranga/tree/master) to actually download your chapters.
+- [Kaizoku](https://github.com/oae/kaizoku), [Tranga](https://github.com/C9Glax/tranga/tree/master), and [Suwayomi](https://github.com/Suwayomi) to actually download your chapters.
 
 More about the integrations [here](https://github.com/diogovalentte/mantium/blob/main/integrations.md).
 
