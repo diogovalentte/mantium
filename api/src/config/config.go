@@ -21,6 +21,7 @@ var GlobalConfigs = &Configs{
 	PeriodicallyUpdateMangas:  &PeriodicallyUpdateMangasConfigs{},
 	Kaizoku:                   &KaizokuConfigs{},
 	Tranga:                    &TrangaConfigs{},
+	Suwayomi:                  &SuwayomiConfigs{},
 	ConfigsFilePath:           "./configs/configs.json",
 	DefaultConfigsFilePath:    "../defaults/configs.json",
 	UpdateMangasJobGoRoutines: 1, // default value
@@ -34,6 +35,7 @@ type Configs struct {
 	PeriodicallyUpdateMangas *PeriodicallyUpdateMangasConfigs
 	Kaizoku                  *KaizokuConfigs
 	Tranga                   *TrangaConfigs
+	Suwayomi                 *SuwayomiConfigs
 	// A file with configs that should be persisted
 	// Relative to main.go
 	ConfigsFilePath           string
@@ -84,6 +86,12 @@ type TrangaConfigs struct {
 	Address         string
 	DefaultInterval string
 	Valid           bool
+}
+
+// SuwayomiConfigs is a struct that holds the configurations for the Suwayomi integration.
+type SuwayomiConfigs struct {
+	Address string
+	Valid   bool
 }
 
 // SetConfigs sets the configurations based on a .env file if provided or using environment variables.
@@ -154,6 +162,11 @@ func SetConfigs(filePath string) error {
 	}
 	if GlobalConfigs.Tranga.Address != "" {
 		GlobalConfigs.Tranga.Valid = true
+	}
+
+	GlobalConfigs.Suwayomi.Address = os.Getenv("SUWAYOMI_ADDRESS")
+	if GlobalConfigs.Suwayomi.Address != "" {
+		GlobalConfigs.Suwayomi.Valid = true
 	}
 
 	if os.Getenv("UPDATE_MANGAS_PERIODICALLY") == "true" {

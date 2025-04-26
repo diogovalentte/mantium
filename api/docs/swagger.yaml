@@ -14,6 +14,8 @@ definitions:
         properties:
           columns:
             type: integer
+          displayMode:
+            type: string
           searchResultsLimit:
             type: integer
           showBackgroundErrorWarning:
@@ -94,6 +96,13 @@ definitions:
           PreferredGroup is the preferred group that translates (and more) the manga.
           Not all sources have multiple groups. Currently not used.
         type: string
+      searchNames:
+        description: |-
+          SearchNames should be the multimanga's mangas names.
+          Used for searching mangas by name.
+        items:
+          type: string
+        type: array
       source:
         description: |-
           Source is the source of the manga, usually the domain of the website.
@@ -343,6 +352,11 @@ paths:
         name: searchResultsLimit
         required: true
         type: integer
+      - description: The display mode of the dashboard. Can be 'Grid View' or 'List
+          View'.
+        in: query
+        name: displayMode
+        type: string
       produces:
       - application/json
       responses:
@@ -744,6 +758,28 @@ paths:
           schema:
             $ref: '#/definitions/routes.responseMessage'
       summary: Add mangas to Kaizoku
+  /mangas/add_to_suwayomi:
+    post:
+      description: Add the multimangas' current manga to Suwayomi. If it fails to
+        add a manga, it will continue with the next manga. This is a heavy operation
+        depending on the number of mangas in the database.
+      parameters:
+      - collectionFormat: csv
+        description: 'Filter which mangas to add by status. 1=reading, 2=completed,
+          3=on hold, 4=dropped, 5=plan to read. Example: status=1,2,3,5'
+        in: query
+        items:
+          type: integer
+        name: status
+        type: array
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Add mangas to Suwayomi
   /mangas/add_to_tranga:
     post:
       description: Add the multimangas' current manga to Tranga. If it fails to add

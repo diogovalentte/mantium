@@ -26,6 +26,7 @@ import (
 	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/integrations/kaizoku"
 	"github.com/diogovalentte/mantium/api/src/integrations/ntfy"
+	"github.com/diogovalentte/mantium/api/src/integrations/suwayomi"
 	"github.com/diogovalentte/mantium/api/src/integrations/tranga"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/sources"
@@ -69,6 +70,7 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.PATCH("/mangas/metadata", UpdateMangasMetadata)
 		group.POST("/mangas/add_to_kaizoku", AddMangasToKaizoku)
 		group.POST("/mangas/add_to_tranga", AddMangasToTranga)
+		group.POST("/mangas/add_to_suwayomi", AddMangasToSuwayomi)
 		group.GET("/mangas/stats", GetLibraryStats)
 	}
 }
@@ -142,6 +144,15 @@ func AddManga(c *gin.Context) {
 		err = tranga.AddManga(mangaAdd)
 		if err != nil {
 			integrationsErrors = append(integrationsErrors, util.AddErrorContext("manga added to DB, but error while adding it to Tranga", err))
+		}
+	}
+
+	if config.GlobalConfigs.Suwayomi.Valid {
+		suwayomi := suwayomi.Suwayomi{}
+		suwayomi.Init()
+		err = suwayomi.AddManga(mangaAdd)
+		if err != nil {
+			integrationsErrors = append(integrationsErrors, util.AddErrorContext("manga added to DB, but error while adding it to Suwayomi", err))
 		}
 	}
 
@@ -1005,6 +1016,15 @@ func AddMultiManga(c *gin.Context) {
 		err = tranga.AddManga(currentManga)
 		if err != nil {
 			integrationsErrors = append(integrationsErrors, util.AddErrorContext("multimanga added to DB, but error while adding current manga to Tranga", err))
+		}
+	}
+
+	if config.GlobalConfigs.Suwayomi.Valid {
+		suwayomi := suwayomi.Suwayomi{}
+		suwayomi.Init()
+		err = suwayomi.AddManga(currentManga)
+		if err != nil {
+			integrationsErrors = append(integrationsErrors, util.AddErrorContext("multimanga added to DB, but error while adding current manga to Suwayomi", err))
 		}
 	}
 
@@ -2281,6 +2301,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 		"ntfy":           {},
 		"tranga":         {},
 		"kaizoku":        {},
+		"suwayomi":       {},
 	}
 	var newMetadata bool
 	var trangaInt *tranga.Tranga
@@ -2540,6 +2561,80 @@ func AddMangasToTranga(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Mangas added to Tranga successfully"})
+}
+
+// @Summary Add mangas to Suwayomi
+// @Description Add the multimangas' current manga to Suwayomi. If it fails to add a manga, it will continue with the next manga. This is a heavy operation depending on the number of mangas in the database.
+// @Produce json
+// @Param status query []int false "Filter which mangas to add by status. 1=reading, 2=completed, 3=on hold, 4=dropped, 5=plan to read. Example: status=1,2,3,5" Example(1,2,3,5)
+// @Success 200 {object} responseMessage
+// @Router /mangas/add_to_suwayomi [post]
+func AddMangasToSuwayomi(c *gin.Context) {
+	if !config.GlobalConfigs.Suwayomi.Valid {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "suwayomi is not configured in the API"})
+		return
+	}
+
+	statusFilterStr := c.Query("status")
+	var statusFilter []int
+	if statusFilterStr != "" {
+		statusStrings := strings.Split(statusFilterStr, ",")
+		for _, statusStr := range statusStrings {
+			status, err := strconv.Atoi(statusStr)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"message": "status must be a list of numbers"})
+				return
+			}
+			statusFilter = append(statusFilter, status)
+		}
+	}
+
+	mangas := []*manga.Manga{}
+	multimangas, err := manga.GetMultiMangasDB(false)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	for _, multimanga := range multimangas {
+		multimanga.CurrentManga.Status = multimanga.Status
+		mangas = append(mangas, multimanga.CurrentManga)
+	}
+
+	suwayomi := suwayomi.Suwayomi{}
+	suwayomi.Init()
+	logger := util.GetLogger(zerolog.Level(config.GlobalConfigs.API.LogLevelInt))
+	var lastError error
+	for _, dbManga := range mangas {
+		if dbManga.Source == manga.CustomMangaSource {
+			continue
+		}
+
+		if len(statusFilter) > 0 {
+			var found bool
+			for _, status := range statusFilter {
+				if dbManga.Status == manga.Status(status) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				continue
+			}
+		}
+		err = suwayomi.AddManga(dbManga)
+		if err != nil {
+			logger.Error().Err(err).Str("manga_url", dbManga.URL).Msg("error adding manga to Suwayomi, will continue with the next manga...")
+			lastError = err
+			continue
+		}
+	}
+
+	if lastError != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "some errors occured while adding some mangas to Suwayomi, check the logs for more information. Last error: " + lastError.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Mangas added to Suwayomi successfully"})
 }
 
 // @Summary Get library stats

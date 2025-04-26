@@ -124,6 +124,12 @@
                         "name": "searchResultsLimit",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "The display mode of the dashboard. Can be 'Grid View' or 'List View'.",
+                        "name": "displayMode",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -665,6 +671,35 @@
                     "application/json"
                 ],
                 "summary": "Add mangas to Kaizoku",
+                "parameters": [
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Filter which mangas to add by status. 1=reading, 2=completed, 3=on hold, 4=dropped, 5=plan to read. Example: status=1,2,3,5",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/mangas/add_to_suwayomi": {
+            "post": {
+                "description": "Add the multimangas' current manga to Suwayomi. If it fails to add a manga, it will continue with the next manga. This is a heavy operation depending on the number of mangas in the database.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Add mangas to Suwayomi",
                 "parameters": [
                     {
                         "type": "array",
@@ -1234,6 +1269,9 @@
                         "columns": {
                             "type": "integer"
                         },
+                        "displayMode": {
+                            "type": "string"
+                        },
                         "searchResultsLimit": {
                             "type": "integer"
                         },
@@ -1328,6 +1366,13 @@
                 "preferredGroup": {
                     "description": "PreferredGroup is the preferred group that translates (and more) the manga.\nNot all sources have multiple groups. Currently not used.",
                     "type": "string"
+                },
+                "searchNames": {
+                    "description": "SearchNames should be the multimanga's mangas names.\nUsed for searching mangas by name.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "source": {
                     "description": "Source is the source of the manga, usually the domain of the website.\nIf source is the above CustomMangaSource const, it means the manga is a custom manga created by the user.\nand without a source site.",
