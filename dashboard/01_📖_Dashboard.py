@@ -187,6 +187,15 @@ class MainDashboard:
             </style>
 
             <style>
+                /* Center images in streamlit>1.39, but it's kind slow
+                div[data-testid="stElementContainer"]:has(div[data-testid="stImageContainer"]) {
+                    display: grid;
+                    align-items: center;
+                }
+                */
+            </style>
+
+            <style>
                 /* General changes */
                 div[data-testid="stStatusWidget"] {
                     display: none;
@@ -436,12 +445,12 @@ class MainDashboard:
             st.image(img)
         elif manga["CoverImgURL"] != "":
             st.markdown(
-                f"""<img src="{manga["CoverImgURL"]}" width="250" height="355"/>""",
+                f"""<img src="{manga["CoverImgURL"]}" width="250" height="355" style="margin-bottom: 16px;"/>""",
                 unsafe_allow_html=True,
             )
         else:
             st.markdown(
-                f"""<img src="{defaults.DEFAULT_MANGA_COVER}" width="250" height="355"/>""",
+                f"""<img src="{defaults.DEFAULT_MANGA_COVER}" width="250" height="355" style="margin-bottom: 16px;"/>""",
                 unsafe_allow_html=True,
             )
 
@@ -584,9 +593,7 @@ class MainDashboard:
                 unsafe_allow_html=True,
             )
 
-            st.markdown(
-                """<div style="height: 25.6px"></div>""", unsafe_allow_html=True
-            )
+            st.markdown("""<div style="height: 24px"></div>""", unsafe_allow_html=True)
 
             def set_no_more_chapters():
                 api_client.update_custom_manga_has_more_chapters(False, manga["ID"], "")
@@ -962,13 +969,13 @@ class MainDashboard:
                         ss.configs_select_show_background_error_warning,
                     )
                     ss["settings_columns_number"] = ss.configs_select_columns_number
-                    ss["settings_show_background_error_warning"] = (
-                        ss.configs_select_show_background_error_warning
-                    )
+                    ss[
+                        "settings_show_background_error_warning"
+                    ] = ss.configs_select_show_background_error_warning
                     ss["settings_display_mode"] = ss.configs_select_display_mode
-                    ss["settings_search_results_limit"] = (
-                        ss.configs_select_search_results_limit
-                    )
+                    ss[
+                        "settings_search_results_limit"
+                    ] = ss.configs_select_search_results_limit
                     ss["configs_update_success_message"] = "Settings saved successfully"
                     st.rerun()
                 except Exception as e:
