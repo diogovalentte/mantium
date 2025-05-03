@@ -105,7 +105,7 @@ func TestAddManga(t *testing.T) {
 	s.Init()
 
 	t.Run("Test add manga", func(t *testing.T) {
-		err := s.AddManga(inputManga)
+		err := s.AddManga(inputManga, true)
 		if err != nil {
 			t.Fatalf("error while adding manga: %v", err)
 		}
@@ -195,7 +195,7 @@ func TestEnqueueChapterDownload(t *testing.T) {
 			t.Fatal("no chapters found")
 		}
 
-		err = s.EnqueueChapterDownload(chapters[0].ID)
+		err = s.EnqueueChapterDownloads([]int{chapters[0].ID})
 		if err != nil {
 			t.Fatalf("error while enqueuing chapter download: %v", err)
 		}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/diogovalentte/mantium/api/src/manga"
@@ -188,7 +189,7 @@ func (s *Suwayomi) addManga(mangaID int) error {
 	return nil
 }
 
-func (s *Suwayomi) AddManga(manga *manga.Manga) error {
+func (s *Suwayomi) AddManga(manga *manga.Manga, enqueChapterDownloads bool) error {
 	errorContext := "(suwayomi) error while adding manga '%s' / '%s'"
 
 	source, err := s.translateSuwayomiSource(manga.Source)
@@ -212,6 +213,21 @@ func (s *Suwayomi) AddManga(manga *manga.Manga) error {
 	err = s.addManga(sourceManga.ID)
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(errorContext, manga.Name, manga.URL), err)
+	}
+
+	if enqueChapterDownloads {
+		chapters, err := s.GetChapters(sourceManga.ID)
+		if err != nil {
+			return util.AddErrorContext(fmt.Sprintf(errorContext, manga.Name, manga.URL), util.AddErrorContext("error while getting chapters", err))
+		}
+		chapterIDs := make([]int, len(chapters))
+		for i, chapter := range chapters {
+			chapterIDs[i] = chapter.ID
+		}
+		err = s.EnqueueChapterDownloads(chapterIDs)
+		if err != nil {
+			return util.AddErrorContext(fmt.Sprintf(errorContext, manga.Name, manga.URL), util.AddErrorContext("error while enqueueing chapter downloads", err))
+		}
 	}
 
 	return nil
@@ -331,29 +347,35 @@ func (s *Suwayomi) GetChapter(mangaID int, chapterURL string) (*APIChapter, erro
 	return nil, util.AddErrorContext(fmt.Sprintf(errorContext, chapterURL, mangaID), fmt.Errorf("chapter not found"))
 }
 
-func (s *Suwayomi) EnqueueChapterDownload(chapterID int) error {
-	errorContext := "error while enqueueing chapter download for chapter '%d'"
+func (s *Suwayomi) EnqueueChapterDownloads(chapterIDs []int) error {
+	errorContext := "error while enqueueing chapter downloads for chapters '%s'"
+
+	strSlice := make([]string, len(chapterIDs))
+	for i, id := range chapterIDs {
+		strSlice[i] = strconv.Itoa(id)
+	}
+	chapterIDsStr := strings.Join(strSlice, ",")
 
 	query := `
-mutation MyMutation($ids: [Int!] = [%d]) {
+mutation MyMutation($ids: [Int!] = [%s]) {
   enqueueChapterDownloads(input: {ids: $ids}) {
     clientMutationId
   }
 }
 	`
-	query = fmt.Sprintf(query, chapterID)
+	query = fmt.Sprintf(query, chapterIDsStr)
 
 	payload := map[string]any{
 		"query": query,
 	}
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(errorContext, chapterID), util.AddErrorContext("error while marshalling payload", err))
+		return util.AddErrorContext(fmt.Sprintf(errorContext, chapterIDsStr), util.AddErrorContext("error while marshalling payload", err))
 	}
 
 	_, err = s.baseRequest(bytes.NewBuffer(jsonData), nil)
 	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(errorContext, chapterID), err)
+		return util.AddErrorContext(fmt.Sprintf(errorContext, chapterIDsStr), err)
 	}
 
 	return nil

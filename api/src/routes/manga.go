@@ -150,9 +150,16 @@ func AddManga(c *gin.Context) {
 	if config.GlobalConfigs.Suwayomi.Valid {
 		suwayomi := suwayomi.Suwayomi{}
 		suwayomi.Init()
-		err = suwayomi.AddManga(mangaAdd)
+
+		var dashboardConfigs *dashboard.Configs
+		err = dashboard.GetConfigsFromFile(&dashboardConfigs)
 		if err != nil {
-			integrationsErrors = append(integrationsErrors, util.AddErrorContext("manga added to DB, but error while adding it to Suwayomi", err))
+			integrationsErrors = append(integrationsErrors, util.AddErrorContext("manga added to DB, but error while adding it to Suwayomi", fmt.Errorf("error while getting dashboard configs: %s", err.Error())))
+		} else {
+			err = suwayomi.AddManga(mangaAdd, dashboardConfigs.Integrations.EnqueueAllSuwayomiChaptersToDownload)
+			if err != nil {
+				integrationsErrors = append(integrationsErrors, util.AddErrorContext("manga added to DB, but error while adding it to Suwayomi", err))
+			}
 		}
 	}
 
@@ -1022,9 +1029,16 @@ func AddMultiManga(c *gin.Context) {
 	if config.GlobalConfigs.Suwayomi.Valid {
 		suwayomi := suwayomi.Suwayomi{}
 		suwayomi.Init()
-		err = suwayomi.AddManga(currentManga)
+
+		var dashboardConfigs *dashboard.Configs
+		err = dashboard.GetConfigsFromFile(&dashboardConfigs)
 		if err != nil {
-			integrationsErrors = append(integrationsErrors, util.AddErrorContext("multimanga added to DB, but error while adding current manga to Suwayomi", err))
+			integrationsErrors = append(integrationsErrors, util.AddErrorContext("multimanga added to DB, but error while adding current manga to Suwayomi", fmt.Errorf("error while getting dashboard configs: %s", err.Error())))
+		} else {
+			err = suwayomi.AddManga(currentManga, dashboardConfigs.Integrations.EnqueueAllSuwayomiChaptersToDownload)
+			if err != nil {
+				integrationsErrors = append(integrationsErrors, util.AddErrorContext("multimanga added to DB, but error while adding current manga to Suwayomi", err))
+			}
 		}
 	}
 
@@ -1592,9 +1606,16 @@ func AddMangaToMultiManga(c *gin.Context) {
 		if config.GlobalConfigs.Suwayomi.Valid {
 			suwayomi := suwayomi.Suwayomi{}
 			suwayomi.Init()
-			err = suwayomi.AddManga(mangaAdd)
+
+			var dashboardConfigs *dashboard.Configs
+			err = dashboard.GetConfigsFromFile(&dashboardConfigs)
 			if err != nil {
-				integrationsErrors = append(integrationsErrors, util.AddErrorContext("manga added to multimanga, but error while adding current manga to Suwayomi", err))
+				integrationsErrors = append(integrationsErrors, util.AddErrorContext("manga added to multimanga, but error while adding it to Suwayomi", fmt.Errorf("error while getting dashboard configs: %s", err.Error())))
+			} else {
+				err = suwayomi.AddManga(mangaAdd, dashboardConfigs.Integrations.EnqueueAllSuwayomiChaptersToDownload)
+				if err != nil {
+					integrationsErrors = append(integrationsErrors, util.AddErrorContext("manga added to multimanga, but error while adding it to Suwayomi", err))
+				}
 			}
 		}
 
@@ -2427,7 +2448,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 	for _, m := range mangasWithNewChapter {
 		// Notify only if the manga's status is 1 (reading) or 2 (completed)
 		if notify && (m.Status == 1 || m.Status == 2) {
-			for j := 0; j < retries; j++ {
+			for j := range retries {
 				err = NotifyMangaLastReleasedChapterUpdate(m)
 				if err != nil {
 					if j == retries-1 {
@@ -2459,12 +2480,12 @@ func UpdateMangasMetadata(c *gin.Context) {
 			} else {
 				chapter, err := suwayomiInt.GetChapter(mangaID, m.LastReleasedChapter.URL)
 				if err != nil {
-					logger.Error().Err(err).Str("manga_url", m.URL).Str("suwayomi_manga_id", string(mangaID)).Msg("Manga metadata updated in DB, but error getting chapter from Suwayomi.\nWill continue with the next manga...")
+					logger.Error().Err(err).Str("manga_url", m.URL).Str("suwayomi_manga_id", strconv.Itoa(mangaID)).Msg("Manga metadata updated in DB, but error getting chapter from Suwayomi.\nWill continue with the next manga...")
 					errors["suwayomi"] = append(errors["suwayomi"], err.Error())
 				} else {
-					err = suwayomiInt.EnqueueChapterDownload(chapter.ID)
+					err = suwayomiInt.EnqueueChapterDownloads([]int{chapter.ID})
 					if err != nil {
-						logger.Error().Err(err).Str("manga_url", m.URL).Str("suwayomi_chapter_id", string(chapter.ID)).Msg("Manga metadata updated in DB, but error updating chapter in Suwayomi.\nWill continue with the next manga...")
+						logger.Error().Err(err).Str("manga_url", m.URL).Str("suwayomi_chapter_id", strconv.Itoa(chapter.ID)).Msg("Manga metadata updated in DB, but error updating chapter in Suwayomi.\nWill continue with the next manga...")
 						errors["suwayomi"] = append(errors["suwayomi"], err.Error())
 					}
 				}
@@ -2678,6 +2699,14 @@ func AddMangasToSuwayomi(c *gin.Context) {
 	suwayomi.Init()
 	logger := util.GetLogger(zerolog.Level(config.GlobalConfigs.API.LogLevelInt))
 	var lastError error
+
+	var dashboardConfigs *dashboard.Configs
+	err = dashboard.GetConfigsFromFile(&dashboardConfigs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("error while getting dashboard configs: %s", err.Error())})
+		return
+	}
+
 	for _, dbManga := range mangas {
 		if dbManga.Source == manga.CustomMangaSource {
 			continue
@@ -2695,7 +2724,7 @@ func AddMangasToSuwayomi(c *gin.Context) {
 				continue
 			}
 		}
-		err = suwayomi.AddManga(dbManga)
+		err = suwayomi.AddManga(dbManga, dashboardConfigs.Integrations.EnqueueAllSuwayomiChaptersToDownload)
 		if err != nil {
 			logger.Error().Err(err).Str("manga_url", dbManga.URL).Msg("error adding manga to Suwayomi, will continue with the next manga...")
 			lastError = err
