@@ -84,12 +84,10 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 		}
 	}
 
-	URLParts := strings.Split(mangaURL, "title/")
-	mangaID := URLParts[len(URLParts)-1]
-	mangaIDParts := strings.Split(mangaID, "/")
-	mangaID = mangaIDParts[0]
-
-	mangaReturn.URL = fmt.Sprintf("%s/title/%s", baseSiteURL, mangaID)
+	mangaReturn.URL, err = GetFormattedMangaURL(mangaURL)
+	if err != nil {
+		return nil, util.AddErrorContext(errorContext, err)
+	}
 
 	return mangaReturn, nil
 }
@@ -202,4 +200,20 @@ func getMangaID(mangaURL string) (string, error) {
 	}
 
 	return matches[1], nil
+}
+
+func GetFormattedMangaURL(mangaURL string) (string, error) {
+	errorContext := "error while getting manga URL '%s'"
+
+	URLParts := strings.Split(mangaURL, "title/")
+	if len(URLParts) < 2 {
+		return "", util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), fmt.Errorf("manga ID not found"))
+	}
+	mangaID := URLParts[len(URLParts)-1]
+	mangaIDParts := strings.Split(mangaID, "/")
+	if len(mangaIDParts) < 1 {
+		return "", util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), fmt.Errorf("manga ID not found"))
+	}
+	mangaID = mangaIDParts[0]
+	return fmt.Sprintf("%s/title/%s", baseSiteURL, mangaID), nil
 }

@@ -16,6 +16,8 @@ import (
 	"github.com/diogovalentte/mantium/api/src/db"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/sources"
+	"github.com/diogovalentte/mantium/api/src/sources/mangadex"
+	"github.com/diogovalentte/mantium/api/src/sources/mangahub"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
@@ -55,13 +57,9 @@ func init() {
 	}
 
 	log.Info().Msg("Truncating dates to second...")
-	err = truncateDatesToSecond()
-	if err != nil {
-		panic(err)
-	}
-
 	log.Info().Msg("Updating mangas sources...")
-	err = updateMangasSources()
+	log.Info().Msg("Updating mangas URL...")
+	err = updateMangas()
 	if err != nil {
 		panic(err)
 	}
@@ -156,7 +154,7 @@ func turnMangasIntoMultiMangas() error {
 	return nil
 }
 
-func truncateDatesToSecond() error {
+func updateMangas() error {
 	multimangas, err := manga.GetMultiMangasDB(true)
 	if err != nil {
 		return err
@@ -164,71 +162,87 @@ func truncateDatesToSecond() error {
 
 	for _, mm := range multimangas {
 		for _, m := range mm.Mangas {
+			// Truncate the dates to seconds
+			contextError := fmt.Sprintf("error updating manga '%s'", m)
 			if m.LastReleasedChapter != nil {
 				m.LastReleasedChapter.UpdatedAt = m.LastReleasedChapter.UpdatedAt.Truncate(time.Second)
 				err = m.UpsertChapterIntoDB(m.LastReleasedChapter)
 				if err != nil {
-					return err
+					return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 				}
 			}
 			if m.LastReadChapter != nil {
 				m.LastReadChapter.UpdatedAt = m.LastReadChapter.UpdatedAt.Truncate(time.Second)
 				err = m.UpsertChapterIntoDB(m.LastReadChapter)
 				if err != nil {
-					return err
+					return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+				}
+			}
+
+			// Update the source
+			contextError = "error updating source for manga '%s'"
+			source, err := sources.GetSource(m.URL)
+			if err != nil {
+				return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+			}
+
+			err = m.UpdateSourceInDB(source.GetName())
+			if err != nil {
+				return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+			}
+
+			// Update the URL to the new format
+			contextError = "error updating URL for manga '%s'"
+			var newURL string
+			switch m.Source {
+			case "mangadex":
+				newURL, err = mangadex.GetFormattedMangaURL(m.URL)
+				if err != nil {
+					return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+				}
+			case "mangahub":
+				newURL, err = mangahub.GetFormattedMangaURL(m.URL)
+				if err != nil {
+					return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+				}
+			}
+
+			if newURL != "" {
+				err = m.UpdateURLInDB(newURL)
+				if err != nil {
+					return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 				}
 			}
 		}
+		contextError := "error updating multimanga '%s'"
 		if mm.LastReadChapter != nil {
 			mm.LastReadChapter.UpdatedAt = mm.LastReadChapter.UpdatedAt.Truncate(time.Second)
 			err = mm.UpsertChapterIntoDB(mm.LastReadChapter)
 			if err != nil {
-				return err
+				return util.AddErrorContext(fmt.Sprintf(contextError, mm), err)
 			}
 		}
 	}
 
+	contextError := "error updating custom mangas"
 	customMangas, err := manga.GetCustomMangasDB()
 	if err != nil {
-		return err
+		return util.AddErrorContext(contextError, err)
 	}
+	contextError = "error updating custom manga '%s'"
 	for _, cm := range customMangas {
 		if cm.LastReleasedChapter != nil {
 			cm.LastReleasedChapter.UpdatedAt = cm.LastReleasedChapter.UpdatedAt.Truncate(time.Second)
 			err = cm.UpsertChapterIntoDB(cm.LastReleasedChapter)
 			if err != nil {
-				return err
+				return util.AddErrorContext(fmt.Sprintf(contextError, cm), err)
 			}
 		}
 		if cm.LastReadChapter != nil {
 			cm.LastReadChapter.UpdatedAt = cm.LastReadChapter.UpdatedAt.Truncate(time.Second)
 			err = cm.UpsertChapterIntoDB(cm.LastReadChapter)
 			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-func updateMangasSources() error {
-	contextError := "error updating mangas sources"
-	multimangas, err := manga.GetMultiMangasDB(true)
-	if err != nil {
-		return err
-	}
-
-	for _, mm := range multimangas {
-		for _, m := range mm.Mangas {
-			source, err := sources.GetSource(m.URL)
-			if err != nil {
-				return util.AddErrorContext(contextError, err)
-			}
-
-			err = m.UpdateSourceInDB(source.GetName())
-			if err != nil {
-				return util.AddErrorContext(contextError, err)
+				return util.AddErrorContext(fmt.Sprintf(contextError, cm), err)
 			}
 		}
 	}

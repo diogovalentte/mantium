@@ -78,7 +78,10 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 		}
 	}
 
-	mangaReturn.URL = baseSiteURL + "/manga/" + mangaSlug
+	mangaReturn.URL, err = GetFormattedMangaURL(mangaURL)
+	if err != nil {
+		return nil, util.AddErrorContext(errorContext, err)
+	}
 
 	return mangaReturn, nil
 }
@@ -177,4 +180,15 @@ func getMangaSlug(mangaURL string) (string, error) {
 	}
 
 	return matches[1], nil
+}
+
+func GetFormattedMangaURL(mangaURL string) (string, error) {
+	errorContext := "error while getting formatted manga URL '%s'"
+
+	mangaSlug, err := getMangaSlug(mangaURL)
+	if err != nil {
+		return "", util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), err)
+	}
+
+	return fmt.Sprintf("%s/manga/%s", baseSiteURL, mangaSlug), nil
 }
