@@ -969,7 +969,7 @@ class MainDashboard:
                 st.checkbox(
                     "Enqueue chapters to download when adding manga to Suwayomi",
                     value=ss["settings_enqueue_all_suwayomi_chapters_to_download"],
-                    help="By default, enqueue to download all chapters from the mangas that are added to the Suwayomi integration (expect ComicK mangas).",
+                    help="By default, enqueue to download all chapters from the mangas that are added to the Suwayomi integration (except ComicK mangas).",
                     key="configs_enqueue_all_suwayomi_chapters_to_download",
                 )
 
