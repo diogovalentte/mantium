@@ -2309,6 +2309,11 @@ func UpdateMangasMetadata(c *gin.Context) {
 		trangaInt = &tranga.Tranga{}
 		trangaInt.Init()
 	}
+	var suwayomiInt *suwayomi.Suwayomi
+	if config.GlobalConfigs.Suwayomi.Valid {
+		suwayomiInt = &suwayomi.Suwayomi{}
+		suwayomiInt.Init()
+	}
 	retries := 3
 	retryInterval := 3 * time.Second
 
@@ -2395,6 +2400,26 @@ func UpdateMangasMetadata(c *gin.Context) {
 				errors["tranga"] = append(errors["tranga"], err.Error())
 			}
 
+		}
+
+		if suwayomiInt != nil {
+			mangaID, err := suwayomiInt.GetLibraryMangaID(m)
+			if err != nil {
+				logger.Error().Err(err).Str("manga_url", m.URL).Msg("Manga metadata updated in DB, but error getting manga ID from Suwayomi.\nWill continue with the next manga...")
+				errors["suwayomi"] = append(errors["suwayomi"], err.Error())
+			} else {
+				chapter, err := suwayomiInt.GetChapter(mangaID, m.LastReleasedChapter.URL)
+				if err != nil {
+					logger.Error().Err(err).Str("manga_url", m.URL).Str("suwayomi_manga_id", string(mangaID)).Msg("Manga metadata updated in DB, but error getting chapter from Suwayomi.\nWill continue with the next manga...")
+					errors["suwayomi"] = append(errors["suwayomi"], err.Error())
+				} else {
+					err = suwayomiInt.EnqueueChapterDownload(chapter.ID)
+					if err != nil {
+						logger.Error().Err(err).Str("manga_url", m.URL).Str("suwayomi_chapter_id", string(chapter.ID)).Msg("Manga metadata updated in DB, but error updating chapter in Suwayomi.\nWill continue with the next manga...")
+						errors["suwayomi"] = append(errors["suwayomi"], err.Error())
+					}
+				}
+			}
 		}
 	}
 

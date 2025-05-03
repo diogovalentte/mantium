@@ -79,27 +79,6 @@ mutation {
 	return fetchSourcesResponse.Data.FetchExtensions.Extensions, nil
 }
 
-type FetchSourcesResponse struct {
-	Data struct {
-		FetchExtensions struct {
-			Extensions []*Extension `json:"extensions"`
-		} `json:"fetchExtensions"`
-	} `json:"data"`
-}
-
-type Extension struct {
-	Source *Source `json:"source"`
-}
-
-type Source struct {
-	Edges []*struct {
-		Node *struct {
-			ID          string `json:"id"`
-			DisplayName string `json:"displayName"`
-		} `json:"node"`
-	} `json:"edges"`
-}
-
 func (s *Suwayomi) fetchSourceID(sourceName string) (string, error) {
 	errorContext := "error while fetching source ID for source '%s'"
 	sources, err := s.fetchSources()
@@ -169,21 +148,6 @@ func (s *Suwayomi) fetchSourceManga(sourceID string, m *manga.Manga, page int) (
 	return nil, util.AddErrorContext(errorContext, fmt.Errorf("manga not found"))
 }
 
-type FetchMangasResponse struct {
-	Data struct {
-		FetchSourceManga struct {
-			HasNextPage bool        `json:"hasNextPage"`
-			Mangas      []*APIManga `json:"mangas"`
-		} `json:"fetchSourceManga"`
-	} `json:"data"`
-}
-
-type APIManga struct {
-	ID        int    `json:"id"`
-	InLibrary bool   `json:"inLibrary"`
-	URL       string `json:"url"`
-}
-
 func (s *Suwayomi) addManga(mangaID int) error {
 	errorContext := "error while adding manga with ID '%d'"
 
@@ -248,6 +212,148 @@ func (s *Suwayomi) AddManga(manga *manga.Manga) error {
 	err = s.addManga(sourceManga.ID)
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(errorContext, manga.Name, manga.URL), err)
+	}
+
+	return nil
+}
+
+func (s *Suwayomi) GetLibraryMangaID(m *manga.Manga) (int, error) {
+	errorContext := "error while getting in-library manga ID for manga '%s'"
+
+	query := `
+query AllCategories {
+	mangas(condition: {inLibrary: true, url: "%s"}) {
+    nodes {
+      realUrl
+      id
+    }
+  }
+}
+	`
+
+	URL, err := s.getSourceMangaURL(m)
+	if err != nil {
+		return 0, util.AddErrorContext(fmt.Sprintf(errorContext, m), err)
+	}
+
+	query = fmt.Sprintf(query, URL)
+
+	payload := map[string]any{
+		"query": query,
+	}
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return 0, util.AddErrorContext(fmt.Sprintf(errorContext, m), util.AddErrorContext("error while marshalling payload", err))
+	}
+
+	var mangaResponse struct {
+		Data struct {
+			Mangas struct {
+				Nodes []*APIManga `json:"nodes"`
+			} `json:"mangas"`
+		} `json:"data"`
+	}
+	_, err = s.baseRequest(bytes.NewBuffer(jsonData), &mangaResponse)
+	if err != nil {
+		return 0, util.AddErrorContext(fmt.Sprintf(errorContext, m), err)
+	}
+
+	if len(mangaResponse.Data.Mangas.Nodes) == 0 {
+		return 0, util.AddErrorContext(fmt.Sprintf(errorContext, m), fmt.Errorf("manga not found in library"))
+	} else if len(mangaResponse.Data.Mangas.Nodes) > 1 {
+		return 0, util.AddErrorContext(fmt.Sprintf(errorContext, m), fmt.Errorf("multiple mangas found in library"))
+	}
+
+	return mangaResponse.Data.Mangas.Nodes[0].ID, nil
+}
+
+func (s *Suwayomi) GetChapters(mangaID int) ([]*APIChapter, error) {
+	errorContext := "error while getting chapters for manga '%d'"
+
+	query := `
+query AllCategories {
+  manga(id: %d) {
+    chapters {
+      nodes {
+        isDownloaded
+        realUrl
+        id
+      }
+    }
+  }
+}
+	`
+	query = fmt.Sprintf(query, mangaID)
+
+	payload := map[string]any{
+		"query": query,
+	}
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaID), util.AddErrorContext("error while marshalling payload", err))
+	}
+
+	var chaptersResponse struct {
+		Data struct {
+			Manga struct {
+				Chapters struct {
+					Nodes []*APIChapter `json:"nodes"`
+				} `json:"chapters"`
+			} `json:"manga"`
+		} `json:"data"`
+	}
+	_, err = s.baseRequest(bytes.NewBuffer(jsonData), &chaptersResponse)
+	if err != nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaID), err)
+	}
+
+	if len(chaptersResponse.Data.Manga.Chapters.Nodes) == 0 {
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaID), fmt.Errorf("manga not found"))
+	}
+
+	return chaptersResponse.Data.Manga.Chapters.Nodes, nil
+}
+
+func (s *Suwayomi) GetChapter(mangaID int, chapterURL string) (*APIChapter, error) {
+	errorContext := "error while getting chapter '%s' for manga '%d'"
+
+	chapters, err := s.GetChapters(mangaID)
+	if err != nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, chapterURL, mangaID), err)
+	}
+
+	for _, chapter := range chapters {
+		if strings.Contains(chapter.RealURL, chapterURL) {
+			return chapter, nil
+		}
+	}
+
+	return nil, util.AddErrorContext(fmt.Sprintf(errorContext, chapterURL, mangaID), fmt.Errorf("chapter not found"))
+}
+
+func (s *Suwayomi) EnqueueChapterDownload(chapterID int) error {
+	errorContext := "error while enqueueing chapter download for chapter '%d'"
+
+	query := `
+mutation MyMutation($ids: [Int!] = [%d]) {
+  enqueueChapterDownloads(input: {ids: $ids}) {
+    clientMutationId
+  }
+}
+	`
+	query = fmt.Sprintf(query, chapterID)
+
+	payload := map[string]any{
+		"query": query,
+	}
+	jsonData, err := json.Marshal(payload)
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(errorContext, chapterID), util.AddErrorContext("error while marshalling payload", err))
+	}
+
+	_, err = s.baseRequest(bytes.NewBuffer(jsonData), nil)
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(errorContext, chapterID), err)
 	}
 
 	return nil

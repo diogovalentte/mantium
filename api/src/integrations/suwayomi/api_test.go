@@ -29,9 +29,12 @@ func TestMain(m *testing.M) {
 }
 
 var inputManga = &manga.Manga{
-	Name:   "One Punch Man",
-	Source: "comick",
-	URL:    "https://comick.io/comic/WfaSlMP9",
+	// Name:   "One Punch Man",
+	// Source: "comick",
+	// URL:    "https://comick.io/comic/WfaSlMP9",
+	Name:   "Neighborhood Craftsmen: Stories from Kanda’s Gokura-chou",
+	Source: "mangadex",
+	URL:    "https://mangadex.org/title/c1b61cc0-7bb1-4280-a35a-c30a9ee0ff56",
 }
 
 func TestFetchSources(t *testing.T) {
@@ -105,6 +108,96 @@ func TestAddManga(t *testing.T) {
 		err := s.AddManga(inputManga)
 		if err != nil {
 			t.Fatalf("error while adding manga: %v", err)
+		}
+	})
+}
+
+func TestGetLibraryMangaID(t *testing.T) {
+	s := Suwayomi{}
+	s.Init()
+
+	t.Run("Test get library manga ID", func(t *testing.T) {
+		mangaID, err := s.GetLibraryMangaID(inputManga)
+		if err != nil {
+			t.Fatalf("error while getting library manga ID: %v", err)
+		}
+
+		if mangaID == 0 {
+			t.Fatal("no manga ID found")
+		}
+	})
+}
+
+func TestGetMangaChapters(t *testing.T) {
+	s := Suwayomi{}
+	s.Init()
+
+	t.Run("Test get manga chapters", func(t *testing.T) {
+		mangaID, err := s.GetLibraryMangaID(inputManga)
+		if err != nil {
+			t.Fatalf("error while getting library manga ID: %v", err)
+		}
+		chapters, err := s.GetChapters(mangaID)
+		if err != nil {
+			t.Fatalf("error while getting manga chapters: %v", err)
+		}
+
+		if len(chapters) == 0 {
+			t.Fatal("no chapters found")
+		}
+	})
+}
+
+func TestGetMangaChapter(t *testing.T) {
+	s := Suwayomi{}
+	s.Init()
+
+	t.Run("Test get manga chapter", func(t *testing.T) {
+		mangaID, err := s.GetLibraryMangaID(inputManga)
+		if err != nil {
+			t.Fatalf("error while getting library manga ID: %v", err)
+		}
+		chapters, err := s.GetChapters(mangaID)
+		if err != nil {
+			t.Fatalf("error while getting manga chapters: %v", err)
+		}
+
+		if len(chapters) == 0 {
+			t.Fatal("no chapters found")
+		}
+
+		chapter, err := s.GetChapter(mangaID, chapters[0].RealURL)
+		if err != nil {
+			t.Fatalf("error while getting manga chapter: %v", err)
+		}
+
+		if chapter.ID == 0 {
+			t.Fatal("no chapter ID found")
+		}
+	})
+}
+
+func TestEnqueueChapterDownload(t *testing.T) {
+	s := Suwayomi{}
+	s.Init()
+
+	t.Run("Test enqueue chapter download", func(t *testing.T) {
+		mangaID, err := s.GetLibraryMangaID(inputManga)
+		if err != nil {
+			t.Fatalf("error while getting library manga ID: %v", err)
+		}
+		chapters, err := s.GetChapters(mangaID)
+		if err != nil {
+			t.Fatalf("error while getting manga chapters: %v", err)
+		}
+
+		if len(chapters) == 0 {
+			t.Fatal("no chapters found")
+		}
+
+		err = s.EnqueueChapterDownload(chapters[0].ID)
+		if err != nil {
+			t.Fatalf("error while enqueuing chapter download: %v", err)
 		}
 	})
 }
