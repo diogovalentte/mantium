@@ -215,7 +215,7 @@ func (s *Suwayomi) AddManga(manga *manga.Manga, enqueChapterDownloads bool) erro
 		return util.AddErrorContext(fmt.Sprintf(errorContext, manga.Name, manga.URL), err)
 	}
 
-	if enqueChapterDownloads {
+	if enqueChapterDownloads && manga.Source != "comick" {
 		chapters, err := s.GetChapters(sourceManga.ID)
 		if err != nil {
 			return util.AddErrorContext(fmt.Sprintf(errorContext, manga.Name, manga.URL), util.AddErrorContext("error while getting chapters", err))
