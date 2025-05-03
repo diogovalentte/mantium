@@ -23,6 +23,7 @@ The [Suwayomi](https://github.com/Suwayomi) integration will:
 
 - Try to add the manga to Suwayomi when you add it to the dashboard.
   - Only the original manga of a multimanga will be added to Suwayomi. Mangas added to a multimanga later are not automatically added to Suwayomi.
+- If the background job to update the mangas metadata detects newly released chapters, it will enqueue the chapter to be downloaded by Suwayomi.
 - If there are already mangas on your dashboard, the API has a route to add your mangas to Suwayomi. To know more, check the [API docs](https://github.com/diogovalentte/mantium?tab=readme-ov-file#api).
 
 ## Extensions repositories and sources
