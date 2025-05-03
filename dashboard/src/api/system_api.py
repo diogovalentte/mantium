@@ -75,38 +75,22 @@ class DashboardAPIClient:
 
     def update_dashboard_configs(
         self,
-        columns: int,
-        searchResultsLimit: int,
-        displayMode: str,
-        show_background_error_warning: bool,
+        configs: dict,
     ):
         """Update the dashboard configs.
 
         Args:
-            columns (int): New columns number.
-            searchResultsLimit (int): New search results limit.
-            displayMode (str): New display mode.
-            show_background_error_warning (bool): If the background error warning should be shown.
+            configs (dict): The configs to update.
         """
-        url = (
-            self.base_api_url
-            + "/v1/dashboard/configs?columns="
-            + str(columns)
-            + "&showBackgroundErrorWarning="
-            + str(show_background_error_warning)
-            + "&searchResultsLimit="
-            + str(searchResultsLimit)
-            + "&displayMode="
-            + displayMode
-        )
+        url = self.base_api_url + "/v1/dashboard/configs"
 
-        res = requests.patch(url)
+        res = requests.post(url, json=configs)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
                 "error while updating the dashboard configs",
                 url,
-                "PATCH",
+                "POST",
                 res.status_code,
                 res.text,
             )

@@ -1561,6 +1561,55 @@ func AddMangaToMultiManga(c *gin.Context) {
 		return
 	}
 
+	var configs dashboard.Configs
+	err = dashboard.GetConfigsFromFile(&configs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "manga added to multimanga, but error while getting configs: " + err.Error()})
+		dashboard.UpdateDashboard()
+		return
+	}
+
+	if configs.Integrations.AddAllMultiMangaMangasToDownloadIntegrations {
+		var integrationsErrors []error
+		if config.GlobalConfigs.Kaizoku.Valid {
+			kaizoku := kaizoku.Kaizoku{}
+			kaizoku.Init()
+			err = kaizoku.AddManga(mangaAdd, config.GlobalConfigs.Kaizoku.TryOtherSources)
+			if err != nil {
+				integrationsErrors = append(integrationsErrors, util.AddErrorContext("manga added to multimanga, but error while adding current manga to Kaizoku", err))
+			}
+		}
+
+		if config.GlobalConfigs.Tranga.Valid {
+			tranga := tranga.Tranga{}
+			tranga.Init()
+			err = tranga.AddManga(mangaAdd)
+			if err != nil {
+				integrationsErrors = append(integrationsErrors, util.AddErrorContext("manga added to multimanga, but error while adding current manga to Tranga", err))
+			}
+		}
+
+		if config.GlobalConfigs.Suwayomi.Valid {
+			suwayomi := suwayomi.Suwayomi{}
+			suwayomi.Init()
+			err = suwayomi.AddManga(mangaAdd)
+			if err != nil {
+				integrationsErrors = append(integrationsErrors, util.AddErrorContext("manga added to multimanga, but error while adding current manga to Suwayomi", err))
+			}
+		}
+
+		if len(integrationsErrors) > 0 {
+			fullMsg := "manga added to multimanga, but error executing integrations: "
+			for _, err := range integrationsErrors {
+				zerolog.Ctx(c.Request.Context()).Error().Err(err).Msg("error while adding manga to at least one integration")
+				fullMsg += err.Error() + " "
+			}
+			dashboard.UpdateDashboard()
+			c.JSON(http.StatusInternalServerError, gin.H{"message": fullMsg})
+			return
+		}
+	}
+
 	dashboard.UpdateDashboard()
 
 	c.JSON(http.StatusOK, gin.H{"message": "Manga added to multimanga successfully"})

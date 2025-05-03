@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strconv"
+	"slices"
 
 	"github.com/gin-gonic/gin"
 
@@ -17,7 +17,7 @@ import (
 func DashboardRoutes(group *gin.RouterGroup) {
 	{
 		group.GET("/dashboard/configs", GetDashboardConfigs)
-		group.PATCH("/dashboard/configs", UpdateDashboardConfigs)
+		group.POST("/dashboard/configs", UpdateDashboardConfigs)
 		group.GET("/dashboard/last_update", GetLastUpdate)
 		group.GET("/dashboard/last_background_error", GetLastBackgroundError)
 		group.DELETE("/dashboard/last_background_error", DeleteLastBackgroundError)
@@ -37,7 +37,7 @@ func GetDashboardConfigs(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"configs": configs.Dashboard})
+	c.JSON(http.StatusOK, gin.H{"configs": configs})
 }
 
 // @Summary Get the last update date
@@ -54,12 +54,10 @@ func GetLastUpdate(c *gin.Context) {
 // @Summary Update dashboard columns
 // @Description Update the dashboard columns in the configs.json file.
 // @Success 200 {object} responseMessage
+// @Accept json
 // @Produce json
-// @Param columns query int true "New number of columns." Example(5)
-// @Param showBackgroundErrorWarning query bool true "Show the last background error warning in the dashboard."
-// @Param searchResultsLimit query int true "How many result will be shown in the dashboard search form. It'll be used by all site sources. The maximum allowed limit value varies per source." Example(20)
-// @Param displayMode query string false "The display mode of the dashboard. Can be 'Grid View' or 'List View'."
-// @Router /dashboard/configs [patch]
+// @Param configs body dashboard.Configs true "Dashboard configs"
+// @Router /dashboard/configs [post]
 func UpdateDashboardConfigs(c *gin.Context) {
 	var configs dashboard.Configs
 	err := dashboard.GetConfigsFromFile(&configs)
@@ -68,52 +66,37 @@ func UpdateDashboardConfigs(c *gin.Context) {
 		return
 	}
 
-	columnsStr := c.Query("columns")
-	if columnsStr != "" {
-		columns, err := strconv.Atoi(columnsStr)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "columns must be an integer"})
-			return
-		}
-		configs.Dashboard.Columns = columns
+	var newConfigs dashboard.Configs
+	err = c.ShouldBindJSON(&newConfigs)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("error while binding configs: %s", err.Error())})
+		return
 	}
 
-	searchResultsLimitStr := c.Query("searchResultsLimit")
-	if searchResultsLimitStr != "" {
-		searchResultsLimit, err := strconv.Atoi(searchResultsLimitStr)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "columns must be an integer"})
-			return
-		}
-		configs.Dashboard.SearchResultsLimit = searchResultsLimit
+	if newConfigs.Dashboard.Columns < 1 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "columns must be greater than 0"})
+		return
 	}
+	configs.Dashboard.Columns = newConfigs.Dashboard.Columns
 
-	displayMode := c.Query("displayMode")
-	if displayMode != "" {
-		var found bool
-		for _, validValue := range dashboard.ValidDisplayModeValues {
-			if displayMode == validValue {
-				found = true
-				break
-			}
-		}
-		if !found {
+	if newConfigs.Dashboard.SearchResultsLimit < 1 {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "searchResultsLimit must be greater than 0"})
+		return
+	}
+	configs.Dashboard.SearchResultsLimit = newConfigs.Dashboard.SearchResultsLimit
+
+	if newConfigs.Dashboard.DisplayMode != "" {
+		if !slices.Contains(dashboard.ValidDisplayModeValues, newConfigs.Dashboard.DisplayMode) {
 			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("displayMode must be one of the following values: %v", dashboard.ValidDisplayModeValues)})
 			return
 		}
-		configs.Dashboard.DisplayMode = displayMode
+		configs.Dashboard.DisplayMode = newConfigs.Dashboard.DisplayMode
 	}
 
-	var showBackgroundErrorWarning bool
-	showBackgroundErrorWarningStr := c.Query("showBackgroundErrorWarning")
-	if showBackgroundErrorWarningStr != "" {
-		showBackgroundErrorWarning, err = strconv.ParseBool(showBackgroundErrorWarningStr)
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "showBackgroundErrorWarning must be a boolean"})
-			return
-		}
-		configs.Dashboard.ShowBackgroundErrorWarning = showBackgroundErrorWarning
-	}
+	configs.Dashboard.ShowBackgroundErrorWarning = newConfigs.Dashboard.ShowBackgroundErrorWarning
+
+	configs.Integrations.AddAllMultiMangaMangasToDownloadIntegrations = newConfigs.Integrations.AddAllMultiMangaMangasToDownloadIntegrations
+	configs.Integrations.EnqueueAllSuwayomiChaptersToDownload = newConfigs.Integrations.EnqueueAllSuwayomiChaptersToDownload
 
 	updatedConfigs, err := json.MarshalIndent(configs, "", "  ")
 	if err != nil {

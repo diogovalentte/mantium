@@ -1,7 +1,12 @@
 {
   "dashboard": {
     "columns": 5,
-    "showBackgroundErrorWarning": true,
+    "displayMode": "Grid View",
     "searchResultsLimit": 20
+    "showBackgroundErrorWarning": true,
+  },
+  "integrations": {
+    "addAllMultiMangaMangasToDownloadIntegrations": false,
+    "enqueueAllSuwayomiChaptersToDownload": true
   }
 }

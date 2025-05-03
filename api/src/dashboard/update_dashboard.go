@@ -55,6 +55,10 @@ type Configs struct {
 		SearchResultsLimit         int    `json:"searchResultsLimit"`
 		DisplayMode                string `json:"displayMode"`
 	} `json:"dashboard"`
+	Integrations struct {
+		AddAllMultiMangaMangasToDownloadIntegrations bool `json:"addAllMultiMangaMangasToDownloadIntegrations"`
+		EnqueueAllSuwayomiChaptersToDownload         bool `json:"enqueueAllSuwayomiChaptersToDownload"`
+	} `json:"integrations"`
 }
 
 var ValidDisplayModeValues = []string{"Grid View", "List View"}
@@ -72,18 +76,19 @@ func SetDefaultConfigsFile() error {
 			return err
 		}
 	} else {
-		var configs map[string]interface{}
+		var configs map[string]any
 		err := GetConfigsFromFile(&configs)
 		if err != nil {
 			return err
 		}
 
+		// Dashboard configs
 		dashboardMap, ok := configs["dashboard"]
 		if !ok {
-			configs["dashboard"] = make(map[string]interface{})
+			configs["dashboard"] = make(map[string]any)
 			dashboardMap = configs["dashboard"]
 		}
-		dashboard, ok := dashboardMap.(map[string]interface{})
+		dashboard, ok := dashboardMap.(map[string]any)
 		if !ok {
 			return fmt.Errorf("error while loading configs file")
 		}
@@ -102,6 +107,25 @@ func SetDefaultConfigsFile() error {
 		_, ok = dashboard["displayMode"]
 		if !ok {
 			dashboard["displayMode"] = "Grid View"
+		}
+
+		// Integrations
+		integrationsMap, ok := configs["integrations"]
+		if !ok {
+			configs["integrations"] = make(map[string]any)
+			integrationsMap = configs["integrations"]
+		}
+		integrations, ok := integrationsMap.(map[string]any)
+		if !ok {
+			return fmt.Errorf("error while loading configs file")
+		}
+		_, ok = integrations["addAllMultiMangaMangasToDownloadIntegrations"]
+		if !ok {
+			integrations["addAllMultiMangaMangasToDownloadIntegrations"] = false
+		}
+		_, ok = integrations["enqueueAllSuwayomiChaptersToDownload"]
+		if !ok {
+			integrations["enqueueAllSuwayomiChaptersToDownload"] = true
 		}
 
 		updatedConfigs, err := json.MarshalIndent(configs, "", "  ")
@@ -134,7 +158,7 @@ func copyDefaultConfigsFile(srcPath, dstPath string) error {
 
 // GetConfigsFromFile reads a file and unmarshal it into a Configs struct.
 // Used to get the configurations from a JSON file.
-func GetConfigsFromFile(target interface{}) error {
+func GetConfigsFromFile(target any) error {
 	jsonFile, err := os.ReadFile(config.GlobalConfigs.ConfigsFilePath)
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf("error reading configs from file '%s'", config.GlobalConfigs.ConfigsFilePath), err)

@@ -21,6 +21,13 @@ definitions:
           showBackgroundErrorWarning:
             type: boolean
         type: object
+      integrations:
+        properties:
+          addAllMultiMangaMangasToDownloadIntegrations:
+            type: boolean
+          enqueueAllSuwayomiChaptersToDownload:
+            type: boolean
+        type: object
     type: object
   manga.Chapter:
     properties:
@@ -330,33 +337,17 @@ paths:
           schema:
             $ref: '#/definitions/dashboard.Configs'
       summary: Get the dashboard configs
-    patch:
+    post:
+      consumes:
+      - application/json
       description: Update the dashboard columns in the configs.json file.
       parameters:
-      - description: New number of columns.
-        example: 5
-        in: query
-        name: columns
+      - description: Dashboard configs
+        in: body
+        name: configs
         required: true
-        type: integer
-      - description: Show the last background error warning in the dashboard.
-        in: query
-        name: showBackgroundErrorWarning
-        required: true
-        type: boolean
-      - description: How many result will be shown in the dashboard search form. It'll
-          be used by all site sources. The maximum allowed limit value varies per
-          source.
-        example: 20
-        in: query
-        name: searchResultsLimit
-        required: true
-        type: integer
-      - description: The display mode of the dashboard. Can be 'Grid View' or 'List
-          View'.
-        in: query
-        name: displayMode
-        type: string
+        schema:
+          $ref: '#/definitions/dashboard.Configs'
       produces:
       - application/json
       responses:

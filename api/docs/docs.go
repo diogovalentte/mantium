@@ -106,41 +106,24 @@ const docTemplate = `{
                     }
                 }
             },
-            "patch": {
+            "post": {
                 "description": "Update the dashboard columns in the configs.json file.",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "summary": "Update dashboard columns",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "example": 5,
-                        "description": "New number of columns.",
-                        "name": "columns",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "boolean",
-                        "description": "Show the last background error warning in the dashboard.",
-                        "name": "showBackgroundErrorWarning",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "example": 20,
-                        "description": "How many result will be shown in the dashboard search form. It'll be used by all site sources. The maximum allowed limit value varies per source.",
-                        "name": "searchResultsLimit",
-                        "in": "query",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "The display mode of the dashboard. Can be 'Grid View' or 'List View'.",
-                        "name": "displayMode",
-                        "in": "query"
+                        "description": "Dashboard configs",
+                        "name": "configs",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dashboard.Configs"
+                        }
                     }
                 ],
                 "responses": {
@@ -1287,6 +1270,17 @@ const docTemplate = `{
                             "type": "integer"
                         },
                         "showBackgroundErrorWarning": {
+                            "type": "boolean"
+                        }
+                    }
+                },
+                "integrations": {
+                    "type": "object",
+                    "properties": {
+                        "addAllMultiMangaMangasToDownloadIntegrations": {
+                            "type": "boolean"
+                        },
+                        "enqueueAllSuwayomiChaptersToDownload": {
                             "type": "boolean"
                         }
                     }
