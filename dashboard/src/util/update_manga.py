@@ -226,8 +226,6 @@ def show_update_multimanga(multimanga_id):
             type="primary",
         ):
             try:
-                print(multimanga["ID"])
-
                 cover_url = ss[
                     "update_multimanga_form_cover_img_url_" + str(multimanga["ID"])
                 ]
