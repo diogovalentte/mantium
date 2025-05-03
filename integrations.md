@@ -23,6 +23,8 @@ The [Suwayomi](https://github.com/Suwayomi) integration will:
 
 - Try to add the manga to Suwayomi when you add it to the dashboard.
   - Only the original manga of a multimanga will be added to Suwayomi. Mangas added to a multimanga later are not automatically added to Suwayomi.
+  - By default, enqueue all chapters from the manga to be downloaded by Suwayomi when adding the manga (_except for ComicK mangas, more about it bellow_).
+    - This functionality can be disabled in the dashboard settings.
 - If the background job to update the mangas metadata detects newly released chapters, it will enqueue the chapter to be downloaded by Suwayomi.
 - If there are already mangas on your dashboard, the API has a route to add your mangas to Suwayomi. To know more, check the [API docs](https://github.com/diogovalentte/mantium?tab=readme-ov-file#api).
 
@@ -31,6 +33,12 @@ The [Suwayomi](https://github.com/Suwayomi) integration will:
 Mantium expects that you installed both the [keiyoushi](https://github.com/keiyoushi/extensions) and [zosetsu-repo](https://github.com/zosetsu-repo/tachi-repo) extension repositories on your Suwayomi server.
 
 It also expects that you have installed the ComicK, MANGA Plus by SHUEISHA, MangaDex, and MangaHub sources on your server. The integration will only work with these sources, as I didn't find Suwayomi-compatible sources for the other Mantium sources.
+
+## ComicK source
+
+The comick source avaliable in Suwayomi's API is **ComicK (ALL)** in contrast to the other sources that are like **Mangadex (EN)**.
+
+This means that comick mangas added by Mantium will show chapters from all languages in Suwayomi, and not just the English chapters. However, Mantium will enqueue only english chapters to be downloaded by Suwayomi.
 
 # Kaizoku
 
