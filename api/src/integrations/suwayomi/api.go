@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/util"
@@ -216,10 +217,22 @@ func (s *Suwayomi) AddManga(manga *manga.Manga, enqueChapterDownloads bool) erro
 	}
 
 	if enqueChapterDownloads && manga.Source != "comick" {
-		chapters, err := s.GetChapters(sourceManga.ID)
+		errorContext = "(suwayomi) manga added to suwayomi, but error while enqueueing chapter downloads for manga '%s' / '%s'"
+
+		var chapters []*APIChapter
+		retries := 5
+		interval := 1 * time.Second
+		for range retries {
+			chapters, err = s.GetChapters(sourceManga.ID)
+			if err == nil {
+				break
+			}
+			time.Sleep(interval)
+		}
 		if err != nil {
 			return util.AddErrorContext(fmt.Sprintf(errorContext, manga.Name, manga.URL), util.AddErrorContext("error while getting chapters", err))
 		}
+
 		chapterIDs := make([]int, len(chapters))
 		for i, chapter := range chapters {
 			chapterIDs[i] = chapter.ID
