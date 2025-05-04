@@ -2,8 +2,8 @@
   "dashboard": {
     "columns": 5,
     "displayMode": "Grid View",
-    "searchResultsLimit": 20
-    "showBackgroundErrorWarning": true,
+    "searchResultsLimit": 20,
+    "showBackgroundErrorWarning": true
   },
   "integrations": {
     "addAllMultiMangaMangasToDownloadIntegrations": false,
