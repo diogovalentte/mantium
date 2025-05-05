@@ -2,6 +2,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"io"
 	"os"
@@ -33,11 +34,6 @@ func init() {
 	logLevel, _ := zerolog.ParseLevel(strconv.Itoa(logLevelInt))
 	log := util.GetLogger(logLevel)
 
-	err := dashboard.SetDefaultConfigsFile()
-	if err != nil {
-		panic(err)
-	}
-
 	log.Info().Msg("Trying to connect to DB...")
 	_db, err := db.OpenConn()
 	if err != nil {
@@ -45,9 +41,27 @@ func init() {
 	}
 	defer _db.Close()
 
+	log.Info().Msg("Creating tables and applying migrations...")
 	err = db.CreateTables(_db, log)
 	if err != nil {
 		panic(err)
+	}
+
+	log.Info().Msg("Loading configs from DB...")
+	err = config.LoadConfigsFromDB(config.GlobalConfigs.DashboardConfigs)
+	if err != nil {
+		if util.ErrorContains(err, sql.ErrNoRows.Error()) {
+			err = config.SetDefaultConfigsInDB()
+			if err != nil {
+				panic(err)
+			}
+			err = config.LoadConfigsFromDB(config.GlobalConfigs.DashboardConfigs)
+			if err != nil {
+				panic(err)
+			}
+		} else {
+			panic(err)
+		}
 	}
 
 	log.Info().Msg("Turning mangas into multimangas...")

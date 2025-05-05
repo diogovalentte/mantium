@@ -17,8 +17,6 @@ import (
 	"github.com/nfnt/resize"
 	"github.com/rs/zerolog"
 	"golang.org/x/image/webp"
-
-	"github.com/diogovalentte/mantium/api/src/config"
 )
 
 var logger *zerolog.Logger
@@ -253,7 +251,7 @@ func RequestUpdateMangasMetadata(notify bool) (*http.Response, error) {
 
 	client := &http.Client{}
 
-	apiPort := config.GlobalConfigs.API.Port
+	apiPort := os.Getenv("API_PORT")
 	if apiPort == "" {
 		apiPort = "8080"
 	}
@@ -277,4 +275,9 @@ func RequestUpdateMangasMetadata(notify bool) (*http.Response, error) {
 	}
 
 	return resp, nil
+}
+
+func FileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil || !os.IsNotExist(err)
 }

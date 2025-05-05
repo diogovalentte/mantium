@@ -1,10 +1,8 @@
 package routes
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"slices"
 
 	"github.com/gin-gonic/gin"
@@ -26,18 +24,11 @@ func DashboardRoutes(group *gin.RouterGroup) {
 
 // @Summary Get the dashboard configs
 // @Description Returns the dashboard configs read from the configs.json file.
-// @Success 200 {object} dashboard.Configs
+// @Success 200 {object} config.DashboardConfigs
 // @Produce json
 // @Router /dashboard/configs [get]
 func GetDashboardConfigs(c *gin.Context) {
-	var configs dashboard.Configs
-	err := dashboard.GetConfigsFromFile(&configs)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("error while loading configs file: %s", err.Error())})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"configs": configs})
+	c.JSON(http.StatusOK, gin.H{"configs": config.GlobalConfigs.DashboardConfigs})
 }
 
 // @Summary Get the last update date
@@ -51,62 +42,39 @@ func GetLastUpdate(c *gin.Context) {
 	})
 }
 
-// @Summary Update dashboard columns
-// @Description Update the dashboard columns in the configs.json file.
+// @Summary Update dashboard configs
+// @Description Update the dashboard configs in the DB
 // @Success 200 {object} responseMessage
 // @Accept json
 // @Produce json
-// @Param configs body dashboard.Configs true "Dashboard configs"
+// @Param configs body config.DashboardConfigs true "Dashboard configs"
 // @Router /dashboard/configs [post]
 func UpdateDashboardConfigs(c *gin.Context) {
-	var configs dashboard.Configs
-	err := dashboard.GetConfigsFromFile(&configs)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("error while loading configs file: %s", err.Error())})
-		return
-	}
-
-	var newConfigs dashboard.Configs
-	err = c.ShouldBindJSON(&newConfigs)
+	var newConfigs config.DashboardConfigs
+	err := c.ShouldBindJSON(&newConfigs)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("error while binding configs: %s", err.Error())})
 		return
 	}
 
-	if newConfigs.Dashboard.Columns < 1 {
+	if newConfigs.Display.Columns < 1 {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "columns must be greater than 0"})
 		return
 	}
-	configs.Dashboard.Columns = newConfigs.Dashboard.Columns
 
-	if newConfigs.Dashboard.SearchResultsLimit < 1 {
+	if newConfigs.Display.SearchResultsLimit < 1 {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "searchResultsLimit must be greater than 0"})
 		return
 	}
-	configs.Dashboard.SearchResultsLimit = newConfigs.Dashboard.SearchResultsLimit
 
-	if newConfigs.Dashboard.DisplayMode != "" {
-		if !slices.Contains(dashboard.ValidDisplayModeValues, newConfigs.Dashboard.DisplayMode) {
-			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("displayMode must be one of the following values: %v", dashboard.ValidDisplayModeValues)})
-			return
-		}
-		configs.Dashboard.DisplayMode = newConfigs.Dashboard.DisplayMode
-	}
-
-	configs.Dashboard.ShowBackgroundErrorWarning = newConfigs.Dashboard.ShowBackgroundErrorWarning
-
-	configs.Integrations.AddAllMultiMangaMangasToDownloadIntegrations = newConfigs.Integrations.AddAllMultiMangaMangasToDownloadIntegrations
-	configs.Integrations.EnqueueAllSuwayomiChaptersToDownload = newConfigs.Integrations.EnqueueAllSuwayomiChaptersToDownload
-
-	updatedConfigs, err := json.MarshalIndent(configs, "", "  ")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("error while updating configs file: %s", err.Error())})
+	if !slices.Contains(config.ValidDisplayModeValues, newConfigs.Display.DisplayMode) {
+		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("displayMode must be one of the following values: %v", config.ValidDisplayModeValues)})
 		return
 	}
 
-	err = os.WriteFile(config.GlobalConfigs.ConfigsFilePath, updatedConfigs, 0o644)
+	err = config.SaveConfigsToDB(&newConfigs)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("error while updating configs file: %s", err.Error())})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("error while saving configs: %s", err.Error())})
 		return
 	}
 

@@ -9,53 +9,38 @@ import (
 
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
+
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // GlobalConfigs is a pointer to the Configs struct that holds all the configurations.
 // It is used to access the configurations throughout the application.
 // Should be initialized by the SetConfigs function.
 var GlobalConfigs = &Configs{
-	API:                       &APIConfigs{},
-	DB:                        &DBConfigs{},
-	Ntfy:                      &NtfyConfigs{},
-	PeriodicallyUpdateMangas:  &PeriodicallyUpdateMangasConfigs{},
-	Kaizoku:                   &KaizokuConfigs{},
-	Tranga:                    &TrangaConfigs{},
-	Suwayomi:                  &SuwayomiConfigs{},
-	ConfigsFilePath:           "./configs/configs.json",
-	DefaultConfigsFilePath:    "../defaults/configs.json",
-	UpdateMangasJobGoRoutines: 1, // default value
+	API:                      &APIConfigs{},
+	DashboardConfigs:         &DashboardConfigs{},
+	Ntfy:                     &NtfyConfigs{},
+	PeriodicallyUpdateMangas: &PeriodicallyUpdateMangasConfigs{},
+	Kaizoku:                  &KaizokuConfigs{},
+	Tranga:                   &TrangaConfigs{},
+	Suwayomi:                 &SuwayomiConfigs{},
 }
 
 // Configs is a struct that holds all the configurations.
 type Configs struct {
 	API                      *APIConfigs
-	DB                       *DBConfigs
+	DashboardConfigs         *DashboardConfigs
 	Ntfy                     *NtfyConfigs
 	PeriodicallyUpdateMangas *PeriodicallyUpdateMangasConfigs
 	Kaizoku                  *KaizokuConfigs
 	Tranga                   *TrangaConfigs
 	Suwayomi                 *SuwayomiConfigs
-	// A file with configs that should be persisted
-	// Relative to main.go
-	ConfigsFilePath           string
-	DefaultConfigsFilePath    string
-	UpdateMangasJobGoRoutines int
 }
 
 // APIConfigs is a struct that holds the API configurations.
 type APIConfigs struct {
 	Port        string
 	LogLevelInt int
-}
-
-// DBConfigs is a struct that holds the database configurations.
-type DBConfigs struct {
-	Host     string
-	Port     string
-	DB       string
-	User     string
-	Password string
 }
 
 // NtfyConfigs is a struct that holds the ntfy configurations.
@@ -67,9 +52,10 @@ type NtfyConfigs struct {
 
 // PeriodicallyUpdateMangasConfigs is a struct that holds the configurations for updating mangas metadata periodically.
 type PeriodicallyUpdateMangasConfigs struct {
-	Update  bool
-	Notify  bool
-	Minutes int
+	Update       bool
+	Notify       bool
+	Minutes      int
+	ParallelJobs int
 }
 
 // KaizokuConfigs is a struct that holds the configurations for the Kaizoku integration.
@@ -96,16 +82,40 @@ type SuwayomiConfigs struct {
 	Valid    bool
 }
 
+// DashboardConfigs is a struct that holds the configurations for the dashboard.
+// This will be set by the dashboard configs form.
+type DashboardConfigs struct {
+	Display struct {
+		Columns                    int    `json:"columns"`
+		ShowBackgroundErrorWarning bool   `json:"showBackgroundErrorWarning"`
+		SearchResultsLimit         int    `json:"searchResultsLimit"`
+		DisplayMode                string `json:"displayMode"`
+	} `json:"display"`
+	Integrations struct {
+		AddAllMultiMangaMangasToDownloadIntegrations bool `json:"addAllMultiMangaMangasToDownloadIntegrations"`
+		EnqueueAllSuwayomiChaptersToDownload         bool `json:"enqueueAllSuwayomiChaptersToDownload"`
+	} `json:"integrations"`
+}
+
+// ValidDisplayModeValues is a list of valid display modes.
+var ValidDisplayModeValues = []string{"Grid View", "List View"}
+
+var oldConfigsFilePath = "./configs/configs.json"
+
 // SetConfigs sets the configurations based on a .env file if provided or using environment variables.
 func SetConfigs(filePath string) error {
+	var err error
+
+	if util.FileExists(oldConfigsFilePath) {
+		return fmt.Errorf("old configs file '%s' found. Settings are stored in the database in Mantium version 4.0. Please remove it and set the configs in the dashboard again", oldConfigsFilePath)
+	}
+
 	if filePath != "" {
-		err := godotenv.Load(filePath)
+		err = godotenv.Load(filePath)
 		if err != nil {
 			return fmt.Errorf("error loading env file '%s': %s", filePath, err)
 		}
 	}
-
-	var err error
 
 	logLevel := zerolog.InfoLevel
 	logLevelStr := os.Getenv("LOG_LEVEL")
@@ -116,14 +126,7 @@ func SetConfigs(filePath string) error {
 		}
 	}
 	GlobalConfigs.API.LogLevelInt = int(logLevel)
-
 	GlobalConfigs.API.Port = os.Getenv("API_PORT")
-
-	GlobalConfigs.DB.Host = os.Getenv("POSTGRES_HOST")
-	GlobalConfigs.DB.Port = os.Getenv("POSTGRES_PORT")
-	GlobalConfigs.DB.DB = os.Getenv("POSTGRES_DB")
-	GlobalConfigs.DB.User = os.Getenv("POSTGRES_USER")
-	GlobalConfigs.DB.Password = os.Getenv("POSTGRES_PASSWORD")
 
 	GlobalConfigs.Ntfy.Address = os.Getenv("NTFY_ADDRESS")
 	GlobalConfigs.Ntfy.Topic = os.Getenv("NTFY_TOPIC")
@@ -190,14 +193,13 @@ func SetConfigs(filePath string) error {
 	GlobalConfigs.PeriodicallyUpdateMangas.Minutes = minutes
 
 	updateMangasJobGoRoutines := 1
-	envUpdateMangasJobGoRoutines := os.Getenv("UPDATE_MANGAS_JOB_PARALLEL_JOBS")
-	if envUpdateMangasJobGoRoutines != "" {
+	if envUpdateMangasJobGoRoutines := os.Getenv("UPDATE_MANGAS_JOB_PARALLEL_JOBS"); envUpdateMangasJobGoRoutines != "" {
 		updateMangasJobGoRoutines, err = strconv.Atoi(envUpdateMangasJobGoRoutines)
 		if err != nil {
 			return fmt.Errorf("error converting UPDATE_MANGAS_JOB_PARALLEL_JOBS '%s' to int: %s", envUpdateMangasJobGoRoutines, err)
 		}
 	}
-	GlobalConfigs.UpdateMangasJobGoRoutines = updateMangasJobGoRoutines
+	GlobalConfigs.PeriodicallyUpdateMangas.ParallelJobs = updateMangasJobGoRoutines
 
 	return nil
 }

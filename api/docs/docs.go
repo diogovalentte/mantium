@@ -101,20 +101,20 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/dashboard.Configs"
+                            "$ref": "#/definitions/config.DashboardConfigs"
                         }
                     }
                 }
             },
             "post": {
-                "description": "Update the dashboard columns in the configs.json file.",
+                "description": "Update the dashboard configs in the DB",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Update dashboard columns",
+                "summary": "Update dashboard configs",
                 "parameters": [
                     {
                         "description": "Dashboard configs",
@@ -122,7 +122,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/dashboard.Configs"
+                            "$ref": "#/definitions/config.DashboardConfigs"
                         }
                     }
                 ],
@@ -1241,23 +1241,10 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "dashboard.BackgroundError": {
+        "config.DashboardConfigs": {
             "type": "object",
             "properties": {
-                "message": {
-                    "description": "Error message.",
-                    "type": "string"
-                },
-                "time": {
-                    "description": "Time when the error occurred.",
-                    "type": "string"
-                }
-            }
-        },
-        "dashboard.Configs": {
-            "type": "object",
-            "properties": {
-                "dashboard": {
+                "display": {
                     "type": "object",
                     "properties": {
                         "columns": {
@@ -1284,6 +1271,19 @@ const docTemplate = `{
                             "type": "boolean"
                         }
                     }
+                }
+            }
+        },
+        "dashboard.BackgroundError": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "description": "Error message.",
+                    "type": "string"
+                },
+                "time": {
+                    "description": "Time when the error occurred.",
+                    "type": "string"
                 }
             }
         },

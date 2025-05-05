@@ -980,7 +980,7 @@ class MainDashboard:
             ):
                 try:
                     new_configs = {
-                        "dashboard": {
+                        "display": {
                             "columns": ss.configs_select_columns_number,
                             "showBackgroundErrorWarning": ss.configs_select_show_background_error_warning,
                             "searchResultsLimit": ss.configs_select_search_results_limit,
@@ -1038,16 +1038,14 @@ def main(api_client):
 
     if "settings_columns_number" not in ss:
         configs = api_client.get_dashboard_configs()
-        dashboard = configs["dashboard"]
+        display = configs["display"]
         integrations = configs["integrations"]
         ss["settings_display_mode"] = (
-            dashboard["displayMode"]
-            if not ss["is_mobile"]
-            else defaults.display_modes[0]
+            display["displayMode"] if not ss["is_mobile"] else defaults.display_modes[0]
         )
-        ss["settings_columns_number"] = dashboard["columns"]
-        ss["settings_search_results_limit"] = dashboard["searchResultsLimit"]
-        ss["settings_show_background_error_warning"] = dashboard[
+        ss["settings_columns_number"] = display["columns"]
+        ss["settings_search_results_limit"] = display["searchResultsLimit"]
+        ss["settings_show_background_error_warning"] = display[
             "showBackgroundErrorWarning"
         ]
         ss[
@@ -1057,8 +1055,8 @@ def main(api_client):
             "enqueueAllSuwayomiChaptersToDownload"
         ]
 
-    dashboard = MainDashboard(api_client)
-    dashboard.show()
+    display = MainDashboard(api_client)
+    display.show()
 
 
 if __name__ == "__main__":

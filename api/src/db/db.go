@@ -4,16 +4,30 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"os"
 
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/rs/zerolog"
 
-	"github.com/diogovalentte/mantium/api/src/config"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
+type dbConfigs struct {
+	Host     string
+	Port     string
+	DB       string
+	User     string
+	Password string
+}
+
 func getConnString() string {
-	configs := config.GlobalConfigs.DB
+	configs := &dbConfigs{
+		Host:     os.Getenv("POSTGRES_HOST"),
+		Port:     os.Getenv("POSTGRES_PORT"),
+		DB:       os.Getenv("POSTGRES_DB"),
+		User:     os.Getenv("POSTGRES_USER"),
+		Password: os.Getenv("POSTGRES_PASSWORD"),
+	}
 
 	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", configs.Host, configs.Port, configs.User, configs.Password, configs.DB)
 }
@@ -86,6 +100,15 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
         );
 
         CREATE INDEX IF NOT EXISTS "chapters_id_idx" ON "chapters" ("id");
+
+		CREATE TABLE IF NOT EXISTS "configs" (
+			"columns" integer NOT NULL DEFAULT 5,
+			"show_background_error_warning" boolean NOT NULL DEFAULT TRUE,
+			"search_results_limit" integer NOT NULL DEFAULT 20,
+			"display_mode" varchar(50) NOT NULL DEFAULT 'Grid View' CHECK ("display_mode" IN ('Grid View', 'List View')),
+			"add_all_multimanga_mangas_to_download_integrations" boolean NOT NULL DEFAULT FALSE,
+			"enqueue_all_suwayomi_chapters_to_download" boolean NOT NULL DEFAULT TRUE
+		);
     `)
 	if err != nil {
 		tx.Rollback()

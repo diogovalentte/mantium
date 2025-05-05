@@ -1,16 +1,7 @@
 definitions:
-  dashboard.BackgroundError:
+  config.DashboardConfigs:
     properties:
-      message:
-        description: Error message.
-        type: string
-      time:
-        description: Time when the error occurred.
-        type: string
-    type: object
-  dashboard.Configs:
-    properties:
-      dashboard:
+      display:
         properties:
           columns:
             type: integer
@@ -28,6 +19,15 @@ definitions:
           enqueueAllSuwayomiChaptersToDownload:
             type: boolean
         type: object
+    type: object
+  dashboard.BackgroundError:
+    properties:
+      message:
+        description: Error message.
+        type: string
+      time:
+        description: Time when the error occurred.
+        type: string
     type: object
   manga.Chapter:
     properties:
@@ -335,19 +335,19 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/dashboard.Configs'
+            $ref: '#/definitions/config.DashboardConfigs'
       summary: Get the dashboard configs
     post:
       consumes:
       - application/json
-      description: Update the dashboard columns in the configs.json file.
+      description: Update the dashboard configs in the DB
       parameters:
       - description: Dashboard configs
         in: body
         name: configs
         required: true
         schema:
-          $ref: '#/definitions/dashboard.Configs'
+          $ref: '#/definitions/config.DashboardConfigs'
       produces:
       - application/json
       responses:
@@ -355,7 +355,7 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/routes.responseMessage'
-      summary: Update dashboard columns
+      summary: Update dashboard configs
   /dashboard/last_background_error:
     delete:
       description: Deletes the last error that happened in the background. Usually
