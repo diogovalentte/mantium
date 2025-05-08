@@ -11,6 +11,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -94,6 +95,10 @@ func AddManga(c *gin.Context) {
 	mangaAdd, err := sources.GetMangaMetadata(requestData.URL, requestData.MangaInternalID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	if !slices.Contains(config.GlobalConfigs.DashboardConfigs.Manga.AllowedSources, mangaAdd.Source) {
+		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("source %s is not allowed", mangaAdd.Source)})
 		return
 	}
 
@@ -961,6 +966,10 @@ func AddMultiManga(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
+	if !slices.Contains(config.GlobalConfigs.DashboardConfigs.Manga.AllowedSources, currentManga.Source) {
+		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("source %s is not allowed", currentManga.Source)})
+		return
+	}
 
 	currentManga.Status = manga.Status(requestData.Status)
 
@@ -1533,6 +1542,10 @@ func AddMangaToMultiManga(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
+	if !slices.Contains(config.GlobalConfigs.DashboardConfigs.Manga.AllowedSources, mangaAdd.Source) {
+		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("source %s is not allowed", mangaAdd.Source)})
+		return
+	}
 
 	if len(mangaAdd.CoverImg) == 0 {
 		mangaAdd.CoverImg, err = util.GetDefaultCoverImg()
@@ -1681,7 +1694,7 @@ func RemoveMangaFromMultiManga(c *gin.Context) {
 }
 
 // @Summary Search manga
-// @Description Searches a manga in the source. You must provide the source site URL like "https://mangadex.org" and the search query.
+// @Description Searches a manga in the source. You must provide the source name like "mangadex" and the search query.
 // @Accept json
 // @Produce json
 // @Param search body SearchMangaRequest true "Search data"
@@ -1697,9 +1710,13 @@ func SearchManga(c *gin.Context) {
 	if requestData.Limit == 0 {
 		requestData.Limit = 20
 	}
-	mangas, err := sources.SearchManga(requestData.Term, requestData.SourceURL, requestData.Limit)
+	mangas, err := sources.SearchManga(requestData.Term, requestData.Source, requestData.Limit)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	if len(mangas) > 0 && !slices.Contains(config.GlobalConfigs.DashboardConfigs.Manga.AllowedSources, mangas[0].Source) {
+		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("source %s is not allowed", mangas[0].Source)})
 		return
 	}
 
@@ -1709,9 +1726,9 @@ func SearchManga(c *gin.Context) {
 
 // SearchMangaRequest is the request body for the SearchManga route
 type SearchMangaRequest struct {
-	SourceURL string `json:"source_url" binding:"required,http_url"`
-	Term      string `json:"q" binding:"required"`
-	Limit     int    `json:"limit"`
+	Source string `json:"source" binding:"required"`
+	Term   string `json:"q" binding:"required"`
+	Limit  int    `json:"limit"`
 }
 
 // @Summary Get mangas

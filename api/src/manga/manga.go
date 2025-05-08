@@ -142,8 +142,8 @@ func insertMangaIntoDB(m *Manga, tx *sql.Tx) (ID, error) {
 	if m.LastReleasedChapter != nil {
 		err := upsertMangaChapter(mangaID, m.LastReleasedChapter, tx)
 		if err != nil {
-			if err.Error() == `pq: duplicate key value violates unique constraint "chapters_pkey"` {
-				return -1, fmt.Errorf("last released chapter of the manga you're trying to add already exists in DB")
+			if util.ErrorContains(err, `pq: duplicate key value violates unique constraint "chapters_pkey"`) {
+				return -1, errordefs.ErrMangaAlreadyInDB // trying to add the same manga with different URL's (like klmanga.rs and klmanga.is), but they have the same chapter
 			}
 			return -1, err
 		}
@@ -151,8 +151,8 @@ func insertMangaIntoDB(m *Manga, tx *sql.Tx) (ID, error) {
 	if m.LastReadChapter != nil {
 		err := upsertMangaChapter(mangaID, m.LastReadChapter, tx)
 		if err != nil {
-			if err.Error() == `pq: duplicate key value violates unique constraint "chapters_pkey"` {
-				return -1, fmt.Errorf("last read chapter of the manga you're trying to add already exists in DB")
+			if util.ErrorContains(err, `pq: duplicate key value violates unique constraint "chapters_pkey"`) {
+				return -1, errordefs.ErrMangaAlreadyInDB
 			}
 			return -1, err
 		}

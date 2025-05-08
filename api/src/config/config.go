@@ -4,7 +4,9 @@ package config
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -83,7 +85,7 @@ type SuwayomiConfigs struct {
 }
 
 // DashboardConfigs is a struct that holds the configurations for the dashboard.
-// This will be set by the dashboard configs form.
+// This will be set mostly by the dashboard configs form.
 type DashboardConfigs struct {
 	Display struct {
 		Columns                    int    `json:"columns"`
@@ -95,10 +97,26 @@ type DashboardConfigs struct {
 		AddAllMultiMangaMangasToDownloadIntegrations bool `json:"addAllMultiMangaMangasToDownloadIntegrations"`
 		EnqueueAllSuwayomiChaptersToDownload         bool `json:"enqueueAllSuwayomiChaptersToDownload"`
 	} `json:"integrations"`
+	Manga struct {
+		AllowedSources       []string `json:"allowedSources"`
+		AllowedAddingMethods []string `json:"allowedAddingMethods"`
+	} `json:"manga"`
 }
 
-// ValidDisplayModeValues is a list of valid display modes.
-var ValidDisplayModeValues = []string{"Grid View", "List View"}
+var (
+	ValidDisplayModeValues = []string{"Grid View", "List View"}
+	ValidAddingMethods     = []string{"Search", "URL"}
+	SourcesList            = []string{
+		"mangadex",
+		"comick",
+		"mangahub",
+		"mangaplus",
+		"mangaupdates",
+		"rawkuma",
+		"klmanga",
+		"jmanga",
+	}
+)
 
 var oldConfigsFilePath = "./configs/configs.json"
 
@@ -200,6 +218,28 @@ func SetConfigs(filePath string) error {
 		}
 	}
 	GlobalConfigs.PeriodicallyUpdateMangas.ParallelJobs = updateMangasJobGoRoutines
+
+	GlobalConfigs.DashboardConfigs.Manga.AllowedSources = SourcesList
+	envAllowedSources := os.Getenv("ALLOWED_SOURCES")
+	if envAllowedSources != "" {
+		GlobalConfigs.DashboardConfigs.Manga.AllowedSources = strings.Split(envAllowedSources, ",")
+		for _, source := range GlobalConfigs.DashboardConfigs.Manga.AllowedSources {
+			if !slices.Contains(SourcesList, source) {
+				return fmt.Errorf("error parsing ALLOWED_SOURCES '%s': source '%s' not found in available sources: %s", envAllowedSources, source, SourcesList)
+			}
+		}
+	}
+
+	GlobalConfigs.DashboardConfigs.Manga.AllowedAddingMethods = ValidAddingMethods
+	envAllowedAddingMethods := os.Getenv("ALLOWED_ADDING_METHODS")
+	if envAllowedAddingMethods != "" {
+		GlobalConfigs.DashboardConfigs.Manga.AllowedAddingMethods = strings.Split(envAllowedAddingMethods, ",")
+		for _, method := range GlobalConfigs.DashboardConfigs.Manga.AllowedAddingMethods {
+			if !slices.Contains(ValidAddingMethods, method) {
+				return fmt.Errorf("error parsing ALLOWED_ADDING_METHODS '%s': method '%s' not found in available methods: %s", envAllowedAddingMethods, method, ValidAddingMethods)
+			}
+		}
+	}
 
 	return nil
 }

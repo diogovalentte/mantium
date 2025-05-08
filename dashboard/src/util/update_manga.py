@@ -435,6 +435,8 @@ def show_update_multimanga_add_manga_search(multimanga):
             except APIException as e:
                 if "manga already exists in DB" in str(e):
                     st.warning("Manga already exists")
+                elif "source" in str(e).lower() and "is not allowed" in str(e).lower():
+                    st.warning("Not allowed to add mangas from this source")
                 else:
                     logger.exception(e)
                     st.error("Error while adding manga to multimanga")
@@ -442,71 +444,20 @@ def show_update_multimanga_add_manga_search(multimanga):
                 ss["update_manga_success_message"] = "Manga added successfully"
                 st.rerun()
         else:
-            (
-                mangadex_tab,
-                comick_tab,
-                mangaplus_tab,
-                mangahub_tab,
-                mangaupdates_tab,
-                rawkuma_tab,
-                klmanga_tab,
-                jmanga_tab,
-            ) = st.tabs(
-                [
-                    "Mangadex",
-                    "Comick",
-                    "Mangaplus",
-                    "Mangahub",
-                    "MangaUpdates",
-                    "RawKuma",
-                    "KLManga",
-                    "JManga",
-                ]
-            )
+            sources = {}
+            for name, source in defaults.default_sources.items():
+                if source in ss["configs"]["manga"]["allowedSources"]:
+                    sources[name] = defaults.default_sources[name]
 
             base_key = key_to_save_manga + "_search_results"
-            ss[base_key + "_mangadex"] = {}
-            ss[base_key + "_comick"] = {}
-            ss[base_key + "_mangaplus"] = {}
-            ss[base_key + "_mangahub"] = {}
-            ss[base_key + "_mangaupdates"] = {}
-            ss[base_key + "_rawkuma"] = {}
-            ss[base_key + "_klmanga"] = {}
-            ss[base_key + "_jmanga"] = {}
-
-            with mangadex_tab:
-                show_search_manga_term_form(
-                    "https://mangadex.org", button_name, key_to_save_manga
-                )
-            with comick_tab:
-                show_search_manga_term_form(
-                    "https://comick.io", button_name, key_to_save_manga
-                )
-            with mangaplus_tab:
-                show_search_manga_term_form(
-                    "https://mangaplus.shueisha.co.jp", button_name, key_to_save_manga
-                )
-            with mangahub_tab:
-                show_search_manga_term_form(
-                    "https://mangahub.io", button_name, key_to_save_manga
-                )
-            with mangaupdates_tab:
-                show_search_manga_term_form(
-                    "https://mangaupdates.com", button_name, key_to_save_manga
-                )
-            with rawkuma_tab:
-                show_search_manga_term_form(
-                    "https://rawkuma.com", button_name, key_to_save_manga
-                )
-            with klmanga_tab:
-                show_search_manga_term_form(
-                    "https://klmanga.rs", button_name, key_to_save_manga
-                )
-            with jmanga_tab:
-                show_search_manga_term_form(
-                    "https://jmanga.is", button_name, key_to_save_manga
-                )
-
+            for source in list(sources.values()):
+                ss[base_key + "_" + source] = {}
+            tabs = st.tabs(list(sources.keys()))
+            for i, source in enumerate(sources.keys()):
+                with tabs[i]:
+                    show_search_manga_term_form(
+                        sources[source], button_name, key_to_save_manga
+                    )
 
 def show_update_multimanga_add_manga_url(multimanga):
     api_client = get_api_client()
@@ -536,6 +487,8 @@ def show_update_multimanga_add_manga_url(multimanga):
                 st.warning("Invalid URL")
             elif "manga not found in source" in resp_text:
                 st.warning("Manga not found")
+            elif "source" in str(e).lower() and "is not allowed" in str(e).lower():
+                st.warning("Not allowed to add mangas from this source")
             else:
                 logger.exception(e)
                 st.error("Error while adding manga to multimanga")

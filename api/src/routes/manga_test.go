@@ -151,20 +151,20 @@ func TestAddManga(t *testing.T) {
 
 var mangaSearchRequestsTestTable = []routes.SearchMangaRequest{
 	{
-		Term:      "Death Note",
-		SourceURL: "https://mangadex.org",
+		Term:   "Death Note",
+		Source: "https://mangadex.org",
 	},
 	{
-		Term:      "Blue Box",
-		SourceURL: "https://comick.io",
+		Term:   "Blue Box",
+		Source: "https://comick.io",
 	},
 	{
-		Term:      "one piece",
-		SourceURL: "https://mangahub.io",
+		Term:   "one piece",
+		Source: "https://mangahub.io",
 	},
 	{
-		Term:      "dandadan",
-		SourceURL: "https://mangaplus.shueisha.co.jp",
+		Term:   "dandadan",
+		Source: "https://mangaplus.shueisha.co.jp",
 	},
 }
 

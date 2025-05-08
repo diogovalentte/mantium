@@ -74,7 +74,7 @@ class MainDashboard:
 
         can_load_more = False
 
-        if ss["settings_display_mode"] == "List View":
+        if ss["configs"]["display"]["displayMode"] == "List View":
             max_mangas_to_show = defaults.list_view_number_of_rows_to_show_first
             if len(mangas) > max_mangas_to_show:
                 self.show_mangas_list_view(mangas[:max_mangas_to_show])
@@ -93,14 +93,14 @@ class MainDashboard:
                 self.show_mangas_list_view(mangas[max_mangas_to_show:])
         else:
             if not ss["is_mobile"]:
-                columns_number = ss["settings_columns_number"]
+                columns_number = ss["configs"]["display"]["columns"]
                 max_mangas_to_show = (
                     columns_number * defaults.grid_view_number_of_rows_to_show_first
                 )
             else:
                 columns_number = 1
                 max_mangas_to_show = (
-                    ss["settings_columns_number"]
+                    ss["configs"]["display"]["columns"]
                     * defaults.grid_view_number_of_rows_to_show_first
                 )
             if len(mangas) > max_mangas_to_show:
@@ -248,21 +248,23 @@ class MainDashboard:
                 def on_add_manga_click(form_type: str):
                     ss["show_add_manga_form"] = form_type
 
-                st.button(
-                    "Add Manga by Searching",
-                    type="primary",
-                    use_container_width=True,
-                    on_click=on_add_manga_click,
-                    args=("search",),
-                )
+                if "Search" in ss["configs"]["manga"]["allowedAddingMethods"]:
+                    st.button(
+                        "Add Manga by Searching",
+                        type="primary",
+                        use_container_width=True,
+                        on_click=on_add_manga_click,
+                        args=("search",),
+                    )
 
-                st.button(
-                    "Add Manga Using URL",
-                    type="primary",
-                    use_container_width=True,
-                    on_click=on_add_manga_click,
-                    args=("url",),
-                )
+                if "URL" in ss["configs"]["manga"]["allowedAddingMethods"]:
+                    st.button(
+                        "Add Manga Using URL",
+                        type="primary",
+                        use_container_width=True,
+                        on_click=on_add_manga_click,
+                        args=("url",),
+                    )
 
                 st.button(
                     "Add Custom Manga",
@@ -340,7 +342,7 @@ class MainDashboard:
             show_configs_update_message()
 
     def show_background_error(self):
-        if ss["settings_show_background_error_warning"]:
+        if ss["configs"]["display"]["showBackgroundErrorWarning"]:
             last_background_error = self.api_client.get_last_background_error()
             if len(last_background_error["message"]) > 3000:
                 last_background_error["message"] = (
@@ -436,7 +438,7 @@ class MainDashboard:
             unsafe_allow_html=True,
         )
 
-        if manga["CoverImg"] is not None:
+        if manga["CoverImg"] is not None and manga["CoverImg"] != b"":
             img_bytes = base64.b64decode(manga["CoverImg"])
             img = BytesIO(img_bytes)
             if not manga["CoverImgResized"]:
@@ -915,8 +917,11 @@ class MainDashboard:
                     ),
                     defaults.display_modes,
                     index=(
-                        defaults.display_modes.index(ss["settings_display_mode"])
-                        if ss["settings_display_mode"] in defaults.display_modes
+                        defaults.display_modes.index(
+                            ss["configs"]["display"]["displayMode"]
+                        )
+                        if ss["configs"]["display"]["displayMode"]
+                        in defaults.display_modes
                         else 0
                     ),
                     disabled=ss["is_mobile"],
@@ -926,7 +931,7 @@ class MainDashboard:
 
                 if ss["is_mobile"]:
                     columns_settings_label = "Columns (not available in mobile):"
-                elif ss["settings_display_mode"] == "Grid View":
+                elif ss["configs"]["display"]["displayMode"] == "Grid View":
                     columns_settings_label = "Columns:"
                 else:
                     columns_settings_label = "Columns (available in Grid View only):"
@@ -935,8 +940,8 @@ class MainDashboard:
                     columns_settings_label,
                     min_value=defaults.columns_min_value,
                     max_value=defaults.columns_max_value,
-                    value=ss["settings_columns_number"],
-                    disabled=(ss["settings_display_mode"] == "List View")
+                    value=ss["configs"]["display"]["columns"],
+                    disabled=(ss["configs"]["display"]["displayMode"] == "List View")
                     or ss["is_mobile"],
                     key="configs_select_columns_number",
                 )
@@ -945,14 +950,14 @@ class MainDashboard:
                     "Search Results Limit:",
                     min_value=defaults.search_results_limit_min_value,
                     max_value=defaults.search_results_limit_max_value,
-                    value=ss["settings_search_results_limit"],
+                    value=ss["configs"]["display"]["searchResultsLimit"],
                     help="The maximum number of search results to show when searching for a manga to add to the dashboard. It doesn't work very well with MangaUpdates.",
                     key="configs_select_search_results_limit",
                 )
 
                 st.checkbox(
                     "Show background error warning",
-                    value=ss["settings_show_background_error_warning"],
+                    value=ss["configs"]["display"]["showBackgroundErrorWarning"],
                     key="configs_select_show_background_error_warning",
                     help="Show a warning in the sidebar if there is a background error",
                 )
@@ -960,15 +965,17 @@ class MainDashboard:
             with st.expander("Integrations"):
                 st.checkbox(
                     "Add multimanga mangas to download integrations",
-                    value=ss[
-                        "settings_add_all_multimanga_mangas_to_download_integrations"
+                    value=ss["configs"]["integrations"][
+                        "addAllMultiMangaMangasToDownloadIntegrations"
                     ],
                     help="By default, add only the multimangas' first manga to download integrations. If checked, when adding additional mangas to a multimanga, add them to download integrations too.",
                     key="configs_add_all_multimanga_mangas_to_download_integrations",
                 )
                 st.checkbox(
                     "Enqueue chapters to download when adding manga to Suwayomi",
-                    value=ss["settings_enqueue_all_suwayomi_chapters_to_download"],
+                    value=ss["configs"]["integrations"][
+                        "enqueueAllSuwayomiChaptersToDownload"
+                    ],
                     help="By default, enqueue to download all chapters from the mangas that are added to the Suwayomi integration (except ComicK mangas).",
                     key="configs_enqueue_all_suwayomi_chapters_to_download",
                 )
@@ -993,19 +1000,23 @@ class MainDashboard:
                     }
                     self.api_client.update_dashboard_configs(new_configs)
 
-                    ss["settings_columns_number"] = ss.configs_select_columns_number
-                    ss[
-                        "settings_show_background_error_warning"
+                    ss["configs"]["display"][
+                        "columns"
+                    ] = ss.configs_select_columns_number
+                    ss["configs"]["display"][
+                        "showBackgroundErrorWarning"
                     ] = ss.configs_select_show_background_error_warning
-                    ss["settings_display_mode"] = ss.configs_select_display_mode
-                    ss[
-                        "settings_search_results_limit"
+                    ss["configs"]["display"][
+                        "displayMode"
+                    ] = ss.configs_select_display_mode
+                    ss["configs"]["display"][
+                        "searchResultsLimit"
                     ] = ss.configs_select_search_results_limit
-                    ss[
-                        "settings_add_all_multimanga_mangas_to_download_integrations"
+                    ss["configs"]["integrations"][
+                        "addAllMultiMangaMangasToDownloadIntegrations"
                     ] = ss.configs_add_all_multimanga_mangas_to_download_integrations
-                    ss[
-                        "settings_enqueue_all_suwayomi_chapters_to_download"
+                    ss["configs"]["integrations"][
+                        "enqueueAllSuwayomiChaptersToDownload"
                     ] = ss.configs_enqueue_all_suwayomi_chapters_to_download
 
                     ss["configs_update_success_message"] = "Settings saved successfully"
@@ -1036,24 +1047,13 @@ class MainDashboard:
 def main(api_client):
     ss["is_mobile"] = browser_detection_engine()["isMobile"]
 
-    if "settings_columns_number" not in ss:
-        configs = api_client.get_dashboard_configs()
-        display = configs["display"]
-        integrations = configs["integrations"]
-        ss["settings_display_mode"] = (
-            display["displayMode"] if not ss["is_mobile"] else defaults.display_modes[0]
+    if "configs" not in ss:
+        ss["configs"] = api_client.get_dashboard_configs()
+        ss["configs"]["display"]["displayMode"] = (
+            ss["configs"]["display"]["displayMode"]
+            if not ss["is_mobile"]
+            else defaults.display_modes[0]
         )
-        ss["settings_columns_number"] = display["columns"]
-        ss["settings_search_results_limit"] = display["searchResultsLimit"]
-        ss["settings_show_background_error_warning"] = display[
-            "showBackgroundErrorWarning"
-        ]
-        ss[
-            "settings_add_all_multimanga_mangas_to_download_integrations"
-        ] = integrations["addAllMultiMangaMangasToDownloadIntegrations"]
-        ss["settings_enqueue_all_suwayomi_chapters_to_download"] = integrations[
-            "enqueueAllSuwayomiChaptersToDownload"
-        ]
 
     display = MainDashboard(api_client)
     display.show()

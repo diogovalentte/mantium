@@ -109,12 +109,14 @@ def add_manga():
             in str(ex).lower()
         ):
             logger.warning(ex)
-            ss["add_manga_warning_message"] = (
-                "Manga added to DB, but couldn't add it to at least one integration"
-            )
+            ss[
+                "add_manga_warning_message"
+            ] = "Manga added to DB, but couldn't add it to at least one integration"
             st.rerun()
         elif "manga already exists in DB".lower() in str(ex).lower():
             st.warning("Manga already in Mantium")
+        elif "source" in str(ex).lower() and "is not allowed" in str(ex).lower():
+            st.warning("Not allowed to add mangas from this source")
         else:
             logger.exception(ex)
             st.error("Error while adding manga")
@@ -213,17 +215,22 @@ def show_add_manga_form_url():
 
 def show_add_manga_form_search():
     api_client = get_api_client()
+    sources = {}
+    for name, source in defaults.default_sources.items():
+        if source in ss["configs"]["manga"]["allowedSources"]:
+            sources[name] = defaults.default_sources[name]
+
     container = st.empty()
     if ss.get("add_manga_search_selected_manga", None) is not None:
         with container:
             try:
                 with st.spinner("Getting manga chapters..."):
-                    ss["add_manga_chapter_options"] = (
-                        api_client.get_cached_manga_chapters(
-                            -1,
-                            ss["add_manga_search_selected_manga"]["URL"],
-                            ss["add_manga_search_selected_manga"]["InternalID"],
-                        )
+                    ss[
+                        "add_manga_chapter_options"
+                    ] = api_client.get_cached_manga_chapters(
+                        -1,
+                        ss["add_manga_search_selected_manga"]["URL"],
+                        ss["add_manga_search_selected_manga"]["InternalID"],
                     )
             except APIException as e:
                 logger.exception(e)
@@ -236,85 +243,22 @@ def show_add_manga_form_search():
             )
 
         def on_click():
-            match ss["add_manga_search_selected_manga"]["Source"]:
-                case "mangadex":
-                    ss["add_manga_search_go_back_to_tab"] = 0
-                case "comick":
-                    ss["add_manga_search_go_back_to_tab"] = 1
-                case "mangaplus":
-                    ss["add_manga_search_go_back_to_tab"] = 2
-                case "mangahub":
-                    ss["add_manga_search_go_back_to_tab"] = 3
-                case "mangaupdates":
-                    ss["add_manga_search_go_back_to_tab"] = 4
-                case "rawkuma":
-                    ss["add_manga_search_go_back_to_tab"] = 5
-                case "klmanga":
-                    ss["add_manga_search_go_back_to_tab"] = 6
-                case "jmanga":
-                    ss["add_manga_search_go_back_to_tab"] = 7
+            ss["add_manga_search_go_back_to_tab"] = list(sources.values()).index(
+                ss["add_manga_search_selected_manga"]["Source"]
+            )
             ss["add_manga_search_selected_manga"] = None
 
         st.button("Back", use_container_width=True, on_click=on_click)
     else:
+        # if change key_to_save_manga, also change it in func show_dialogs in the 01_?.py main file
+        button_name, key_to_save_manga = "Select", "add_manga_search_selected_manga"
         with container:
-            (
-                mangadex_tab,
-                comick_tab,
-                mangaplus_tab,
-                mangahub_tab,
-                mangaupdates_tab,
-                rawkuma_tab,
-                klmanga_tab,
-                jmanga_tab,
-            ) = st.tabs(
-                [
-                    "Mangadex",
-                    "Comick",
-                    "Mangaplus",
-                    "Mangahub",
-                    "MangaUpdates",
-                    "RawKuma",
-                    "KLManga",
-                    "JManga",
-                ]
-            )
-
-            # if change key_to_save_manga, also change it in func show_dialogs in the 01_?.py main file
-            button_name, key_to_save_manga = "Select", "add_manga_search_selected_manga"
-
-            with mangadex_tab:
-                show_search_manga_term_form(
-                    "https://mangadex.org", button_name, key_to_save_manga
-                )
-            with comick_tab:
-                show_search_manga_term_form(
-                    "https://comick.io", button_name, key_to_save_manga
-                )
-            with mangaplus_tab:
-                show_search_manga_term_form(
-                    "https://mangaplus.shueisha.co.jp", button_name, key_to_save_manga
-                )
-            with mangahub_tab:
-                show_search_manga_term_form(
-                    "https://mangahub.io", button_name, key_to_save_manga
-                )
-            with mangaupdates_tab:
-                show_search_manga_term_form(
-                    "https://mangaupdates.com", button_name, key_to_save_manga
-                )
-            with rawkuma_tab:
-                show_search_manga_term_form(
-                    "https://rawkuma.com", button_name, key_to_save_manga
-                )
-            with klmanga_tab:
-                show_search_manga_term_form(
-                    "https://klmanga.rs", button_name, key_to_save_manga
-                )
-            with jmanga_tab:
-                show_search_manga_term_form(
-                    "https://jmanga.is", button_name, key_to_save_manga
-                )
+            tabs = st.tabs(list(sources.keys()))
+            for i, source in enumerate(sources.keys()):
+                with tabs[i]:
+                    show_search_manga_term_form(
+                        sources[source], button_name, key_to_save_manga
+                    )
 
         tab_index = ss["add_manga_search_go_back_to_tab"]
         js = f"""window.parent.document.querySelectorAll('button[data-baseweb="tab"]')[{tab_index}].click();"""
@@ -323,19 +267,17 @@ def show_add_manga_form_search():
         st_javascript(js)
 
 
-def show_search_manga_term_form(
-    source_site_url: str, button_name: str, key_to_save_manga: str
-):
+def show_search_manga_term_form(source: str, button_name: str, key_to_save_manga: str):
     """Show search manga term form.
 
     Args:
-        source_site_url (str): The source site URL to search for manga.
+        source(str): The source name to search for manga.
         button_name (str): The name of the button to select a manga.
         key_to_save_manga (str): The key to save the selected manga in streamlit.session_state.
     """
     api_client = get_api_client()
-    search_results_key = f"{key_to_save_manga}_search_results_{source_site_url.split('//')[1].split('.')[0]}"
-    search_term_key = f"{key_to_save_manga}_search_term_{source_site_url.split('//')[1].split('.')[0]}"
+    search_results_key = f"{key_to_save_manga}_search_results_{source}"
+    search_term_key = f"{key_to_save_manga}_search_term_{source}"
 
     term = st.text_input(
         "Term to Search",
@@ -357,8 +299,8 @@ def show_search_manga_term_form(
             with st.spinner("Searching..."):
                 results = api_client.search_mangas(
                     term,
-                    ss["settings_search_results_limit"],
-                    source_site_url,
+                    ss["configs"]["display"]["searchResultsLimit"],
+                    source,
                 )
                 ss[search_results_key]["results"] = results
         except Exception as ex:

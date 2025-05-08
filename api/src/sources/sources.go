@@ -21,7 +21,8 @@ import (
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
-var sources = map[string]models.Source{
+// Also update SourcesList on config.go
+var Sources = map[string]models.Source{
 	"mangadex":     &mangadex.Source{},
 	"comick":       &comick.Source{},
 	"mangahub":     &mangahub.Source{},
@@ -34,12 +35,12 @@ var sources = map[string]models.Source{
 
 // RegisterSource registers a new source
 func RegisterSource(domain string, source models.Source) {
-	sources[domain] = source
+	Sources[domain] = source
 }
 
 // DeleteSource deletes a source
 func DeleteSource(domain string) {
-	delete(sources, domain)
+	delete(Sources, domain)
 }
 
 // GetSource returns a source
@@ -51,7 +52,7 @@ func GetSource(mangaURL string) (models.Source, error) {
 		return nil, util.AddErrorContext(contextError, err)
 	}
 
-	value, ok := sources[source]
+	value, ok := Sources[source]
 	if !ok {
 		return nil, util.AddErrorContext(contextError, fmt.Errorf("source '%s' not found", source))
 	}
@@ -60,7 +61,7 @@ func GetSource(mangaURL string) (models.Source, error) {
 
 // GetSources returns all sources
 func GetSources() map[string]models.Source {
-	return sources
+	return Sources
 }
 
 // GetMangaMetadata gets the metadata of a manga using a source
@@ -82,18 +83,18 @@ func GetMangaMetadata(mangaURL, internalID string) (*manga.Manga, error) {
 }
 
 // SearchManga searches for a manga using a source
-func SearchManga(term, sourceSiteURL string, limit int) ([]*models.MangaSearchResult, error) {
+func SearchManga(term, sourceName string, limit int) ([]*models.MangaSearchResult, error) {
 	contextError := "error while searching '%s' in '%s'"
 
-	source, err := GetSource(sourceSiteURL)
-	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf(contextError, term, sourceSiteURL), err)
+	source, ok := Sources[sourceName]
+	if !ok {
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, term, sourceName), fmt.Errorf("source '%s' not found", sourceName))
 	}
 	contextError = fmt.Sprintf("(%s) %s", source.GetName(), contextError)
 
 	results, err := searchManga(term, limit, source)
 	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf(contextError, term, sourceSiteURL), err)
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, term, source), err)
 	}
 
 	return results, nil
@@ -146,7 +147,7 @@ func urlToSource(urlString string) (string, error) {
 	}
 	domain := parsedURL.Hostname()
 
-	for source := range sources {
+	for source := range Sources {
 		if strings.Contains(domain, source) {
 			return source, nil
 		}

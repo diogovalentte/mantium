@@ -1,3 +1,14 @@
+default_sources = {
+    "Mangadex": "mangadex",
+    "Comick": "comick",
+    "Mangaplus": "mangaplus",
+    "Mangahub": "mangahub",
+    "MangaUpdates": "mangaupdates",
+    "RawKuma": "rawkuma",
+    "KLManga": "klmanga",
+    "JManga": "jmanga",
+}
+
 manga_status_options = {
     0: "📚 All",
     1: "📖 Reading",
