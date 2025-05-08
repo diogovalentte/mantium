@@ -16,8 +16,6 @@ services:
   mantium-api:
     container_name: mantium-api
     image: ghcr.io/diogovalentte/mantium-api:latest
-    volumes:
-      - ./configs:/app/api/configs
     environment:
       - TZ=${TZ:-UTC}
       - POSTGRES_HOST=mantium-db
