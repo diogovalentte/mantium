@@ -81,7 +81,7 @@
         },
         "/dashboard/configs": {
             "get": {
-                "description": "Returns the dashboard configs read from the configs.json file.",
+                "description": "Returns the dashboard configs",
                 "produces": [
                     "application/json"
                 ],
@@ -809,7 +809,7 @@
         },
         "/mangas/search": {
             "post": {
-                "description": "Searches a manga in the source. You must provide the source site URL like \"https://mangadex.org\" and the search query.",
+                "description": "Searches a manga in the source. You must provide the source name like \"mangadex\" and the search query.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1260,6 +1260,23 @@
                             "type": "boolean"
                         }
                     }
+                },
+                "manga": {
+                    "type": "object",
+                    "properties": {
+                        "allowedAddingMethods": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "allowedSources": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
                 }
             }
         },
@@ -1549,7 +1566,7 @@
             "type": "object",
             "required": [
                 "q",
-                "source_url"
+                "source"
             ],
             "properties": {
                 "limit": {
@@ -1558,7 +1575,7 @@
                 "q": {
                     "type": "string"
                 },
-                "source_url": {
+                "source": {
                     "type": "string"
                 }
             }

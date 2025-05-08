@@ -92,7 +92,7 @@ const docTemplate = `{
         },
         "/dashboard/configs": {
             "get": {
-                "description": "Returns the dashboard configs read from the configs.json file.",
+                "description": "Returns the dashboard configs",
                 "produces": [
                     "application/json"
                 ],
@@ -820,7 +820,7 @@ const docTemplate = `{
         },
         "/mangas/search": {
             "post": {
-                "description": "Searches a manga in the source. You must provide the source site URL like \"https://mangadex.org\" and the search query.",
+                "description": "Searches a manga in the source. You must provide the source name like \"mangadex\" and the search query.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1271,6 +1271,23 @@ const docTemplate = `{
                             "type": "boolean"
                         }
                     }
+                },
+                "manga": {
+                    "type": "object",
+                    "properties": {
+                        "allowedAddingMethods": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "allowedSources": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
                 }
             }
         },
@@ -1560,7 +1577,7 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "q",
-                "source_url"
+                "source"
             ],
             "properties": {
                 "limit": {
@@ -1569,7 +1586,7 @@ const docTemplate = `{
                 "q": {
                     "type": "string"
                 },
-                "source_url": {
+                "source": {
                     "type": "string"
                 }
             }

@@ -23,7 +23,7 @@ func DashboardRoutes(group *gin.RouterGroup) {
 }
 
 // @Summary Get the dashboard configs
-// @Description Returns the dashboard configs read from the configs.json file.
+// @Description Returns the dashboard configs
 // @Success 200 {object} config.DashboardConfigs
 // @Produce json
 // @Router /dashboard/configs [get]

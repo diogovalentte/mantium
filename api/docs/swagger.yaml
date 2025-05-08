@@ -19,6 +19,17 @@ definitions:
           enqueueAllSuwayomiChaptersToDownload:
             type: boolean
         type: object
+      manga:
+        properties:
+          allowedAddingMethods:
+            items:
+              type: string
+            type: array
+          allowedSources:
+            items:
+              type: string
+            type: array
+        type: object
     type: object
   dashboard.BackgroundError:
     properties:
@@ -244,11 +255,11 @@ definitions:
         type: integer
       q:
         type: string
-      source_url:
+      source:
         type: string
     required:
     - q
-    - source_url
+    - source
     type: object
   routes.UpdateMangaChapterRequest:
     properties:
@@ -328,7 +339,7 @@ paths:
       summary: Update custom manga no more chapters
   /dashboard/configs:
     get:
-      description: Returns the dashboard configs read from the configs.json file.
+      description: Returns the dashboard configs
       produces:
       - application/json
       responses:
@@ -854,8 +865,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Searches a manga in the source. You must provide the source site
-        URL like "https://mangadex.org" and the search query.
+      description: Searches a manga in the source. You must provide the source name
+        like "mangadex" and the search query.
       parameters:
       - description: Search data
         in: body
