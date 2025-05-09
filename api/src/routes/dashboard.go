@@ -78,6 +78,12 @@ func UpdateDashboardConfigs(c *gin.Context) {
 		return
 	}
 
+	err = config.LoadConfigsFromDB(config.GlobalConfigs.DashboardConfigs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("configs saved to DB, but error while loading new configs from DB: %s", err.Error())})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"message": "Configs updated successfully"})
 }
 
