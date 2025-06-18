@@ -1,6 +1,6 @@
 --------------------------------------
 -- @name    KLManga
--- @url     https://klmanga.at
+-- @url     https://klmanga.fi
 -- @author  diogovalentte
 -- @license MIT
 --------------------------------------
@@ -9,6 +9,7 @@
 Html = require("html")
 Http = require("http")
 Json = require("json")
+HttpUtil = require("http_util")
 --- END IMPORTS ---
 
 ----- VARIABLES -----
@@ -23,7 +24,7 @@ Base = "https://klmanga.fi"
 -- @param query Query to search for
 -- @return Table of tables with the following fields: name, url
 function SearchManga(query)
-    query = query:gsub(" ", "+")
+    query = HttpUtil.query_escape(query)
     local req_url = Base .. "/?s=" .. query
     local request = Http.request("GET", req_url)
     local result = Client:do_request(request)
