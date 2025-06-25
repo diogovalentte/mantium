@@ -27,6 +27,7 @@ You have two display options: **grid view** and **list view**.
 </p>
 
 ## List View
+
 <p align="center">
   <img src="https://github.com/user-attachments/assets/8b0f810f-d2ce-4fe8-a9c5-bd215541d67b">
 </p>
@@ -106,9 +107,9 @@ More about the integrations [here](https://github.com/diogovalentte/mantium/blob
 
 # Running
 
-By default, the API will be available on port `8080` and the dashboard on port `8501`, and they're not accessible by other machines. To access the API and dashboard in other machines, you run the containers in [host network mode](https://docs.docker.com/network/drivers/host/) or behind a reverse proxy.
+By default, the API will be available on port `8080` and it's not accessible by other machines. To access the API in other machines, you run the container in [host network mode](https://docs.docker.com/network/drivers/host/) or behind a reverse proxy.
 
-- For convenience, you can change the API and dashboard ports using the environment variables `API_PORT` and `DASHBOARD_PORT`.
+- For convenience, you can change the API port using the environment variables `API_PORT`.
 
 ## Docker Compose
 

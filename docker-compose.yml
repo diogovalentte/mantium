@@ -65,7 +65,6 @@ services:
     image: ghcr.io/diogovalentte/mantium-dashboard:latest
     environment:
       - TZ=${TZ:-UTC}
-      - DASHBOARD_PORT=${DASHBOARD_PORT:-8501}
       - API_ADDRESS=${API_ADDRESS:-http://mantium-api:8080}
     logging:
       driver: "json-file"
