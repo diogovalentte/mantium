@@ -1,24 +1,28 @@
-FROM python:3.10.12-slim
+FROM python:3.11-slim AS build
 
-WORKDIR /app/dashboard
+WORKDIR /app
 
-COPY ./dashboard .
+COPY ./dashboard/requirements.txt requirements.txt
 
-ENV DASHBOARD_PORT=8501
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir --target=/app/deps -r requirements.txt 
+
+RUN rm -rf /app/deps/**/*.dist-info/__pycache__ /app/deps/**/*.pyc /root/.cache
+RUN rm -r /app/deps/streamlit/static
+
+FROM gcr.io/distroless/python3:nonroot
+
 ENV TZ=UTC
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    curl \
-    && pip install --no-cache-dir -r requirements.txt \
-    && apt-get remove -y build-essential \
-    && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
 
-RUN rm -rf /usr/local/lib/python3.10/site-packages/streamlit/static
-COPY ./defaults/streamlit_fix/build /usr/local/lib/python3.10/site-packages/streamlit/static
+COPY --from=build /app/deps /app/deps
+COPY ./dashboard .
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-  CMD sh -c 'curl -f http://localhost:$DASHBOARD_PORT/healthz | grep ok || exit 1'
+COPY ./defaults/streamlit_fix/build /app/deps/streamlit/static
 
-CMD ["sh", "-c", "streamlit run --server.port=$DASHBOARD_PORT 01_📖_Dashboard.py"]
+ENV PYTHONPATH="/app/deps"
+
+EXPOSE 8501
+
+CMD ["-m", "streamlit", "run", "01_📖_Dashboard.py", "--server.port=8501", "--server.address=0.0.0.0"]
