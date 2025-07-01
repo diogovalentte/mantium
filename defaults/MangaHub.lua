@@ -5,6 +5,14 @@
 -- @license MIT
 ------------------------------
 
+function generateUUID()
+    local template = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
+    return string.gsub(template, "[xy]", function(c)
+        local v = (c == "x") and math.random(0, 15) or math.random(8, 11)
+        return string.format("%x", v)
+    end)
+end
+
 ----- IMPORTS -----
 Http = require("http")
 Json = require("json")
@@ -12,11 +20,19 @@ Json = require("json")
 
 ----- VARIABLES -----
 Debug = false
-Client = Http.client({ timeout = 20, insecure_ssl = true, debug = Debug })
 BaseSiteURL = "https://mangahub.io"
 ApiBase = "https://api.mghcdn.com/graphql"
 ImageBase = "https://imgx.mghcdn.com"
 UserAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0"
+Headers = {
+    ["Content-Type"] = "application/json",
+    ["Accept"] = "application/json",
+    ["Origin"] = BaseSiteURL,
+    ["Referer"] = BaseSiteURL .. "/",
+    ["User-Agent"] = UserAgent,
+    ["x-mhub-access"] = generateUUID(),
+}
+Client = Http.client({ timeout = 20, insecure_ssl = true, debug = Debug, headers = Headers })
 Limit = 50
 Order = 0 -- Chapter Order: 0 = descending, 1 = ascending
 --- END VARIABLES ---
@@ -32,9 +48,18 @@ function SearchManga(query)
         .. '\\",mod:POPULAR,limit:'
         .. Limit
         .. ',offset:0,count:true){rows{title,slug,image,latestChapter,status},count}}"}'
-    local result = request(req_query)
-    local json = Json.decode(result)
-    local results = json["data"]["search"]["rows"]
+    req_query =
+    '{"query":"{search(x:m01,q:\\"dandadan\\",limit:10){rows{id,title,slug,image,rank,latestChapter,createdDate}}}"}'
+    local request = Http.request("POST", ApiBase, req_query)
+    local result, err = Client:do_request(request)
+    if err then
+        error(err)
+    end
+    if not (result.code == 200) then
+        error("code: " .. result.code .. " - " .. result.body)
+    end
+    local result_body = Json.decode(result.body)
+    local results = result_body["data"]["search"]["rows"]
 
     local mangas = {}
     for i, m in ipairs(results) do
@@ -55,9 +80,16 @@ function MangaChapters(mangaURL)
         return {}
     end
     local req_query = '{"query":"{manga(x:m01,slug:\\"' .. slug .. '\\"){chapters{number,title}}}"}'
-    local result = request(req_query)
-    local json = Json.decode(result)
-    local results = json["data"]["manga"]["chapters"]
+    local request = Http.request("POST", ApiBase, req_query)
+    local result, err = Client:do_request(request)
+    if err then
+        error(err)
+    end
+    if not (result.code == 200) then
+        error("code: " .. result.code .. " - " .. result.body)
+    end
+    local result_body = Json.decode(result.body)
+    local results = result_body["data"]["manga"]["chapters"]
 
     local chapters = {}
     for i, c in ipairs(results) do
@@ -85,9 +117,16 @@ function ChapterPages(chapterURL)
         .. '\\",number:'
         .. chapter_num
         .. '){pages,manga{mainSlug}}}"}'
-    local result = request(req_query)
-    local json = Json.decode(result)
-    local chapter = json["data"]["chapter"]
+    local request = Http.request("POST", ApiBase, req_query)
+    local result, err = Client:do_request(request)
+    if err then
+        error(err)
+    end
+    if not (result.code == 200) then
+        error("code: " .. result.code .. " - " .. result.body)
+    end
+    local result_body = Json.decode(result.body)
+    local chapter = result_body["data"]["chapter"]
 
     local images = Json.decode(chapter["pages"])
     local imagePrefix = images["p"]
@@ -104,30 +143,6 @@ end
 --- END MAIN ---
 
 ----- HELPERS -----
-function request(body)
-    local command = string.format(
-        'curl -s -XPOST --tlsv1.2 -H "Content-Type: application/json" -H "Accept: application/json" -H "Origin: %s" -H "User-Agent: %s" -H "x-mhub-access: %s" "%s"',
-        BaseSiteURL,
-        UserAgent,
-        generateUUID(),
-        ApiBase
-    )
-    command = command .. " --data '" .. body .. "'"
-    local handle = io.popen(command)
-    local response = handle:read("*a")
-    handle:close()
-
-    return response
-end
-
-function generateUUID()
-    local template = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx"
-    return string.gsub(template, "[xy]", function(c)
-        local v = (c == "x") and math.random(0, 15) or math.random(8, 11)
-        return string.format("%x", v)
-    end)
-end
-
 function getMangaSlug(mangaURL)
     return mangaURL:match("manga/([^/?]+)")
 end
