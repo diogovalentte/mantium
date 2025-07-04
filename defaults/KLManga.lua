@@ -90,7 +90,7 @@ function ChapterPages(chapterURL)
         end
 
         local js = el:text()
-        if contains(js, "decode_images_100") then
+		if contains(js, "decode_images_g") then
             chapter_id_js = js
         elseif contains(js, [["nonce_a":"]]) then
             nonce_a_js = js
@@ -111,7 +111,7 @@ function ChapterPages(chapterURL)
     local page_idx = 1
     local img_index = 0
     while true do
-        local data = "action=z_do_ajax&_action=decode_images_100&chapter_id="
+        local data = "action=z_do_ajax&_action=decode_images_g&chapter_id="
             .. chapter_id
             .. "&p="
             .. number
