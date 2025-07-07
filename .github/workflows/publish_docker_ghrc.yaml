@@ -63,14 +63,3 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.api-image-meta.outputs.tags }}
           labels: ${{ steps.api-image-meta.outputs.labels }}
-
-      - name: Set up Tailscale
-        uses: tailscale/github-action@v2
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci
-
-      - name: Update my portainer stack xD
-        run: |
-          python3 .github/workflows/update_portainer_stack.py ${{ secrets.PORTAINER_URL }} ${{ secrets.PORTAINER_USERNAME }} ${{ secrets.PORTAINER_PASSWORD }} ${{ secrets.PORTAINER_STACK_NAME }} ${{ secrets.GH_USERNAME }} ${{ secrets.GH_TOKEN }}
