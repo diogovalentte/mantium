@@ -15,7 +15,7 @@ HttpUtil = require("http_util")
 ----- VARIABLES -----
 Debug = false
 Client = Http.client({ timeout = 20, insecure_ssl = true, debug = Debug })
-Base = "https://klmanga.fi"
+Base = "https://klmanga.bot"
 --- END VARIABLES ---
 
 ----- MAIN -----
@@ -90,7 +90,7 @@ function ChapterPages(chapterURL)
         end
 
         local js = el:text()
-		if contains(js, "decode_images_g") then
+        if contains(js, "decode_images_g") then
             chapter_id_js = js
         elseif contains(js, [["nonce_a":"]]) then
             nonce_a_js = js
