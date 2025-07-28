@@ -973,6 +973,17 @@ class MainDashboard:
                     key="configs_enqueue_all_suwayomi_chapters_to_download",
                 )
 
+            with st.expander("Info"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.write("Version: ")
+                with col2:
+                    st.badge("4.1.0")
+                st.divider()
+                st.markdown(
+                    "If you have any questions or suggestions, feel free to open an issue on the [GitHub repository](https://github.com/diogovalentte/mantium)."
+                )
+
             if st.form_submit_button(
                 "Save",
                 type="primary",
