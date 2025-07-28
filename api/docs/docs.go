@@ -107,7 +107,7 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "description": "Update the dashboard configs in the DB",
+                "description": "Update the dashboard configs in the DB. Cannot update version.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1286,6 +1286,14 @@ const docTemplate = `{
                             "items": {
                                 "type": "string"
                             }
+                        }
+                    }
+                },
+                "mantium": {
+                    "type": "object",
+                    "properties": {
+                        "version": {
+                            "type": "string"
                         }
                     }
                 }

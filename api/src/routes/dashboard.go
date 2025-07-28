@@ -31,19 +31,8 @@ func GetDashboardConfigs(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"configs": config.GlobalConfigs.DashboardConfigs})
 }
 
-// @Summary Get the last update date
-// @Description Returns the last time a resource that should trigger an update in the iframe/dashboard was updated. Usually used to update the dashboard when an event not triggered by the user occurs.
-// @Success 200 {object} responseMessage
-// @Produce json
-// @Router /dashboard/last_update [get]
-func GetLastUpdate(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
-		"message": dashboard.GetLastUpdateDashboard(),
-	})
-}
-
 // @Summary Update dashboard configs
-// @Description Update the dashboard configs in the DB
+// @Description Update the dashboard configs in the DB. Cannot update version.
 // @Success 200 {object} responseMessage
 // @Accept json
 // @Produce json
@@ -85,6 +74,17 @@ func UpdateDashboardConfigs(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Configs updated successfully"})
+}
+
+// @Summary Get the last update date
+// @Description Returns the last time a resource that should trigger an update in the iframe/dashboard was updated. Usually used to update the dashboard when an event not triggered by the user occurs.
+// @Success 200 {object} responseMessage
+// @Produce json
+// @Router /dashboard/last_update [get]
+func GetLastUpdate(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"message": dashboard.GetLastUpdateDashboard(),
+	})
 }
 
 // @Summary Get the last background error

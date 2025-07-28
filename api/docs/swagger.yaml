@@ -30,6 +30,11 @@ definitions:
               type: string
             type: array
         type: object
+      mantium:
+        properties:
+          version:
+            type: string
+        type: object
     type: object
   dashboard.BackgroundError:
     properties:
@@ -351,7 +356,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Update the dashboard configs in the DB
+      description: Update the dashboard configs in the DB. Cannot update version.
       parameters:
       - description: Dashboard configs
         in: body

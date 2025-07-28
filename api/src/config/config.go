@@ -101,6 +101,9 @@ type DashboardConfigs struct {
 		AllowedSources       []string `json:"allowedSources"`
 		AllowedAddingMethods []string `json:"allowedAddingMethods"`
 	} `json:"manga"`
+	Mantium struct {
+		Version string `json:"version"`
+	}
 }
 
 var (

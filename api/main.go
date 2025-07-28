@@ -78,6 +78,7 @@ func init() {
 	}
 
 	log.Info().Msgf("Current version in DB: %s", version)
+	config.GlobalConfigs.DashboardConfigs.Mantium.Version = version
 
 	for _, m := range migrations {
 		if m.Version == "update_version" {
