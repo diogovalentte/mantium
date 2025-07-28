@@ -64,6 +64,12 @@ func init() {
 		}
 	}
 
+	log.Info().Msg("Updating manga URLs TLDs...")
+	err = updateMangasTLDs()
+	if err != nil {
+		panic(err)
+	}
+
 	log.Info().Msg("Turning mangas into multimangas...")
 	err = turnMangasIntoMultiMangas()
 	if err != nil {
@@ -258,6 +264,17 @@ func updateMangas() error {
 			if err != nil {
 				return util.AddErrorContext(fmt.Sprintf(contextError, cm), err)
 			}
+		}
+	}
+
+	return nil
+}
+
+func updateMangasTLDs() error {
+	for k, v := range sources.SourcesTLDs {
+		err := sources.ChangeSourceTLDInDB(k, v)
+		if err != nil {
+			return err
 		}
 	}
 

@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/diogovalentte/mantium/api/src/db"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/sources/comick"
 	"github.com/diogovalentte/mantium/api/src/sources/jmanga"
@@ -21,7 +22,7 @@ import (
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
-// Also update SourcesList on config.go
+// Sources - also update SourcesList on config.go
 var Sources = map[string]models.Source{
 	"mangadex":     &mangadex.Source{},
 	"comick":       &comick.Source{},
@@ -31,6 +32,12 @@ var Sources = map[string]models.Source{
 	"rawkuma":      &rawkuma.Source{},
 	"klmanga":      &klmanga.Source{},
 	"jmanga":       &jmanga.Source{},
+}
+
+// SourcesTLDs specifies the TLDs of the sources.
+// Sometimes it's necessery to change the TLD of a source, for example, when the source changes its domain and the old one doesn't redirect to the new one.
+var SourcesTLDs = map[string]string{
+	"klmanga": "st",
 }
 
 // RegisterSource registers a new source
@@ -136,6 +143,35 @@ func GetMangaChapters(mangaURL, mangaInternalID string) ([]*manga.Chapter, error
 	}
 
 	return chapters, nil
+}
+
+// ChangeSourceTLDInDB changes the TLD of a source in the database
+func ChangeSourceTLDInDB(sourceName, newTLD string) error {
+	contextError := "error changing source TLD in DB for source '%s' to '%s'"
+
+	_db, err := db.OpenConn()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, sourceName, newTLD), err)
+	}
+	defer _db.Close()
+
+	query := fmt.Sprintf(`
+		UPDATE mangas
+		SET
+			url = REGEXP_REPLACE(
+				url,
+				'(https?://[^/]+?)\.[a-z]+',
+				'\1.%s'
+			)
+		WHERE
+			source = '%s'
+	`, newTLD, sourceName)
+	_, err = _db.Exec(query)
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, sourceName, newTLD), err)
+	}
+
+	return nil
 }
 
 func urlToSource(urlString string) (string, error) {

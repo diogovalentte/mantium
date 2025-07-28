@@ -277,6 +277,7 @@ func RequestUpdateMangasMetadata(notify bool) (*http.Response, error) {
 	return resp, nil
 }
 
+// FileExists checks if a file exists at the given path.
 func FileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil || !os.IsNotExist(err)
