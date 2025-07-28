@@ -109,6 +109,14 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
 			"add_all_multimanga_mangas_to_download_integrations" boolean NOT NULL DEFAULT FALSE,
 			"enqueue_all_suwayomi_chapters_to_download" boolean NOT NULL DEFAULT TRUE
 		);
+
+		CREATE TABLE IF NOT EXISTS "version" (
+			"version" VARCHAR(15) NOT NULL DEFAULT '4.0.4'
+		);
+
+		INSERT INTO version (version)
+		SELECT '4.0.4'
+		WHERE NOT EXISTS (SELECT 1 FROM version);
     `)
 	if err != nil {
 		tx.Rollback()
@@ -233,4 +241,15 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
 	log.Info().Msg("Database tables created")
 
 	return nil
+}
+
+func GetVersionFromDB(db *sql.DB) (string, error) {
+	const query = `SELECT version FROM version`
+	var version string
+	err := db.QueryRow(query).Scan(&version)
+	if err != nil {
+		return "", err
+	}
+
+	return version, nil
 }

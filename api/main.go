@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog"
@@ -41,7 +42,7 @@ func init() {
 	}
 	defer _db.Close()
 
-	log.Info().Msg("Creating tables and applying migrations...")
+	log.Info().Msg("Creating tables and applying DB migrations...")
 	err = db.CreateTables(_db, log)
 	if err != nil {
 		panic(err)
@@ -70,18 +71,29 @@ func init() {
 		panic(err)
 	}
 
-	log.Info().Msg("Turning mangas into multimangas...")
-	err = turnMangasIntoMultiMangas()
+	log.Info().Msg("Getting version from DB...")
+	version, err := db.GetVersionFromDB(_db)
 	if err != nil {
 		panic(err)
 	}
 
-	log.Info().Msg("Truncating dates to second...")
-	log.Info().Msg("Updating mangas sources...")
-	log.Info().Msg("Updating mangas URL...")
-	err = updateMangas()
-	if err != nil {
-		panic(err)
+	log.Info().Msgf("Current version in DB: %s", version)
+
+	for _, m := range migrations {
+		if m.Version == "update_version" {
+			// This migration is always executed to update the version in the database
+			err = m.Up(log)
+			if err != nil {
+				panic(err)
+			}
+			continue
+		}
+		if compareVersions(version, m.Version) < 0 {
+			err = m.Up(log)
+			if err != nil {
+				panic(err)
+			}
+		}
 	}
 
 	setUpdateMangasMetadataPeriodicallyJob(log)
@@ -104,6 +116,17 @@ func main() {
 	router.SetTrustedProxies(nil)
 
 	router.Run(":" + os.Getenv("API_PORT"))
+}
+
+func updateMangasTLDs() error {
+	for k, v := range sources.SourcesTLDs {
+		err := sources.ChangeSourceTLDInDB(k, v)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // setUpdateMangasMetadataPeriodicallyJob sets a job to update mangas metadata periodically
@@ -157,7 +180,46 @@ func setUpdateMangasMetadataPeriodicallyJob(log *zerolog.Logger) {
 	}
 }
 
-func turnMangasIntoMultiMangas() error {
+// Migration to be applied if current version stored in DB is lower than the field Version.
+type Migration struct {
+	Version string
+	Up      func(*zerolog.Logger) error
+}
+
+// If the current version in the database is lower than the Version field, the Up function will be executed.
+var migrations = []Migration{
+	{
+		Version: "4.1.0",
+		Up:      turnMangasIntoMultiMangas,
+	},
+	{
+		Version: "4.1.0",
+		Up:      updateMangas,
+	},
+	{
+		Version: "update_version",
+		Up: func(*zerolog.Logger) error {
+			version := "4.1.0" // Change it in every new version
+
+			const query = `UPDATE version SET version = $1`
+			db, err := db.OpenConn()
+			if err != nil {
+				return util.AddErrorContext("error opening database connection", err)
+			}
+			defer db.Close()
+			_, err = db.Exec(query, version)
+			if err != nil {
+				return util.AddErrorContext("error updating version in database", err)
+			}
+
+			return nil
+		},
+	},
+}
+
+func turnMangasIntoMultiMangas(log *zerolog.Logger) error {
+	log.Info().Msg("Turning mangas into multimangas...")
+
 	contextError := "error turning all mangas into multimangas"
 	mangas, err := manga.GetMangasWithoutMultiMangasDB()
 	if err != nil {
@@ -174,7 +236,11 @@ func turnMangasIntoMultiMangas() error {
 	return nil
 }
 
-func updateMangas() error {
+func updateMangas(log *zerolog.Logger) error {
+	log.Info().Msg("Truncating dates to second...")
+	log.Info().Msg("Updating mangas sources...")
+	log.Info().Msg("Updating mangas URL format...")
+
 	multimangas, err := manga.GetMultiMangasDB(true)
 	if err != nil {
 		return err
@@ -270,13 +336,28 @@ func updateMangas() error {
 	return nil
 }
 
-func updateMangasTLDs() error {
-	for k, v := range sources.SourcesTLDs {
-		err := sources.ChangeSourceTLDInDB(k, v)
-		if err != nil {
-			return err
+func compareVersions(v1, v2 string) int {
+	splitV1 := strings.Split(v1, ".")
+	splitV2 := strings.Split(v2, ".")
+
+	maxLen := max(len(splitV1), len(splitV2))
+
+	for i := range maxLen {
+		var n1, n2 int
+
+		if i < len(splitV1) {
+			n1, _ = strconv.Atoi(splitV1[i])
+		}
+		if i < len(splitV2) {
+			n2, _ = strconv.Atoi(splitV2[i])
+		}
+
+		if n1 < n2 {
+			return -1 // v1 < v2
+		} else if n1 > n2 {
+			return 1 // v1 > v2
 		}
 	}
 
-	return nil
+	return 0 // v1 == v2
 }
