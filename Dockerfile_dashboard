@@ -19,8 +19,6 @@ WORKDIR /app
 COPY --from=build /app/deps /app/deps
 COPY ./dashboard .
 
-COPY ./defaults/streamlit_fix/build /app/deps/streamlit/static
-
 ENV PYTHONPATH="/app/deps"
 
 EXPOSE 8501

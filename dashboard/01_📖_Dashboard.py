@@ -134,7 +134,7 @@ class MainDashboard:
         improve_css = """
             <style>
                 /* Hide the header link button */
-                button[title="View fullscreen"]{
+                div[data-testid="stFullScreenFrame"] > div > div.stElementToolbar {
                     display: none !important;
                 }
 
@@ -142,9 +142,7 @@ class MainDashboard:
                 div.st-key-browser_engine {
                     display: none !important;
                 }
-            </style>
 
-            <style>
                 /* Hide the header link button */
                 h1.manga_header > span {
                     display: none !important;
@@ -157,6 +155,7 @@ class MainDashboard:
                     text-overflow: ellipsis !important;
                 }
 
+                /* Add header decorations */
                 h1.manga_header {
                     padding: 0px 0px 1rem;
                     text-align: center;
@@ -184,18 +183,12 @@ class MainDashboard:
                         color: #04c9b7; /* End color */
                     }
                 }
-            </style>
 
-            <style>
-                /* Center images in streamlit>1.39, but it's kind slow
                 div[data-testid="stElementContainer"]:has(div[data-testid="stImageContainer"]) {
-                    display: grid;
+                    display: grid !important;
                     align-items: center;
                 }
-                */
-            </style>
 
-            <style>
                 /* General changes */
                 div[data-testid="stStatusWidget"] {
                     display: none;

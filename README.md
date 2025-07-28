@@ -256,12 +256,10 @@ export API_ADDRESS=http://localhost:8081
 pip install -r requirements.txt
 ```
 
-8. Currently, there is an issue with one of the dashboard dependencies; refer to [this guide](https://github.com/diogovalentte/mantium/blob/main/defaults/streamlit_fix/help.md) explaining more about it.
-
-9. Start the dashboard:
+8. Start the dashboard:
 
 ```bash
 streamlit run 01_📖_Dashboard.py
 ```
 
-10. Access the dashboard on `http://localhost:8501`
+9. Access the dashboard on `http://localhost:8501`
