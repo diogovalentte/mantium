@@ -8,7 +8,6 @@ RUN pip install --upgrade pip \
     && pip install --no-cache-dir --target=/app/deps -r requirements.txt 
 
 RUN rm -rf /app/deps/**/*.dist-info/__pycache__ /app/deps/**/*.pyc /root/.cache
-RUN rm -r /app/deps/streamlit/static
 
 FROM gcr.io/distroless/python3:nonroot
 
