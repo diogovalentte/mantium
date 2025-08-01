@@ -76,7 +76,6 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-
 	log.Info().Msgf("Current version in DB: %s", version)
 	config.GlobalConfigs.DashboardConfigs.Mantium.Version = version
 
@@ -87,6 +86,17 @@ func init() {
 			if err != nil {
 				panic(err)
 			}
+			newVersion, err := db.GetVersionFromDB(_db)
+			if err != nil {
+				panic(err)
+			}
+
+			if newVersion != version {
+				log.Info().Msg("Version updated in DB")
+				log.Info().Msgf("New version in DB: %s", newVersion)
+				config.GlobalConfigs.DashboardConfigs.Mantium.Version = newVersion
+			}
+
 			continue
 		}
 		if compareVersions(version, m.Version) < 0 {
