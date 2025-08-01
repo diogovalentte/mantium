@@ -1,5 +1,5 @@
 import base64
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from typing import Any
 
@@ -634,7 +634,7 @@ def show_multimanga_manga(
 
     release_date = (
         manga["LastReleasedChapter"]["UpdatedAt"]
-        if manga["LastReleasedChapter"]["UpdatedAt"] != datetime.min
+        if manga["LastReleasedChapter"]["UpdatedAt"] != datetime.min.replace(tzinfo=timezone.utc)
         else "N/A"
     )
     if release_date != "N/A":

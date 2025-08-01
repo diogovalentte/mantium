@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urljoin
 
@@ -71,7 +71,7 @@ class MangaAPIClient:
         else:
             manga["LastReleasedChapter"] = {
                 "Chapter": "",
-                "UpdatedAt": datetime.min,
+                "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
                 "URL": (
                     manga["URL"]
                     if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
@@ -85,7 +85,7 @@ class MangaAPIClient:
         else:
             manga["LastReadChapter"] = {
                 "Chapter": "",
-                "UpdatedAt": datetime.min,
+                "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
                 "URL": (
                     manga["URL"]
                     if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
@@ -123,7 +123,7 @@ class MangaAPIClient:
             else:
                 manga["LastReleasedChapter"] = {
                     "Chapter": "",
-                    "UpdatedAt": datetime.min,
+                    "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
                     "URL": (
                         manga["URL"]
                         if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
@@ -137,7 +137,7 @@ class MangaAPIClient:
             else:
                 manga["LastReadChapter"] = {
                     "Chapter": "",
-                    "UpdatedAt": datetime.min,
+                    "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
                     "URL": (
                         manga["URL"]
                         if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
@@ -377,11 +377,15 @@ class MangaAPIClient:
             ):
                 if manga["Source"] == defaults.CUSTOM_MANGA_SOURCE:
                     return (0, -manga["LastReadChapter"]["UpdatedAt"].timestamp())
-                if manga["LastReleasedChapter"]["UpdatedAt"] == datetime.min:
+                if manga["LastReleasedChapter"]["UpdatedAt"] == datetime.min.replace(
+                    tzinfo=timezone.utc
+                ):
                     return (0, -float("inf"))
                 return (0, -manga["LastReleasedChapter"]["UpdatedAt"].timestamp())
             else:
-                if manga["LastReleasedChapter"]["UpdatedAt"] == datetime.min:
+                if manga["LastReleasedChapter"]["UpdatedAt"] == datetime.min.replace(
+                    tzinfo=timezone.utc
+                ):
                     return (1, float("inf"))
                 return (1, -manga["LastReleasedChapter"]["UpdatedAt"].timestamp())
 
@@ -399,7 +403,7 @@ class MangaAPIClient:
                 key=lambda manga: (
                     manga["LastReadChapter"]["UpdatedAt"]
                     if manga["LastReadChapter"] is not None
-                    else datetime.min
+                    else datetime.min.replace(tzinfo=timezone.utc)
                 ),
                 reverse=not reverse,
             )

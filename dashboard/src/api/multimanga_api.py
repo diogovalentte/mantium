@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urljoin
 
@@ -69,27 +69,27 @@ class MultiMangaAPIClient:
             multimanga["CurrentManga"]["CoverImg"], "utf-8"
         )
         if multimanga["CurrentManga"]["LastReleasedChapter"] is not None:
-            multimanga["CurrentManga"]["LastReleasedChapter"]["UpdatedAt"] = (
-                get_updated_at_datetime(
-                    multimanga["CurrentManga"]["LastReleasedChapter"]["UpdatedAt"]
-                )
+            multimanga["CurrentManga"]["LastReleasedChapter"][
+                "UpdatedAt"
+            ] = get_updated_at_datetime(
+                multimanga["CurrentManga"]["LastReleasedChapter"]["UpdatedAt"]
             )
         else:
             multimanga["CurrentManga"]["LastReleasedChapter"] = {
                 "Chapter": "",
-                "UpdatedAt": datetime.min,
+                "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
                 "URL": multimanga["CurrentManga"]["URL"],
             }
         if multimanga["CurrentManga"]["LastReadChapter"] is not None:
-            multimanga["CurrentManga"]["LastReadChapter"]["UpdatedAt"] = (
-                get_updated_at_datetime(
-                    multimanga["CurrentManga"]["LastReadChapter"]["UpdatedAt"]
-                )
+            multimanga["CurrentManga"]["LastReadChapter"][
+                "UpdatedAt"
+            ] = get_updated_at_datetime(
+                multimanga["CurrentManga"]["LastReadChapter"]["UpdatedAt"]
             )
         else:
             multimanga["CurrentManga"]["LastReadChapter"] = {
                 "Chapter": "",
-                "UpdatedAt": datetime.min,
+                "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
                 "URL": multimanga["CurrentManga"]["URL"],
             }
         if multimanga["LastReadChapter"] is not None:
@@ -99,7 +99,7 @@ class MultiMangaAPIClient:
         else:
             multimanga["LastReadChapter"] = {
                 "Chapter": "",
-                "UpdatedAt": datetime.min,
+                "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
                 "URL": multimanga["CurrentManga"]["URL"],
             }
 
@@ -112,7 +112,7 @@ class MultiMangaAPIClient:
             else:
                 manga["LastReleasedChapter"] = {
                     "Chapter": "",
-                    "UpdatedAt": datetime.min,
+                    "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
                     "URL": manga["URL"],
                 }
             if manga["LastReadChapter"] is not None:
@@ -122,7 +122,7 @@ class MultiMangaAPIClient:
             else:
                 manga["LastReadChapter"] = {
                     "Chapter": "",
-                    "UpdatedAt": datetime.min,
+                    "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
                     "URL": manga["URL"],
                 }
 
@@ -158,7 +158,7 @@ class MultiMangaAPIClient:
         else:
             manga["LastReleasedChapter"] = {
                 "Chapter": "",
-                "UpdatedAt": datetime.min,
+                "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
                 "URL": (
                     manga["URL"]
                     if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
@@ -172,7 +172,7 @@ class MultiMangaAPIClient:
         else:
             manga["LastReadChapter"] = {
                 "Chapter": "",
-                "UpdatedAt": datetime.min,
+                "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
                 "URL": (
                     manga["URL"]
                     if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE

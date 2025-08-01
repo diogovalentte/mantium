@@ -1,5 +1,5 @@
 import base64
-from datetime import datetime
+from datetime import datetime, timezone
 from io import BytesIO
 from typing import Any
 
@@ -475,7 +475,8 @@ class MainDashboard:
             )
             release_date = (
                 manga["LastReleasedChapter"]["UpdatedAt"]
-                if manga["LastReleasedChapter"]["UpdatedAt"] != datetime.min
+                if manga["LastReleasedChapter"]["UpdatedAt"]
+                != datetime.min.replace(tzinfo=timezone.utc)
                 else "N/A"
             )
             if release_date != "N/A":
@@ -504,7 +505,8 @@ class MainDashboard:
             )
             read_date = (
                 manga["LastReadChapter"]["UpdatedAt"]
-                if manga["LastReadChapter"]["UpdatedAt"] != datetime.min
+                if manga["LastReadChapter"]["UpdatedAt"]
+                != datetime.min.replace(tzinfo=timezone.utc)
                 else "N/A"
             )
             if read_date != "N/A":
@@ -569,7 +571,8 @@ class MainDashboard:
 
             read_date = (
                 manga["LastReadChapter"]["UpdatedAt"]
-                if manga["LastReadChapter"]["UpdatedAt"] != datetime.min
+                if manga["LastReadChapter"]["UpdatedAt"]
+                != datetime.min.replace(tzinfo=timezone.utc)
                 else "N/A"
             )
             if read_date != "N/A":
@@ -750,7 +753,8 @@ class MainDashboard:
             )
             release_date = (
                 manga["LastReleasedChapter"]["UpdatedAt"]
-                if manga["LastReleasedChapter"]["UpdatedAt"] != datetime.min
+                if manga["LastReleasedChapter"]["UpdatedAt"]
+                != datetime.min.replace(tzinfo=timezone.utc)
                 else "N/A"
             )
             if release_date != "N/A":
@@ -784,7 +788,8 @@ class MainDashboard:
             )
             read_date = (
                 manga["LastReadChapter"]["UpdatedAt"]
-                if manga["LastReadChapter"]["UpdatedAt"] != datetime.min
+                if manga["LastReadChapter"]["UpdatedAt"]
+                != datetime.min.replace(tzinfo=timezone.utc)
                 else "N/A"
             )
             if read_date != "N/A":
@@ -851,7 +856,8 @@ class MainDashboard:
 
             read_date = (
                 manga["LastReadChapter"]["UpdatedAt"]
-                if manga["LastReadChapter"]["UpdatedAt"] != datetime.min
+                if manga["LastReadChapter"]["UpdatedAt"]
+                != datetime.min.replace(tzinfo=timezone.utc)
                 else "N/A"
             )
             if read_date != "N/A":
