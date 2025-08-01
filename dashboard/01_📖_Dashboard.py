@@ -984,7 +984,7 @@ class MainDashboard:
                 with col1:
                     st.write("Version: ")
                 with col2:
-                    st.badge("4.1.0")
+                    st.badge(ss["configs"]["Mantium"]["version"])
                 st.divider()
                 st.markdown(
                     "If you have any questions or suggestions, feel free to open an issue on the [GitHub repository](https://github.com/diogovalentte/mantium)."
