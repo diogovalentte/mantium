@@ -63,3 +63,25 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.api-image-meta.outputs.tags }}
           labels: ${{ steps.api-image-meta.outputs.labels }}
+
+      - name: Create payload file
+        run: |
+          REPO_FULL="${{ github.repository }}"
+          REPO_NAME="${REPO_FULL##*/}"
+          echo "{\"repository\": {\"name\": \"${REPO_NAME}\"}}" > payload.json
+
+      - name: Send GitHub webhook
+        env:
+          WEBHOOK_SERVER: ${{ secrets.WEBHOOK_SERVER }}
+          WEBHOOK_SERVER_SECRET: ${{ secrets.WEBHOOK_SERVER_SECRET }}
+          EVENT: push
+          PAYLOAD_FILE: payload.json
+        run: |
+          SIG="sha256=$(openssl dgst -sha256 -hmac "$WEBHOOK_SERVER_SECRET" "$PAYLOAD_FILE" | sed 's/^.* //')"
+          DELIVERY_ID=$(uuidgen)
+          curl -X POST "$WEBHOOK_SERVER" \
+            -H "Content-Type: application/json" \
+            -H "X-Hub-Signature-256: $SIG" \
+            -H "X-GitHub-Event: $EVENT" \
+            -H "X-GitHub-Delivery: $DELIVERY_ID" \
+            --data-binary "@$PAYLOAD_FILE"
