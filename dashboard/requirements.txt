@@ -19,7 +19,7 @@ htbuilder==0.6.2
 idna==3.10
 importlib-metadata==7.0.1
 iniconfig==2.0.0
-Jinja2==3.1.4
+Jinja2==3.1.6
 jsonschema==4.21.1
 jsonschema-specifications==2023.12.1
 kiwisolver==1.4.5
@@ -36,7 +36,7 @@ packaging==23.2
 pandas==2.2.0
 pillow==10.4.0
 pluggy==1.4.0
-protobuf==4.25.2
+protobuf==6.31.1
 pyarrow==15.0.0
 pydeck==0.8.1b0
 Pygments==2.17.2
@@ -48,7 +48,7 @@ python-dateutil==2.8.2
 pytz==2023.4
 PyYAML==6.0.1
 referencing==0.33.0
-requests==2.32.3
+requests==2.32.4
 rich==13.7.0
 rpds-py==0.17.1
 six==1.16.0
@@ -71,11 +71,11 @@ tenacity==8.2.3
 toml==0.10.2
 tomli==2.0.1
 toolz==0.12.1
-tornado==6.4.2
+tornado==6.5.1
 typing_extensions==4.9.0
 tzdata==2023.4
 tzlocal==5.2
-urllib3==2.2.3
+urllib3==2.5.0
 validators==0.22.0
 watchdog==3.0.0
 zipp==3.21.0
