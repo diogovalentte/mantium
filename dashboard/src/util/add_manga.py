@@ -263,7 +263,7 @@ def show_add_manga_form_search():
         tab_index = ss["add_manga_search_go_back_to_tab"]
         js = f"""window.parent.document.querySelectorAll('button[data-baseweb="tab"]')[{tab_index}].click();"""
         st_javascript(js)
-        js = """window.parent.document.querySelectorAll('div:has(> iframe[title="streamlit_javascript.streamlit_javascript"])').forEach(div => div.style.display = 'none');"""
+        js = """window.parent.document.querySelectorAll('div:has(> iframe[title="streamlit_javascript.streamlit_javascript"])').forEach(div => div.parentElement.style.display = 'none');"""
         st_javascript(js)
 
 
