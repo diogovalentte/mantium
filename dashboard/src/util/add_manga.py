@@ -1,5 +1,6 @@
 from typing import Any
 
+from src.util import util
 import src.util.defaults as defaults
 import streamlit as st
 from src.api.api_client import get_api_client
@@ -263,8 +264,7 @@ def show_add_manga_form_search():
         tab_index = ss["add_manga_search_go_back_to_tab"]
         js = f"""window.parent.document.querySelectorAll('button[data-baseweb="tab"]')[{tab_index}].click();"""
         st_javascript(js)
-        js = """window.parent.document.querySelectorAll('div:has(> iframe[title="streamlit_javascript.streamlit_javascript"])').forEach(div => div.parentElement.style.display = 'none');"""
-        st_javascript(js)
+        util.set_custom_js_to_none()
 
 
 def show_search_manga_term_form(source: str, button_name: str, key_to_save_manga: str):

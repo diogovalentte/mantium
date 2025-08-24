@@ -1,11 +1,13 @@
 import logging
 import pathlib
 from datetime import datetime, timezone
+import uuid
 
 import streamlit as st
 from bs4 import BeautifulSoup
 from dateutil.parser import parse
 from streamlit_extras.stylable_container import stylable_container
+from streamlit_javascript import st_javascript
 
 
 def get_logger():
@@ -99,9 +101,15 @@ def get_relative_time(past_date):
     else:
         return "Just now"
 
+def set_custom_js_to_none():
+    js = """window.parent.document.querySelectorAll('div:has(> iframe[title="streamlit_javascript.streamlit_javascript"])').forEach(div => div.parentElement.style.display = 'none');"""
+    st_javascript(js, key=str(uuid.uuid4()))
 
 def fix_streamlit_index_html():
-    """Fixes the Streamlit index.html file to allow to load mangadex images."""
+    """Fixes the Streamlit index.html file to allow to load mangadex images.
+
+    DOING IT USING st_javascript IN THE MAIN FILE INSTEAD.
+    """
     index_path = pathlib.Path(st.__file__).parent / "static" / "index.html"
     soup = BeautifulSoup(index_path.read_text(), features="html.parser")
 

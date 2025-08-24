@@ -8,6 +8,7 @@ from browser_detection import browser_detection_engine
 from PIL import Image
 from src.api.api_client import get_api_client
 from src.util import defaults
+from src.util import util
 from src.util.add_manga import show_add_manga_form
 from src.util.update_manga import (
     show_update_multimanga_form,
@@ -129,6 +130,11 @@ class MainDashboard:
         self.update_dashboard_job()
 
         self.show_forms()
+
+        # Disable referrer. If not disabled, some manga sources (like MangaDex) will block the request to fetch the cover image
+        js = """(window.parent.document.querySelector('meta[name="referrer"]') || window.parent.document.head.appendChild(Object.assign(window.parent.document.createElement("meta"), { name: "referrer" }))).setAttribute("content", "no-referrer");"""
+        st_javascript(js)
+        util.set_custom_js_to_none()
 
     def set_css(self):
         improve_css = """
