@@ -210,7 +210,7 @@ var migrations = []Migration{
 	{
 		Version: "update_version",
 		Up: func(*zerolog.Logger) error {
-			version := "4.1.3" // Change it in every new version
+			version := "4.1.4" // Change it in every new version
 
 			const query = `UPDATE version SET version = $1`
 			db, err := db.OpenConn()
