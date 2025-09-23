@@ -208,9 +208,9 @@ var migrations = []Migration{
 		Up:      updateMangas,
 	},
 	{
-		Version: "update_version",
+		Version: "update_version", // It's not a valid version, so it will always be executed
 		Up: func(*zerolog.Logger) error {
-			version := "4.1.4" // Change it in every new version
+			version := "4.1.5" // Change it in every new version
 
 			const query = `UPDATE version SET version = $1`
 			db, err := db.OpenConn()
