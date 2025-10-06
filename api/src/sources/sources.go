@@ -39,6 +39,7 @@ var Sources = map[string]models.Source{
 var SourcesTLDs = map[string]string{
 	"klmanga": "lt",
 	"jmanga":  "pw",
+	"rawkuma": "net",
 }
 
 // RegisterSource registers a new source

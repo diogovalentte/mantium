@@ -20,52 +20,55 @@ var mangasTestTable = []mangaTestType{
 		expected: &manga.Manga{
 			Name:            "Go-Toubun no Hanayome",
 			Source:          "rawkuma",
-			URL:             "https://rawkuma.com/manga/go-toubun-no-hanayome",
-			CoverImgURL:     "https://rawkuma.com/wp-content/uploads/2020/06/Go-Toubun-no-Hanayome-cover.jpg",
+			URL:             "https://rawkuma.net/manga/go-toubun-no-hanayome",
+			CoverImgURL:     "https://rawkuma.net/wp-content/uploads/2025/09/i360331.jpg",
 			CoverImgResized: true,
+			InternalID:      "742",
 			LastReleasedChapter: &manga.Chapter{
 				Chapter:   "122",
 				Name:      "Chapter 122",
-				URL:       "https://rawkuma.com/go-toubun-no-hanayome-chapter-122/",
-				UpdatedAt: time.Date(2023, 11, 21, 0, 0, 0, 0, time.UTC),
+				URL:       "https://rawkuma.net/manga/go-toubun-no-hanayome/chapter-122.27772/",
+				UpdatedAt: time.Date(2025, 9, 14, 10, 34, 51, 0, time.UTC),
 				Type:      1,
 			},
 		},
-		url: "https://rawkuma.com/manga/go-toubun-no-hanayome",
+		url: "https://rawkuma.net/manga/go-toubun-no-hanayome",
 	},
 	{
 		expected: &manga.Manga{
 			Name:            "Shingeki no Kyojin",
 			Source:          "rawkuma",
-			URL:             "https://rawkuma.com/manga/shingeki-no-kyojin",
-			CoverImgURL:     "https://rawkuma.com/wp-content/uploads/2020/07/Shingeki-no-Kyojin-33.jpg",
+			URL:             "https://rawkuma.net/manga/shingeki-no-kyojin",
+			CoverImgURL:     "https://rawkuma.net/wp-content/uploads/2025/09/i424594.png",
 			CoverImgResized: true,
+			InternalID:      "1270",
 			LastReleasedChapter: &manga.Chapter{
 				Chapter:   "139",
 				Name:      "Chapter 139",
-				URL:       "https://rawkuma.com/shingeki-no-kyojin-chapter-139/",
-				UpdatedAt: time.Date(2023, 11, 23, 0, 0, 0, 0, time.UTC),
+				URL:       "https://rawkuma.net/manga/shingeki-no-kyojin/chapter-139.49406/",
+				UpdatedAt: time.Date(2025, 9, 17, 3, 57, 30, 0, time.UTC),
 				Type:      1,
 			},
 		},
-		url: "https://rawkuma.com/manga/shingeki-no-kyojin",
+		url: "https://rawkuma.net/manga/shingeki-no-kyojin",
 	},
 	{
 		expected: &manga.Manga{
-			Name:            "Darling in the FRANXX",
+			Name:            "Darling in the Franxx",
 			Source:          "rawkuma",
-			URL:             "https://rawkuma.com/manga/darling-in-the-franxx",
-			CoverImgURL:     "https://rawkuma.com/wp-content/uploads/2020/02/Darling-in-the-FRANXX.jpg",
+			URL:             "https://rawkuma.net/manga/darling-in-the-franxx",
+			CoverImgURL:     "https://rawkuma.net/wp-content/uploads/2025/09/i310814.jpg",
 			CoverImgResized: true,
+			InternalID:      "360",
 			LastReleasedChapter: &manga.Chapter{
-				Chapter:   "60-End",
-				Name:      "Chapter 60-End",
-				URL:       "https://rawkuma.com/darling-in-the-franxx-chapter-60/",
-				UpdatedAt: time.Date(2023, 11, 19, 0, 0, 0, 0, time.UTC),
+				Chapter:   "60",
+				Name:      "Chapter 60",
+				URL:       "https://rawkuma.net/manga/darling-in-the-franxx/chapter-60.14004/",
+				UpdatedAt: time.Date(2025, 9, 12, 2, 43, 46, 0, time.UTC),
 				Type:      1,
 			},
 		},
-		url: "https://rawkuma.com/manga/darling-in-the-franxx",
+		url: "https://rawkuma.net/manga/darling-in-the-franxx",
 	},
 }
 
@@ -86,6 +89,7 @@ func TestGetMangaMetadata(t *testing.T) {
 				t.Fatalf("expected manga.CoverImg to be different than nil")
 			}
 			actualManga.CoverImg = nil
+			actualManga.LastReleasedChapter.UpdatedAt = actualManga.LastReleasedChapter.UpdatedAt.UTC()
 
 			if !reflect.DeepEqual(actualManga, expected) {
 				t.Fatalf("expected manga %s, got %s", expected, actualManga)
@@ -122,6 +126,15 @@ func TestSearch(t *testing.T) {
 
 			if len(results) == 0 {
 				t.Fatalf("expected results to be different than 0")
+			}
+
+			for _, result := range results {
+				if result.Name == "" {
+					t.Fatalf("expected result.Name to be different than empty")
+				}
+				if result.URL == "" {
+					t.Fatalf("expected result.URL to be different than empty")
+				}
 			}
 		}
 	})

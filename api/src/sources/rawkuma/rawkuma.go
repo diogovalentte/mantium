@@ -5,7 +5,7 @@ import (
 	"github.com/gocolly/colly/v2"
 )
 
-var baseSiteURL = "https://rawkuma.com"
+var baseSiteURL = "https://rawkuma.net"
 
 // Source is the struct for the Rawkuma source
 type Source struct {

@@ -1,12 +1,15 @@
 package rawkuma
 
 import (
+	"bytes"
 	"fmt"
-	"net/url"
-	"path"
+	"mime/multipart"
+	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly/v2"
 
 	"github.com/diogovalentte/mantium/api/src/errordefs"
@@ -28,13 +31,12 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	var sharedErr error
 
 	// manga name
-	s.c.OnHTML("h1.entry-title", func(e *colly.HTMLElement) {
-		name := e.Text
-		mangaReturn.Name = strings.TrimSuffix(name, " Raw")
+	s.c.OnHTML("h1[itemprop='name']", func(e *colly.HTMLElement) {
+		mangaReturn.Name = strings.TrimSpace(e.Text)
 	})
 
 	// manga cover
-	s.c.OnHTML("div.thumb > img", func(e *colly.HTMLElement) {
+	s.c.OnHTML("article img.wp-post-image", func(e *colly.HTMLElement) {
 		coverURL := e.Attr("src")
 
 		coverImg, resized, err := util.GetImageFromURL(coverURL, 3, 1*time.Second)
@@ -46,29 +48,21 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	})
 
 	// last released chapter
-	s.c.OnHTML("ul.clstyle > li:first-child", func(e *colly.HTMLElement) {
-		chapter := e.Attr("data-num")
-		chapterName := e.DOM.Find("div > div > a > span.chapternum").Text()
-		chapterURL, exists := e.DOM.Find("div > div > a").Attr("href")
-		if !exists {
-			sharedErr = errordefs.ErrChapterURLNotFound
+	s.c.OnResponse(func(r *colly.Response) {
+		body := string(r.Body)
+		re := regexp.MustCompile(`wp-admin/admin-ajax\.php\?manga_id=(\d+)(?:&|$)`)
+		HTMLMangaID := re.FindStringSubmatch(body)
+		if len(HTMLMangaID) <= 1 {
+			sharedErr = fmt.Errorf("manga ID not found in HTML response")
 			return
 		}
 
-		chapterDate := e.DOM.Find("div > div > a > span.chapterdate").Text()
-		releaseTime, err := time.Parse("January 2, 2006", chapterDate)
+		var err error
+		mangaReturn.InternalID = HTMLMangaID[1]
+		mangaReturn.LastReleasedChapter, err = s.GetLastChapterMetadata("", HTMLMangaID[1])
+		mangaReturn.LastReleasedChapter.Type = 1
 		if err != nil {
 			sharedErr = err
-			return
-		}
-		releaseTime = releaseTime.Truncate(time.Second)
-
-		mangaReturn.LastReleasedChapter = &manga.Chapter{
-			URL:       chapterURL,
-			Chapter:   chapter,
-			Name:      chapterName,
-			Type:      1,
-			UpdatedAt: releaseTime,
 		}
 	})
 
@@ -94,49 +88,74 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 	mangaSearchResults := []*models.MangaSearchResult{}
 	pageNumber := 1
 	var mangaCount int
-	term = url.QueryEscape(term)
 
 	for mangaCount < limit {
-		s.resetCollector()
-		nextPage := false
+		searchURL := fmt.Sprintf("%s/wp-admin/admin-ajax.php?action=advanced_search", baseSiteURL)
 
-		s.c.OnHTML("div.listupd > div > div", func(e *colly.HTMLElement) {
+		var b bytes.Buffer
+		w := multipart.NewWriter(&b)
+		w.WriteField("query", term)
+		w.WriteField("orderby", "popular")
+		w.WriteField("order", "desc")
+		w.WriteField("page", fmt.Sprintf("%d", pageNumber))
+		w.Close()
+
+		req, err := http.NewRequest(http.MethodPost, searchURL, &b)
+		if err != nil {
+			return nil, util.AddErrorContext(errorContext, util.AddErrorContext("error creating search request", err))
+		}
+		req.Header.Set("Content-Type", w.FormDataContentType())
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, util.AddErrorContext(errorContext, util.AddErrorContext("error performing search request", err))
+		}
+		switch resp.StatusCode {
+		case http.StatusOK:
+		case http.StatusNotFound:
+			return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
+		default:
+			return nil, util.AddErrorContext(errorContext, fmt.Errorf("unexpected status code: %d", resp.StatusCode))
+		}
+		defer resp.Body.Close()
+
+		doc, err := goquery.NewDocumentFromReader(resp.Body)
+		if err != nil {
+			return nil, util.AddErrorContext(errorContext, util.AddErrorContext("error parsing search response body", err))
+		}
+
+		doc.Find("div > div > a > img").Each(func(_ int, s *goquery.Selection) {
 			if mangaCount >= limit {
 				return
 			}
+			s = s.Parent().Parent()
 			mangaSearchResult := &models.MangaSearchResult{}
 			mangaSearchResult.Source = "rawkuma"
-			mangaSearchResult.URL = e.DOM.Find("a").AttrOr("href", "")
-			mangaSearchResult.Description = e.DOM.Find("a > div.limit > span.type").Text()
-			mangaSearchResult.Name = strings.TrimSpace(e.DOM.Find("a > div.bigor > div.tt").Text())
-			mangaSearchResult.CoverURL = e.DOM.Find("a > div.limit > img").AttrOr("src", "")
+			mangaSearchResult.URL = s.Find("a").AttrOr("href", "")
+			mangaSearchResult.Description = s.Find("div > div > p").Text()
+			mangaSearchResult.Name = strings.TrimSpace(s.Find("div > div > div > div > a").Text())
+			mangaSearchResult.CoverURL = s.Find("a > img").AttrOr("src", "")
 			if mangaSearchResult.CoverURL == "" {
 				mangaSearchResult.CoverURL = models.DefaultCoverImgURL
 			}
 
-			mangaSearchResult.LastChapter = strings.TrimPrefix(e.DOM.Find("a > div.bigor > div.adds > div.epxs").Text(), "Chapter ")
-			baseURL := path.Base(strings.TrimSuffix(mangaSearchResult.URL, "/"))
+			mangaSearchResult.LastChapter = strings.TrimPrefix(s.Find("div > div > div > div > span:first-child").Text(), "Chapter ")
 			if mangaSearchResult.LastChapter != "" {
-				mangaSearchResult.LastChapterURL = baseSiteURL + "/" + baseURL + "-chapter-" + mangaSearchResult.LastChapter
+				mangaSearchResult.LastChapterURL = mangaSearchResult.URL
 			}
+			mangaSearchResult.Status = s.Find("div > div > div > div > span:last-child").First().Text()
 
 			mangaSearchResults = append(mangaSearchResults, mangaSearchResult)
 			mangaCount++
 		})
 
-		s.c.OnHTML("span.page-numbers.current + a.page-numbers", func(_ *colly.HTMLElement) {
-			nextPage = true
+		buttonCount := 0
+		doc.Find("button polyline").Each(func(_ int, _ *goquery.Selection) {
+			buttonCount++
 		})
 
-		mangaURL := fmt.Sprintf("%s/page/%d/?s=%s", baseSiteURL, pageNumber, term)
-		err := s.c.Visit(mangaURL)
-		if err != nil {
-			if err.Error() == "Not Found" {
-				return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
-			}
-			return nil, util.AddErrorContext(errorContext, util.AddErrorContext("error while visiting manga URL", err))
-		}
-		if !nextPage {
+		if buttonCount < 2 && pageNumber > 1 {
 			break
 		}
 		pageNumber++
