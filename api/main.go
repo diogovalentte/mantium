@@ -210,7 +210,7 @@ var migrations = []Migration{
 	{
 		Version: "update_version", // It's not a valid version, so it will always be executed
 		Up: func(*zerolog.Logger) error {
-			version := "4.1.7" // Change it in every new version
+			version := "4.1.8" // Change it in every new version
 
 			const query = `UPDATE version SET version = $1`
 			db, err := db.OpenConn()
