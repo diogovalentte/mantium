@@ -36,7 +36,7 @@ func (s *Source) getChapterMetadataByURL(chapterURL string) (*manga.Chapter, err
 	chapterReturn.URL = chapterURL
 	var sharedErr error
 
-	s.c.OnHTML("time[itemprop='dateCreated']", func(e *colly.HTMLElement) {
+	s.col.OnHTML("time[itemprop='dateCreated']", func(e *colly.HTMLElement) {
 		releaseTime, err := util.GetRFC3339Datetime(e.Attr("datetime"))
 		if err != nil {
 			sharedErr = err
@@ -49,7 +49,7 @@ func (s *Source) getChapterMetadataByURL(chapterURL string) (*manga.Chapter, err
 		chapterReturn.Name = "Chapter " + chapterReturn.Chapter
 	})
 
-	err := s.c.Visit(chapterURL)
+	err := s.col.Visit(chapterURL)
 	if err != nil {
 		if err.Error() == "Not Found" {
 			return nil, errordefs.ErrChapterNotFound
@@ -90,7 +90,7 @@ func (s *Source) GetChaptersMetadata(mangaURL, mangaInternalID string) ([]*manga
 		s.resetCollector()
 		var sharedErr error
 
-		s.c.OnResponse(func(r *colly.Response) {
+		s.col.OnResponse(func(r *colly.Response) {
 			body := string(r.Body)
 			re := regexp.MustCompile(`wp-admin/admin-ajax\.php\?manga_id=(\d+)(?:&|$)`)
 			HTMLMangaID := re.FindStringSubmatch(body)
@@ -101,7 +101,7 @@ func (s *Source) GetChaptersMetadata(mangaURL, mangaInternalID string) ([]*manga
 			mangaInternalID = HTMLMangaID[1]
 		})
 
-		err := s.c.Visit(mangaURL)
+		err := s.col.Visit(mangaURL)
 		if err != nil {
 			if err.Error() == "Not Found" {
 				return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
@@ -137,7 +137,7 @@ func getChapterList(internalMangaID string) ([]*manga.Chapter, error) {
 	chapters := []*manga.Chapter{}
 	var sharedErr error
 
-	s.c.OnHTML("div#chapter-list > div > a", func(e *colly.HTMLElement) {
+	s.col.OnHTML("div#chapter-list > div > a", func(e *colly.HTMLElement) {
 		chapter := &manga.Chapter{}
 		chapter.URL = e.Attr("href")
 		chapter.Name = e.DOM.Find("span").Text()
@@ -157,7 +157,7 @@ func getChapterList(internalMangaID string) ([]*manga.Chapter, error) {
 		chapters = append(chapters, chapter)
 	})
 
-	err = s.c.Visit(fmt.Sprintf("%s%d", chapterListURL, mangaID))
+	err = s.col.Visit(fmt.Sprintf("%s%d", chapterListURL, mangaID))
 	if err != nil {
 		if err.Error() == "Not Found" {
 			return nil, errordefs.ErrChapterListNotFound

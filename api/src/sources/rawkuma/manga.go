@@ -31,12 +31,12 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	var sharedErr error
 
 	// manga name
-	s.c.OnHTML("h1[itemprop='name']", func(e *colly.HTMLElement) {
+	s.col.OnHTML("h1[itemprop='name']", func(e *colly.HTMLElement) {
 		mangaReturn.Name = strings.TrimSpace(e.Text)
 	})
 
 	// manga cover
-	s.c.OnHTML("article img.wp-post-image", func(e *colly.HTMLElement) {
+	s.col.OnHTML("article img.wp-post-image", func(e *colly.HTMLElement) {
 		coverURL := e.Attr("src")
 
 		coverImg, resized, err := util.GetImageFromURL(coverURL, 3, 1*time.Second)
@@ -48,7 +48,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	})
 
 	// last released chapter
-	s.c.OnResponse(func(r *colly.Response) {
+	s.col.OnResponse(func(r *colly.Response) {
 		body := string(r.Body)
 		re := regexp.MustCompile(`wp-admin/admin-ajax\.php\?manga_id=(\d+)(?:&|$)`)
 		HTMLMangaID := re.FindStringSubmatch(body)
@@ -66,7 +66,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 		}
 	})
 
-	err := s.c.Visit(mangaURL)
+	err := s.col.Visit(mangaURL)
 	if err != nil {
 		if err.Error() == "Not Found" {
 			return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
@@ -85,6 +85,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 
 func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, error) {
 	errorContext := "error while searching manga"
+	s.resetAPIClient()
 	mangaSearchResults := []*models.MangaSearchResult{}
 	pageNumber := 1
 	var mangaCount int
@@ -100,25 +101,13 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 		w.WriteField("page", fmt.Sprintf("%d", pageNumber))
 		w.Close()
 
-		req, err := http.NewRequest(http.MethodPost, searchURL, &b)
+		resp, err := s.client.Request(http.MethodPost, searchURL, &b, nil)
 		if err != nil {
-			return nil, util.AddErrorContext(errorContext, util.AddErrorContext("error creating search request", err))
-		}
-		req.Header.Set("Content-Type", w.FormDataContentType())
-
-		client := &http.Client{}
-		resp, err := client.Do(req)
-		if err != nil {
+			if util.ErrorContains(err, "non-200 status code -> (404)") {
+				return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
+			}
 			return nil, util.AddErrorContext(errorContext, util.AddErrorContext("error performing search request", err))
 		}
-		switch resp.StatusCode {
-		case http.StatusOK:
-		case http.StatusNotFound:
-			return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
-		default:
-			return nil, util.AddErrorContext(errorContext, fmt.Errorf("unexpected status code: %d", resp.StatusCode))
-		}
-		defer resp.Body.Close()
 
 		doc, err := goquery.NewDocumentFromReader(resp.Body)
 		if err != nil {

@@ -9,7 +9,8 @@ var baseSiteURL = "https://rawkuma.net"
 
 // Source is the struct for the Rawkuma source
 type Source struct {
-	c *colly.Collector
+	col    *colly.Collector
+	client *Client
 }
 
 func (Source) GetName() string {
@@ -27,9 +28,13 @@ func newCollector() *colly.Collector {
 }
 
 func (s *Source) resetCollector() {
-	if s.c != nil {
-		s.c.Wait()
+	if s.col != nil {
+		s.col.Wait()
 	}
 
-	s.c = newCollector()
+	s.col = newCollector()
+}
+
+func (s *Source) resetAPIClient() {
+	s.client = newAPIClient()
 }
