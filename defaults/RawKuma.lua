@@ -1,6 +1,6 @@
 --------------------------------------
 -- @name    RawKuma
--- @url     https://rawkuma.com
+-- @url     https://rawkuma.net
 -- @author  diogovalentte
 -- @license MIT
 --------------------------------------
@@ -14,7 +14,7 @@ Json = require("json")
 ----- VARIABLES -----
 Debug = false
 Client = Http.client({ timeout = 20, insecure_ssl = true, debug = Debug })
-Base = "https://rawkuma.com"
+Base = "https://rawkuma.net"
 --- END VARIABLES ---
 
 ----- MAIN -----
@@ -23,18 +23,18 @@ Base = "https://rawkuma.com"
 -- @param query Query to search for
 -- @return Table of tables with the following fields: name, url
 function SearchManga(query)
-    query = query:gsub(" ", "+")
-    query = query:gsub("–", "-")
-    local req_url = Base .. "/?s=" .. query
-    local request = Http.request("GET", req_url)
+    local req_url = Base .. "/wp-admin/admin-ajax.php?action=advanced_search"
+    local request = Http.request("POST", req_url, "query=" .. query .. "&orderBy=popular&order=desc")
+    request:header_set("Content-Type", "application/x-www-form-urlencoded")
+
     local result = Client:do_request(request)
     local doc = Html.parse(result.body)
 
     local mangas = {}
 
-    doc:find("div.listupd > div > div"):each(function(i, el)
-        local name = trim(el:find("a > div.bigor > div.tt"):text())
-        name = name:gsub("–", "-")
+    doc:find("div > div > a > img"):each(function(i, el)
+        el = el:parent():parent()
+        local name = trim(el:find("div > div > div > div > a"):text())
         local url = trim(el:find("a"):attr("href"))
         local manga = { url = url, name = name }
         mangas[i + 1] = manga
@@ -50,13 +50,24 @@ end
 function MangaChapters(mangaURL)
     local request = Http.request("GET", mangaURL)
     local result = Client:do_request(request)
-    local doc = Html.parse(result.body)
+    local body = result.body
+
+    -- extract manga ID
+    local mangaInternalID = body:match("wp%-admin/admin%-ajax%.php%?manga_id=(%d+)")
+    if not mangaInternalID then
+        error("manga ID not found in HTML response")
+    end
 
     local chapters = {}
 
-    doc:find("ul.clstyle > li"):each(function(i, el)
-        local name = trim(el:find("div > div > a > span.chapternum"):text())
-        local url = el:find("div > div > a"):attr("href")
+    request =
+        Http.request("GET", Base .. "/wp-admin/admin-ajax.php?page=1&action=chapter_list&manga_id=" .. mangaInternalID)
+    result = Client:do_request(request)
+    local doc = Html.parse(result.body)
+
+    doc:find("div#chapter-list > div > a"):each(function(i, el)
+        local name = trim(el:find("span"):text())
+        local url = el:attr("href")
         local chapter = { url = url, name = name }
 
         chapters[i + 1] = chapter
@@ -77,22 +88,13 @@ function ChapterPages(chapterURL)
 
     local pages = {}
 
-    doc:find("script"):each(function(_, el)
-        local js = el:text()
-
-        if not hasPrefix(js, "ts_reader.run(") then
-            return nil
+    doc:find("section > img"):each(function(_, el)
+        local url = el:attr("src")
+        if not url or url == "" then
+            error("could not extract page URL")
         end
-
-        local json_text = trimPrefix(js, "ts_reader.run(")
-        json_text = trimSuffix(json_text, ");")
-        local json = Json.decode(json_text)
-
-        local images = json["sources"][1]["images"]
-        for i, image in ipairs(images) do
-            local page = { url = image, index = i }
-            pages[i] = page
-        end
+        local page = { url = url, index = #pages + 1 }
+        pages[#pages + 1] = page
     end)
 
     if #pages == 0 then
