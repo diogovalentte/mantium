@@ -55,7 +55,7 @@ type Job struct {
 		JobID            int  `json:"jobId"`
 		RemoveOnComplete bool `json:"removeOnComplete"`
 	}
-	Data     map[string]interface{} `json:"data"`
-	Name     string                 `json:"name"`
-	IsFailed bool                   `json:"isFailed"`
+	Data     map[string]any `json:"data"`
+	Name     string         `json:"name"`
+	IsFailed bool           `json:"isFailed"`
 }

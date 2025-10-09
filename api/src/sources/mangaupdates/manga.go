@@ -77,7 +77,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 
 	errorContext := "error while searching manga"
 
-	body, payload := map[string]interface{}{
+	body, payload := map[string]any{
 		"search":  term,
 		"perpage": limit, // possible values: 5,10,15,25,30,40,50,75,100. 5 is the minimum, 100 the maximum, 25 the default
 		"orderby": "score",

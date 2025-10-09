@@ -160,7 +160,7 @@ func (s *Source) generateMangaChapters(mangaInternalID string, chaptersChan chan
 		default:
 		}
 
-		body, payload := map[string]interface{}{
+		body, payload := map[string]any{
 			"search":      mangaInternalID,
 			"search_type": "series",
 			"orderby":     "date",

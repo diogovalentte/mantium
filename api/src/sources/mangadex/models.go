@@ -6,9 +6,9 @@ import (
 )
 
 type genericRelationship struct {
-	Attributes map[string]interface{} `json:"attributes"`
-	ID         string                 `json:"id"`
-	Type       string                 `json:"type"`
+	Attributes map[string]any `json:"attributes"`
+	ID         string         `json:"id"`
+	Type       string         `json:"type"`
 }
 
 type localisedStrings map[string]string
@@ -84,7 +84,7 @@ type mangaAttributes struct {
 	LatestUploadedChapter string             `json:"latestUploadedChapter"`
 }
 
-type coverAttributes map[string]interface{}
+type coverAttributes map[string]any
 
 // type coverAttributes struct {
 // 	Description string  `json:"description"`

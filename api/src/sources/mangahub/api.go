@@ -45,7 +45,7 @@ func NewMangaHubClient() *Client {
 }
 
 // Request is a helper function to make a request to the MangaHub API
-func (c *Client) Request(method, url string, reqBody io.Reader, retBody interface{}) (*http.Response, error) {
+func (c *Client) Request(method, url string, reqBody io.Reader, retBody any) (*http.Response, error) {
 	errorContext := fmt.Sprintf("error while making '%s' request", method)
 
 	req, err := http.NewRequest(method, url, reqBody)

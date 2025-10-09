@@ -1730,7 +1730,7 @@ func TestUpdateMangasMetadata(t *testing.T) {
 	})
 }
 
-func requestHelper(method, url string, body io.Reader, target interface{}) error {
+func requestHelper(method, url string, body io.Reader, target any) error {
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {

@@ -143,7 +143,7 @@ func (t *Tranga) GetConnectors() ([]string, error) {
 }
 
 // request is a helper function to make a request to the Tranga API
-func (t *Tranga) request(method, url string, reqBody io.Reader, retBody interface{}) (*http.Response, error) {
+func (t *Tranga) request(method, url string, reqBody io.Reader, retBody any) (*http.Response, error) {
 	errorContext := "error while making '%s' request"
 
 	req, err := http.NewRequest(method, url, reqBody)
