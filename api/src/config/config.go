@@ -111,7 +111,6 @@ var (
 	ValidAddingMethods     = []string{"Search", "URL"}
 	SourcesList            = []string{
 		"mangadex",
-		"comick",
 		"mangahub",
 		"mangaplus",
 		"mangaupdates",

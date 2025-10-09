@@ -155,10 +155,6 @@ var mangaSearchRequestsTestTable = []routes.SearchMangaRequest{
 		Source: "https://mangadex.org",
 	},
 	{
-		Term:   "Blue Box",
-		Source: "https://comick.io",
-	},
-	{
 		Term:   "one piece",
 		Source: "https://mangahub.io",
 	},

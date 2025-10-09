@@ -46,7 +46,7 @@ services:
       - UPDATE_MANGAS_PERIODICALLY=${UPDATE_MANGAS_PERIODICALLY:-false}
       - UPDATE_MANGAS_PERIODICALLY_NOTIFY=${UPDATE_MANGAS_PERIODICALLY_NOTIFY:-false}
       - UPDATE_MANGAS_PERIODICALLY_MINUTES=${UPDATE_MANGAS_PERIODICALLY_MINUTES:-30}
-      - ALLOWED_SOURCES=${ALLOWED_SOURCES:-} # Comma separated list of sources to be allowed to add mangas from. Defaults to all. Example: mangadex,comick,mangahub,mangaplus,mangaupdates,rawkuma,klmanga,jmanga
+      - ALLOWED_SOURCES=${ALLOWED_SOURCES:-} # Comma separated list of sources to be allowed to add mangas from. Defaults to all. Example: mangadex,mangahub,mangaplus,mangaupdates,rawkuma,klmanga,jmanga
       - ALLOWED_ADDING_METHODS=${ALLOWED_ADDING_METHODS:-} # Comma separated list of adding mangas methods to show in the dashboard. Defaults to all. Example: Search,URL
     logging:
       driver: "json-file"

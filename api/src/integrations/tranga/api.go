@@ -142,7 +142,7 @@ func (t *Tranga) GetConnectors() ([]string, error) {
 	return connectors, nil
 }
 
-// request is a helper function to make a request to the Comick API
+// request is a helper function to make a request to the Tranga API
 func (t *Tranga) request(method, url string, reqBody io.Reader, retBody interface{}) (*http.Response, error) {
 	errorContext := "error while making '%s' request"
 

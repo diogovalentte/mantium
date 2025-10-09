@@ -981,7 +981,7 @@ class MainDashboard:
                     value=ss["configs"]["integrations"][
                         "enqueueAllSuwayomiChaptersToDownload"
                     ],
-                    help="By default, enqueue to download all chapters from the mangas that are added to the Suwayomi integration (except ComicK mangas).",
+                    help="By default, enqueue to download all chapters from the mangas that are added to the Suwayomi integration.",
                     key="configs_enqueue_all_suwayomi_chapters_to_download",
                 )
 

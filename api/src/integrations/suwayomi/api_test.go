@@ -29,9 +29,6 @@ func TestMain(m *testing.M) {
 }
 
 var inputManga = &manga.Manga{
-	// Name:   "One Punch Man",
-	// Source: "comick",
-	// URL:    "https://comick.io/comic/WfaSlMP9",
 	Name:   "Neighborhood Craftsmen: Stories from Kanda’s Gokura-chou",
 	Source: "mangadex",
 	URL:    "https://mangadex.org/title/c1b61cc0-7bb1-4280-a35a-c30a9ee0ff56",

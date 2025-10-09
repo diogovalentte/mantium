@@ -44,7 +44,7 @@ func NewMangaHubClient() *Client {
 	return hub
 }
 
-// Request is a helper function to make a request to the Comick API
+// Request is a helper function to make a request to the MangaHub API
 func (c *Client) Request(method, url string, reqBody io.Reader, retBody interface{}) (*http.Response, error) {
 	errorContext := fmt.Sprintf("error while making '%s' request", method)
 

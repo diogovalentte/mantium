@@ -266,8 +266,6 @@ func (k *Kaizoku) getKaizokuSource(source string) (string, error) {
 	switch source {
 	case "mangadex":
 		returnSource = "MangaDex"
-	case "comick":
-		returnSource = "ComicK"
 	case "mangahub":
 		returnSource = "MangaHub"
 	case "rawkuma":

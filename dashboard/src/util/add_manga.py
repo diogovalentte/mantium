@@ -29,7 +29,6 @@ def show_add_manga_form(form_type: str):
         del ss["add_manga_manga_to_add"]
     base_key = "add_manga_search_selected_manga_search_results"
     ss[base_key + "_mangadex"] = {}
-    ss[base_key + "_comick"] = {}
     ss[base_key + "_mangaplus"] = {}
     ss[base_key + "_mangahub"] = {}
     ss[base_key + "_mangaupdates"] = {}

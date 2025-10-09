@@ -1,6 +1,5 @@
 default_sources = {
     "Mangadex": "mangadex",
-    "Comick": "comick",
     "Mangaplus": "mangaplus",
     "Mangahub": "mangahub",
     "MangaUpdates": "mangaupdates",

@@ -10,7 +10,6 @@ import (
 
 	"github.com/diogovalentte/mantium/api/src/db"
 	"github.com/diogovalentte/mantium/api/src/manga"
-	"github.com/diogovalentte/mantium/api/src/sources/comick"
 	"github.com/diogovalentte/mantium/api/src/sources/jmanga"
 	"github.com/diogovalentte/mantium/api/src/sources/klmanga"
 	"github.com/diogovalentte/mantium/api/src/sources/mangadex"
@@ -25,7 +24,6 @@ import (
 // Sources - also update SourcesList on config.go
 var Sources = map[string]models.Source{
 	"mangadex":     &mangadex.Source{},
-	"comick":       &comick.Source{},
 	"mangahub":     &mangahub.Source{},
 	"mangaplus":    &mangaplus.Source{},
 	"mangaupdates": &mangaupdates.Source{},

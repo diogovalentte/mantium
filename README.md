@@ -1,8 +1,8 @@
 # Mantium
 
-**Mantium is a cross-site manga tracker**, which means that you can track manga from multiple source sites, like [Mangadex](https://mangadex.org) and [ComicK](https://comick.io). Mantium doesn't download the chapter images; it downloads the manga metadata (name, URL, cover, etc.) and chapter metadata (number, name, URL) from the source site and shows them in a dashboard and iFrame to put in your dashboard service.
+**Mantium is a cross-site manga tracker**, which means that you can track manga from multiple source sites, like [Mangadex](https://mangadex.org) and [MangaPlus](https://mangaplus.shueisha.co.jp). Mantium doesn't download the chapter images; it downloads the manga metadata (name, URL, cover, etc.) and chapter metadata (number, name, URL) from the source site and shows them in a dashboard and iFrame to put in your dashboard service.
 
-- Mantium currently can track mangas on [Manga Plus](https://mangaplus.shueisha.co.jp), [MangaDex](https://mangadex.org), [ComicK](https://comick.io), [MangaHub](https://mangahub.io), [MangaUpdates](https://www.mangaupdates.com/), [RawKuma](https://rawkuma.com/), [KLManga](https://klmanga.rs/), and [JManga](https://jmanga.is).
+- Mantium currently can track mangas on [Manga Plus](https://mangaplus.shueisha.co.jp), [MangaDex](https://mangadex.org), [MangaHub](https://mangahub.io), [MangaUpdates](https://www.mangaupdates.com/), [RawKuma](https://rawkuma.com/), [KLManga](https://klmanga.rs/), and [JManga](https://jmanga.is).
 
 **The basic workflow is:**
 
@@ -179,14 +179,14 @@ Sometimes the source sites can be down for some time, like in maintenance. In th
 If a manga is removed from the source site (_like Mangedex_) or its URL changes, the API will not be able to track it, as it saves the manga URL on the database when you add the manga in the dashboard and continues to use this URL forever. If this happens, the dashboard/API logs will show an error like this:
 
 ```
-{"message":"(comick.io) Error while getting manga with URL 'https://comick.io/comic/witch-hat-atelier' chapters from source: Error while getting chapters metadata: Error while making 'GET' request: Non-200 status code -\u003e (404). Body: {\"statusCode\":404,\"message\":\"Not Found\"}"}
+{"message":"(mangadex.org) Error while getting manga with URL 'https://mangadex.org/title/3e65d915-332b-4399-ba64-ebf0583f9887' chapters from source: Error while getting chapters metadata: Error while making 'GET' request: Non-200 status code -\u003e (404). Body: {\"statusCode\":404,\"message\":\"Not Found\"}"}
 ```
 
 To fix this, delete the manga and add it again from another source site or use its new URL.
 
 ### Source site URL changes
 
-Sometimes the URL of a source site changes (_like comick.fun to comick.io_). In this case, please open an issue if a new release with the updated URL has not been released yet.
+Sometimes the URL of a source site changes (_like klmanga.dm to klmanga.io_). In this case, please open an issue if a new release with the updated URL has not been released yet.
 
 # Running manually
 

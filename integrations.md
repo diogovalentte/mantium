@@ -15,7 +15,7 @@ The [Tranga](https://github.com/c9glax/tranga) integration will:
 
 ## Limitations
 
-Tranga can download chapters from mangas from many sources (called connectors in Tranga). They are like Mantium source sites (_MangaDex, ComicK, etc._). Currently, the only connector/source site that Mantium and Tranga both share is MangaDex. This means that only mangas from MangaDex will work with this integration.
+Tranga can download chapters from mangas from many sources (called connectors in Tranga). They are like Mantium source sites (_MangaDex, MangaPlus, etc._). Currently, the only connector/source site that Mantium and Tranga both share is MangaDex. This means that only mangas from MangaDex will work with this integration.
 
 # Suwayomi
 
@@ -23,7 +23,7 @@ The [Suwayomi](https://github.com/Suwayomi) integration will:
 
 - Try to add the manga to Suwayomi when you add it to the dashboard.
   - Only the original manga of a multimanga will be added to Suwayomi. Mangas added to a multimanga later are not automatically added to Suwayomi.
-  - By default, enqueue all chapters from the manga to be downloaded by Suwayomi when adding the manga (_except for ComicK mangas, more about it bellow_).
+  - By default, enqueue all chapters from the manga to be downloaded by Suwayomi when adding the manga.
     - This functionality can be disabled in the dashboard settings.
 - If the background job to update the mangas metadata detects newly released chapters, it will enqueue the chapter to be downloaded by Suwayomi.
 - If there are already mangas on your dashboard, the API has a route to add your mangas to Suwayomi. To know more, check the [API docs](https://github.com/diogovalentte/mantium?tab=readme-ov-file#api).
@@ -32,13 +32,7 @@ The [Suwayomi](https://github.com/Suwayomi) integration will:
 
 Mantium expects that you installed both the [keiyoushi](https://github.com/keiyoushi/extensions) and [zosetsu-repo](https://github.com/zosetsu-repo/tachi-repo) extension repositories on your Suwayomi server.
 
-It also expects that you have installed the ComicK, MANGA Plus by SHUEISHA, MangaDex, and MangaHub sources on your server. The integration will only work with these sources, as I didn't find Suwayomi-compatible sources for the other Mantium sources.
-
-## ComicK source
-
-The comick source avaliable in Suwayomi's API is **ComicK (ALL)** in contrast to the other sources that are like **Mangadex (EN)**.
-
-This means that comick mangas added by Mantium will show chapters from all languages in Suwayomi, and not just the English chapters. However, Mantium will enqueue only english chapters to be downloaded by Suwayomi.
+It also expects that you have installed the MANGA Plus by SHUEISHA, MangaDex, and MangaHub sources on your server. The integration will only work with these sources, as I didn't find Suwayomi-compatible sources for the other Mantium sources.
 
 # Kaizoku
 
@@ -55,7 +49,7 @@ The [Kaizoku](https://github.com/oae/kaizoku) integration will:
 
 Kaizoku uses [Mangal](https://github.com/metafates/mangal) under the hood to download the chapters. Mangal can only download from configured sources, but from the sources that Mantium supports, only the mangadex source is configured by default in Kaizoku, and this source doesn't work properly anymore.
 
-In this repository, there are source files for the [MangaDex](https://github.com/diogovalentte/mantium/blob/main/defaults/MangaDex.lua), [ComicK](https://github.com/diogovalentte/mantium/blob/main/defaults/ComicK.lua), [MangaHub](https://github.com/diogovalentte/mantium/blob/main/defaults/MangaHub.lua), [RawKuma](https://github.com/diogovalentte/mantium/blob/main/defaults/RawKuma.lua), [KLManga](https://github.com/diogovalentte/mantium/blob/main/defaults/KLManga.lua), and [JManga](https://github.com/diogovalentte/mantium/blob/main/defaults/JManga.lua) in the `defaults/` folder. I recommend downloading these files and adding them to Kaizoku, this way, you will be able to download chapters from these sources.
+In this repository, there are source files for the [MangaDex](https://github.com/diogovalentte/mantium/blob/main/defaults/MangaDex.lua), [MangaHub](https://github.com/diogovalentte/mantium/blob/main/defaults/MangaHub.lua), [RawKuma](https://github.com/diogovalentte/mantium/blob/main/defaults/RawKuma.lua), [KLManga](https://github.com/diogovalentte/mantium/blob/main/defaults/KLManga.lua), and [JManga](https://github.com/diogovalentte/mantium/blob/main/defaults/JManga.lua) in the `defaults/` folder. I recommend downloading these files and adding them to Kaizoku, this way, you will be able to download chapters from these sources.
 
 > After downloading the files, add them to the folder `/config/.config/mangal/sources` of your Kaizoku Docker container, and restart it.
 >

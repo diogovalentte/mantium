@@ -216,7 +216,7 @@ func (s *Suwayomi) AddManga(manga *manga.Manga, enqueChapterDownloads bool) erro
 		return util.AddErrorContext(fmt.Sprintf(errorContext, manga.Name, manga.URL), err)
 	}
 
-	if enqueChapterDownloads && manga.Source != "comick" {
+	if enqueChapterDownloads {
 		errorContext = "(suwayomi) manga added to suwayomi, but error while enqueueing chapter downloads for manga '%s' / '%s'"
 
 		var chapters []*APIChapter
@@ -398,8 +398,6 @@ func (s *Suwayomi) translateSuwayomiSource(sourceName string) (string, error) {
 	errorContext := "error while translating Mantium source '%s' to Suwayomi source"
 
 	switch sourceName {
-	case "comick":
-		return "Comick (ALL)", nil
 	case "mangadex":
 		return "MangaDex (EN)", nil
 	case "mangaplus":
@@ -415,9 +413,6 @@ func (s *Suwayomi) getSourceMangaURL(manga *manga.Manga) (string, error) {
 	errorContext := "error while getting source manga URL for manga '%s' / '%s'"
 
 	switch manga.Source {
-	case "comick":
-		URLParts := strings.Split(manga.URL, "/")
-		return fmt.Sprintf("/comic/%s#", URLParts[len(URLParts)-1]), nil
 	case "mangadex":
 		URLParts := strings.Split(manga.URL, "/")
 		return fmt.Sprintf("/manga/%s", URLParts[len(URLParts)-1]), nil

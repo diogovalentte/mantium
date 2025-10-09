@@ -27,22 +27,6 @@ var multimangaMangasTest = []*Manga{
 		},
 	},
 	{
-		Source:         "comick",
-		URL:            "https://comick.io/title/yotsubato",
-		Name:           "Yotsuba to!",
-		Status:         1,
-		CoverImgURL:    "https://cnd.random.best-manga.jpg", // mangahub.io
-		CoverImg:       []byte{},
-		PreferredGroup: "",
-		LastReleasedChapter: &Chapter{
-			URL:       "https://comick.io/manga/yotsubato/f45asdf4",
-			Name:      "Chapter 15",
-			Chapter:   "15",
-			UpdatedAt: time.Date(2015, 10, 3, 5, 42, 11, 0, time.UTC),
-			Type:      1,
-		},
-	},
-	{
 		Source:         "mangadex",
 		URL:            "https://mangadex.org/title/yotsubato",
 		Name:           "Yotsubato!",
