@@ -55,7 +55,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 		chapterName := strings.TrimSpace(e.DOM.Find("span").Text())
 		chapter, err := extractChapter(chapterName)
 		if err != nil {
-			sharedErr = err
+			sharedErr = util.AddErrorContext(errordefs.ErrMangaAttributesNotFound.Error(), err)
 			return
 		}
 		chapterURL := e.Attr("href")
@@ -79,7 +79,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 		return nil, util.AddErrorContext(errorContext, sharedErr)
 	}
 	if mangaReturn.Name == "" {
-		return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
+		return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaAttributesNotFound)
 	}
 
 	return mangaReturn, nil
@@ -119,7 +119,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 			lastChapter := e.DOM.Find("div.thumb > a.meta-info")
 			chapter, err := extractChapter(lastChapter.Text())
 			if err != nil {
-				sharedErr = err
+				sharedErr = util.AddErrorContext(errordefs.ErrMangaAttributesNotFound.Error(), err)
 				return
 			}
 			mangaSearchResult.LastChapter = chapter

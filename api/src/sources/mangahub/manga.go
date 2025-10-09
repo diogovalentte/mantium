@@ -45,7 +45,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	if len(mangaAPIResp.Errors) > 0 {
 		switch mangaAPIResp.Errors[0].Message {
 		case "Cannot read properties of undefined (reading 'mangaID')":
-			return nil, errordefs.ErrMangaNotFound
+			return nil, errordefs.ErrMangaAttributesNotFound
 		default:
 			return nil, fmt.Errorf("error while getting chapter from response: %s", mangaAPIResp.Errors[0].Message)
 		}

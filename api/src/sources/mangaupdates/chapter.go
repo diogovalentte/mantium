@@ -100,7 +100,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL, mangaInternalID string) (*mang
 	select {
 	case <-done:
 		if returnChapter == nil {
-			return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL, mangaInternalID), errordefs.ErrLastReleasedChapterNotFound)
+			return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL, mangaInternalID), errordefs.ErrChapterNotFound)
 		}
 		return returnChapter, nil
 	case err := <-errChan:

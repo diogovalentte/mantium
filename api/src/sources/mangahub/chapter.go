@@ -11,32 +11,19 @@ import (
 )
 
 // GetChapterMetadata returns a chapter by its chapter or URL
-func (s *Source) GetChapterMetadata(mangaURL, _, chapter, chapterURL, _ string) (*manga.Chapter, error) {
+func (s *Source) GetChapterMetadata(mangaURL, _, chapter, _, _ string) (*manga.Chapter, error) {
 	errorContext := "error while getting metadata of chapter"
 
-	if chapter == "" && chapterURL == "" {
+	if chapter == "" {
 		return nil, util.AddErrorContext(errorContext, errordefs.ErrChapterHasNoChapterOrURL)
 	}
 
-	returnChapter := &manga.Chapter{}
-	var err error
-	if chapter != "" {
-		returnChapter, err = s.GetChapterMetadataByChapter(mangaURL, "", chapter)
-	}
-	if chapterURL != "" && (err != nil || chapter == "") {
-		returnChapter, err = s.GetChapterMetadataByURL(chapterURL)
-	}
-
+	returnChapter, err := s.GetChapterMetadataByChapter(mangaURL, "", chapter)
 	if err != nil {
 		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	return returnChapter, nil
-}
-
-// GetChapterMetadataByURL returns the chapter by its URL
-func (s *Source) GetChapterMetadataByURL(_ string) (*manga.Chapter, error) {
-	return nil, fmt.Errorf("not implemented")
 }
 
 // GetChapterMetadataByChapter returns the chapter by its chapter
@@ -199,7 +186,7 @@ func getChapterFromResponse(chapter *getMangaAPIChapter, mangaSlug string) (*man
 	errorContext := "error while getting chapter from response"
 	updatedAt, err := util.GetRFC3339Datetime(chapter.Date)
 	if err != nil {
-		return nil, util.AddErrorContext(errorContext, err)
+		return nil, util.AddErrorContext(errorContext, util.AddErrorContext(errordefs.ErrChapterAttributesNotFound.Message, err))
 	}
 
 	number := strconv.FormatFloat(chapter.Number, 'f', -1, 64)

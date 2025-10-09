@@ -44,7 +44,7 @@ func (s *Source) GetMangaMetadata(mangaURL, mangaInternalID string) (*manga.Mang
 
 	lastReleasedChapter, err := s.GetLastChapterMetadata(mangaURL, mangaInternalID)
 	if err != nil {
-		if !util.ErrorContains(err, errordefs.ErrLastReleasedChapterNotFound.Message) {
+		if !util.ErrorContains(err, errordefs.ErrChapterNotFound.Message) {
 			return nil, util.AddErrorContext(errorContext, err)
 		}
 		mangaReturn.LastReadChapter = nil
@@ -158,6 +158,7 @@ func (s *Source) getMangaIDFromURL(mangaURL string) (string, error) {
 
 	c.OnError(func(_ *colly.Response, err error) {
 		sharedErr = err
+		return
 	})
 
 	err := c.Visit(mangaURL)

@@ -12,32 +12,19 @@ import (
 var chapterURLBase = "https://mangaplus.shueisha.co.jp/viewer/"
 
 // GetChapterMetadata returns a chapter by its chapter or URL
-func (s *Source) GetChapterMetadata(mangaURL, _, chapter, chapterURL, _ string) (*manga.Chapter, error) {
+func (s *Source) GetChapterMetadata(mangaURL, _, chapter, _, _ string) (*manga.Chapter, error) {
 	errorContext := "error while getting metadata of chapter"
 
-	if chapter == "" && chapterURL == "" {
+	if chapter == "" {
 		return nil, util.AddErrorContext(errorContext, errordefs.ErrChapterHasNoChapterOrURL)
 	}
 
-	returnChapter := &manga.Chapter{}
-	var err error
-	if chapter != "" {
-		returnChapter, err = s.GetChapterMetadataByChapter(mangaURL, "", chapter)
-	}
-	if chapterURL != "" && (err != nil || chapter == "") {
-		returnChapter, err = s.GetChapterMetadataByURL(chapterURL, "")
-	}
-
+	returnChapter, err := s.GetChapterMetadataByChapter(mangaURL, "", chapter)
 	if err != nil {
 		return nil, util.AddErrorContext(errorContext, err)
 	}
 
 	return returnChapter, nil
-}
-
-// GetChapterMetadataByURL returns a manga chapter by its URL.
-func (s *Source) GetChapterMetadataByURL(_, _ string) (*manga.Chapter, error) {
-	return nil, fmt.Errorf("not implemented")
 }
 
 // GetChapterMetadataByChapter returns a manga chapter by its chapter.
@@ -71,10 +58,6 @@ func (s *Source) GetChapterMetadataByChapter(mangaURL, _, chapter string) (*mang
 	}
 
 	return nil, errordefs.ErrChapterNotFound
-}
-
-func cleanChapter(chapter string) string {
-	return strings.TrimLeft(strings.TrimSpace(strings.Replace(chapter, "#", "", 1)), "0")
 }
 
 // GetLastChapterMetadata returns the manga last released chapter
@@ -121,4 +104,8 @@ func (s *Source) GetChaptersMetadata(mangaURL, _ string) ([]*manga.Chapter, erro
 	}
 	titleChapters := response.GetSuccess().GetTitleDetailView().GetChapters()
 	return getChaptersFromAPIList(titleChapters), nil
+}
+
+func cleanChapter(chapter string) string {
+	return strings.TrimLeft(strings.TrimSpace(strings.Replace(chapter, "#", "", 1)), "0")
 }

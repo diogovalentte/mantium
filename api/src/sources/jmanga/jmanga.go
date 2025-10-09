@@ -43,5 +43,6 @@ func extractChapter(s string) (string, error) {
 	if len(matches) > 1 {
 		return matches[1], nil
 	}
+
 	return "", fmt.Errorf("could not extract chapter number from %s", s)
 }

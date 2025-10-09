@@ -40,8 +40,8 @@ func (s *Source) getChapterMetadataByURL(chapterURL string) (*manga.Chapter, err
 	s.resetCollector()
 	chapterReturn := &manga.Chapter{}
 	var sharedErr error
-
 	var chapterFound bool
+
 	s.c.OnHTML("ol.breadcrumb", func(e *colly.HTMLElement) {
 		if chapterFound {
 			return
@@ -85,7 +85,6 @@ func (s *Source) getChapterMetadataByChapter(mangaURL string, chapter string) (*
 	s.resetCollector()
 	chapterReturn := &manga.Chapter{}
 	var sharedErr error
-
 	var chapterFound bool
 
 	s.c.OnHTML("div.chapter-box > h4 > a", func(e *colly.HTMLElement) {

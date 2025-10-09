@@ -99,7 +99,7 @@ func TestGetMangaMetadata(t *testing.T) {
 
 			_, err := source.GetMangaMetadata(mangaURL, "")
 			if err != nil {
-				if util.ErrorContains(err, errordefs.ErrMangaNotFound.Error()) {
+				if util.ErrorContains(err, errordefs.ErrMangaAttributesNotFound.Error()) {
 					continue
 				}
 				t.Fatalf("expected error, got %s", err)

@@ -10,22 +10,14 @@ import (
 )
 
 // GetChapterMetadata returns a chapter by its chapter or URL
-func (s *Source) GetChapterMetadata(mangaURL, _, chapter, chapterURL, _ string) (*manga.Chapter, error) {
+func (s *Source) GetChapterMetadata(_, _, _, chapterURL, _ string) (*manga.Chapter, error) {
 	errorContext := "error while getting metadata of chapter"
 
-	if chapter == "" && chapterURL == "" {
+	if chapterURL == "" {
 		return nil, util.AddErrorContext(errorContext, errordefs.ErrChapterHasNoChapterOrURL)
 	}
 
-	returnChapter := &manga.Chapter{}
-	var err error
-	if chapterURL != "" {
-		returnChapter, err = s.getChapterMetadataByURL(chapterURL)
-	}
-	if chapter != "" && (err != nil || chapterURL == "") {
-		returnChapter, err = s.getChapterMetadataByChapter(mangaURL, chapter)
-	}
-
+	returnChapter, err := s.getChapterMetadataByURL(chapterURL)
 	if err != nil {
 		return nil, util.AddErrorContext(errorContext, err)
 	}
@@ -76,7 +68,7 @@ func (s *Source) getChapterMetadataByURL(chapterURL string) (*manga.Chapter, err
 
 	chapterReturn.UpdatedAt, err = util.GetRFC3339Datetime(attributes.PublishAt)
 	if err != nil {
-		return nil, err
+		return nil, util.AddErrorContext(errordefs.ErrChapterAttributesNotFound.Message, err)
 	}
 
 	return chapterReturn, nil
@@ -91,11 +83,6 @@ type getChapterAPIResponse struct {
 		Relationships []genericRelationship `json:"relationships"`
 		Attributes    chapterAttributes     `json:"attributes"`
 	}
-}
-
-// getChapterMetadataByChapter scrapes the manga page and return the chapter by its chapter
-func (s *Source) getChapterMetadataByChapter(_ string, _ string) (*manga.Chapter, error) {
-	return nil, fmt.Errorf("not implemented")
 }
 
 // GetLastChapterMetadata returns the last chapter of a manga by its URL
@@ -121,7 +108,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, err
 	}
 
 	if len(feedAPIResp.Data) == 0 {
-		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), errordefs.ErrLastReleasedChapterNotFound)
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), errordefs.ErrChapterNotFound)
 	}
 
 	chapterReturn := &manga.Chapter{}
@@ -148,7 +135,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, err
 
 	chapterReturn.UpdatedAt, err = util.GetRFC3339Datetime(attributes.PublishAt)
 	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), err)
+		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), util.AddErrorContext(errordefs.ErrChapterAttributesNotFound.Message, err))
 	}
 
 	return chapterReturn, nil
@@ -243,7 +230,7 @@ func generateMangaFeed(s *Source, mangaURL string, chaptersChan chan<- *manga.Ch
 
 			chapterReturn.UpdatedAt, err = util.GetRFC3339Datetime(attributes.PublishAt)
 			if err != nil {
-				errChan <- err
+				errChan <- util.AddErrorContext(errordefs.ErrChapterAttributesNotFound.Message, err)
 				return
 			}
 

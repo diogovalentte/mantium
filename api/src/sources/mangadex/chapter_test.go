@@ -93,7 +93,7 @@ func TestGetChapterMetadata(t *testing.T) {
 
 			actualChapter, err = source.GetChapterMetadata("", "", expected.Chapter, "", "")
 			if err != nil {
-				if !util.ErrorContains(err, "not implemented") {
+				if !util.ErrorContains(err, errordefs.ErrChapterHasNoChapterOrURL.Message) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			} else {
@@ -139,7 +139,7 @@ func TestGetLastChapterMetadata(t *testing.T) {
 
 			actualChapter, err := source.GetLastChapterMetadata(mangaURL, "")
 			if err != nil {
-				if !util.ErrorContains(err, errordefs.ErrLastReleasedChapterNotFound.Error()) {
+				if !util.ErrorContains(err, errordefs.ErrChapterNotFound.Error()) {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			} else {

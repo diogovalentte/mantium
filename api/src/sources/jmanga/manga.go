@@ -49,7 +49,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 		chapterName := e.DOM.Find("span.name > strong").Text()
 		chapter, err := extractChapter(chapterName)
 		if err != nil {
-			sharedErr = err
+			sharedErr = util.AddErrorContext(errordefs.ErrMangaAttributesNotFound.Error(), err)
 			return
 		}
 		chapterURL := e.DOM.Find("a").AttrOr("href", "")
@@ -73,7 +73,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 		return nil, util.AddErrorContext(errorContext, sharedErr)
 	}
 	if mangaReturn.Name == "" {
-		return nil, errordefs.ErrMangaNotFound
+		return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaAttributesNotFound)
 	}
 
 	return mangaReturn, nil
@@ -83,8 +83,8 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 	s.resetCollector()
 
 	errorContext := "error while searching manga"
-	var sharedErr error
 	mangaSearchResults := []*models.MangaSearchResult{}
+	var sharedErr error
 	var mangaCount int
 
 	s.c.OnHTML("div.manga_list-sbs div.item", func(e *colly.HTMLElement) {
@@ -98,7 +98,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 		mangaNameEl := e.DOM.Find("h3.manga-name > a")
 		mangaSearchResult.URL, exists = mangaNameEl.Attr("href")
 		if !exists {
-			sharedErr = errordefs.ErrMangaURLNotFound
+			sharedErr = errordefs.ErrMangaAttributesNotFound
 			return
 		}
 		mangaSearchResult.Name = mangaNameEl.Text()
@@ -113,7 +113,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 		lastChapter := e.DOM.Find("div.manga-detail div.fd-list > div.fdl-item:first-child > div.chapter > a")
 		chapter, err := extractChapter(lastChapter.Text())
 		if err != nil {
-			sharedErr = err
+			sharedErr = util.AddErrorContext(errordefs.ErrMangaAttributesNotFound.Error(), err)
 			return
 		}
 		mangaSearchResult.LastChapter = chapter

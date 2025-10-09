@@ -53,7 +53,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 		re := regexp.MustCompile(`wp-admin/admin-ajax\.php\?manga_id=(\d+)(?:&|$)`)
 		HTMLMangaID := re.FindStringSubmatch(body)
 		if len(HTMLMangaID) <= 1 {
-			sharedErr = fmt.Errorf("manga ID not found in HTML response")
+			sharedErr = errordefs.ErrMangaAttributesNotFound
 			return
 		}
 
@@ -63,6 +63,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 		mangaReturn.LastReleasedChapter.Type = 1
 		if err != nil {
 			sharedErr = err
+			return
 		}
 	})
 
@@ -77,7 +78,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 		return nil, util.AddErrorContext(errorContext, sharedErr)
 	}
 	if mangaReturn.Name == "" {
-		return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
+		return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaAttributesNotFound)
 	}
 
 	return mangaReturn, nil

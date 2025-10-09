@@ -2,6 +2,7 @@ package jmanga
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/gocolly/colly/v2"
 
@@ -35,31 +36,18 @@ func (s *Source) GetChapterMetadata(mangaURL, _, chapter, chapterURL, _ string) 
 
 // GetChapterMetadataByURL scrapes the manga page and return the chapter by its URL
 func (s *Source) getChapterMetadataByURL(chapterURL string) (*manga.Chapter, error) {
-	s.resetCollector()
+	re := regexp.MustCompile(`chapter-(\d+(?:\.\d+)?)`)
+	matches := re.FindStringSubmatch(chapterURL)
+	if len(matches) < 2 {
+		return nil, errordefs.ErrChapterAttributesNotFound
+	}
+
 	chapterReturn := &manga.Chapter{}
-
-	s.c.OnHTML("ul.reading-list", func(e *colly.HTMLElement) {
-		chapterNum := e.Attr("data-number")
-		if chapterNum == "" {
-			return
-		}
-		chapterName := fmt.Sprintf("第%s話", chapterNum)
-
-		chapterReturn.URL = chapterURL
-		chapterReturn.Chapter = chapterNum
-		chapterReturn.Name = chapterName
-	})
-
-	err := s.c.Visit(chapterURL)
-	if err != nil {
-		if err.Error() == "Not Found" {
-			return nil, errordefs.ErrChapterNotFound
-		}
-		return nil, err
-	}
-	if chapterReturn.Chapter == "" {
-		return nil, errordefs.ErrChapterNotFound
-	}
+	chapterNum := matches[1]
+	chapterName := fmt.Sprintf("第%s話", chapterNum)
+	chapterReturn.Chapter = chapterNum
+	chapterReturn.Name = chapterName
+	chapterReturn.URL = chapterURL
 
 	return chapterReturn, nil
 }
@@ -69,7 +57,6 @@ func (s *Source) getChapterMetadataByChapter(mangaURL string, chapter string) (*
 	s.resetCollector()
 	chapterReturn := &manga.Chapter{}
 	var sharedErr error
-
 	var chapterFound bool
 
 	s.c.OnHTML("ul#ja-chaps > li", func(e *colly.HTMLElement) {

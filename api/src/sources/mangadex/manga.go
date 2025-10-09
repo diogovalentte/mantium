@@ -54,7 +54,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 
 	lastReleasedChapter, err := s.GetLastChapterMetadata(mangaURL, "")
 	if err != nil {
-		if !util.ErrorContains(err, errordefs.ErrLastReleasedChapterNotFound.Message) {
+		if !util.ErrorContains(err, errordefs.ErrChapterNotFound.Error()) {
 			return nil, util.AddErrorContext(errorContext, err)
 		}
 		mangaReturn.LastReadChapter = nil
@@ -143,7 +143,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 			if len(mangaData.Attributes.AltTitles) > 0 {
 				mangaSearchResult.Name = mangaData.Attributes.AltTitles[0].get()
 			} else {
-				return nil, util.AddErrorContext(errorContext, fmt.Errorf("manga name not found"))
+				return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaAttributesNotFound)
 			}
 		}
 
@@ -196,23 +196,23 @@ func getMangaID(mangaURL string) (string, error) {
 
 	matches := re.FindStringSubmatch(mangaURL)
 	if len(matches) < 2 {
-		return "", util.AddErrorContext(errorContext, fmt.Errorf("manga ID not found"))
+		return "", util.AddErrorContext(errorContext, fmt.Errorf("manga ID not found in URL"))
 	}
 
 	return matches[1], nil
 }
 
 func GetFormattedMangaURL(mangaURL string) (string, error) {
-	errorContext := "error while getting manga URL '%s'"
+	errorContext := "error while getting formatted manga URL from '%s'"
 
 	URLParts := strings.Split(mangaURL, "title/")
 	if len(URLParts) < 2 {
-		return "", util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), fmt.Errorf("manga ID not found"))
+		return "", util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), fmt.Errorf("manga ID not found in URL"))
 	}
 	mangaID := URLParts[len(URLParts)-1]
 	mangaIDParts := strings.Split(mangaID, "/")
 	if len(mangaIDParts) < 1 {
-		return "", util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), fmt.Errorf("manga ID not found"))
+		return "", util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), fmt.Errorf("manga ID not found in URL"))
 	}
 	mangaID = mangaIDParts[0]
 	return fmt.Sprintf("%s/title/%s", baseSiteURL, mangaID), nil
