@@ -41,9 +41,9 @@ func TestMain(m *testing.M) {
 
 var mangasRequestsTestTable = map[string]routes.AddMangaRequest{
 	"valid manga with read chapter": {
-		URL:             "https://comick.io/comic/dandadan",
+		URL:             "https://klmanga.lt/manga-raw/大ダーク-raw-free/",
 		Status:          5,
-		LastReadChapter: "154",
+		LastReadChapter: "59",
 	},
 	"invalid manga URL": {
 		URL:    "https://mangahub.io/manga/beeerserkk",
@@ -59,8 +59,8 @@ var mangasRequestsTestTable = map[string]routes.AddMangaRequest{
 func TestSearchManga(t *testing.T) {
 	t.Run("Search valid manga with read chapter", func(t *testing.T) {
 		body := map[string]string{
-			"q":          "yotsubato",
-			"source_url": "https://mangaupdates.com",
+			"q":      "yotsubato",
+			"source": "mangaupdates",
 		}
 		payload, err := json.Marshal(body)
 		if err != nil {
@@ -125,7 +125,7 @@ func TestAddManga(t *testing.T) {
 		}
 
 		actual := resMap["message"]
-		expected := errordefs.ErrMangaNotFound.Error()
+		expected := errordefs.ErrMangaAttributesNotFound.Error()
 		if !strings.Contains(actual, expected) {
 			t.Fatalf(`expected actual message "%s" to contain expected message "%s"`, actual, expected)
 		}
@@ -152,15 +152,15 @@ func TestAddManga(t *testing.T) {
 var mangaSearchRequestsTestTable = []routes.SearchMangaRequest{
 	{
 		Term:   "Death Note",
-		Source: "https://mangadex.org",
+		Source: "mangadex",
 	},
 	{
 		Term:   "one piece",
-		Source: "https://mangahub.io",
+		Source: "mangahub",
 	},
 	{
 		Term:   "dandadan",
-		Source: "https://mangaplus.shueisha.co.jp",
+		Source: "mangaplus",
 	},
 }
 
