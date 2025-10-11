@@ -80,9 +80,9 @@ The images below show the pop-up when you click the "**Highlight**" button of on
 
 # Custom Manga
 
-In Mantium, there are normal manga, which are those from the supported sources (*like MangaDex*), and are always inside a MultiManga, and **Custom Manga**.
+In Mantium, there are normal manga, which are those from the supported sources (_like MangaDex_), and are always inside a MultiManga, and **Custom Manga**.
 
-Custom Manga allows you to track manga, manhwa, light novels, etc., that aren't from one of the supported sources. You must manually provide the manga name, URL, cover image (*or use the default one from Mantium*), and the last chapter you read from this manga.
+Custom Manga allows you to track manga, manhwa, light novels, etc., that aren't from one of the supported sources. You must manually provide the manga name, URL, cover image (_or use the default one from Mantium_), and the last chapter you read from this manga.
 
 - Custom mangas are not part of a **multimangas**.
 
@@ -101,6 +101,7 @@ Mantium can periodically get the metadata of the mangas you're tracking from the
 You can also set Mantium to notify you when a manga with the status "reading" or "completed" has a newly released chapter.
 
 - If an error occurs in the background while updating the manga's metadata or notifying, a warning will appear on the dashboard and iframe. You can disable this warning.
+- Mantium will also update and notify for changes with custom manga's last released chapter selectors in this job.
 
 # Integrations
 
