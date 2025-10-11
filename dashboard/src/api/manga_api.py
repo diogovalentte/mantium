@@ -40,6 +40,7 @@ class MangaAPIClient:
                 "error while adding manga",
                 url,
                 "POST",
+                request_body,
                 res.status_code,
                 res.text,
             )
@@ -57,6 +58,7 @@ class MangaAPIClient:
                 "error while getting manga",
                 url,
                 "GET",
+                {},
                 res.status_code,
                 res.text,
             )
@@ -72,11 +74,7 @@ class MangaAPIClient:
             manga["LastReleasedChapter"] = {
                 "Chapter": "",
                 "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
-                "URL": (
-                    manga["URL"]
-                    if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
-                    else ""
-                ),
+                "URL": manga["URL"] if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE else "",
             }
         if manga["LastReadChapter"] is not None:
             manga["LastReadChapter"]["UpdatedAt"] = get_updated_at_datetime(
@@ -86,11 +84,7 @@ class MangaAPIClient:
             manga["LastReadChapter"] = {
                 "Chapter": "",
                 "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
-                "URL": (
-                    manga["URL"]
-                    if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
-                    else ""
-                ),
+                "URL": manga["URL"] if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE else "",
             }
 
         return manga
@@ -106,6 +100,7 @@ class MangaAPIClient:
                 "error while getting mangas",
                 url,
                 "GET",
+                {},
                 res.status_code,
                 res.text,
             )
@@ -124,11 +119,7 @@ class MangaAPIClient:
                 manga["LastReleasedChapter"] = {
                     "Chapter": "",
                     "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
-                    "URL": (
-                        manga["URL"]
-                        if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
-                        else ""
-                    ),
+                    "URL": manga["URL"] if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE else "",
                 }
             if manga["LastReadChapter"] is not None:
                 manga["LastReadChapter"]["UpdatedAt"] = get_updated_at_datetime(
@@ -138,11 +129,19 @@ class MangaAPIClient:
                 manga["LastReadChapter"] = {
                     "Chapter": "",
                     "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
-                    "URL": (
-                        manga["URL"]
-                        if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
-                        else ""
-                    ),
+                    "URL": manga["URL"] if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE else "",
+                }
+
+            if manga["LastReleasedChapterNameSelector"] is None:
+                manga["LastReleasedChapterNameSelector"] = {
+                    "Selector": "",
+                    "Attribute": "",
+                    "Regex": "",
+                }
+            if manga["LastReleasedChapterURLSelector"] is None:
+                manga["LastReleasedChapterURLSelector"] = {
+                    "Selector": "",
+                    "Attribute": "",
                 }
 
         return mangas
@@ -168,86 +167,7 @@ class MangaAPIClient:
                 "error while updating manga status",
                 url,
                 "PATCH",
-                res.status_code,
-                res.text,
-            )
-
-        return res.json()
-
-    def update_manga_name(
-        self,
-        name: str,
-        manga_id: int = 0,
-        manga_url: str = "",
-    ) -> dict[str, str]:
-        path = "/name"
-        url = f"{self.base_manga_url}{path}"
-        url = f"{url}?id={manga_id}&url={manga_url}&name={name}"
-
-        res = requests.patch(url)
-
-        if res.status_code not in self.acceptable_status_codes:
-            raise APIException(
-                "error while updating manga name",
-                url,
-                "PATCH",
-                res.status_code,
-                res.text,
-            )
-
-        return res.json()
-
-    def update_manga_url(
-        self,
-        new_url: str,
-        manga_id: int = 0,
-        manga_url: str = "",
-    ) -> dict[str, str]:
-        path = "/url"
-        url = f"{self.base_manga_url}{path}"
-        url = f"{url}?id={manga_id}&url={manga_url}&new_url={new_url}"
-
-        res = requests.patch(url)
-
-        if res.status_code not in self.acceptable_status_codes:
-            raise APIException(
-                "error while updating manga URL",
-                url,
-                "PATCH",
-                res.status_code,
-                res.text,
-            )
-
-        return res.json()
-
-    def update_manga_last_read_chapter(
-        self,
-        manga_id: int = 0,
-        manga_url: str = "",
-        manga_internal_id: str = "",
-        chapter: str = "",
-        chapter_url: str = "",
-        chapter_internal_id: str = "",
-    ) -> dict[str, str]:
-        path = "/last_read_chapter"
-        url = f"{self.base_manga_url}{path}"
-        url = (
-            f"{url}?id={manga_id}&url={manga_url}&manga_internal_id={manga_internal_id}"
-        )
-
-        request_body = {
-            "chapter": chapter,
-            "chapter_url": chapter_url,
-            "chapter_internal_id": chapter_internal_id,
-        }
-
-        res = requests.patch(url, json=request_body)
-
-        if res.status_code not in self.acceptable_status_codes:
-            raise APIException(
-                "error while updating manga last read chapter",
-                url,
-                "PATCH",
+                request_body,
                 res.status_code,
                 res.text,
             )
@@ -275,23 +195,7 @@ class MangaAPIClient:
                 "error while updating manga cover image",
                 url,
                 "PATCH",
-                res.status_code,
-                res.text,
-            )
-
-        return res.json()
-
-    def turn_manga_into_multimanga(self, manga_id: int = 0) -> dict[str, str]:
-        url = self.base_manga_url + "/turn_into_multimanga"
-        url = f"{url}?id={manga_id}"
-
-        res = requests.post(url)
-
-        if res.status_code not in self.acceptable_status_codes:
-            raise APIException(
-                "error while turning manga into multimanga",
-                url,
-                "POST",
+                {},
                 res.status_code,
                 res.text,
             )
@@ -309,6 +213,7 @@ class MangaAPIClient:
                 "error while deleting manga",
                 url,
                 "DELETE",
+                {},
                 res.status_code,
                 res.text,
             )
@@ -331,6 +236,7 @@ class MangaAPIClient:
                 "error while getting manga chapters",
                 url,
                 "GET",
+                {},
                 res.status_code,
                 res.text,
             )
@@ -356,6 +262,7 @@ class MangaAPIClient:
                 "error while searching manga",
                 url,
                 "POST",
+                request_body,
                 res.status_code,
                 res.text,
             )
@@ -375,8 +282,6 @@ class MangaAPIClient:
                 manga["LastReadChapter"]["Chapter"]
                 != manga["LastReleasedChapter"]["Chapter"]
             ):
-                if manga["Source"] == defaults.CUSTOM_MANGA_SOURCE:
-                    return (0, -manga["LastReadChapter"]["UpdatedAt"].timestamp())
                 if manga["LastReleasedChapter"]["UpdatedAt"] == datetime.min.replace(
                     tzinfo=timezone.utc
                 ):

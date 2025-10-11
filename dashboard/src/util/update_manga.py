@@ -478,14 +478,13 @@ def show_update_multimanga_add_manga_url(multimanga):
             resp_text = str(e.response_text).lower()
             if "manga already exists in db" in resp_text:
                 st.warning("Manga already exists")
-            elif (
-                "error while getting source: source '" in resp_text
-                and "not found" in resp_text
-            ):
+            elif "source not found" in resp_text:
                 st.warning("No source site for this manga")
             elif "invalid manga url" in resp_text:
                 st.warning("Invalid URL")
             elif "manga not found in source" in resp_text:
+                st.warning("Manga not found")
+            elif "one of the manga attributes were not found in source" in resp_text:
                 st.warning("Manga not found")
             elif "source" in str(e).lower() and "is not allowed" in str(e).lower():
                 st.warning("Not allowed to add mangas from this source")
@@ -744,30 +743,70 @@ def show_update_custom_manga(manga: dict[str, Any]):
         )
 
         with st.expander(
-            "Next Chapter",
+            "Last Read Chapter",
         ):
             st.text_input(
-                "Next Chapter to Read",
+                "Last Read Chapter",
                 value=manga["LastReadChapter"]["Chapter"],
                 placeholder="1000",
                 help="Can be a number or text",
-                key="update_custom_manga_form_chapter",
+                key="update_custom_manga_form_last_read_chapter",
             )
 
             st.text_input(
                 "Chapter URL",
                 value=manga["LastReadChapter"]["URL"],
                 placeholder="https://randomsite.com/title/one-piece/chapter/1000",
-                key="update_custom_manga_form_chapter_url",
+                key="update_custom_manga_form_last_read_chapter_url",
             )
 
-            st.checkbox(
-                "No more chapters available",
-                value=manga["LastReadChapter"]["Chapter"]
-                == manga["LastReleasedChapter"]["Chapter"],
-                help="Check this if there are no more chapters available. By default, if next chapter is empty, it's checked, even if you changed it previously. You can change it anytime.",
-                key="update_custom_manga_form_no_more_chapters",
+        with st.expander(
+            "Last Released Chapter",
+        ):
+            st.info(
+                "Optional. Only fill if you want Mantium to automatically track new chapters."
             )
+            with st.expander(
+                "Chapter Name"
+            ):
+                st.text_input(
+                    "Selector",
+                    value=manga["LastReleasedChapterNameSelector"]["Selector"],
+                    placeholder="css:div.chapter-list > a:nth-child(1) > div.chapter-title",
+                    help="CSS or XPath selector to get the chapter name. E.g. 'css:div.chapter-list > a:nth-child(1) > div.chapter-title' or 'xpath://div[@class=\"chapter-list\"]//a[1]//div[@class=\"chapter-title\"]'. Leave empty to skip.",
+                    key="update_custom_manga_form_last_chapter_name_selector",
+                )
+                st.text_input(
+                    "Attribute",
+                    value=manga["LastReleasedChapterNameSelector"]["Attribute"],
+                    placeholder="href",
+                    help="Element attribute to get the chapter name. E.g. 'href' for link. Leave empty to get the inner text.",
+                    key="update_custom_manga_form_last_chapter_name_attribute",
+                )
+                st.text_input(
+                    "Regex",
+                    value=manga["LastReleasedChapterNameSelector"]["Regex"],
+                    placeholder="Chapter (\\d+)",
+                    help="Regex to extract the chapter name. E.g. 'Chapter (\\d+)' to extract '100' from 'Chapter 100'. Leave empty to skip.",
+                    key="update_custom_manga_form_last_chapter_name_regex",
+                )
+            with st.expander(
+                "Chapter URL"
+            ):
+                st.text_input(
+                    "Selector",
+                    value=manga["LastReleasedChapterURLSelector"]["Selector"],
+                    placeholder="css:div.chapter-list > a:nth-child(1)",
+                    help="CSS or XPath selector to get the chapter URL. E.g. 'css:div.chapter-list > a:nth-child(1)' or 'xpath://div[@class=\"chapter-list\"]//a[1]'. Leave empty to skip.",
+                    key="update_custom_manga_form_last_chapter_url_selector",
+                )
+                st.text_input(
+                    "Attribute",
+                    value=manga["LastReleasedChapterURLSelector"]["Attribute"],
+                    placeholder="href",
+                    help="Element attribute to get the chapter URL. E.g. 'href' for link. Leave empty to get the inner text.",
+                    key="update_custom_manga_form_last_chapter_url_attribute",
+                )
 
         with st.expander(
             "Cover Image",
@@ -796,11 +835,15 @@ def show_update_custom_manga(manga: dict[str, Any]):
                 name = ss.update_custom_manga_form_name
                 url = ss.update_custom_manga_form_url
                 status = ss.update_custom_manga_form_status
-                next_chapter = ss.update_custom_manga_form_chapter
-                next_chapter_url = ss.update_custom_manga_form_chapter_url
-                manga_has_more_chapters = (
-                    not ss.update_custom_manga_form_no_more_chapters
-                )
+                last_read_chapter = ss.update_custom_manga_form_last_read_chapter
+                last_read_chapter_url = ss.update_custom_manga_form_last_read_chapter_url
+
+                last_released_chapter_name_selector = ss.update_custom_manga_form_last_chapter_name_selector
+                last_released_chapter_name_attribute = ss.update_custom_manga_form_last_chapter_name_attribute
+                last_released_chapter_name_regex = ss.update_custom_manga_form_last_chapter_name_regex
+                last_released_chapter_url_selector = ss.update_custom_manga_form_last_chapter_url_selector
+                last_released_chapter_url_attribute = ss.update_custom_manga_form_last_chapter_url_attribute
+
                 cover_img_url = ss.update_custom_manga_form_cover_img_url
                 cover_img = (
                     ss.update_custom_manga_form_cover_img_file.getvalue()
@@ -812,50 +855,50 @@ def show_update_custom_manga(manga: dict[str, Any]):
                 )
                 if name == "":
                     st.warning("Provide a manga name")
-                elif next_chapter == "" and next_chapter_url != "":
+                elif last_read_chapter == "" and last_read_chapter_url != "":
                     ss["update_manga_warning_message"] = (
-                        "Provide a chapter number to go with the chapter URL"
+                        "If providing a chapter URL, also provide a chapter number"
                     )
                 else:
                     if name != manga["Name"]:
-                        api_client.update_manga_name(name, manga["ID"])
+                        api_client.update_custom_manga_name(name, manga["ID"])
 
                     if url != manga["URL"]:
-                        api_client.update_manga_url(url, manga["ID"])
+                        api_client.update_custom_manga_url(url, manga["ID"])
 
                     if status != manga["Status"]:
                         api_client.update_manga_status(status, manga["ID"])
 
                     if (
-                        next_chapter != manga["LastReadChapter"]["Chapter"]
-                        or next_chapter_url != manga["LastReadChapter"]["URL"]
+                        last_read_chapter != manga["LastReadChapter"]["Chapter"]
+                        or last_read_chapter_url != manga["LastReadChapter"]["URL"]
                     ):
-                        api_client.update_manga_last_read_chapter(
+                        api_client.update_custom_manga_last_read_chapter(
                             manga["ID"],
                             "",
-                            "",
-                            next_chapter,
-                            next_chapter_url,
-                            "",
+                            last_read_chapter,
+                            last_read_chapter_url,
                         )
 
                     if (
-                        (
-                            manga_has_more_chapters
-                            and manga["LastReadChapter"]["Chapter"] != ""
-                            and manga["LastReadChapter"]["Chapter"]
-                            == manga["LastReleasedChapter"]["Chapter"]
-                        )
-                        or (
-                            not manga_has_more_chapters
-                            and manga["LastReadChapter"]["Chapter"] != ""
-                            and manga["LastReadChapter"]["Chapter"]
-                            != manga["LastReleasedChapter"]["Chapter"]
-                        )
-                        or next_chapter != manga["LastReadChapter"]["Chapter"]
+                        last_released_chapter_name_selector
+                        != manga["LastReleasedChapterNameSelector"]["Selector"]
+                        or last_released_chapter_name_attribute
+                        != manga["LastReleasedChapterNameSelector"]["Attribute"]
+                        or last_released_chapter_name_regex
+                        != manga["LastReleasedChapterNameSelector"]["Regex"]
+                        or last_released_chapter_url_selector
+                        != manga["LastReleasedChapterURLSelector"]["Selector"]
+                        or last_released_chapter_url_attribute
+                        != manga["LastReleasedChapterURLSelector"]["Attribute"]
                     ):
-                        api_client.update_custom_manga_has_more_chapters(
-                            manga_has_more_chapters, manga["ID"], ""
+                        api_client.update_custom_manga_last_released_chapter_selectors(
+                            last_released_chapter_name_selector,
+                            last_released_chapter_name_attribute,
+                            last_released_chapter_name_regex,
+                            last_released_chapter_url_selector,
+                            last_released_chapter_url_attribute,
+                            manga["ID"],
                         )
 
                     values_count = sum(
@@ -902,9 +945,23 @@ def show_update_custom_manga(manga: dict[str, Any]):
                             "Manga updated successfully"
                         )
                         st.rerun()
-            except Exception as e:
-                logger.exception(e)
-                ss["update_manga_error_message"] = "Error while updating manga"
+            except Exception as ex:
+                resp_text = str(ex).lower()
+                logger.exception(ex)
+                if "error while visiting manga url" in resp_text:
+                    ss["update_manga_warning_message"] = (
+                        "Error while visiting the provided manga URL. Check that it's valid."
+                    )
+                elif "selector not found in the page or is empty" in resp_text or "selector should start with 'css:' or 'xpath:', instead it's" in resp_text:
+                    ss["update_manga_warning_message"] = (
+                        "Invalid selector or one of the provided selectors/attributes was not found in the page or is empty"
+                    )
+                elif "regex did not match" in resp_text or "error compiling regex" in resp_text:
+                    ss["update_manga_warning_message"] = (
+                        "Invalid regex or the chapter name selector is empty after applying the provided regex"
+                    )
+                else:
+                    ss["update_manga_error_message"] = "Error while updating manga"
 
     with stylable_container(
         key="update_custom_manga_delete_button",
@@ -921,8 +978,8 @@ def show_update_custom_manga(manga: dict[str, Any]):
         ):
             try:
                 api_client.delete_manga(manga["ID"])
-            except Exception as e:
-                logger.exception(e)
+            except Exception as ex:
+                logger.exception(ex)
                 ss["update_manga_error_message"] = "Error while deleting manga"
             else:
                 ss["update_manga_success_message"] = "Manga deleted successfully"

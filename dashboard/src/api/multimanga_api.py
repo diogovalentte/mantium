@@ -40,6 +40,7 @@ class MultiMangaAPIClient:
                 "error while adding multimanga",
                 url,
                 "POST",
+                request_body,
                 res.status_code,
                 res.text,
             )
@@ -57,6 +58,7 @@ class MultiMangaAPIClient:
                 "error while getting multimanga",
                 url,
                 "GET",
+                {},
                 res.status_code,
                 res.text,
             )
@@ -144,6 +146,7 @@ class MultiMangaAPIClient:
                 "error while getting choose current manga from multimanga",
                 url,
                 "GET",
+                {},
                 res.status_code,
                 res.text,
             )
@@ -159,11 +162,7 @@ class MultiMangaAPIClient:
             manga["LastReleasedChapter"] = {
                 "Chapter": "",
                 "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
-                "URL": (
-                    manga["URL"]
-                    if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
-                    else ""
-                ),
+                "URL": manga["URL"],
             }
         if manga["LastReadChapter"] is not None:
             manga["LastReadChapter"]["UpdatedAt"] = get_updated_at_datetime(
@@ -173,11 +172,7 @@ class MultiMangaAPIClient:
             manga["LastReadChapter"] = {
                 "Chapter": "",
                 "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
-                "URL": (
-                    manga["URL"]
-                    if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE
-                    else ""
-                ),
+                "URL": manga["URL"],
             }
 
         return manga
@@ -202,6 +197,7 @@ class MultiMangaAPIClient:
                 "error while adding manga to multimanga",
                 url,
                 "POST",
+                request_body,
                 res.status_code,
                 res.text,
             )
@@ -219,6 +215,7 @@ class MultiMangaAPIClient:
                 "error while removing manga from multimanga",
                 url,
                 "DELETE",
+                {},
                 res.status_code,
                 res.text,
             )
@@ -245,6 +242,7 @@ class MultiMangaAPIClient:
                 "error while updating multimanga status",
                 url,
                 "PATCH",
+                request_body,
                 res.status_code,
                 res.text,
             )
@@ -276,6 +274,7 @@ class MultiMangaAPIClient:
                 "error while updating multimanga last read chapter",
                 url,
                 "PATCH",
+                request_body,
                 res.status_code,
                 res.text,
             )
@@ -300,6 +299,7 @@ class MultiMangaAPIClient:
                 "error while updating multimanga cover image",
                 url,
                 "PATCH",
+                {},
                 res.status_code,
                 res.text,
             )
@@ -317,6 +317,7 @@ class MultiMangaAPIClient:
                 "error while deleting multimanga",
                 url,
                 "DELETE",
+                {},
                 res.status_code,
                 res.text,
             )
@@ -335,6 +336,7 @@ class MultiMangaAPIClient:
                 "error while getting multimanga chapters",
                 url,
                 "GET",
+                {},
                 res.status_code,
                 res.text,
             )

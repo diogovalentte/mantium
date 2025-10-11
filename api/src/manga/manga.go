@@ -4,7 +4,12 @@ package manga
 import (
 	"database/sql"
 	"fmt"
+	"regexp"
 	"sort"
+	"strings"
+	"time"
+
+	"github.com/gocolly/colly/v2"
 
 	"github.com/diogovalentte/mantium/api/src/db"
 	"github.com/diogovalentte/mantium/api/src/errordefs"
@@ -58,6 +63,10 @@ type Manga struct {
 	// LastReleasedChapter is the last chapter released by the source
 	// If the custom manga has no more released chapter, it'll be equal to the LastReadChapter.
 	LastReleasedChapter *Chapter
+	// LastReleasedChapterNameSelector is the selector used to find the last released chapter name in the source website
+	LastReleasedChapterNameSelector *HTMLSelector
+	// LastReleasedChapterURLSelector is the selector used to find the last released chapter URL in the source website
+	LastReleasedChapterURLSelector *HTMLSelector
 	// LastReadChapter is the last chapter read by the user
 	// In a custom manga, this field represents the next manga the user should read
 	// or, if it's equal to the last released chapter, the manga is considered read.
@@ -76,8 +85,8 @@ type Manga struct {
 }
 
 func (m Manga) String() string {
-	return fmt.Sprintf("Manga{ID: %d, Source: %s, URL: %s, Name: %s, SearchNames: %v, InternalID: %s, Status: %d, CoverImg: []byte, CoverImgResized: %v, CoverImgURL: %s, CoverImgFixed: %v, PreferredGroup: %s, MultiMangaID: %d, LastReleasedChapter: %s, LastReadChapter: %s}",
-		m.ID, m.Source, m.URL, m.Name, m.SearchNames, m.InternalID, m.Status, m.CoverImgResized, m.CoverImgURL, m.CoverImgFixed, m.PreferredGroup, m.MultiMangaID, m.LastReleasedChapter, m.LastReadChapter)
+	return fmt.Sprintf("Manga{ID: %d, Source: %s, URL: %s, Name: %s, SearchNames: %v, InternalID: %s, Status: %d, CoverImg: []byte, CoverImgResized: %v, CoverImgURL: %s, CoverImgFixed: %v, PreferredGroup: %s, MultiMangaID: %d, LastReleasedChapter: %s, LastReadChapter: %s, LastReleasedChapterNameSelector: %s, LastReleasedChapterURLSelector: %s}",
+		m.ID, m.Source, m.URL, m.Name, m.SearchNames, m.InternalID, m.Status, m.CoverImgResized, m.CoverImgURL, m.CoverImgFixed, m.PreferredGroup, m.MultiMangaID, m.LastReleasedChapter, m.LastReadChapter, m.LastReleasedChapterNameSelector, m.LastReleasedChapterURLSelector)
 }
 
 // InsertIntoDB saves the manga into the database
@@ -123,15 +132,22 @@ func insertMangaIntoDB(m *Manga, tx *sql.Tx) (ID, error) {
 		multiMangaID = sql.NullInt32{Valid: false}
 	}
 
+	if m.LastReleasedChapterNameSelector == nil {
+		m.LastReleasedChapterNameSelector = &HTMLSelector{}
+	}
+	if m.LastReleasedChapterURLSelector == nil {
+		m.LastReleasedChapterURLSelector = &HTMLSelector{}
+	}
+
 	var mangaID ID
 	err = tx.QueryRow(`
         INSERT INTO mangas
-            (source, url, name, internal_id, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group, multimanga_id)
+            (source, url, name, internal_id, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group, multimanga_id, last_released_chapter_name_selector, last_released_chapter_name_attribute, last_released_chapter_name_regex, last_released_chapter_url_selector, last_released_chapter_url_attribute)
         VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         RETURNING
             id;
-    `, m.Source, m.URL, m.Name, m.InternalID, m.Status, m.CoverImg, m.CoverImgResized, m.CoverImgURL, m.CoverImgFixed, m.PreferredGroup, multiMangaID).Scan(&mangaID)
+    `, m.Source, m.URL, m.Name, m.InternalID, m.Status, m.CoverImg, m.CoverImgResized, m.CoverImgURL, m.CoverImgFixed, m.PreferredGroup, multiMangaID, m.LastReleasedChapterNameSelector.Selector, m.LastReleasedChapterNameSelector.Attribute, m.LastReleasedChapterNameSelector.Regex, m.LastReleasedChapterURLSelector.Selector, m.LastReleasedChapterURLSelector.Attribute).Scan(&mangaID)
 	if err != nil {
 		if err.Error() == `pq: duplicate key value violates unique constraint "mangas_pkey"` {
 			return -1, errordefs.ErrMangaAlreadyInDB
@@ -550,6 +566,54 @@ func (m *Manga) UpdateURLInDB(URL string) error {
 	return nil
 }
 
+// UpdateCustomMangaURLInDB updates the manga URL in the database
+func (m *Manga) UpdateCustomMangaURLInDB(URL string) error {
+	contextError := "error updating custom manga '%s' URL to '%s' in DB"
+
+	var chapter *Chapter
+	var err error
+
+	if (m.LastReleasedChapterNameSelector != nil && m.LastReleasedChapterNameSelector.Selector != "") || (m.LastReleasedChapterURLSelector != nil && m.LastReleasedChapterURLSelector.Selector != "") {
+		chapter, err = GetCustomMangaLastReleasedChapter(URL, m.LastReleasedChapterNameSelector, m.LastReleasedChapterURLSelector)
+		if err != nil {
+			return util.AddErrorContext(fmt.Sprintf(contextError, m, URL), err)
+		}
+	}
+
+	db, err := db.OpenConn()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, URL), err)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, URL), err)
+	}
+
+	if chapter != nil {
+		err = upsertMangaChapter(m.ID, chapter, tx)
+		if err != nil {
+			tx.Rollback()
+			return util.AddErrorContext(fmt.Sprintf(contextError, m, URL), err)
+		}
+	}
+
+	err = updateMangaURLDB(m, URL, tx)
+	if err != nil {
+		tx.Rollback()
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, URL), err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, URL), err)
+	}
+	m.URL = URL
+
+	return nil
+}
+
 func updateMangaURLDB(m *Manga, URL string, tx *sql.Tx) error {
 	err := validateManga(m)
 	if err != nil {
@@ -749,6 +813,9 @@ func getMangaFromDB(mangaID ID, mangaURL string, db *sql.DB) (*Manga, error) {
 	var lastReleasedChapter, lastReadChapter Chapter
 
 	var (
+		lastReleasedChapterNameSelector, lastReleasedChapterNameAttribute, lastReleasedChapterNameRegex sql.NullString
+		lastReleasedChapterURLSelector, lastReleasedChapterURLAttribute                                 sql.NullString
+
 		lastReleasedChapterURL, lastReleasedChapterChapter, lastReleasedChapterName, lastReleasedChapterInternalID sql.NullString
 		lastReleasedChapterUpdatedAt                                                                               sql.NullTime
 		lastReleasedChapterType, multiMangaID                                                                      sql.NullInt32
@@ -772,6 +839,11 @@ func getMangaFromDB(mangaID ID, mangaURL string, db *sql.DB) (*Manga, error) {
                 mangas.cover_img_fixed,
                 mangas.status,
                 mangas.multimanga_id AS multi_manga_id,
+				mangas.last_released_chapter_name_selector,
+				mangas.last_released_chapter_name_attribute,
+				mangas.last_released_chapter_name_regex,
+				mangas.last_released_chapter_url_selector,
+				mangas.last_released_chapter_url_attribute,
                 
                 last_released_chapter.url AS last_released_chapter_url,
                 last_released_chapter.chapter AS last_released_chapter,
@@ -799,6 +871,9 @@ func getMangaFromDB(mangaID ID, mangaURL string, db *sql.DB) (*Manga, error) {
 			&currentManga.ID, &currentManga.Source, &currentManga.URL, &currentManga.Name,
 			&currentManga.InternalID, &currentManga.PreferredGroup, &currentManga.CoverImgURL,
 			&currentManga.CoverImg, &currentManga.CoverImgResized, &currentManga.CoverImgFixed, &currentManga.Status, &multiMangaID,
+
+			&lastReleasedChapterNameSelector, &lastReleasedChapterNameAttribute, &lastReleasedChapterNameRegex,
+			&lastReleasedChapterURLSelector, &lastReleasedChapterURLAttribute,
 
 			&lastReleasedChapterURL, &lastReleasedChapterChapter, &lastReleasedChapterName,
 			&lastReleasedChapterInternalID, &lastReleasedChapterUpdatedAt, &lastReleasedChapterType,
@@ -828,6 +903,11 @@ func getMangaFromDB(mangaID ID, mangaURL string, db *sql.DB) (*Manga, error) {
                 mangas.cover_img_fixed,
                 mangas.status,
                 mangas.multimanga_id AS multi_manga_id,
+				mangas.last_released_chapter_name_selector,
+				mangas.last_released_chapter_name_attribute,
+				mangas.last_released_chapter_name_regex,
+				mangas.last_released_chapter_url_selector,
+				mangas.last_released_chapter_url_attribute,
                 
                 last_released_chapter.url AS last_released_chapter_url,
                 last_released_chapter.chapter AS last_released_chapter,
@@ -856,6 +936,9 @@ func getMangaFromDB(mangaID ID, mangaURL string, db *sql.DB) (*Manga, error) {
 			&currentManga.InternalID, &currentManga.PreferredGroup, &currentManga.CoverImgURL,
 			&currentManga.CoverImg, &currentManga.CoverImgResized, &currentManga.CoverImgFixed, &currentManga.Status, &multiMangaID,
 
+			&lastReleasedChapterNameSelector, &lastReleasedChapterNameAttribute, &lastReleasedChapterNameRegex,
+			&lastReleasedChapterURLSelector, &lastReleasedChapterURLAttribute,
+
 			&lastReleasedChapterURL, &lastReleasedChapterChapter, &lastReleasedChapterName,
 			&lastReleasedChapterInternalID, &lastReleasedChapterUpdatedAt, &lastReleasedChapterType,
 
@@ -875,6 +958,20 @@ func getMangaFromDB(mangaID ID, mangaURL string, db *sql.DB) (*Manga, error) {
 
 	if multiMangaID.Valid {
 		currentManga.MultiMangaID = ID(multiMangaID.Int32)
+	}
+
+	if lastReleasedChapterNameSelector.Valid && lastReleasedChapterNameSelector.String != "" {
+		currentManga.LastReleasedChapterNameSelector = &HTMLSelector{
+			Selector:  lastReleasedChapterNameSelector.String,
+			Attribute: lastReleasedChapterNameAttribute.String,
+			Regex:     lastReleasedChapterNameRegex.String,
+		}
+	}
+	if lastReleasedChapterURLSelector.Valid && lastReleasedChapterURLSelector.String != "" {
+		currentManga.LastReleasedChapterURLSelector = &HTMLSelector{
+			Selector:  lastReleasedChapterURLSelector.String,
+			Attribute: lastReleasedChapterURLAttribute.String,
+		}
 	}
 
 	if lastReleasedChapterURL.Valid {
@@ -972,6 +1069,11 @@ func getMangasWithoutMultiMangasFromDB(db *sql.DB) ([]*Manga, error) {
             mangas.cover_img,
             mangas.cover_img_resized,
             mangas.status,
+			mangas.last_released_chapter_name_selector,
+			mangas.last_released_chapter_name_attribute,
+			mangas.last_released_chapter_name_regex,
+			mangas.last_released_chapter_url_selector,
+			mangas.last_released_chapter_url_attribute,
 
             last_released_chapter.url AS last_released_chapter_url,
             last_released_chapter.chapter AS last_released_chapter,
@@ -1009,6 +1111,9 @@ func getMangasWithoutMultiMangasFromDB(db *sql.DB) ([]*Manga, error) {
 		var lastReadChapter, lastReleasedChapter Chapter
 
 		var (
+			lastReleasedChapterNameSelector, lastReleasedChapterNameAttribute, lastReleasedChapterNameRegex sql.NullString
+			lastReleasedChapterURLSelector, lastReleasedChapterURLAttribute                                 sql.NullString
+
 			lastReleasedChapterURL, lastReleasedChapterChapter, lastReleasedChapterName, lastReleasedChapterInternalID sql.NullString
 			lastReleasedChapterUpdatedAt                                                                               sql.NullTime
 			lastReleasedChapterType                                                                                    sql.NullInt32
@@ -1023,6 +1128,9 @@ func getMangasWithoutMultiMangasFromDB(db *sql.DB) ([]*Manga, error) {
 			&currentManga.InternalID, &currentManga.PreferredGroup, &currentManga.CoverImgURL,
 			&currentManga.CoverImg, &currentManga.CoverImgResized, &currentManga.Status,
 
+			&lastReleasedChapterNameSelector, &lastReleasedChapterNameAttribute, &lastReleasedChapterNameRegex,
+			&lastReleasedChapterURLSelector, &lastReleasedChapterURLAttribute,
+
 			&lastReleasedChapterURL, &lastReleasedChapterChapter, &lastReleasedChapterName,
 			&lastReleasedChapterInternalID, &lastReleasedChapterUpdatedAt, &lastReleasedChapterType,
 
@@ -1033,6 +1141,20 @@ func getMangasWithoutMultiMangasFromDB(db *sql.DB) ([]*Manga, error) {
 			return nil, err
 		}
 		currentManga.SearchNames = []string{currentManga.Name}
+
+		if lastReleasedChapterNameSelector.Valid && lastReleasedChapterNameSelector.String != "" {
+			currentManga.LastReleasedChapterNameSelector = &HTMLSelector{
+				Selector:  lastReleasedChapterNameSelector.String,
+				Attribute: lastReleasedChapterNameAttribute.String,
+				Regex:     lastReleasedChapterNameRegex.String,
+			}
+		}
+		if lastReleasedChapterURLSelector.Valid && lastReleasedChapterURLSelector.String != "" {
+			currentManga.LastReleasedChapterURLSelector = &HTMLSelector{
+				Selector:  lastReleasedChapterURLSelector.String,
+				Attribute: lastReleasedChapterURLAttribute.String,
+			}
+		}
 
 		if lastReleasedChapterURL.Valid {
 			lastReleasedChapter.URL = lastReleasedChapterURL.String
@@ -1097,6 +1219,11 @@ func getCustomMangasFromDB(db *sql.DB) ([]*Manga, error) {
             mangas.cover_img,
             mangas.cover_img_resized,
             mangas.status,
+			mangas.last_released_chapter_name_selector,
+			mangas.last_released_chapter_name_attribute,
+			mangas.last_released_chapter_name_regex,
+			mangas.last_released_chapter_url_selector,
+			mangas.last_released_chapter_url_attribute,
             
             last_released_chapter.url AS last_released_chapter_url,
             last_released_chapter.chapter AS last_released_chapter,
@@ -1133,6 +1260,9 @@ func getCustomMangasFromDB(db *sql.DB) ([]*Manga, error) {
 		var lastReleasedChapter, lastReadChapter Chapter
 
 		var (
+			lastReleasedChapterNameSelector, lastReleasedChapterNameAttribute, lastReleasedChapterNameRegex sql.NullString
+			lastReleasedChapterURLSelector, lastReleasedChapterURLAttribute                                 sql.NullString
+
 			lastReleasedChapterURL, lastReleasedChapterChapter, lastReleasedChapterName, lastReleasedChapterInternalID sql.NullString
 			lastReleasedChapterUpdatedAt                                                                               sql.NullTime
 			lastReleasedChapterType                                                                                    sql.NullInt32
@@ -1147,6 +1277,9 @@ func getCustomMangasFromDB(db *sql.DB) ([]*Manga, error) {
 			&currentManga.InternalID, &currentManga.PreferredGroup, &currentManga.CoverImgURL,
 			&currentManga.CoverImg, &currentManga.CoverImgResized, &currentManga.Status,
 
+			&lastReleasedChapterNameSelector, &lastReleasedChapterNameAttribute, &lastReleasedChapterNameRegex,
+			&lastReleasedChapterURLSelector, &lastReleasedChapterURLAttribute,
+
 			&lastReleasedChapterURL, &lastReleasedChapterChapter, &lastReleasedChapterName,
 			&lastReleasedChapterInternalID, &lastReleasedChapterUpdatedAt, &lastReleasedChapterType,
 
@@ -1158,6 +1291,20 @@ func getCustomMangasFromDB(db *sql.DB) ([]*Manga, error) {
 		}
 
 		currentManga.SearchNames = []string{currentManga.Name}
+
+		if lastReleasedChapterNameSelector.Valid && lastReleasedChapterNameSelector.String != "" {
+			currentManga.LastReleasedChapterNameSelector = &HTMLSelector{
+				Selector:  lastReleasedChapterNameSelector.String,
+				Attribute: lastReleasedChapterNameAttribute.String,
+				Regex:     lastReleasedChapterNameRegex.String,
+			}
+		}
+		if lastReleasedChapterURLSelector.Valid && lastReleasedChapterURLSelector.String != "" {
+			currentManga.LastReleasedChapterURLSelector = &HTMLSelector{
+				Selector:  lastReleasedChapterURLSelector.String,
+				Attribute: lastReleasedChapterURLAttribute.String,
+			}
+		}
 
 		if lastReleasedChapterURL.Valid {
 			lastReleasedChapter.URL = lastReleasedChapterURL.String
@@ -1353,53 +1500,6 @@ func getLibraryStatsFromDB(db *sql.DB) (map[string]int, error) {
 	return stats, nil
 }
 
-// UpdateCustomMangaLastReadChapterInDB updates the last read chapter of a custom manga in the database.
-// It also needs to delete the last released chapter.
-func UpdateCustomMangaLastReadChapterInDB(m *Manga, chapter *Chapter) error {
-	contextError := "error updating custom manga '%s' last read chapter to '%s' in DB"
-
-	if chapter.Type != 2 {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m, chapter), fmt.Errorf("chapter type should be 2, instead it's %d", chapter.Type))
-	}
-
-	db, err := db.OpenConn()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m, chapter), err)
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m, chapter), err)
-	}
-
-	err = upsertMangaChapter(m.ID, chapter, tx)
-	if err != nil {
-		tx.Rollback()
-		return util.AddErrorContext(fmt.Sprintf(contextError, m, chapter), err)
-	}
-
-	if m.LastReleasedChapter != nil {
-		rChapter := *chapter
-		rChapter.Type = 1
-		err = upsertMangaChapter(m.ID, &rChapter, tx)
-		if err != nil {
-			tx.Rollback()
-			return util.AddErrorContext(fmt.Sprintf(contextError, m, chapter), err)
-		}
-		m.LastReleasedChapter = &rChapter
-	}
-
-	m.LastReadChapter = chapter
-
-	err = tx.Commit()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m, chapter), err)
-	}
-
-	return nil
-}
-
 func (m *Manga) UpdateSourceInDB(source string) error {
 	contextError := "error updating manga '%s' source to '%s' in DB"
 
@@ -1451,6 +1551,124 @@ func updateMangaSourceDB(m *Manga, source string, tx *sql.Tx) error {
             SET source = $1
             WHERE url = $2;
         `, source, m.URL)
+		if err != nil {
+			return err
+		}
+	} else {
+		return errordefs.ErrMangaHasNoIDOrURL
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return errordefs.ErrMangaNotFoundDB
+	}
+
+	return nil
+}
+
+func (m *Manga) UpdateLastReleasedChapterSelectorsInDB(nameSelector, URLSelector *HTMLSelector) error {
+	var chapter *Chapter
+	var err error
+
+	contextError := "error updating manga '%s' chapter name selector to '%s' and URL selector to '%s' in DB"
+	emptySelectors := (nameSelector == nil || nameSelector.Selector == "") &&
+		(URLSelector == nil || URLSelector.Selector == "")
+	if !emptySelectors {
+		chapter, err = GetCustomMangaLastReleasedChapter(m.URL, nameSelector, URLSelector)
+		if err != nil {
+			return util.AddErrorContext(fmt.Sprintf(contextError, m, nameSelector, URLSelector), err)
+		}
+	}
+
+	db, err := db.OpenConn()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, nameSelector, URLSelector), err)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, nameSelector, URLSelector), err)
+	}
+
+	err = updateMangaLastReleasedChapterSelectorDB(m, nameSelector, URLSelector, tx)
+	if err != nil {
+		tx.Rollback()
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, nameSelector, URLSelector), err)
+	}
+
+	if !emptySelectors {
+		err = upsertMangaChapter(m.ID, chapter, tx)
+		if err != nil {
+			tx.Rollback()
+			return util.AddErrorContext(fmt.Sprintf(contextError, m, nameSelector, URLSelector), err)
+		}
+		m.LastReleasedChapter = chapter
+	} else {
+		if m.LastReleasedChapter != nil {
+			err = deleteMangaChapter(m.ID, m.LastReleasedChapter, tx)
+			if err != nil {
+				tx.Rollback()
+				return util.AddErrorContext(fmt.Sprintf(contextError, m, nameSelector, URLSelector), err)
+			}
+			m.LastReleasedChapter = nil
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, nameSelector, URLSelector), err)
+	}
+	m.LastReleasedChapterNameSelector = nameSelector
+	m.LastReleasedChapterURLSelector = URLSelector
+
+	return nil
+}
+
+func updateMangaLastReleasedChapterSelectorDB(m *Manga, nameSelector, URLSelector *HTMLSelector, tx *sql.Tx) error {
+	err := validateManga(m)
+	if err != nil {
+		return err
+	}
+
+	if nameSelector == nil {
+		nameSelector = &HTMLSelector{}
+	}
+	if URLSelector == nil {
+		URLSelector = &HTMLSelector{}
+	}
+
+	var result sql.Result
+	if m.ID > 0 {
+		result, err = tx.Exec(`
+            UPDATE mangas
+            SET
+				last_released_chapter_name_selector = $1,
+				last_released_chapter_name_attribute = $2,
+				last_released_chapter_name_regex = $3,
+				last_released_chapter_url_selector = $4,
+				last_released_chapter_url_attribute = $5
+            WHERE id = $6;
+        `, nameSelector.Selector, nameSelector.Attribute, nameSelector.Regex,
+			URLSelector.Selector, URLSelector.Attribute, m.ID)
+		if err != nil {
+			return err
+		}
+	} else if m.URL != "" {
+		result, err = tx.Exec(`
+            UPDATE mangas
+            SET
+				last_released_chapter_name_selector = $1,
+				last_released_chapter_name_attribute = $2,
+				last_released_chapter_name_regex = $3,
+				last_released_chapter_url_selector = $4,
+				last_released_chapter_url_attribute = $5
+            WHERE url = $6;
+        `, nameSelector.Selector, nameSelector.Attribute, nameSelector.Regex,
+			URLSelector.Selector, URLSelector.Attribute, m.URL)
 		if err != nil {
 			return err
 		}
@@ -1589,4 +1807,110 @@ func getStatusStr(status int) (string, error) {
 	default:
 		return "i", fmt.Errorf("invalid status: %d", status)
 	}
+}
+
+// HTMLSelector is used to select an element from an HTML document
+type HTMLSelector struct {
+	Selector  string `json:"Selector" binding:"required"`
+	Attribute string `json:"Attribute"`
+	Regex     string `json:"Regex"`
+}
+
+func (s HTMLSelector) String() string {
+	return fmt.Sprintf("HTMLSelector{Selector: %s, Attr: %s, Regex: %s}", s.Selector, s.Attribute, s.Regex)
+}
+
+// GetCustomMangaLastReleasedChapter gets the last released chapter of a custom manga
+func GetCustomMangaLastReleasedChapter(mangaURL string, nameSelector *HTMLSelector, URLSelector *HTMLSelector) (*Chapter, error) {
+	contextError := "error getting custom manga '%s' last released chapter with name selector '%s' and URL selector '%s' from source"
+
+	if nameSelector == nil && URLSelector == nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector), fmt.Errorf("both manga last released chapter selectors are nil"))
+	}
+
+	chapter := &Chapter{
+		UpdatedAt: time.Now().Local().Truncate(time.Second),
+		Type:      1,
+	}
+	if nameSelector != nil {
+		chapterName, err := getSelectorFromPage(mangaURL, nameSelector)
+		if err != nil {
+			return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector), err)
+		}
+		chapter.Chapter = chapterName
+		chapter.Name = "Chapter " + chapterName
+	}
+	if URLSelector != nil {
+		chapterURL, err := getSelectorFromPage(mangaURL, URLSelector)
+		if err != nil {
+			return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector), err)
+		}
+		chapter.URL = chapterURL
+		if chapter.Chapter == "" {
+			chapter.Chapter = "?"
+			chapter.Name = "Chapter ?"
+		}
+	}
+
+	return chapter, nil
+}
+
+var userAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0"
+
+func getSelectorFromPage(url string, selector *HTMLSelector) (string, error) {
+	contextError := "error getting selector '%s' from page '%s'"
+
+	if selector == nil {
+		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), fmt.Errorf("manga.HTMLSelector is nil"))
+	}
+	if selector.Selector == "" {
+		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), fmt.Errorf("manga.HTMLSelector.Selector is empty"))
+	}
+
+	c := colly.NewCollector(colly.UserAgent(userAgent))
+
+	var selection string
+	if after, ok := strings.CutPrefix(selector.Selector, "css:"); ok {
+		c.OnHTML(after, func(e *colly.HTMLElement) {
+			if selector.Attribute != "" {
+				selection = e.Attr(selector.Attribute)
+			} else {
+				selection = e.Text
+			}
+		})
+	} else if after, ok := strings.CutPrefix(selector.Selector, "xpath:"); ok {
+		c.OnXML(after, func(e *colly.XMLElement) {
+			if selector.Attribute != "" {
+				selection = e.Attr(selector.Attribute)
+			} else {
+				selection = e.Text
+			}
+		})
+	} else {
+		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), fmt.Errorf("selector should start with 'css:' or 'xpath:', instead it's '%s'", url))
+	}
+
+	err := c.Visit(url)
+	if err != nil {
+		return "", util.AddErrorContext(contextError, util.AddErrorContext("error while visiting manga URL", err))
+	}
+
+	if selection == "" {
+		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), fmt.Errorf("selector not found in the page or is empty"))
+	}
+
+	if selector.Regex != "" {
+		re, err := regexp.Compile(selector.Regex)
+		if err != nil {
+			return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), util.AddErrorContext("error compiling regex", err))
+		}
+		matches := re.FindStringSubmatch(selection)
+		if len(matches) < 2 {
+			return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), fmt.Errorf("regex did not match"))
+		}
+		selection = matches[1]
+	}
+	selection = strings.TrimSpace(selection)
+
+	return selection, nil
 }

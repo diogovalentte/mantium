@@ -27,6 +27,7 @@ class DashboardAPIClient:
                 "error while checking the health of the API",
                 url,
                 "GET",
+                {},
                 res.status_code,
                 res.text,
             )
@@ -46,6 +47,7 @@ class DashboardAPIClient:
                 "error while checking for updates in the API",
                 url,
                 "GET",
+                {},
                 res.status_code,
                 res.text,
             )
@@ -67,6 +69,7 @@ class DashboardAPIClient:
                 "error while getting the dashboarc configs from the API",
                 url,
                 "GET",
+                {},
                 res.status_code,
                 res.text,
             )
@@ -91,6 +94,7 @@ class DashboardAPIClient:
                 "error while updating the dashboard configs",
                 url,
                 "POST",
+                {},
                 res.status_code,
                 res.text,
             )
@@ -110,6 +114,7 @@ class DashboardAPIClient:
                 "error while getting last background error",
                 url,
                 "GET",
+                {},
                 res.status_code,
                 res.text,
             )
@@ -131,6 +136,7 @@ class DashboardAPIClient:
                 "error while deleting last background error",
                 url,
                 "DELETE",
+                {},
                 res.status_code,
                 res.text,
             )

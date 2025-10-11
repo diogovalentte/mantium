@@ -68,7 +68,12 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
           "cover_img_url" text,
           "preferred_group" varchar(30),
           "last_released_chapter" integer,
-          "last_read_chapter" integer
+          "last_read_chapter" integer,
+		  "last_released_chapter_name_selector" text,
+		  "last_released_chapter_name_attribute" varchar(30),
+		  "last_released_chapter_name_regex" varchar(255),
+		  "last_released_chapter_url_selector" text,
+		  "last_released_chapter_url_attribute" varchar(30)
         );
 
         CREATE INDEX IF NOT EXISTS "mangas_id_idx" ON "mangas" ("id");
@@ -201,6 +206,11 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
         ALTER TABLE "mangas" ALTER COLUMN "last_read_chapter" TYPE integer;
         ALTER TABLE "mangas" ALTER COLUMN "url" TYPE text;
         ALTER TABLE "mangas" ALTER COLUMN "cover_img_url" TYPE text;
+		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "last_released_chapter_name_selector" text;
+		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "last_released_chapter_name_attribute" varchar(30);
+		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "last_released_chapter_name_regex" varchar(255);
+		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "last_released_chapter_url_selector" text;
+		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "last_released_chapter_url_attribute" varchar(30);
         ALTER TABLE "chapters" ADD COLUMN IF NOT EXISTS "internal_id" VARCHAR(100) NOT NULL DEFAULT '';
         ALTER TABLE "chapters" ADD COLUMN IF NOT EXISTS "multimanga_id" integer DEFAULT NULL;
         ALTER TABLE "chapters" ALTER COLUMN "manga_id" DROP NOT NULL;

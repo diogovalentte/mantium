@@ -360,24 +360,6 @@ func TestUpdateManga(t *testing.T) {
 			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
 		}
 	})
-	t.Run("Update the last read chapter of an existing manga to a specific chapter", func(t *testing.T) {
-		test := mangasRequestsTestTable["valid manga with read chapter"]
-		body, err := json.Marshal(routes.UpdateMangaChapterRequest{Chapter: "14"}) // not all sources allow to get a chapter metadata using its chapter number/name
-		if err != nil {
-			t.Fatal(err)
-		}
-		var resMap map[string]string
-		err = requestHelper(http.MethodPatch, fmt.Sprintf("/v1/manga/last_read_chapter?url=%s", test.URL), bytes.NewBuffer(body), &resMap)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		actual := resMap["message"]
-		expected := "Manga last read chapter updated successfully"
-		if actual != expected {
-			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
-		}
-	})
 	t.Run("Update the last read chapter of an existing manga to the last release chapter", func(t *testing.T) {
 		test := mangasRequestsTestTable["valid manga with read chapter"]
 		body, err := json.Marshal(map[string]string{}) // request needs to have a body, but it can be empty
@@ -394,24 +376,6 @@ func TestUpdateManga(t *testing.T) {
 		expected := "Manga last read chapter updated successfully"
 		if actual != expected {
 			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
-		}
-	})
-	t.Run("Update the last read chapter of an non existing manga", func(t *testing.T) {
-		test := mangasRequestsTestTable["invalid manga URL"]
-		body, err := json.Marshal(routes.UpdateMangaChapterRequest{Chapter: "14"})
-		if err != nil {
-			t.Fatal(err)
-		}
-		var resMap map[string]string
-		err = requestHelper(http.MethodPatch, fmt.Sprintf("/v1/manga/last_read_chapter?url=%s", test.URL), bytes.NewBuffer(body), &resMap)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		actual := resMap["message"]
-		expected := errordefs.ErrMangaNotFoundDB.Error()
-		if !strings.Contains(actual, expected) {
-			t.Fatalf(`expected actual message "%s" to contain expected message "%s"`, actual, expected)
 		}
 	})
 	t.Run("Update a manga cover img using URL", func(t *testing.T) {
@@ -597,24 +561,58 @@ func TestDeleteManga(t *testing.T) {
 	})
 }
 
-var addCustomMangaRequest = &routes.AddCustomMangaRequest{
-	Name:                 "Custom Manga",
-	URL:                  "https://customsite.com/title/custom_manga123",
-	Status:               2,
-	MangaHasMoreChapters: false,
-	CoverImgURL:          "",
-	NextChapter: &struct {
-		Chapter string `json:"chapter"`
-		URL     string `json:"url" binding:"omitempty,http_url"`
-	}{
-		Chapter: "10",
-		URL:     "https://customsite.com/title/custom_manga123/chapter/10",
+var customMangaTests = map[string]*routes.AddCustomMangaRequest{
+	"valid custom manga with next chapter": {
+		Name:        "Custom Manga",
+		URL:         "https://customsite.com/title/custom_manga123",
+		Status:      2,
+		CoverImgURL: "",
+		LastReadChapter: &struct {
+			Chapter string `json:"chapter"`
+			URL     string `json:"url" binding:"omitempty,http_url"`
+		}{
+			Chapter: "10",
+			URL:     "https://customsite.com/title/custom_manga123/chapter/10",
+		},
+	},
+	"valid custom manga with last released chapter": {
+		Name:   "Custom Manga",
+		URL:    "https://klmangaii.lt/manga-raw/ポンコツ風紀委員とスカート丈が不適切なjkの話-raw/",
+		Status: 3,
+		LastReleasedChapterNameSelector: &routes.HTMLSelectorRequest{
+			Selector: "css:div.chapter-box > h4:first-child > a span:first-child",
+			// Regex:    `【第(\d+(\.\d+)?)話】`,
+		},
+		// LastReleasedChapterURLSelector: &routes.HTMLSelectorRequest{
+		// 	Selector:  "css:div.chapter-box > h4:first-child > a",
+		// 	Attribute: "href",
+		// },
 	},
 }
 
 func TestCustomMangaLifeCycle(t *testing.T) {
-	t.Run("Add custom manga", func(t *testing.T) {
-		body, err := json.Marshal(addCustomMangaRequest)
+	addCustomMangaRequestWithNextChapter := customMangaTests["valid custom manga with next chapter"]
+	addCustomMangaRequestWithLastReasedChapter := customMangaTests["valid custom manga with last released chapter"]
+
+	t.Run("Add custom manga with next chapter", func(t *testing.T) {
+		body, err := json.Marshal(addCustomMangaRequestWithNextChapter)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var resMap map[string]string
+		err = requestHelper(http.MethodPost, "/v1/custom_manga", bytes.NewBuffer(body), &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["message"]
+		expected := "Manga added successfully"
+		if actual != expected {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
+		}
+	})
+	t.Run("Add custom manga with last released chapter", func(t *testing.T) {
+		body, err := json.Marshal(addCustomMangaRequestWithLastReasedChapter)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -631,7 +629,7 @@ func TestCustomMangaLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Get custom manga", func(t *testing.T) {
-		test := addCustomMangaRequest
+		test := addCustomMangaRequestWithNextChapter
 		var resMap map[string]manga.Manga
 		err := requestHelper(http.MethodGet, fmt.Sprintf("/v1/manga?url=%s", test.URL), nil, &resMap)
 		if err != nil {
@@ -644,7 +642,7 @@ func TestCustomMangaLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Don't get custom manga with invalid URL", func(t *testing.T) {
-		test := addCustomMangaRequest
+		test := addCustomMangaRequestWithNextChapter
 		var resMap map[string]string
 		err := requestHelper(http.MethodGet, fmt.Sprintf("/v1/manga?url=%s", test.URL+"salt"), nil, &resMap)
 		if err != nil {
@@ -658,7 +656,7 @@ func TestCustomMangaLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Update custom manga status", func(t *testing.T) {
-		test := addCustomMangaRequest
+		test := addCustomMangaRequestWithNextChapter
 		body, err := json.Marshal(routes.UpdateMangaStatusRequest{Status: 4})
 		if err != nil {
 			t.Fatal(err)
@@ -675,8 +673,36 @@ func TestCustomMangaLifeCycle(t *testing.T) {
 			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
 		}
 	})
+	t.Run("Update custom manga last released chapter selectors", func(t *testing.T) {
+		selectors := routes.UpdateLastReleasedChapterSelectorsRequest{
+			LastReleasedChapterNameSelector: &routes.HTMLSelectorRequest{
+				Selector: "css:div.chapter-box > h4:first-child > a span",
+			},
+			LastReleasedChapterURLSelector: &routes.HTMLSelectorRequest{
+				Selector:  "css:div.chapter-box > h4:first-child > a",
+				Attribute: "href",
+			},
+		}
+		body, err := json.Marshal(selectors)
+		if err != nil {
+			t.Fatal(err)
+		}
+		test := addCustomMangaRequestWithLastReasedChapter
+
+		var resMap map[string]string
+		err = requestHelper(http.MethodPatch, fmt.Sprintf("/v1/custom_manga/last_released_chapter_selectors?url=%s", test.URL), bytes.NewBuffer(body), &resMap)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		actual := resMap["message"]
+		expected := "Custom manga updated successfully"
+		if actual != expected {
+			t.Fatalf(`expected message "%s", got "%s"`, expected, actual)
+		}
+	})
 	t.Run("Update custom manga name", func(t *testing.T) {
-		test := addCustomMangaRequest
+		test := addCustomMangaRequestWithNextChapter
 		newName := "Test"
 		var resMap map[string]string
 		err := requestHelper(http.MethodPatch, fmt.Sprintf("/v1/manga/name?url=%s&name=%s", test.URL, newName), nil, &resMap)
@@ -691,7 +717,7 @@ func TestCustomMangaLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Update custom manga URL", func(t *testing.T) {
-		test := addCustomMangaRequest
+		test := addCustomMangaRequestWithNextChapter
 		newURL := "https://newsite.com/new_manga123"
 		var resMap map[string]string
 		err := requestHelper(http.MethodPatch, fmt.Sprintf("/v1/manga/url?url=%s&new_url=%s", test.URL, newURL), nil, &resMap)
@@ -717,8 +743,10 @@ func TestCustomMangaLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Update the chapter of the last read chapter of custom manga", func(t *testing.T) {
-		test := addCustomMangaRequest
-		body, err := json.Marshal(routes.UpdateMangaChapterRequest{Chapter: "14"})
+		test := addCustomMangaRequestWithNextChapter
+		body, err := json.Marshal(routes.UpdateMangaLastReadChapterRequest{Chapter: &routes.LastReadChapterRequest{
+			Chapter: "14",
+		}})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -735,8 +763,8 @@ func TestCustomMangaLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Update the chapter of the last read chapter of custom manga to null", func(t *testing.T) {
-		test := addCustomMangaRequest
-		body, err := json.Marshal(routes.UpdateMangaChapterRequest{})
+		test := addCustomMangaRequestWithNextChapter
+		body, err := json.Marshal(routes.UpdateMangaLastReadChapterRequest{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -753,7 +781,7 @@ func TestCustomMangaLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Update custom manga has no more chapters to true", func(t *testing.T) {
-		test := addCustomMangaRequest
+		test := addCustomMangaRequestWithNextChapter
 		var resMap map[string]string
 		err := requestHelper(http.MethodPatch, fmt.Sprintf("/v1/custom_manga/has_more_chapters?url=%s&has_more_chapters=true", test.URL), nil, &resMap)
 		if err != nil {
@@ -767,7 +795,7 @@ func TestCustomMangaLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Update custom manga has no more chapters to false", func(t *testing.T) {
-		test := addCustomMangaRequest
+		test := addCustomMangaRequestWithNextChapter
 		var resMap map[string]string
 		err := requestHelper(http.MethodPatch, fmt.Sprintf("/v1/custom_manga/has_more_chapters?url=%s&has_more_chapters=false", test.URL), nil, &resMap)
 		if err != nil {
@@ -781,7 +809,7 @@ func TestCustomMangaLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Update custom manga has no more chapters to true again", func(t *testing.T) {
-		test := addCustomMangaRequest
+		test := addCustomMangaRequestWithNextChapter
 		var resMap map[string]string
 		err := requestHelper(http.MethodPatch, fmt.Sprintf("/v1/custom_manga/has_more_chapters?url=%s&has_more_chapters=true", test.URL), nil, &resMap)
 		if err != nil {
@@ -795,7 +823,7 @@ func TestCustomMangaLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Update custom manga cover img using URL", func(t *testing.T) {
-		test := addCustomMangaRequest
+		test := addCustomMangaRequestWithNextChapter
 		coverImgURL := "https://i.imgur.com/jMy7evE.jpeg"
 		var resMap map[string]string
 		err := requestHelper(http.MethodPatch, fmt.Sprintf("/v1/manga/cover_img?url=%s&cover_img_url=%s", test.URL, coverImgURL), nil, &resMap)
@@ -810,7 +838,7 @@ func TestCustomMangaLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Update custom manga cover img with a file", func(t *testing.T) {
-		test := addCustomMangaRequest
+		test := addCustomMangaRequestWithNextChapter
 		coverImg, err := os.ReadFile("../../../defaults/default_cover_img.jpg")
 		if err != nil {
 			t.Fatal(err)
@@ -852,7 +880,7 @@ func TestCustomMangaLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Don't update custom manga cover img because no args", func(t *testing.T) {
-		test := addCustomMangaRequest
+		test := addCustomMangaRequestWithNextChapter
 		var resMap map[string]string
 		err := requestHelper(http.MethodPatch, fmt.Sprintf("/v1/manga/cover_img?url=%s", test.URL), nil, &resMap)
 		if err != nil {
@@ -866,7 +894,7 @@ func TestCustomMangaLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Don't update custom manga cover img because 2 args", func(t *testing.T) {
-		test := addCustomMangaRequest
+		test := addCustomMangaRequestWithNextChapter
 		coverImgURL := "https://i.imgur.com/jMy7evE.jpeg"
 		var resMap map[string]string
 		err := requestHelper(http.MethodPatch, fmt.Sprintf("/v1/manga/cover_img?url=%s&use_mantium_default_img=true&cover_img_url=%s", test.URL, coverImgURL), nil, &resMap)
@@ -881,7 +909,7 @@ func TestCustomMangaLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Don't update custom manga cover img because invalid image URL", func(t *testing.T) {
-		test := addCustomMangaRequest
+		test := addCustomMangaRequestWithNextChapter
 		coverImgURL := "https://site.com/jMy7evE.jpeg"
 		var resMap map[string]string
 		err := requestHelper(http.MethodPatch, fmt.Sprintf("/v1/manga/cover_img?url=%s&cover_img_url=%s", test.URL, coverImgURL), nil, &resMap)
@@ -896,7 +924,7 @@ func TestCustomMangaLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Don't update custom manga cover img to get from source", func(t *testing.T) {
-		test := addCustomMangaRequest
+		test := addCustomMangaRequestWithNextChapter
 		var resMap map[string]string
 		err := requestHelper(http.MethodPatch, fmt.Sprintf("/v1/manga/cover_img?url=%s&get_cover_img_from_source=true", test.URL), nil, &resMap)
 		if err != nil {
@@ -910,7 +938,7 @@ func TestCustomMangaLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Delete custom manga", func(t *testing.T) {
-		test := addCustomMangaRequest
+		test := addCustomMangaRequestWithNextChapter
 		var resMap map[string]string
 		err := requestHelper(http.MethodDelete, fmt.Sprintf("/v1/manga?url=%s", test.URL), nil, &resMap)
 		if err != nil {
@@ -1044,7 +1072,9 @@ func TestEmptyCustomMangaLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Update the chapter of the last read chapter of empty custom manga", func(t *testing.T) {
-		body, err := json.Marshal(routes.UpdateMangaChapterRequest{Chapter: "14"})
+		body, err := json.Marshal(routes.UpdateMangaLastReadChapterRequest{Chapter: &routes.LastReadChapterRequest{
+			Chapter: "14",
+		}})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1100,7 +1130,7 @@ func TestEmptyCustomMangaLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Update the chapter of the last read chapter of empty custom manga to null", func(t *testing.T) {
-		body, err := json.Marshal(routes.UpdateMangaChapterRequest{})
+		body, err := json.Marshal(routes.UpdateMangaLastReadChapterRequest{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1527,7 +1557,9 @@ func TestMultiMangaLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Update the last read chapter of a multimanga to a specific chapter", func(t *testing.T) {
-		body, err := json.Marshal(routes.UpdateMangaChapterRequest{Chapter: "14"}) // not all sources allows to get a chapter metadata using its chapter number/name
+		body, err := json.Marshal(routes.UpdateMangaLastReadChapterRequest{Chapter: &routes.LastReadChapterRequest{ // not all sources allows to get a chapter metadata using its chapter number/name
+			Chapter: "14",
+		}})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1761,6 +1793,34 @@ func TestNotifyMangaLastReleasedChapterUpdate(t *testing.T) {
 		err := routes.NotifyMangaLastReleasedChapterUpdate(m)
 		if err != nil {
 			t.Fatal(err)
+		}
+	})
+}
+
+func TestCustomMangaLastReleasedChapter(t *testing.T) {
+	customManga := &manga.Manga{
+		Source: manga.CustomMangaSource,
+		URL:    "https://klmanga.lt/manga-raw/%E3%83%9D%E3%83%B3%E3%82%B3%E3%83%84%E9%A2%A8%E7%B4%80%E5%A7%94%E5%93%A1%E3%81%A8%E3%82%B9%E3%82%AB%E3%83%BC%E3%83%88%E4%B8%88%E3%81%8C%E4%B8%8D%E9%81%A9%E5%88%87%E3%81%AAjk%E3%81%AE%E8%A9%B1-raw/",
+		LastReleasedChapterNameSelector: &manga.HTMLSelector{
+			Selector: "css:div.chapter-box > h4:first-child > a span:first-child",
+			Regex:    `【第(\d+(\.\d+)?)話】`,
+		},
+		LastReleasedChapterURLSelector: &manga.HTMLSelector{
+			Selector:  "css:div.chapter-box > h4:first-child > a",
+			Attribute: "href",
+		},
+	}
+
+	t.Run("Should get custom manga last released chapter", func(t *testing.T) {
+		chapter, err := manga.GetCustomMangaLastReleasedChapter(customManga.URL, customManga.LastReleasedChapterNameSelector, customManga.LastReleasedChapterURLSelector)
+		if err != nil {
+			t.Fatalf("Error getting custom manga last released chapter: %v", err)
+		}
+		if chapter.Name == "" {
+			t.Fatal("Expected chapter name to be not empty")
+		}
+		if chapter.URL == "" {
+			t.Fatal("Expected chapter URL to be not empty")
 		}
 	})
 }

@@ -71,13 +71,8 @@ def show_add_manga_form(form_type: str):
         def show():
             ss["is_dialog_open"] = True
             e = st.empty()
-            if ss.get("add_custom_manga_manga_to_add", None) is not None:
-                with e:
-                    add_custom_manga()
-                    del ss["add_custom_manga_manga_to_add"]
-            else:
-                with e.container():
-                    show_add_custom_manga_form()
+            with e.container():
+                show_add_custom_manga_form()
 
     else:
         st.stop()
@@ -193,10 +188,7 @@ def show_add_manga_form_url():
                 )
         except APIException as e:
             resp_text = str(e.response_text).lower()
-            if (
-                "error while getting source: source '" in resp_text
-                and "not found" in resp_text
-            ):
+            if "source not found" in resp_text:
                 st.warning("No source site for this manga")
             elif (
                 "manga doesn't have and id or url" in resp_text
@@ -204,6 +196,8 @@ def show_add_manga_form_url():
             ):
                 st.warning("Invalid URL")
             elif "manga not found in source" in resp_text:
+                st.warning("Manga not found")
+            elif "one of the manga attributes were not found in source" in resp_text:
                 st.warning("Manga not found")
             else:
                 logger.exception(e)
@@ -479,7 +473,6 @@ def show_search_result_manga(
 
 
 def show_add_custom_manga_form():
-    api_client = get_api_client()
 
     with st.form(key="add_custom_manga_form", border=False):
         st.text_input(
@@ -505,26 +498,64 @@ def show_add_custom_manga_form():
         )
 
         with st.expander(
-            "Next Chapter",
+            "Last Read Chapter",
         ):
             st.text_input(
-                "New Chapter to Read",
+                "Last Read Chapter",
                 placeholder="1000",
-                help="Can be a number or text",
-                key="add_custom_manga_form_chapter",
+                help="Can be a number or text.",
+                key="add_custom_manga_form_last_read_chapter",
             )
 
             st.text_input(
                 "Chapter URL",
                 placeholder="https://randomsite.com/title/one-piece/chapter/1000",
-                key="add_custom_manga_form_chapter_url",
+                help="Optional. Can provide only the chapter above.",
+                key="add_custom_manga_form_last_read_chapter_url",
             )
 
-            st.checkbox(
-                "No more chapters available",
-                help="Check this if there are no more chapters available. You can change it later.",
-                key="add_custom_manga_form_no_more_chapters",
+        with st.expander(
+            "Last Released Chapter",
+        ):
+            st.info(
+                "Optional. Only fill if you want Mantium to automatically track new chapters."
             )
+            with st.expander(
+                "Chapter Name"
+            ):
+                st.text_input(
+                    "Selector",
+                    placeholder="css:div.chapter-list > a:nth-child(1) > div.chapter-title",
+                    help="CSS or XPath selector to get the chapter name. E.g. 'css:div.chapter-list > a:nth-child(1) > div.chapter-title' or 'xpath://div[@class=\"chapter-list\"]//a[1]//div[@class=\"chapter-title\"]'. Leave empty to skip.",
+                    key="add_custom_manga_form_last_released_chapter_name_selector",
+                )
+                st.text_input(
+                    "Attribute",
+                    placeholder="href",
+                    help="Element attribute to get the chapter name. E.g. 'href' for link. Leave empty to get the inner text.",
+                    key="add_custom_manga_form_last_released_chapter_name_attribute",
+                )
+                st.text_input(
+                    "Regex",
+                    placeholder="Chapter (\\d+)",
+                    help="Regex to extract the chapter name. E.g. 'Chapter (\\d+)' to extract '100' from 'Chapter 100'. Leave empty to skip.",
+                    key="add_custom_manga_form_last_released_chapter_name_regex",
+                )
+            with st.expander(
+                "Chapter URL"
+            ):
+                st.text_input(
+                    "Selector",
+                    placeholder="css:div.chapter-list > a:nth-child(1)",
+                    help="CSS or XPath selector to get the chapter URL. E.g. 'css:div.chapter-list > a:nth-child(1)' or 'xpath://div[@class=\"chapter-list\"]//a[1]'. Leave empty to skip.",
+                    key="add_custom_manga_form_last_released_chapter_url_selector",
+                )
+                st.text_input(
+                    "Attribute",
+                    placeholder="href",
+                    help="Element attribute to get the chapter URL. E.g. 'href' for link. Leave empty to get the inner text.",
+                    key="add_custom_manga_form_last_released_chapter_url_attribute",
+                )
 
         with st.expander(
             "Cover Image",
@@ -551,10 +582,10 @@ def show_add_custom_manga_form():
             if ss.add_custom_manga_form_name == "":
                 st.warning("Provide a manga name")
             elif (
-                ss.add_custom_manga_form_chapter == ""
-                and ss.add_custom_manga_form_chapter_url != ""
+                ss.add_custom_manga_form_last_read_chapter == ""
+                and ss.add_custom_manga_form_last_read_chapter_url != ""
             ):
-                st.warning("If providing a chapter URL, also provide a chapter number")
+                st.warning("If providing a last read chapter URL, also provide the chapter number")
             else:
                 if ss.add_custom_manga_form_cover_img_file is not None:
                     cover_img = ss.add_custom_manga_form_cover_img_file.getvalue()
@@ -565,15 +596,23 @@ def show_add_custom_manga_form():
                     "name": ss.add_custom_manga_form_name,
                     "url": ss.add_custom_manga_form_url,
                     "status": ss.add_custom_manga_form_status,
-                    "manga_has_more_chapters": not ss.add_custom_manga_form_no_more_chapters,
                     "cover_img_url": ss.add_custom_manga_form_cover_img_url,
                     "cover_img": cover_img,
-                    "next_chapter": {
-                        "chapter": ss.add_custom_manga_form_chapter,
-                        "url": ss.add_custom_manga_form_chapter_url,
+                    "last_read_chapter": {
+                        "chapter": ss.add_custom_manga_form_last_read_chapter,
+                        "url": ss.add_custom_manga_form_last_read_chapter_url,
+                    },
+                    "last_released_chapter_name_selector": {
+                        "selector": ss.add_custom_manga_form_last_released_chapter_name_selector,
+                        "attribute": ss.add_custom_manga_form_last_released_chapter_name_attribute,
+                        "regex": ss.add_custom_manga_form_last_released_chapter_name_regex,
+                    },
+                    "last_released_chapter_url_selector": {
+                        "selector": ss.add_custom_manga_form_last_released_chapter_url_selector,
+                        "attribute": ss.add_custom_manga_form_last_released_chapter_url_attribute,
                     },
                 }
-                st.rerun(scope="fragment")
+                add_custom_manga()
 
 
 def add_custom_manga():
@@ -585,26 +624,52 @@ def add_custom_manga():
                 ss["add_custom_manga_manga_to_add"]["name"],
                 ss["add_custom_manga_manga_to_add"]["url"],
                 ss["add_custom_manga_manga_to_add"]["status"],
-                ss["add_custom_manga_manga_to_add"]["manga_has_more_chapters"],
                 ss["add_custom_manga_manga_to_add"]["cover_img_url"],
                 ss["add_custom_manga_manga_to_add"]["cover_img"],
-                ss["add_custom_manga_manga_to_add"]["next_chapter"]["chapter"],
-                ss["add_custom_manga_manga_to_add"]["next_chapter"]["url"],
+                ss["add_custom_manga_manga_to_add"]["last_read_chapter"]["chapter"],
+                ss["add_custom_manga_manga_to_add"]["last_read_chapter"]["url"],
+                ss["add_custom_manga_manga_to_add"][
+                    "last_released_chapter_name_selector"
+                ]["selector"],
+                ss["add_custom_manga_manga_to_add"][
+                    "last_released_chapter_name_selector"
+                ]["attribute"],
+                ss["add_custom_manga_manga_to_add"][
+                    "last_released_chapter_name_selector"
+                ]["regex"],
+                ss["add_custom_manga_manga_to_add"][
+                    "last_released_chapter_url_selector"
+                ]["selector"],
+                ss["add_custom_manga_manga_to_add"][
+                    "last_released_chapter_url_selector"
+                ]["attribute"],
             )
         except Exception as e:
             ex = e
 
     if ex is not None:
         resp_text = str(ex).lower()
+        logger.exception(ex)
         if "manga already exists in DB".lower() in resp_text:
             st.warning("Manga already in Mantium")
         if (
             "duplicate key value violates unique constraint" in resp_text
             and "chapters_pkey" in resp_text
         ):
-            st.warning("Next chapter URL already in Mantium")
+            st.warning("Last read chapter URL already in Mantium")
+        elif "error while visiting manga url" in resp_text:
+            st.warning(
+                "Error while visiting the provided manga URL. Check that it's valid."
+            )
+        elif "selector not found in the page or is empty" in resp_text or "selector should start with 'css:' or 'xpath:', instead it's" in resp_text:
+            st.warning(
+                "Invalid selector or one of the provided selectors/attributes was not found in the page or is empty"
+            )
+        elif "regex did not match" in resp_text or "error compiling regex" in resp_text:
+            st.warning(
+                "Invalid regex or the chapter name selector is empty after applying the provided regex"
+            )
         else:
-            logger.exception(ex)
             st.error("Error while adding manga")
     else:
         ss["add_manga_success_message"] = "Manga added successfully"
