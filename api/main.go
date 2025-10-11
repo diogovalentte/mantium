@@ -197,6 +197,34 @@ type Migration struct {
 	Up      func(*zerolog.Logger) error
 }
 
+// Change it in every new version
+var (
+	version        string = "5.0.0"
+	updatedMessage string = `# Custom Manga Update
+
+Custom mangas are now more similar to regular mangas. They still aren't part of a multimanga, but they now have more features.
+
+### Last Released Chapter Selectors
+The ability to set last released chapter name and URL selectors for custom mangas was added.
+
+These CSS or XPATH selectors will be used to fetch the custom manga last released chapter name and URL from the custom manga page. In the background job, the custom mangas configured with these selectors will have their last released chapter updated automatically. Notifications will also be sent if enabled in the configs.
+
+- More about it can be found [here](https://github.com/diogovalentte/mantium/tree/main?tab=readme-ov-file#custom-manga).
+
+### Next Chapter replaced with Last Read Chapter
+The "Next Chapter" feature was removed and replaced with "Last Read Chapter". You can manually set the last read chapter and its URL. This will be used to track your reading progress.
+
+### Custom Manga Forms Updated
+![](https://private-user-images.githubusercontent.com/49578155/500197245-ac4dfc1d-686e-4354-9299-57c7f0f5a8b7.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjAyMjMxNTQsIm5iZiI6MTc2MDIyMjg1NCwicGF0aCI6Ii80OTU3ODE1NS81MDAxOTcyNDUtYWM0ZGZjMWQtNjg2ZS00MzU0LTkyOTktNTdjN2YwZjVhOGI3LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTEwMTElMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUxMDExVDIyNDczNFomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTdiYjFiMTBlZWNhZGRmODMwYWExMTY3NzBkMTRlODMwYTMzODc4ZGRiZmQ0ZDIwMmI1NjMzYWEzM2ZjZjQ0NWEmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.yhYS1YuItMPEOwIqkOaVeH4Hc2bfoz4pOkbs0ARyAMg)
+
+# Other Changes
+
+- **added**: this update message that will be shown in the dashboard after a notable update.
+- **removed**: ComicK source, as it was shut down.
+- **changed**: API routes for mangas. Check the docs if you use the API directly.
+`
+)
+
 // If the current version in the database is lower than the Version field, the Up function will be executed.
 var migrations = []Migration{
 	{
@@ -208,10 +236,19 @@ var migrations = []Migration{
 		Up:      updateMangas,
 	},
 	{
+		Version: version,
+		Up: func(log *zerolog.Logger) error {
+			if updatedMessage != "" {
+				dashboard.UpdatedMessageToShow = updatedMessage
+				dashboard.UpdatedMessageVersion = version
+			}
+
+			return nil
+		},
+	},
+	{
 		Version: "update_version", // It's not a valid version, so it will always be executed
 		Up: func(*zerolog.Logger) error {
-			version := "4.1.8" // Change it in every new version
-
 			const query = `UPDATE version SET version = $1`
 			db, err := db.OpenConn()
 			if err != nil {

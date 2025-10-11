@@ -258,6 +258,23 @@
                 }
             }
         },
+        "/dashboard/updated_message": {
+            "get": {
+                "description": "Get's the updated message for this version and deletes so it won't be shown again. Returns the message and the updated version.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get's the updated message for this version",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
         "/health": {
             "get": {
                 "description": "Returns status OK",

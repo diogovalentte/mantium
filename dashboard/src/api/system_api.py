@@ -140,3 +140,27 @@ class DashboardAPIClient:
                 res.status_code,
                 res.text,
             )
+
+    def get_updated_message(self):
+        """Get this version updated message.
+
+        Returns:
+            (str, str): Message and new version.
+        """
+        url = self.base_api_url + "/v1/dashboard/updated_message"
+
+        res = requests.get(url)
+
+        if res.status_code not in self.acceptable_status_codes:
+            raise APIException(
+                "error while getting the updated message from the API",
+                url,
+                "GET",
+                {},
+                res.status_code,
+                res.text,
+            )
+
+        json_resp = res.json()
+
+        return json_resp["message"], json_resp["version"]

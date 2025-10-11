@@ -19,6 +19,7 @@ func DashboardRoutes(group *gin.RouterGroup) {
 		group.GET("/dashboard/last_update", GetLastUpdate)
 		group.GET("/dashboard/last_background_error", GetLastBackgroundError)
 		group.DELETE("/dashboard/last_background_error", DeleteLastBackgroundError)
+		group.GET("/dashboard/updated_message", GetUpdatedMessage)
 	}
 }
 
@@ -105,4 +106,17 @@ func GetLastBackgroundError(c *gin.Context) {
 func DeleteLastBackgroundError(c *gin.Context) {
 	dashboard.DeleteLastBackgroundError()
 	c.JSON(http.StatusOK, gin.H{"message": "Last background error deleted"})
+}
+
+// @Summary Get's the updated message for this version
+// @Description Get's the updated message for this version and deletes so it won't be shown again. Returns the message and the updated version.
+// @Success 200 {object} responseMessage
+// @Produce json
+// @Router /dashboard/updated_message [get]
+func GetUpdatedMessage(c *gin.Context) {
+	message := dashboard.UpdatedMessageToShow
+	version := dashboard.UpdatedMessageVersion
+	dashboard.UpdatedMessageToShow = ""
+	dashboard.UpdatedMessageVersion = ""
+	c.JSON(http.StatusOK, gin.H{"message": message, "version": version})
 }

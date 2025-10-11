@@ -515,6 +515,18 @@ paths:
           schema:
             $ref: '#/definitions/routes.responseMessage'
       summary: Get the last update date
+  /dashboard/updated_message:
+    get:
+      description: Get's the updated message for this version and deletes so it won't
+        be shown again. Returns the message and the updated version.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Get's the updated message for this version
   /health:
     get:
       description: Returns status OK

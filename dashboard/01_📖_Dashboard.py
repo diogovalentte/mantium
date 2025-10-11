@@ -40,6 +40,8 @@ class MainDashboard:
         ss["is_dialog_open"] = False
         self.check_dashboard_error()
 
+        ss["updated_message"], ss["updated_version"] = self.api_client.get_updated_message()
+
         self.sidebar()
 
         mangas = self.api_client.get_mangas()
@@ -284,7 +286,26 @@ class MainDashboard:
                 )
 
     def show_forms(self):
-        if ss.get("show_add_manga_form", "") != "":
+        if ss.get("updated_message", "") != "":
+            message = ss["updated_message"]
+            new_version = ss["updated_version"]
+
+            @st.dialog(f"Updated to version {new_version}!", width="large")
+            def show():
+                ss["is_dialog_open"] = True
+                st.markdown(message)
+                ss["updated_message"] = ""
+                ss["updated_version"] = ""
+                if st.button(
+                    "Close",
+                    type="primary",
+                    use_container_width=True,
+                ):
+                    st.session_state["is_dialog_open"] = False
+                    st.rerun()
+
+            show()
+        elif ss.get("show_add_manga_form", "") != "":
             show_add_manga_form(ss["show_add_manga_form"])
             ss["show_add_manga_form"] = ""
         elif ss.get("highlighted_manga", None) is not None:
