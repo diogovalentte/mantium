@@ -92,6 +92,9 @@ Another feature of custom manga is the **last released chapter selectors**. It a
 - **Attribute** (optional): the attribute from the selected HTML element that contains the chapter name or URL (ex: `href`). Leave empty to get the element's text.
 - **Regex** (optional): if provided, Mantium will run this regex to get the chapter's name from the attribute/text of the HTML element got using the selector (ex: `【第(\d+(\.\d+)?)話】` get `94` from `【第94話】`)
 
+> [!NOTE]
+> Mantium will make a simple HTTP GET request to the custom manga's URL field and use the selectors on it. Pages that have some kind of protection, or need JavaScript to show the necessary information won't work well with this feature.
+
 <img width="436" height="1247" alt="image" src="https://github.com/user-attachments/assets/ac4dfc1d-686e-4354-9299-57c7f0f5a8b7" />
 
 # Check manga updates and notify
