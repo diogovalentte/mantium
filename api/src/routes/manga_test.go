@@ -581,12 +581,12 @@ var customMangaTests = map[string]*routes.AddCustomMangaRequest{
 		Status: 3,
 		LastReleasedChapterNameSelector: &routes.HTMLSelectorRequest{
 			Selector: "css:div.chapter-box > h4:first-child > a span:first-child",
-			// Regex:    `【第(\d+(\.\d+)?)話】`,
+			Regex:    `【第(\d+(\.\d+)?)話】`,
 		},
-		// LastReleasedChapterURLSelector: &routes.HTMLSelectorRequest{
-		// 	Selector:  "css:div.chapter-box > h4:first-child > a",
-		// 	Attribute: "href",
-		// },
+		LastReleasedChapterURLSelector: &routes.HTMLSelectorRequest{
+			Selector:  "css:div.chapter-box > h4:first-child > a",
+			Attribute: "href",
+		},
 	},
 }
 
