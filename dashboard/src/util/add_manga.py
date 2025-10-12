@@ -541,6 +541,12 @@ def show_add_custom_manga_form():
                     help="Regex to extract the chapter name. E.g. 'Chapter (\\d+)' to extract '100' from 'Chapter 100'. Leave empty to skip.",
                     key="add_custom_manga_form_last_released_chapter_name_regex",
                 )
+                st.checkbox(
+                    "Get First",
+                    value=False,
+                    help="Get the first match instead of the last match. Useful for sites that list chapters in ascending order.",
+                    key="add_custom_manga_form_last_released_chapter_name_get_first",
+                )
             with st.expander(
                 "Chapter URL"
             ):
@@ -556,6 +562,19 @@ def show_add_custom_manga_form():
                     help="Element attribute to get the chapter URL. E.g. 'href' for link. Leave empty to get the inner text.",
                     key="add_custom_manga_form_last_released_chapter_url_attribute",
                 )
+                st.checkbox(
+                    "Get First",
+                    value=False,
+                    help="Get the first match instead of the last match. Useful for sites that list chapters in ascending order.",
+                    key="add_custom_manga_form_last_released_chapter_url_get_first",
+                )
+
+            st.checkbox(
+                "Use Browser",
+                value=False,
+                help="Use a browser to fetch the manga page. Use this if the chapter info is loaded dynamically with JavaScript. Requires more resources and can take longer.",
+                key="add_custom_manga_form_last_released_chapter_use_browser",
+            )
 
         with st.expander(
             "Cover Image",
@@ -606,11 +625,14 @@ def show_add_custom_manga_form():
                         "selector": ss.add_custom_manga_form_last_released_chapter_name_selector,
                         "attribute": ss.add_custom_manga_form_last_released_chapter_name_attribute,
                         "regex": ss.add_custom_manga_form_last_released_chapter_name_regex,
+                        "get_first": ss.add_custom_manga_form_last_released_chapter_name_get_first,
                     },
                     "last_released_chapter_url_selector": {
                         "selector": ss.add_custom_manga_form_last_released_chapter_url_selector,
                         "attribute": ss.add_custom_manga_form_last_released_chapter_url_attribute,
+                        "get_first": ss.add_custom_manga_form_last_released_chapter_url_get_first,
                     },
+                    "last_released_chapter_use_browser": ss.add_custom_manga_form_last_released_chapter_use_browser,
                 }
                 add_custom_manga()
 
@@ -638,11 +660,20 @@ def add_custom_manga():
                     "last_released_chapter_name_selector"
                 ]["regex"],
                 ss["add_custom_manga_manga_to_add"][
+                    "last_released_chapter_name_selector"
+                ]["get_first"],
+                ss["add_custom_manga_manga_to_add"][
                     "last_released_chapter_url_selector"
                 ]["selector"],
                 ss["add_custom_manga_manga_to_add"][
                     "last_released_chapter_url_selector"
                 ]["attribute"],
+                ss["add_custom_manga_manga_to_add"][
+                    "last_released_chapter_url_selector"
+                ]["get_first"],
+                ss["add_custom_manga_manga_to_add"][
+                    "last_released_chapter_use_browser"
+                ],
             )
         except Exception as e:
             ex = e

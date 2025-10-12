@@ -729,6 +729,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
             "Manga URL",
             value=manga["URL"],
             placeholder="https://randomsite.com/title/one-piece",
+            help="The URL of the manga in the source site. It's used by the Last Released Chapter selectors to check for new chapters if you provided the selectors. If you have to change both the URL and selectors to make them work, DON'T update them at the same time. Clear the selectors, update the URL, then update the selectors.",
             key="update_custom_manga_form_url",
         )
 
@@ -790,6 +791,12 @@ def show_update_custom_manga(manga: dict[str, Any]):
                     help="Regex to extract the chapter name. E.g. 'Chapter (\\d+)' to extract '100' from 'Chapter 100'. Leave empty to skip.",
                     key="update_custom_manga_form_last_chapter_name_regex",
                 )
+                st.checkbox(
+                    "Get First",
+                    value=manga["LastReleasedChapterNameSelector"]["GetFirst"],
+                    help="Get the first match instead of the last match. Useful for sites that list chapters in ascending order.",
+                    key="update_custom_manga_form_last_released_chapter_name_get_first",
+                )
             with st.expander(
                 "Chapter URL"
             ):
@@ -807,6 +814,19 @@ def show_update_custom_manga(manga: dict[str, Any]):
                     help="Element attribute to get the chapter URL. E.g. 'href' for link. Leave empty to get the inner text.",
                     key="update_custom_manga_form_last_chapter_url_attribute",
                 )
+                st.checkbox(
+                    "Get First",
+                    value=manga["LastReleasedChapterURLSelector"]["GetFirst"],
+                    help="Get the first match instead of the last match. Useful for sites that list chapters in ascending order.",
+                    key="update_custom_manga_form_last_released_chapter_url_get_first",
+                )
+
+            st.checkbox(
+                "Use Browser",
+                value=manga["LastReleasedChapterSelectorUseBrowser"],
+                help="Use a browser to fetch the manga page. Use this if the chapter info is loaded dynamically with JavaScript. Requires more resources and can take longer.",
+                key="update_custom_manga_form_last_released_chapter_use_browser",
+            )
 
         with st.expander(
             "Cover Image",
@@ -841,8 +861,11 @@ def show_update_custom_manga(manga: dict[str, Any]):
                 last_released_chapter_name_selector = ss.update_custom_manga_form_last_chapter_name_selector
                 last_released_chapter_name_attribute = ss.update_custom_manga_form_last_chapter_name_attribute
                 last_released_chapter_name_regex = ss.update_custom_manga_form_last_chapter_name_regex
+                last_released_chapter_name_get_first = ss.update_custom_manga_form_last_released_chapter_name_get_first
                 last_released_chapter_url_selector = ss.update_custom_manga_form_last_chapter_url_selector
                 last_released_chapter_url_attribute = ss.update_custom_manga_form_last_chapter_url_attribute
+                last_released_chapter_url_get_first = ss.update_custom_manga_form_last_released_chapter_url_get_first
+                last_released_chapter_selector_use_browser = ss.update_custom_manga_form_last_released_chapter_use_browser
 
                 cover_img_url = ss.update_custom_manga_form_cover_img_url
                 cover_img = (
@@ -887,17 +910,26 @@ def show_update_custom_manga(manga: dict[str, Any]):
                         != manga["LastReleasedChapterNameSelector"]["Attribute"]
                         or last_released_chapter_name_regex
                         != manga["LastReleasedChapterNameSelector"]["Regex"]
+                        or last_released_chapter_name_get_first
+                        != manga["LastReleasedChapterNameSelector"]["GetFirst"]
                         or last_released_chapter_url_selector
                         != manga["LastReleasedChapterURLSelector"]["Selector"]
                         or last_released_chapter_url_attribute
                         != manga["LastReleasedChapterURLSelector"]["Attribute"]
+                        or last_released_chapter_url_get_first
+                        != manga["LastReleasedChapterURLSelector"]["GetFirst"]
+                        or last_released_chapter_selector_use_browser
+                        != manga["LastReleasedChapterSelectorUseBrowser"]
                     ):
                         api_client.update_custom_manga_last_released_chapter_selectors(
                             last_released_chapter_name_selector,
                             last_released_chapter_name_attribute,
                             last_released_chapter_name_regex,
+                            last_released_chapter_name_get_first,
                             last_released_chapter_url_selector,
                             last_released_chapter_url_attribute,
+                            last_released_chapter_url_get_first,
+                            last_released_chapter_selector_use_browser,
                             manga["ID"],
                         )
 

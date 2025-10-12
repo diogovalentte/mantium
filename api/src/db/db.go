@@ -72,8 +72,11 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
 		  "last_released_chapter_name_selector" text,
 		  "last_released_chapter_name_attribute" varchar(30),
 		  "last_released_chapter_name_regex" varchar(255),
+		  "last_released_chapter_name_get_first" boolean NOT NULL DEFAULT FALSE,
 		  "last_released_chapter_url_selector" text,
-		  "last_released_chapter_url_attribute" varchar(30)
+		  "last_released_chapter_url_attribute" varchar(30),
+		  "last_released_chapter_url_get_first" boolean NOT NULL DEFAULT FALSE,
+		  "last_released_chapter_selector_use_browser" boolean NOT NULL DEFAULT FALSE
         );
 
         CREATE INDEX IF NOT EXISTS "mangas_id_idx" ON "mangas" ("id");
@@ -209,8 +212,11 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
 		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "last_released_chapter_name_selector" text;
 		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "last_released_chapter_name_attribute" varchar(30);
 		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "last_released_chapter_name_regex" varchar(255);
+		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "last_released_chapter_name_get_first" boolean NOT NULL DEFAULT FALSE;
 		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "last_released_chapter_url_selector" text;
 		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "last_released_chapter_url_attribute" varchar(30);
+		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "last_released_chapter_url_get_first" boolean NOT NULL DEFAULT FALSE;
+		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "last_released_chapter_selector_use_browser" boolean NOT NULL DEFAULT FALSE;
         ALTER TABLE "chapters" ADD COLUMN IF NOT EXISTS "internal_id" VARCHAR(100) NOT NULL DEFAULT '';
         ALTER TABLE "chapters" ADD COLUMN IF NOT EXISTS "multimanga_id" integer DEFAULT NULL;
         ALTER TABLE "chapters" ALTER COLUMN "manga_id" DROP NOT NULL;

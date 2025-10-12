@@ -1,4 +1,5 @@
 import base64
+from typing import Any
 from urllib.parse import urljoin
 
 import requests
@@ -22,8 +23,11 @@ class CustomMangaAPIClient:
         last_released_chapter_name_selector: str,
         last_released_chapter_name_attribute: str,
         last_released_chapter_name_regex: str,
+        last_released_chapter_name_get_first: str,
         last_released_chapter_url_selector: str,
         last_released_chapter_url_attribute: str,
+        last_released_chapter_url_get_first: str,
+        last_released_chapter_selector_use_browser: bool,
     ) -> dict[str, str]:
         url = self.base_custom_manga_url
 
@@ -33,6 +37,7 @@ class CustomMangaAPIClient:
             "status": manga_status,
             "cover_img_url": cover_img_url,
             "cover_img": base64.b64encode(cover_img).decode("utf-8") if cover_img else "",
+            "last_released_chapter_selector_use_browser": last_released_chapter_selector_use_browser,
         }
 
         if last_read_chapter:
@@ -45,11 +50,13 @@ class CustomMangaAPIClient:
                 "selector": last_released_chapter_name_selector,
                 "attribute": last_released_chapter_name_attribute,
                 "regex": last_released_chapter_name_regex,
+                "get_first": last_released_chapter_name_get_first,
             }
         if last_released_chapter_url_selector != "":
             request_body["last_released_chapter_url_selector"] = {
                 "selector": last_released_chapter_url_selector,
                 "attribute": last_released_chapter_url_attribute,
+                "get_first": last_released_chapter_url_get_first,
             }
 
         res = requests.post(url, json=request_body)
@@ -154,8 +161,11 @@ class CustomMangaAPIClient:
         last_released_chapter_name_selector: str,
         last_released_chapter_name_attribute: str,
         last_released_chapter_name_regex: str,
+        last_released_chapter_name_get_first: str,
         last_released_chapter_url_selector: str,
         last_released_chapter_url_attribute: str,
+        last_released_chapter_url_get_first: str,
+        last_released_chapter_selector_use_browser: bool,
         manga_id: int = 0,
         manga_url: str = "",
     ) -> dict[str, str]:
@@ -163,17 +173,21 @@ class CustomMangaAPIClient:
         url = f"{self.base_custom_manga_url}{path}"
         url = f"{url}?id={manga_id}&url={manga_url}"
 
-        request_body = {}
+        request_body: dict[str, Any] = {
+            "use_browser": last_released_chapter_selector_use_browser,
+        }
         if last_released_chapter_name_selector != "":
             request_body["name_selector"] = {
                 "selector": last_released_chapter_name_selector,
                 "attribute": last_released_chapter_name_attribute,
                 "regex": last_released_chapter_name_regex,
+                "get_first": last_released_chapter_name_get_first,
             }
         if last_released_chapter_url_selector != "":
             request_body["url_selector"] = {
                 "selector": last_released_chapter_url_selector,
                 "attribute": last_released_chapter_url_attribute,
+                "get_first": last_released_chapter_url_get_first,
             }
 
         res = requests.patch(url, json=request_body)
