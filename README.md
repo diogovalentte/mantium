@@ -91,14 +91,11 @@ Another feature of custom manga is the **last released chapter selectors**. It a
 - **Selector**: a CSS or XPATH selector to get the HTML element from the page. Add the prefix `css:` for CSS selectors, and `xpath:` for XPATH selectors (ex: `css:div.chapter-box > h4:first-child > a span`).
 - **Attribute** (optional): the attribute from the selected HTML element that contains the chapter name or URL (ex: `href`). Leave empty to get the element's text.
 - **Regex** (optional): if provided, Mantium will run this regex to get the chapter's name from the attribute/text of the HTML element got using the selector (ex: `【第(\d+(\.\d+)?)話】` get `94` from `【第94話】`)
-
-> [!NOTE]
-> Mantium will make a simple HTTP GET request to the custom manga's URL field and use the selectors on it. Pages that have some kind of protection, or need JavaScript to show the necessary information won't work well with this feature.
+- **Get First** (optional): if checked, Mantium will get the first HTML element that matches the selector. If unchecked, Mantium will get the last HTML element that matches the selector.
+- **Use Browser** (optional): if checked, Mantium will use a headless browser to load the page and get the chapter information. Use this if the page needs JavaScript to show the necessary information. If unchecked, Mantium will make a simple HTTP GET request to get the page HTML.
 
 > [!NOTE]
 > If the URL selector doesn't return a string that starts with `http`, Mantium will consider it a relative URL and will prepend the manga URL to it. For example, if the manga URL is `https://example.com/manga1` and the URL selector returns `/chapter1`, Mantium will consider the chapter URL to be `https://example.com/chapter1`.
-
-<img width="436" height="1247" alt="image" src="https://github.com/user-attachments/assets/ac4dfc1d-686e-4354-9299-57c7f0f5a8b7" />
 
 # Check manga updates and notify
 
