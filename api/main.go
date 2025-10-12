@@ -199,7 +199,7 @@ type Migration struct {
 
 // Change it in every new version
 var (
-	version        string = "5.0.1"
+	version        string = "5.0.2"
 	updatedMessage string = `# Custom Manga Update
 
 Custom mangas are now more similar to regular mangas. They still aren't part of a multimanga, but they now have more features.
@@ -215,7 +215,7 @@ These CSS or XPATH selectors will be used to fetch the custom manga last release
 The "Next Chapter" feature was removed and replaced with "Last Read Chapter". You can manually set the last read chapter and its URL. This will be used to track your reading progress.
 
 ### Custom Manga Forms Updated
-![](https://private-user-images.githubusercontent.com/49578155/500197245-ac4dfc1d-686e-4354-9299-57c7f0f5a8b7.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3NjAyMjMxNTQsIm5iZiI6MTc2MDIyMjg1NCwicGF0aCI6Ii80OTU3ODE1NS81MDAxOTcyNDUtYWM0ZGZjMWQtNjg2ZS00MzU0LTkyOTktNTdjN2YwZjVhOGI3LnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNTEwMTElMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjUxMDExVDIyNDczNFomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTdiYjFiMTBlZWNhZGRmODMwYWExMTY3NzBkMTRlODMwYTMzODc4ZGRiZmQ0ZDIwMmI1NjMzYWEzM2ZjZjQ0NWEmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.yhYS1YuItMPEOwIqkOaVeH4Hc2bfoz4pOkbs0ARyAMg)
+![](https://github.com/user-attachments/assets/a057fa8a-8ebd-4b95-a648-388d366b7fbb)
 
 # Other Changes
 
