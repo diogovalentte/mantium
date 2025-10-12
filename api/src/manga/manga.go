@@ -1846,6 +1846,9 @@ func GetCustomMangaLastReleasedChapter(mangaURL string, nameSelector *HTMLSelect
 			return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector), err)
 		}
 		chapter.URL = chapterURL
+		if !strings.HasPrefix(chapter.URL, "http") {
+			chapter.URL = strings.TrimRight(mangaURL, "/") + "/" + strings.TrimLeft(chapter.URL, "/")
+		}
 		if chapter.Chapter == "" {
 			chapter.Chapter = "?"
 			chapter.Name = "Chapter ?"
