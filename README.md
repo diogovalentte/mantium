@@ -88,7 +88,7 @@ Custom Manga allows you to track manga, manhwa, light novels, etc., that aren't 
 
 Another feature of custom manga is the **last released chapter selectors**. It allows you to provide CSS or XPATH selectors that get the manga's last released chapter and its URL from the manga page. You can provide:
 
-- **Selector**: a CSS or XPATH selector to get the HTML element from the page. Add the prefix `css:` for CSS selectors, and `xpath:` for XPATH selectors (ex: `css:div.chapter-box > h4:first-child > a span`).
+- **Selector**: a CSS or XPATH selector to get the HTML element from the page. Add the prefix `css:` for CSS selectors, and `xpath:` for XPATH selectors (ex: `css:div.chapter-box > h4:first-child > a span`). XPATH selectors also work with XML pages.
 - **Attribute** (optional): the attribute from the selected HTML element that contains the chapter name or URL (ex: `href`). Leave empty to get the element's text.
 - **Regex** (optional): if provided, Mantium will run this regex to get the chapter's name from the attribute/text of the HTML element got using the selector (ex: `【第(\d+(\.\d+)?)話】` get `94` from `【第94話】`)
 - **Get First** (optional): if checked, Mantium will get the first HTML element that matches the selector. If unchecked, Mantium will get the last HTML element that matches the selector.
