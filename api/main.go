@@ -199,7 +199,7 @@ type Migration struct {
 
 // Change it in every new version
 var (
-	version        string = "5.0.0"
+	version        string = "5.0.1"
 	updatedMessage string = `# Custom Manga Update
 
 Custom mangas are now more similar to regular mangas. They still aren't part of a multimanga, but they now have more features.
