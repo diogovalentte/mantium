@@ -97,6 +97,8 @@ Another feature of custom manga is the **last released chapter selectors**. It a
 > [!NOTE]
 > If the URL selector doesn't return a string that starts with `http`, Mantium will consider it a relative URL and will prepend the manga URL to it. For example, if the manga URL is `https://example.com/manga1` and the URL selector returns `/chapter1`, Mantium will consider the chapter URL to be `https://example.com/chapter1`.
 
+<img width="436" height="1351" alt="image" src="https://github.com/user-attachments/assets/a057fa8a-8ebd-4b95-a648-388d366b7fbb" />
+
 # Check manga updates and notify
 
 Mantium can periodically get the metadata of the mangas you're tracking from their source sites (like every 30 minutes). If the manga metadata (like the cover image, name, or last release chapter) changes from the currently stored metadata, Mantium updates it.
