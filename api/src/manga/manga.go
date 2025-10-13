@@ -1922,7 +1922,11 @@ var (
 func getSelectorFromPageUsingBrowser(url string, selector *HTMLSelector) (string, error) {
 	contextError := "error getting selector '%s' from page '%s'"
 
-	browser := rod.New().MustConnect()
+	browser := rod.New()
+	err := browser.Connect()
+	if err != nil {
+		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), util.AddErrorContext("error connecting to browser", err))
+	}
 	defer browser.MustClose()
 
 	page := browser.MustPage(url).MustSetUserAgent(&proto.NetworkSetUserAgentOverride{UserAgent: userAgent})
