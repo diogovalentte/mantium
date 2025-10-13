@@ -1,5 +1,27 @@
 FROM golang:1.24.0 AS build
 
+RUN apt update && apt install -y \
+  libatk1.0-0 \
+  libatk-bridge2.0-0 \
+  libcups2 \
+  libdrm2 \
+  libatspi2.0-0 \
+  libx11-6 \
+  libxcomposite1 \
+  libxdamage1 \
+  libxext6 \
+  libxfixes3 \
+  libxrandr2 \
+  libgbm1 \
+  libxcb1 \
+  libxkbcommon0 \
+  libpango-1.0-0 \
+  libcairo2 \
+  libasound2 \
+  libglib2.0-0 \
+  libnss3 \
+  libdbus-1-dev
+
 WORKDIR /app/api
 
 COPY ./api .
@@ -8,7 +30,10 @@ RUN go mod download
 
 RUN CGO_ENABLED=0 go build -o main .
 
-FROM gcr.io/distroless/static-debian12:nonroot
+FROM gcr.io/distroless/base-debian12:nonroot
+
+COPY --from=build /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
+COPY --from=build /lib/x86_64-linux-gnu /lib/x86_64-linux-gnu
 
 WORKDIR /app/api
 
