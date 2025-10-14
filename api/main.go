@@ -199,8 +199,8 @@ type Migration struct {
 
 // Change it in every new version
 var (
-	version        string = "5.0.3"
-	updatedMessage string = `# Custom Manga Update
+	version        = "5.0.4"
+	updatedMessage = `# Custom Manga Update
 
 Custom mangas are now more similar to regular mangas. They still aren't part of a multimanga, but they now have more features.
 
@@ -237,7 +237,7 @@ var migrations = []Migration{
 	},
 	{
 		Version: version,
-		Up: func(log *zerolog.Logger) error {
+		Up: func(_ *zerolog.Logger) error {
 			if updatedMessage != "" {
 				dashboard.UpdatedMessageToShow = updatedMessage
 				dashboard.UpdatedMessageVersion = version
