@@ -1927,7 +1927,7 @@ func getSelectorFromPageUsingBrowser(url string, selector *HTMLSelector) (string
 	var u string
 	var err error
 	if config.GlobalConfigs.API.RodBrowserPath != "" {
-		u, err = launcher.New().Bin(config.GlobalConfigs.API.RodBrowserPath).Headless(true).Launch()
+		u, err = launcher.New().Bin(config.GlobalConfigs.API.RodBrowserPath).Headless(true).NoSandbox(true).Set("disable-dev-shm-usage").Set("disable-gpu").Set("no-zygote").Set("single-process").Launch()
 		if err != nil {
 			return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), util.AddErrorContext("error launching browser", err))
 		}
