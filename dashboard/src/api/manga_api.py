@@ -137,11 +137,13 @@ class MangaAPIClient:
                     "Selector": "",
                     "Attribute": "",
                     "Regex": "",
+                    "GetFirst": False,
                 }
             if manga["LastReleasedChapterURLSelector"] is None:
                 manga["LastReleasedChapterURLSelector"] = {
                     "Selector": "",
                     "Attribute": "",
+                    "GetFirst": False,
                 }
 
         return mangas
