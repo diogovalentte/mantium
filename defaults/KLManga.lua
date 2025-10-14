@@ -15,7 +15,7 @@ HttpUtil = require("http_util")
 ----- VARIABLES -----
 Debug = false
 Client = Http.client({ timeout = 20, insecure_ssl = true, debug = Debug })
-Base = "https://klmanga.lt"
+Base = "https://klmanga.ist"
 --- END VARIABLES ---
 
 ----- MAIN -----
