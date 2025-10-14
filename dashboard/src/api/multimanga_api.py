@@ -3,7 +3,6 @@ from typing import Any
 from urllib.parse import urljoin
 
 import requests
-import src.util.defaults as defaults
 from src.exceptions import APIException
 from src.util.util import get_updated_at_datetime
 
@@ -262,10 +261,14 @@ class MultiMangaAPIClient:
         url = f"{url}?id={multimanga_id}&manga_id={manga_id}"
 
         request_body = {
-            "chapter": chapter,
-            "chapter_url": chapter_url,
-            "chapter_internal_id": chapter_internal_id,
+            "chapter": {}
         }
+        if chapter:
+            request_body["chapter"]["chapter"] = chapter
+        if chapter_url:
+            request_body["chapter"]["url"] = chapter_url
+        if chapter_internal_id:
+            request_body["chapter"]["internal_id"] = chapter_internal_id
 
         res = requests.patch(url, json=request_body)
 
