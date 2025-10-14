@@ -1,6 +1,17 @@
-FROM golang:1.24.0 AS build
+FROM golang:1.24.0 AS builder
 
-RUN apt update && apt install -y \
+WORKDIR /app/api
+
+COPY ./api .
+
+RUN go mod download
+
+RUN CGO_ENABLED=0 go build -o main .
+
+FROM debian:bookworm-slim AS runtime
+
+RUN apt update && apt install -y --no-install-recommends \
+  chromium \
   libatk1.0-0 \
   libatk-bridge2.0-0 \
   libcups2 \
@@ -20,26 +31,17 @@ RUN apt update && apt install -y \
   libasound2 \
   libglib2.0-0 \
   libnss3 \
-  libdbus-1-dev
+  libdbus-1-dev \
+  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app/api
 
-COPY ./api .
-
-RUN go mod download
-
-RUN CGO_ENABLED=0 go build -o main .
-
-FROM gcr.io/distroless/base-debian12:nonroot
-
-COPY --from=build /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
-COPY --from=build /lib/x86_64-linux-gnu /lib/x86_64-linux-gnu
-
-WORKDIR /app/api
-
-COPY --from=build /app/api/main .
+COPY --from=builder /app/api/main .
 COPY ./defaults/default_cover_img.jpg ../defaults/default_cover_img.jpg
 
+ENV ROD_BROWSER_PATH=/usr/bin/chromium
+ENV XDG_CONFIG_HOME=/tmp/.chromium
+ENV XDG_CACHE_HOME=/tmp/.chromium
 ENV GIN_MODE=release
 ENV API_PORT=8080
 ENV TZ=UTC

@@ -12,10 +12,12 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/antchfx/htmlquery"
 	"github.com/go-rod/rod"
+	"github.com/go-rod/rod/lib/launcher"
 	"github.com/go-rod/rod/lib/proto"
 	"github.com/gocolly/colly/v2"
 	netHTML "golang.org/x/net/html"
 
+	"github.com/diogovalentte/mantium/api/src/config"
 	"github.com/diogovalentte/mantium/api/src/db"
 	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/util"
@@ -1922,8 +1924,17 @@ var (
 func getSelectorFromPageUsingBrowser(url string, selector *HTMLSelector) (string, error) {
 	contextError := "error getting selector '%s' from page '%s'"
 
-	browser := rod.New()
-	err := browser.Connect()
+	var u string
+	var err error
+	if config.GlobalConfigs.API.RodBrowserPath != "" {
+		u, err = launcher.New().Bin(config.GlobalConfigs.API.RodBrowserPath).Headless(true).Launch()
+		if err != nil {
+			return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), util.AddErrorContext("error launching browser", err))
+		}
+	}
+
+	browser := rod.New().ControlURL(u)
+	err = browser.Connect()
 	if err != nil {
 		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), util.AddErrorContext("error connecting to browser", err))
 	}

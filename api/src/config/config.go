@@ -41,8 +41,9 @@ type Configs struct {
 
 // APIConfigs is a struct that holds the API configurations.
 type APIConfigs struct {
-	Port        string
-	LogLevelInt int
+	Port           string
+	LogLevelInt    int
+	RodBrowserPath string
 }
 
 // NtfyConfigs is a struct that holds the ntfy configurations.
@@ -147,6 +148,7 @@ func SetConfigs(filePath string) error {
 	}
 	GlobalConfigs.API.LogLevelInt = int(logLevel)
 	GlobalConfigs.API.Port = os.Getenv("API_PORT")
+	GlobalConfigs.API.RodBrowserPath = os.Getenv("ROD_BROWSER_PATH")
 
 	GlobalConfigs.Ntfy.Address = os.Getenv("NTFY_ADDRESS")
 	GlobalConfigs.Ntfy.Topic = os.Getenv("NTFY_TOPIC")
