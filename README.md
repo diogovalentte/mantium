@@ -2,7 +2,7 @@
 
 **Mantium is a cross-site manga tracker**, which means that you can track manga from multiple source sites, like [Mangadex](https://mangadex.org) and [MangaPlus](https://mangaplus.shueisha.co.jp). Mantium doesn't download the chapter images; it downloads the manga metadata (name, URL, cover, etc.) and chapter metadata (number, name, URL) from the source site and shows them in a dashboard and iFrame to put in your dashboard service.
 
-- Mantium currently can track mangas on [Manga Plus](https://mangaplus.shueisha.co.jp), [MangaDex](https://mangadex.org), [MangaHub](https://mangahub.io), [MangaUpdates](https://www.mangaupdates.com/), [RawKuma](https://rawkuma.com/), [KLManga](https://klmanga.rs/), and [JManga](https://jmanga.is).
+- Mantium currently can natively track manga on [Manga Plus](https://mangaplus.shueisha.co.jp), [MangaDex](https://mangadex.org), [MangaHub](https://mangahub.io), [MangaUpdates](https://www.mangaupdates.com/), [RawKuma](https://rawkuma.com/), [KLManga](https://klmanga.rs/), and [JManga](https://jmanga.is), but it can also [automatically track manga from nearly all sites](#custom-manga).
 
 **The basic workflow is:**
 
