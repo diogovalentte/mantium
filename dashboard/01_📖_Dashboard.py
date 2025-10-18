@@ -50,19 +50,14 @@ class MainDashboard:
             self.status_filter_key,
         )
         filter_by_name_term = ss.get("search_manga", "").upper()
+        
+        # Add unread filter
         if filter_by_status == 6:  # Status 6 = Unread
-            # Debug logs
-            st.write("Debug - Filter Status:", filter_by_status)
-            st.write("Debug - Total mangas before filter:", len(mangas))
-            
-            # Correção do filtro para comparar apenas o número do capítulo
             mangas = [
                 manga for manga in mangas 
                 if manga["LastReadChapter"]["Chapter"] != manga["LastReleasedChapter"]["Chapter"]
                 and manga["LastReleasedChapter"]["Chapter"] != ""  # Garante que há um capítulo lançado
             ]
-        
-            st.write("Debug - Total mangas after filter:", len(mangas))
         elif filter_by_status != 0 and filter_by_name_term != "":
             mangas = [
                 manga
