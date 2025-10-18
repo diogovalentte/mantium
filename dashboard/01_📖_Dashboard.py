@@ -441,8 +441,8 @@ class MainDashboard:
 
     def show_manga_grid(self, manga: dict[str, Any]):
         unread = (
-            manga["LastReadChapter"]["Chapter"]
-            != manga["LastReleasedChapter"]["Chapter"]
+            (manga["LastReadChapter"]["Chapter"] != manga["LastReleasedChapter"]["Chapter"])
+            and not (manga["Source"] == defaults.CUSTOM_MANGA_SOURCE and manga["LastReleasedChapter"]["Chapter"] == "")
         )
 
         st.markdown(
@@ -496,45 +496,49 @@ class MainDashboard:
             </span>
         """
 
-        if manga["LastReleasedChapter"]["URL"] != "":
-            chapter = chapter_with_url_tag_content.format(
-                manga["LastReleasedChapter"]["URL"],
-                (
-                    f'Ch. {manga["LastReleasedChapter"]["Chapter"]}'
-                    if manga["LastReleasedChapter"]["Chapter"] != ""
-                    else "N/A"
-                ),
+        no_released_chapter_custom_manga = not (manga["LastReleasedChapter"]["Chapter"] == "" and manga["Source"] == defaults.CUSTOM_MANGA_SOURCE)
+        if no_released_chapter_custom_manga:
+            if manga["LastReleasedChapter"]["URL"] != "":
+                chapter = chapter_with_url_tag_content.format(
+                    manga["LastReleasedChapter"]["URL"],
+                    (
+                        f'Ch. {manga["LastReleasedChapter"]["Chapter"]}'
+                        if manga["LastReleasedChapter"]["Chapter"] != ""
+                        else "N/A"
+                    ),
+                )
+            else:
+                chapter = chapter_without_url_tag_content.format(
+                    (
+                        f'Ch. {manga["LastReleasedChapter"]["Chapter"]}'
+                        if manga["LastReleasedChapter"]["Chapter"] != ""
+                        else "N/A"
+                    ),
+                )
+
+            release_date = (
+                manga["LastReleasedChapter"]["UpdatedAt"]
+                if manga["LastReleasedChapter"]["UpdatedAt"]
+                != datetime.min.replace(tzinfo=timezone.utc)
+                else "N/A"
+            )
+            if release_date != "N/A":
+                relative_release_date = get_relative_time(release_date)
+            else:
+                relative_release_date = release_date
+
+            tagger(
+                "<strong>Last Released Chapter:</strong>",
+                chapter,
+                defaults.chapter_link_tag_background_color,
+                "float: right;",
+            )
+            st.caption(
+                f'**Release Date**: <span style="float: right;" title="{release_date}">{relative_release_date}</span>',
+                unsafe_allow_html=True,
             )
         else:
-            chapter = chapter_without_url_tag_content.format(
-                (
-                    f'Ch. {manga["LastReleasedChapter"]["Chapter"]}'
-                    if manga["LastReleasedChapter"]["Chapter"] != ""
-                    else "N/A"
-                ),
-            )
-
-        release_date = (
-            manga["LastReleasedChapter"]["UpdatedAt"]
-            if manga["LastReleasedChapter"]["UpdatedAt"]
-            != datetime.min.replace(tzinfo=timezone.utc)
-            else "N/A"
-        )
-        if release_date != "N/A":
-            relative_release_date = get_relative_time(release_date)
-        else:
-            relative_release_date = release_date
-
-        tagger(
-            "<strong>Last Released Chapter:</strong>",
-            chapter,
-            defaults.chapter_link_tag_background_color,
-            "float: right;",
-        )
-        st.caption(
-            f'**Release Date**: <span style="float: right;" title="{release_date}">{relative_release_date}</span>',
-            unsafe_allow_html=True,
-        )
+            st.markdown("""<div style="height: 80px"></div>""", unsafe_allow_html=True)
 
         if manga["LastReadChapter"]["URL"] != "":
             chapter = chapter_with_url_tag_content.format(
@@ -575,31 +579,40 @@ class MainDashboard:
             unsafe_allow_html=True,
         )
 
-        c1, c2 = st.columns(2)
-        with c1:
+        if no_released_chapter_custom_manga:
+            c1, c2 = st.columns(2)
+            with c1:
 
-            def set_last_read():
-                if (
-                    manga.get("LastReadChapter", {}).get("Chapter")
-                    != manga["LastReleasedChapter"]["Chapter"]
-                ):
-                    if manga["Source"] == defaults.CUSTOM_MANGA_SOURCE:
-                        self.api_client.update_custom_manga_last_read_chapter(
-                            manga["ID"], manga["URL"], set_to_last_released_chapter=True
-                        )
-                    else:
-                        self.api_client.update_multimanga_last_read_chapter(
-                            manga["MultiMangaID"], manga["ID"]
-                        )
+                def set_last_read():
+                    if (
+                        manga.get("LastReadChapter", {}).get("Chapter")
+                        != manga["LastReleasedChapter"]["Chapter"]
+                    ):
+                        if manga["Source"] == defaults.CUSTOM_MANGA_SOURCE:
+                            self.api_client.update_custom_manga_last_read_chapter(
+                                manga["ID"], manga["URL"], set_to_last_released_chapter=True
+                            )
+                        else:
+                            self.api_client.update_multimanga_last_read_chapter(
+                                manga["MultiMangaID"], manga["ID"]
+                            )
 
-            st.button(
-                "Set last read",
-                use_container_width=True,
-                on_click=set_last_read,
-                key=f"set_last_read_{manga['ID']}",
-                disabled=not unread,
-            )
-        with c2:
+                st.button(
+                    "Set last read",
+                    use_container_width=True,
+                    on_click=set_last_read,
+                    key=f"set_last_read_{manga['ID']}",
+                    disabled=not unread,
+                )
+            with c2:
+                st.button(
+                    "Highlight",
+                    use_container_width=True,
+                    type="primary",
+                    key=f"highlight_{manga['ID']}",
+                    on_click=highlight_manga,
+                )
+        else:
             st.button(
                 "Highlight",
                 use_container_width=True,
@@ -654,8 +667,8 @@ class MainDashboard:
             )
 
         unread = (
-            manga["LastReadChapter"]["Chapter"]
-            != manga["LastReleasedChapter"]["Chapter"]
+            (manga["LastReadChapter"]["Chapter"] != manga["LastReleasedChapter"]["Chapter"])
+            and not (manga["Source"] == defaults.CUSTOM_MANGA_SOURCE and manga["LastReleasedChapter"]["Chapter"] == "")
         )
 
         with name_col:
