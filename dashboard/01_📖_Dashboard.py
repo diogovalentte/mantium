@@ -62,7 +62,7 @@ class MainDashboard:
                 and manga["LastReleasedChapter"]["Chapter"] != ""  # Garante que há um capítulo lançado
             ]
         
-        st.write("Debug - Total mangas after filter:", len(mangas))
+            st.write("Debug - Total mangas after filter:", len(mangas))
         elif filter_by_status != 0 and filter_by_name_term != "":
             mangas = [
                 manga
