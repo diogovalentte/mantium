@@ -51,10 +51,10 @@ class MainDashboard:
         )
         filter_by_name_term = ss.get("search_manga", "").upper()
         if filter_by_status == 6:  # Status 6 = Unread
-        mangas = [
-            manga for manga in mangas 
-            if manga.get("LastReadChapter", "") != manga.get("LastReleasedChapter", "")
-        ]
+            mangas = [
+                manga for manga in mangas 
+                if manga.get("LastReadChapter", "") != manga.get("LastReleasedChapter", "")
+            ]
         elif filter_by_status != 0 and filter_by_name_term != "":
             mangas = [
                 manga
