@@ -15,6 +15,7 @@ manga_status_options = {
     3: "🚧 On Hold",
     4: "❌ Dropped",
     5: "📅 Plan to Read",
+    6: "📬 Unread",
 }
 sort_options = [
     "Name",
