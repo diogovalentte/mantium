@@ -1780,12 +1780,14 @@ func FilterUnreadChapterMangas(mangas []*Manga) []*Manga {
 	unreadChapterMangas := []*Manga{}
 
 	for _, manga := range mangas {
-		if (manga.LastReleasedChapter != nil && manga.LastReadChapter == nil) || (manga.LastReleasedChapter == nil && manga.LastReadChapter != nil) {
-			unreadChapterMangas = append(unreadChapterMangas, manga)
-		} else if manga.LastReleasedChapter != nil && manga.LastReadChapter != nil {
+		if manga.LastReleasedChapter != nil && manga.LastReadChapter != nil {
 			if manga.LastReleasedChapter.Chapter != manga.LastReadChapter.Chapter {
 				unreadChapterMangas = append(unreadChapterMangas, manga)
 			}
+		} else if manga.LastReleasedChapter != nil && manga.LastReadChapter == nil {
+			unreadChapterMangas = append(unreadChapterMangas, manga)
+		} else if (manga.LastReleasedChapter == nil && manga.LastReadChapter != nil) && manga.Source != CustomMangaSource {
+			unreadChapterMangas = append(unreadChapterMangas, manga)
 		}
 	}
 

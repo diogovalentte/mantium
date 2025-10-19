@@ -276,14 +276,18 @@ class MangaAPIClient:
     ) -> list[dict[str, Any]]:
         def unread_sorting(manga: dict[str, Any]) -> tuple[int, Any]:
             """Sort mangas by unread chapters.
+
             Define two priority groups:
                 0 = Unread chapters, sorted by last chapter release date (desc).
                 1 = Read chapters, sorted by last chapter release date (desc).
+
             Unread chapters are prioritized over read chapters."""
             if (
                 manga["LastReadChapter"]["Chapter"]
                 != manga["LastReleasedChapter"]["Chapter"]
             ):
+                if (manga["Source"] == defaults.CUSTOM_MANGA_SOURCE and manga["LastReleasedChapter"]["Chapter"] == ""):
+                    return (1, -manga["LastReadChapter"]["UpdatedAt"].timestamp())
                 if manga["LastReleasedChapter"]["UpdatedAt"] == datetime.min.replace(
                     tzinfo=timezone.utc
                 ):
