@@ -2751,38 +2751,63 @@ func getMangaIDAndURL(mangaIDStr string, mangaURL string) (manga.ID, string, err
 
 // NotifyMangaLastReleasedChapterUpdate notifies a manga last released chapter update
 func NotifyMangaLastReleasedChapterUpdate(m *manga.Manga) error {
-	publisher, err := ntfy.GetNtfyPublisher()
-	if err != nil {
-		return err
+	var errors []error
+
+	// Notify via Ntfy if configured
+	if config.GlobalConfigs.Ntfy.Address != "" {
+		publisher, err := ntfy.GetNtfyPublisher()
+		if err != nil {
+			errors = append(errors, err)
+		} else {
+			title := fmt.Sprintf("(Mantium) New chapter of manga: %s", m.Name)
+			message := fmt.Sprintf("New chapter: %s", m.LastReleasedChapter.Chapter)
+
+			chapterLink, err := url.Parse(m.LastReleasedChapter.URL)
+			if err != nil {
+				errors = append(errors, err)
+			} else {
+				msg := &gotfy.Message{
+					Topic:   publisher.Topic,
+					Title:   title,
+					Message: message,
+					Actions: []gotfy.ActionButton{
+						&gotfy.ViewAction{
+							Label: "Open Chapter",
+							Link:  chapterLink,
+							Clear: false,
+						},
+					},
+					ClickURL: chapterLink,
+				}
+
+				ctx := context.Background()
+				err = publisher.SendMessage(ctx, msg)
+				if err != nil {
+					errors = append(errors, err)
+				}
+			}
+		}
 	}
 
-	title := fmt.Sprintf("(Mantium) New chapter of manga: %s", m.Name)
+	// Notify via Telegram if configured
+	if config.GlobalConfigs.Telegram.Valid {
+		bot, err := telegram.GetTelegramBot()
+		if err != nil {
+			errors = append(errors, err)
+		} else {
+			messageText := fmt.Sprintf("<b>New chapter of manga: %s</b>\nChapter: %s", 
+				m.Name, m.LastReleasedChapter.Chapter)
 
-	message := fmt.Sprintf("New chapter: %s", m.LastReleasedChapter.Chapter)
-
-	chapterLink, err := url.Parse(m.LastReleasedChapter.URL)
-	if err != nil {
-		return err
+			ctx := context.Background()
+			err = bot.SendMessage(ctx, messageText, "Open Chapter", m.LastReleasedChapter.URL)
+			if err != nil {
+				errors = append(errors, err)
+			}
+		}
 	}
 
-	msg := &gotfy.Message{
-		Topic:   publisher.Topic,
-		Title:   title,
-		Message: message,
-		Actions: []gotfy.ActionButton{
-			&gotfy.ViewAction{
-				Label: "Open Chapter",
-				Link:  chapterLink,
-				Clear: false,
-			},
-		},
-		ClickURL: chapterLink,
-	}
-
-	ctx := context.Background()
-	err = publisher.SendMessage(ctx, msg)
-	if err != nil {
-		return err
+	if len(errors) > 0 {
+		return fmt.Errorf("errors while sending notifications: %v", errors)
 	}
 
 	return nil
