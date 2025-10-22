@@ -5,10 +5,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
+	"strings"
 
-	"github.com/diogovalentte/mantium/api/src/config"
-	"github.com/diogovalentte/mantium/api/src/util"
+	"github.com/mendoncart/mantium/api/src/config"
+	"github.com/mendoncart/mantium/api/src/util"
 )
 
 type Bot struct {
@@ -51,7 +51,7 @@ func (b *Bot) SendMessage(ctx context.Context, messageText string, buttonLabel s
 
 		// Create request
 		req, err := http.NewRequestWithContext(ctx, "POST", baseURL, 
-			url.NewReader(requestBody))
+			strings.NewReader(requestBody))
 		if err != nil {
 			return util.AddErrorContext("could not create telegram request", err)
 		}

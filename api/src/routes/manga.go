@@ -2827,7 +2827,7 @@ func TestTelegramNotification(c *gin.Context) {
 	// Create a dummy manga object for testing
 	testManga := &manga.Manga{
 		Name: "Test Manga",
-		LastReleasedChapter: manga.Chapter{
+		LastReleasedChapter: *manga.Chapter{
 			Chapter: "1",
 			URL:     "https://example.com/test-chapter",
 		},
@@ -2865,7 +2865,7 @@ func TestNtfyNotification(c *gin.Context) {
 	// Create a dummy manga object for testing
 	testManga := &manga.Manga{
 		Name: "Test Manga",
-		LastReleasedChapter: manga.Chapter{
+		LastReleasedChapter: *manga.Chapter{
 			Chapter: "1",
 			URL:     "https://example.com/test-chapter",
 		},
