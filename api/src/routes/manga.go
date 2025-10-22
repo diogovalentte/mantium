@@ -27,6 +27,7 @@ import (
 	"github.com/diogovalentte/mantium/api/src/errordefs"
 	"github.com/diogovalentte/mantium/api/src/integrations/kaizoku"
 	"github.com/diogovalentte/mantium/api/src/integrations/ntfy"
+	"github.com/mendoncart/mantium/api/src/integrations/telegram"
 	"github.com/diogovalentte/mantium/api/src/integrations/suwayomi"
 	"github.com/diogovalentte/mantium/api/src/integrations/tranga"
 	"github.com/diogovalentte/mantium/api/src/manga"
