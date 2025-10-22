@@ -10,6 +10,7 @@ import (
 	"image/png"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -281,4 +282,17 @@ func RequestUpdateMangasMetadata(notify bool) (*http.Response, error) {
 func FileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil || !os.IsNotExist(err)
+}
+
+// GetDomain extracts the domain from a given URL.
+func GetDomain(rawURL string) (string, error) {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return "", err
+	}
+
+	if parsed.Scheme == "" || parsed.Host == "" {
+		return "", fmt.Errorf("invalid URL: missing scheme or host")
+	}
+	return parsed.Scheme + "://" + parsed.Host, nil
 }
