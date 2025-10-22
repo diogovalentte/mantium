@@ -2,7 +2,7 @@ FROM golang:1.24.0 AS builder
 
 WORKDIR /app/api
 
-COPY ./api .
+COPY api/ .
 
 RUN go mod download
 
