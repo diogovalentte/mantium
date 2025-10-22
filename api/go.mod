@@ -1,4 +1,4 @@
-module github.com/diogovalentte/mantium/api
+module github.com/mendoncart/mantium/api
 
 go 1.24.0
 

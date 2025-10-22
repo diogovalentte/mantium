@@ -12,7 +12,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 
-	"github.com/diogovalentte/mantium/api/src/util"
+	"github.com/mendoncart/mantium/api/src/util"
 )
 
 // GlobalConfigs is a pointer to the Configs struct that holds all the configurations.

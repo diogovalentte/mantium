@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/diogovalentte/mantium/api/src/errordefs"
-	"github.com/diogovalentte/mantium/api/src/manga"
-	"github.com/diogovalentte/mantium/api/src/sources/models"
-	"github.com/diogovalentte/mantium/api/src/util"
+	"github.com/mendoncart/mantium/api/src/errordefs"
+	"github.com/mendoncart/mantium/api/src/manga"
+	"github.com/mendoncart/mantium/api/src/sources/models"
+	"github.com/mendoncart/mantium/api/src/util"
 )
 
 // GetMangaMetadata returns the metadata of a manga given its URL

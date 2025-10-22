@@ -1,6 +1,6 @@
 package models
 
-import "github.com/diogovalentte/mantium/api/src/manga"
+import "github.com/mendoncart/mantium/api/src/manga"
 
 // Source is the interface for a manga source
 type Source interface {

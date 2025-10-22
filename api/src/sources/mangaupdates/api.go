@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/diogovalentte/mantium/api/src/util"
+	"github.com/mendoncart/mantium/api/src/util"
 )
 
 // Client is a client for the MangaUpdates API
