@@ -76,6 +76,10 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.POST("/mangas/add_to_tranga", AddMangasToTranga)
 		group.POST("/mangas/add_to_suwayomi", AddMangasToSuwayomi)
 		group.GET("/mangas/stats", GetLibraryStats)
+
+		// Test notification endpoints
+		group.POST("/test/telegram_notification", TestTelegramNotification)
+		group.POST("/test/ntfy_notification", TestNtfyNotification)
 	}
 }
 
@@ -2811,6 +2815,82 @@ func NotifyMangaLastReleasedChapterUpdate(m *manga.Manga) error {
 	}
 
 	return nil
+}
+
+// TestTelegramNotification sends a test notification via Telegram
+// @Summary Test Telegram notification
+// @Description Sends a test notification via Telegram to verify the configuration
+// @Produce json
+// @Success 200 {object} responseMessage
+// @Router /test/telegram_notification [post]
+func TestTelegramNotification(c *gin.Context) {
+	// Create a dummy manga object for testing
+	testManga := &manga.Manga{
+		Name: "Test Manga",
+		LastReleasedChapter: manga.Chapter{
+			Chapter: "1",
+			URL:     "https://example.com/test-chapter",
+		},
+	}
+
+	// Check if Telegram is configured
+	if !config.GlobalConfigs.Telegram.Valid {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Telegram is not configured",
+		})
+		return
+	}
+
+	// Send the test notification
+	err := NotifyMangaLastReleasedChapterUpdate(testManga)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("Failed to send Telegram test notification: %v", err),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Telegram test notification sent successfully",
+	})
+}
+
+// TestNtfyNotification sends a test notification via Ntfy
+// @Summary Test Ntfy notification
+// @Description Sends a test notification via Ntfy to verify the configuration
+// @Produce json
+// @Success 200 {object} responseMessage
+// @Router /test/ntfy_notification [post]
+func TestNtfyNotification(c *gin.Context) {
+	// Create a dummy manga object for testing
+	testManga := &manga.Manga{
+		Name: "Test Manga",
+		LastReleasedChapter: manga.Chapter{
+			Chapter: "1",
+			URL:     "https://example.com/test-chapter",
+		},
+	}
+
+	// Check if Ntfy is configured
+	if config.GlobalConfigs.Ntfy.Address == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Ntfy is not configured",
+		})
+		return
+	}
+
+	// Send the test notification
+	err := NotifyMangaLastReleasedChapterUpdate(testManga)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": fmt.Sprintf("Failed to send Ntfy test notification: %v", err),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Ntfy test notification sent successfully",
+	})
 }
 
 func isNewChapterDifferentFromOld(oldChapter, newChapter *manga.Chapter, source string) bool {
