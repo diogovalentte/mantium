@@ -352,6 +352,34 @@ class MainDashboard:
         elif ss.get("show_settings_form", False):
             self.show_settings()
             ss["show_settings_form"] = False
+        # Handle test notification results (success or error)
+        elif (
+            ss.get("test_notification_success", "") != ""
+            or ss.get("test_notification_error", "") != ""
+        ):
+            @st.dialog("Test Notification")
+            def show_test_notification_result():
+                """
+                Display the result of a test notification in a dialog.
+                Shows either a success message (green) or error message (red).
+                """
+                # Mark that a dialog is currently open
+                ss["is_dialog_open"] = True
+                
+                # Display success message if available
+                if ss.get("test_notification_success", "") != "":
+                    st.success(ss["test_notification_success"])
+                    # Clear the success message from session state
+                    ss["test_notification_success"] = ""
+                
+                # Display error message if available
+                if ss.get("test_notification_error", "") != "":
+                    st.error(ss["test_notification_error"])
+                    # Clear the error message from session state
+                    ss["test_notification_error"] = ""
+        
+            # Show the dialog with the result
+            show_test_notification_result()
         elif (
             ss.get("configs_update_error_message", "") != ""
             or ss.get("configs_update_success_message", "") != ""
@@ -927,6 +955,61 @@ class MainDashboard:
                     help="By default, enqueue to download all chapters from the mangas that are added to the Suwayomi integration.",
                     key="configs_enqueue_all_suwayomi_chapters_to_download",
                 )
+
+                # Add a visual separator before the test buttons
+            st.divider()
+            
+            # Create callback function for testing Telegram notification
+            def test_telegram_callback():
+                """
+                Callback function executed when user clicks 'Test Telegram' button.
+                Calls the API to send a test notification and stores the result
+                in session state for display.
+                """
+                try:
+                    # Call API client method to send test notification
+                    message = self.api_client.test_telegram_notification()
+                    # Store success message in session state to display in dialog
+                    ss["test_notification_success"] = message
+                except Exception as e:
+                    # Store error message in session state to display in dialog
+                    logger.exception(e)
+                    ss["test_notification_error"] = str(e)
+            
+            # Create callback function for testing Ntfy notification
+            def test_ntfy_callback():
+                """
+                Callback function executed when user clicks 'Test Ntfy' button.
+                Calls the API to send a test notification and stores the result
+                in session state for display.
+                """
+                try:
+                    # Call API client method to send test notification
+                    message = self.api_client.test_ntfy_notification()
+                    # Store success message in session state to display in dialog
+                    ss["test_notification_success"] = message
+                except Exception as e:
+                    # Store error message in session state to display in dialog
+                    logger.exception(e)
+                    ss["test_notification_error"] = str(e)
+            
+            # Button to test Telegram notification
+            st.button(
+                "Test Telegram Notification",
+                type="secondary",
+                use_container_width=True,
+                on_click=test_telegram_callback,
+                help="Send a test notification via Telegram to verify your configuration",
+            )
+            
+            # Button to test Ntfy notification
+            st.button(
+                "Test Ntfy Notification",
+                type="secondary",
+                use_container_width=True,
+                on_click=test_ntfy_callback,
+                help="Send a test notification via Ntfy to verify your configuration",
+            )
 
             with st.expander("Info"):
                 col1, col2 = st.columns(2)
