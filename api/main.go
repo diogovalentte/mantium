@@ -199,30 +199,8 @@ type Migration struct {
 
 // Change it in every new version
 var (
-	version        = "5.0.6"
-	updatedMessage = `# Custom Manga Update
-
-Custom mangas are now more similar to regular mangas. They still aren't part of a multimanga, but they now have more features.
-
-### Last Released Chapter Selectors
-The ability to set last released chapter name and URL selectors for custom mangas was added.
-
-These CSS or XPATH selectors will be used to fetch the custom manga last released chapter name and URL from the custom manga page. In the background job, the custom mangas configured with these selectors will have their last released chapter updated automatically. Notifications will also be sent if enabled in the configs.
-
-- More about it can be found [here](https://github.com/diogovalentte/mantium/tree/main?tab=readme-ov-file#custom-manga).
-
-### Next Chapter replaced with Last Read Chapter
-The "Next Chapter" feature was removed and replaced with "Last Read Chapter". You can manually set the last read chapter and its URL. This will be used to track your reading progress.
-
-### Custom Manga Forms Updated
-![](https://github.com/user-attachments/assets/a057fa8a-8ebd-4b95-a648-388d366b7fbb)
-
-# Other Changes
-
-- **added**: this update message that will be shown in the dashboard after a notable update.
-- **removed**: ComicK source, as it was shut down.
-- **changed**: API routes for mangas. Check the docs if you use the API directly.
-`
+	version        = "5.0.7"
+	updatedMessage = ``
 )
 
 // If the current version in the database is lower than the Version field, the Up function will be executed.
