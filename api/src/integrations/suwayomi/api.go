@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mendoncart/mantium/api/src/manga"
-	"github.com/mendoncart/mantium/api/src/util"
+	"github.com/diogovalentte/mantium/api/src/manga"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 func (s *Suwayomi) baseRequest(reqBody io.Reader, target any) (*http.Response, error) {

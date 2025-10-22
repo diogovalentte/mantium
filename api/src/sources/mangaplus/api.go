@@ -8,7 +8,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
-	"github.com/mendoncart/mantium/api/src/util"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // Client is a client for the Manga Plus API

@@ -11,7 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/mendoncart/mantium/api/src/util"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // Client is a client for the MangaHub API

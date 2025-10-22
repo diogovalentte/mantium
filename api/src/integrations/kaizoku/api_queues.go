@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mendoncart/mantium/api/src/util"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 func (k *Kaizoku) GetQueues() ([]*Queue, error) {

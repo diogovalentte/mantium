@@ -7,8 +7,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/mendoncart/mantium/api/src/config"
-	"github.com/mendoncart/mantium/api/src/dashboard"
+	"github.com/diogovalentte/mantium/api/src/config"
+	"github.com/diogovalentte/mantium/api/src/dashboard"
 )
 
 // DashboardRoutes sets the routes for the dashboard.

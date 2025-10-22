@@ -9,7 +9,7 @@ import (
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/rs/zerolog"
 
-	"github.com/mendoncart/mantium/api/src/util"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 type dbConfigs struct {

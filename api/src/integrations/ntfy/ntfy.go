@@ -9,8 +9,8 @@ import (
 
 	"github.com/AnthonyHewins/gotfy"
 
-	"github.com/mendoncart/mantium/api/src/config"
-	"github.com/mendoncart/mantium/api/src/util"
+	"github.com/diogovalentte/mantium/api/src/config"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // GetNtfyPublisher returns a new NtfyPublisher

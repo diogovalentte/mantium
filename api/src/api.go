@@ -6,8 +6,8 @@ import (
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 
-	docs "github.com/mendoncart/mantium/api/docs"
-	"github.com/mendoncart/mantium/api/src/routes"
+	docs "github.com/diogovalentte/mantium/api/docs"
+	"github.com/diogovalentte/mantium/api/src/routes"
 )
 
 // SetupRouter sets up the routes for the API

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/mendoncart/mantium/api/src/errordefs"
-	"github.com/mendoncart/mantium/api/src/util"
+	"github.com/diogovalentte/mantium/api/src/errordefs"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 type (

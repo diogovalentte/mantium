@@ -3,8 +3,8 @@ package config
 import (
 	"sync"
 
-	"github.com/mendoncart/mantium/api/src/db"
-	"github.com/mendoncart/mantium/api/src/util"
+	"github.com/diogovalentte/mantium/api/src/db"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 func LoadConfigsFromDB(configs *DashboardConfigs) error {

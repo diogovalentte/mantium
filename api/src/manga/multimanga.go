@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mendoncart/mantium/api/src/db"
-	"github.com/mendoncart/mantium/api/src/errordefs"
-	"github.com/mendoncart/mantium/api/src/util"
+	"github.com/diogovalentte/mantium/api/src/db"
+	"github.com/diogovalentte/mantium/api/src/errordefs"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // MultiManga is an interface to the same manga from multiple sources.

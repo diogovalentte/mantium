@@ -3,7 +3,7 @@ package suwayomi
 import (
 	"net/http"
 
-	"github.com/mendoncart/mantium/api/src/config"
+	"github.com/diogovalentte/mantium/api/src/config"
 )
 
 type Suwayomi struct {
