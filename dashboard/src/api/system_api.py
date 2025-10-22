@@ -164,3 +164,61 @@ class DashboardAPIClient:
         json_resp = res.json()
 
         return json_resp["message"], json_resp["version"]
+
+    def test_telegram_notification(self):
+        """Send a test notification via Telegram.
+        
+        This method calls the backend API to send a test notification
+        through Telegram, allowing users to verify their Telegram configuration.
+        
+        Raises:
+            APIException: If the API request fails or Telegram is not configured.
+        """
+        # Build the API endpoint URL
+        url = self.base_api_url + "/v1/test/telegram_notification"
+    
+        # Make POST request to trigger test notification
+        res = requests.post(url)
+    
+        # Check if request was successful
+        if res.status_code not in self.acceptable_status_codes:
+            raise APIException(
+                "error while sending Telegram test notification",
+                url,
+                "POST",
+                {},
+                res.status_code,
+                res.text,
+            )
+        
+        # Return success message from API
+        return res.json()["message"]
+    
+    def test_ntfy_notification(self):
+        """Send a test notification via Ntfy.
+        
+        This method calls the backend API to send a test notification
+        through Ntfy, allowing users to verify their Ntfy configuration.
+        
+        Raises:
+            APIException: If the API request fails or Ntfy is not configured.
+        """
+        # Build the API endpoint URL
+        url = self.base_api_url + "/v1/test/ntfy_notification"
+    
+        # Make POST request to trigger test notification
+        res = requests.post(url)
+    
+        # Check if request was successful
+        if res.status_code not in self.acceptable_status_codes:
+            raise APIException(
+                "error while sending Ntfy test notification",
+                url,
+                "POST",
+                {},
+                res.status_code,
+                res.text,
+            )
+        
+        # Return success message from API
+        return res.json()["message"]
