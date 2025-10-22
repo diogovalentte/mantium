@@ -2,8 +2,12 @@ name: Build and push Docker image
 on:
   workflow_dispatch:
     inputs:
+      target:
+        description: 'Build target (api or dashboard)'
+        required: true
+        default: dashboard
       image_name:
-        description: 'Image name (ex: mantium)'
+        description: 'Base image name (ex: mantium)'
         required: false
         default: mantium
       tag:
@@ -46,34 +50,49 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Prepare image names
+      - name: Prepare build context
         id: prepare
         run: |
-          IMAGE_BASE=${REGISTRY}/${{ github.repository_owner }}/${{ github.event.inputs.image_name }}
+          TARGET=${{ github.event.inputs.target }}
+          if [ "$TARGET" = "api" ]; then
+            DOCKERFILE="Dockerfile_API"
+            SUFFIX="-api"
+          elif [ "$TARGET" = "dashboard" ]; then
+            DOCKERFILE="Dockerfile_dashboard"
+            SUFFIX="-dashboard"
+          else
+            echo "Invalid target: $TARGET"
+            exit 1
+          fi
+
+          IMAGE_BASE=${REGISTRY}/${{ github.repository_owner }}/${{ github.event.inputs.image_name }}${SUFFIX}
           IMAGE_TAG=${IMAGE_BASE}:${{ github.event.inputs.tag }}
           IMAGE_SHA=${IMAGE_BASE}:${{ github.sha }}
-          echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
-          echo "image_sha=${IMAGE_SHA}" >> $GITHUB_OUTPUT
+
+          echo "dockerfile=$DOCKERFILE" >> $GITHUB_OUTPUT
+          echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "image_sha=$IMAGE_SHA" >> $GITHUB_OUTPUT
+          echo "suffix=$SUFFIX" >> $GITHUB_OUTPUT
 
       - name: Build and push image (multi-platform)
         id: build-and-push
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile_dashboard
+          file: ./${{ steps.prepare.outputs.dockerfile }}
           platforms: linux/amd64,linux/arm64
           push: ${{ github.event.inputs.push == 'true' }}
           tags: |
             ${{ steps.prepare.outputs.image_tag }}
             ${{ steps.prepare.outputs.image_sha }}
-          # optional: enable build cache in the registry (uncomment if desired)
-          # cache-from: type=registry,ref=${{ steps.prepare.outputs.image_tag }}
-          # cache-to: type=registry,mode=max,ref=${{ steps.prepare.outputs.image_tag }}
 
       - name: Show pushed image references
         if: ${{ github.event.inputs.push == 'true' }}
         run: |
+          echo "Build target: ${{ github.event.inputs.target }}"
+          echo "Dockerfile used: ${{ steps.prepare.outputs.dockerfile }}"
+          echo "Image suffix: ${{ steps.prepare.outputs.suffix }}"
           echo "Image tags pushed:"
           echo "  ${{ steps.prepare.outputs.image_tag }}"
           echo "  ${{ steps.prepare.outputs.image_sha }}"
-          echo "Build action digest: ${{ steps.build-and-push.outputs.digest }}"
+          echo "Build digest: ${{ steps.build-and-push.outputs.digest }}"
