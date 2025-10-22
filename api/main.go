@@ -12,15 +12,15 @@ import (
 
 	"github.com/rs/zerolog"
 
-	"github.com/diogovalentte/mantium/api/src"
-	"github.com/diogovalentte/mantium/api/src/config"
-	"github.com/diogovalentte/mantium/api/src/dashboard"
-	"github.com/diogovalentte/mantium/api/src/db"
-	"github.com/diogovalentte/mantium/api/src/manga"
-	"github.com/diogovalentte/mantium/api/src/sources"
-	"github.com/diogovalentte/mantium/api/src/sources/mangadex"
-	"github.com/diogovalentte/mantium/api/src/sources/mangahub"
-	"github.com/diogovalentte/mantium/api/src/util"
+	"github.com/mendoncart/mantium/api/src"
+	"github.com/mendoncart/mantium/api/src/config"
+	"github.com/mendoncart/mantium/api/src/dashboard"
+	"github.com/mendoncart/mantium/api/src/db"
+	"github.com/mendoncart/mantium/api/src/manga"
+	"github.com/mendoncart/mantium/api/src/sources"
+	"github.com/mendoncart/mantium/api/src/sources/mangadex"
+	"github.com/mendoncart/mantium/api/src/sources/mangahub"
+	"github.com/mendoncart/mantium/api/src/util"
 )
 
 func init() {
@@ -209,7 +209,7 @@ The ability to set last released chapter name and URL selectors for custom manga
 
 These CSS or XPATH selectors will be used to fetch the custom manga last released chapter name and URL from the custom manga page. In the background job, the custom mangas configured with these selectors will have their last released chapter updated automatically. Notifications will also be sent if enabled in the configs.
 
-- More about it can be found [here](https://github.com/diogovalentte/mantium/tree/main?tab=readme-ov-file#custom-manga).
+- More about it can be found [here](https://github.com/mendoncart/mantium/tree/main?tab=readme-ov-file#custom-manga).
 
 ### Next Chapter replaced with Last Read Chapter
 The "Next Chapter" feature was removed and replaced with "Last Read Chapter". You can manually set the last read chapter and its URL. This will be used to track your reading progress.

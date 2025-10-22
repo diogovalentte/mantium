@@ -12,12 +12,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/diogovalentte/mantium/api/src"
-	"github.com/diogovalentte/mantium/api/src/config"
-	"github.com/diogovalentte/mantium/api/src/errordefs"
-	"github.com/diogovalentte/mantium/api/src/manga"
-	"github.com/diogovalentte/mantium/api/src/routes"
-	"github.com/diogovalentte/mantium/api/src/sources/models"
+	"github.com/mendoncart/mantium/api/src"
+	"github.com/mendoncart/mantium/api/src/config"
+	"github.com/mendoncart/mantium/api/src/errordefs"
+	"github.com/mendoncart/mantium/api/src/manga"
+	"github.com/mendoncart/mantium/api/src/routes"
+	"github.com/mendoncart/mantium/api/src/sources/models"
 )
 
 func setup() error {

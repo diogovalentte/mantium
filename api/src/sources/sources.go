@@ -8,17 +8,17 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/diogovalentte/mantium/api/src/db"
-	"github.com/diogovalentte/mantium/api/src/manga"
-	"github.com/diogovalentte/mantium/api/src/sources/jmanga"
-	"github.com/diogovalentte/mantium/api/src/sources/klmanga"
-	"github.com/diogovalentte/mantium/api/src/sources/mangadex"
-	"github.com/diogovalentte/mantium/api/src/sources/mangahub"
-	"github.com/diogovalentte/mantium/api/src/sources/mangaplus"
-	"github.com/diogovalentte/mantium/api/src/sources/mangaupdates"
-	"github.com/diogovalentte/mantium/api/src/sources/models"
-	"github.com/diogovalentte/mantium/api/src/sources/rawkuma"
-	"github.com/diogovalentte/mantium/api/src/util"
+	"github.com/mendoncart/mantium/api/src/db"
+	"github.com/mendoncart/mantium/api/src/manga"
+	"github.com/mendoncart/mantium/api/src/sources/jmanga"
+	"github.com/mendoncart/mantium/api/src/sources/klmanga"
+	"github.com/mendoncart/mantium/api/src/sources/mangadex"
+	"github.com/mendoncart/mantium/api/src/sources/mangahub"
+	"github.com/mendoncart/mantium/api/src/sources/mangaplus"
+	"github.com/mendoncart/mantium/api/src/sources/mangaupdates"
+	"github.com/mendoncart/mantium/api/src/sources/models"
+	"github.com/mendoncart/mantium/api/src/sources/rawkuma"
+	"github.com/mendoncart/mantium/api/src/util"
 )
 
 // Sources - also update SourcesList on config.go

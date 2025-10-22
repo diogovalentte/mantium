@@ -7,9 +7,9 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/diogovalentte/mantium/api/src/manga"
-	"github.com/diogovalentte/mantium/api/src/sources"
-	"github.com/diogovalentte/mantium/api/src/util"
+	"github.com/mendoncart/mantium/api/src/manga"
+	"github.com/mendoncart/mantium/api/src/sources"
+	"github.com/mendoncart/mantium/api/src/util"
 )
 
 func (k *Kaizoku) baseRequest(method, url string, body io.Reader) (*http.Response, error) {

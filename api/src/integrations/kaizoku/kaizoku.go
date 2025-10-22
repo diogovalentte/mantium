@@ -3,7 +3,7 @@ package kaizoku
 import (
 	"net/http"
 
-	"github.com/diogovalentte/mantium/api/src/config"
+	"github.com/mendoncart/mantium/api/src/config"
 )
 
 type Kaizoku struct {

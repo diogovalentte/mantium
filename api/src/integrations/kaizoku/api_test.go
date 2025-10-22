@@ -5,9 +5,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/diogovalentte/mantium/api/src/config"
-	"github.com/diogovalentte/mantium/api/src/manga"
-	"github.com/diogovalentte/mantium/api/src/util"
+	"github.com/mendoncart/mantium/api/src/config"
+	"github.com/mendoncart/mantium/api/src/manga"
+	"github.com/mendoncart/mantium/api/src/util"
 )
 
 func setup() error {

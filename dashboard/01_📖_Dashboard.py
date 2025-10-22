@@ -956,60 +956,24 @@ class MainDashboard:
                     key="configs_enqueue_all_suwayomi_chapters_to_download",
                 )
 
-                # Add a visual separator before the test buttons
-            st.divider()
-            
-            # Create callback function for testing Telegram notification
-            def test_telegram_callback():
-                """
-                Callback function executed when user clicks 'Test Telegram' button.
-                Calls the API to send a test notification and stores the result
-                in session state for display.
-                """
-                try:
-                    # Call API client method to send test notification
-                    message = self.api_client.test_telegram_notification()
-                    # Store success message in session state to display in dialog
-                    ss["test_notification_success"] = message
-                except Exception as e:
-                    # Store error message in session state to display in dialog
-                    logger.exception(e)
-                    ss["test_notification_error"] = str(e)
-            
-            # Create callback function for testing Ntfy notification
-            def test_ntfy_callback():
-                """
-                Callback function executed when user clicks 'Test Ntfy' button.
-                Calls the API to send a test notification and stores the result
-                in session state for display.
-                """
-                try:
-                    # Call API client method to send test notification
-                    message = self.api_client.test_ntfy_notification()
-                    # Store success message in session state to display in dialog
-                    ss["test_notification_success"] = message
-                except Exception as e:
-                    # Store error message in session state to display in dialog
-                    logger.exception(e)
-                    ss["test_notification_error"] = str(e)
-            
-            # Button to test Telegram notification
-            st.button(
-                "Test Telegram Notification",
-                type="secondary",
-                use_container_width=True,
-                on_click=test_telegram_callback,
-                help="Send a test notification via Telegram to verify your configuration",
-            )
-            
-            # Button to test Ntfy notification
-            st.button(
-                "Test Ntfy Notification",
-                type="secondary",
-                use_container_width=True,
-                on_click=test_ntfy_callback,
-                help="Send a test notification via Ntfy to verify your configuration",
-            )
+                #  Add a visual separator before the test buttons
+                st.divider()
+
+                # Create simple buttons without callbacks (inside form)
+                # These buttons just set flags in session state
+                test_telegram = st.form_submit_button(
+                    "Test Telegram Notification",
+                    type="secondary",
+                    use_container_width=True,
+                    help="Send a test notification via Telegram to verify your configuration",
+                )
+
+                test_ntfy = st.form_submit_button(
+                    "Test Ntfy Notification",
+                    type="secondary",
+                    use_container_width=True,
+                    help="Send a test notification via Ntfy to verify your configuration",
+                )
 
             with st.expander("Info"):
                 col1, col2 = st.columns(2)
@@ -1067,6 +1031,28 @@ class MainDashboard:
                     logger.exception(e)
                     ss["configs_update_error_message"] = "Error while saving settings"
                     st.rerun()
+
+            # Handle test button clicks (must be outside form)
+            if test_telegram:
+                try:
+                    message = self.api_client.test_telegram_notification()
+                    ss["test_notification_success"] = message
+                    st.rerun()
+                except Exception as e:
+                    logger.exception(e)
+                    ss["test_notification_error"] = str(e)
+                    st.rerun()
+
+            if test_ntfy:
+                try:
+                    message = self.api_client.test_ntfy_notification()
+                    ss["test_notification_success"] = message
+                    st.rerun()
+                except Exception as e:
+                    logger.exception(e)
+                    ss["test_notification_error"] = str(e)
+                    st.rerun()
+
 
     def check_dashboard_error(self):
         if ss.get("dashboard_error", False):

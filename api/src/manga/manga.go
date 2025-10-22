@@ -17,10 +17,10 @@ import (
 	"github.com/gocolly/colly/v2"
 	netHTML "golang.org/x/net/html"
 
-	"github.com/diogovalentte/mantium/api/src/config"
-	"github.com/diogovalentte/mantium/api/src/db"
-	"github.com/diogovalentte/mantium/api/src/errordefs"
-	"github.com/diogovalentte/mantium/api/src/util"
+	"github.com/mendoncart/mantium/api/src/config"
+	"github.com/mendoncart/mantium/api/src/db"
+	"github.com/mendoncart/mantium/api/src/errordefs"
+	"github.com/mendoncart/mantium/api/src/util"
 )
 
 type (
