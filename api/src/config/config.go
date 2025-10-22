@@ -22,6 +22,7 @@ var GlobalConfigs = &Configs{
 	API:                      &APIConfigs{},
 	DashboardConfigs:         &DashboardConfigs{},
 	Ntfy:                     &NtfyConfigs{},
+	Telegram: 				  &TelegramConfigs{},
 	PeriodicallyUpdateMangas: &PeriodicallyUpdateMangasConfigs{},
 	Kaizoku:                  &KaizokuConfigs{},
 	Tranga:                   &TrangaConfigs{},
@@ -33,6 +34,7 @@ type Configs struct {
 	API                      *APIConfigs
 	DashboardConfigs         *DashboardConfigs
 	Ntfy                     *NtfyConfigs
+	Telegram                 *TelegramConfigs
 	PeriodicallyUpdateMangas *PeriodicallyUpdateMangasConfigs
 	Kaizoku                  *KaizokuConfigs
 	Tranga                   *TrangaConfigs
@@ -51,6 +53,13 @@ type NtfyConfigs struct {
 	Address string
 	Topic   string
 	Token   string
+}
+
+// TelegramConfigs is a struct that holds the Telegram configurations.
+type TelegramConfigs struct {
+	APIToken string
+	ChatIDs  []string
+	Valid    bool
 }
 
 // PeriodicallyUpdateMangasConfigs is a struct that holds the configurations for updating mangas metadata periodically.
@@ -153,6 +162,13 @@ func SetConfigs(filePath string) error {
 	GlobalConfigs.Ntfy.Address = os.Getenv("NTFY_ADDRESS")
 	GlobalConfigs.Ntfy.Topic = os.Getenv("NTFY_TOPIC")
 	GlobalConfigs.Ntfy.Token = os.Getenv("NTFY_TOKEN")
+
+	GlobalConfigs.Telegram.APIToken = os.Getenv("TELEGRAM_BOT_TOKEN")
+	chatIDsStr := os.Getenv("TELEGRAM_CHAT_IDS")
+	if chatIDsStr != "" {
+		GlobalConfigs.Telegram.ChatIDs = strings.Split(chatIDsStr, ",")
+	}
+	GlobalConfigs.Telegram.Valid = GlobalConfigs.Telegram.APIToken != "" && len(GlobalConfigs.Telegram.ChatIDs) > 0
 
 	GlobalConfigs.Kaizoku.Address = os.Getenv("KAIZOKU_ADDRESS")
 	GlobalConfigs.Kaizoku.DefaultInterval = os.Getenv("KAIZOKU_DEFAULT_INTERVAL")
