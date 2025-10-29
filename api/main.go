@@ -21,6 +21,7 @@ import (
 	"github.com/mendoncart/mantium/api/src/sources/mangadex"
 	"github.com/mendoncart/mantium/api/src/sources/mangahub"
 	"github.com/mendoncart/mantium/api/src/util"
+	"github.com/mendoncart/mantium/api/src/integrations/telegram"
 )
 
 func init() {
@@ -119,6 +120,11 @@ func init() {
 		log.Info().Msg("Will use the Tranga integration")
 	} else {
 		log.Info().Msg("Will not use the Tranga integration")
+	}
+
+	// Initialize Telegram bot if polling is enabled
+	if err := telegram.InitializeBotIfEnabled(); err != nil {
+		log.Info().Msg("Failed to initialize Telegram bot")
 	}
 }
 

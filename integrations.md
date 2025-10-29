@@ -1,5 +1,12 @@
 > Integrations are optional and disabled by default. You can be enabled them using environment variables. Check the [.env.example](https://github.com/diogovalentte/mantium/blob/main/.env.example) file for more information.
 
+# Telegram
+
+> **Note:** The Telegram integration is currently exclusive to this fork until the original repository merges the pull request.
+
+This integration includes a powerful [Telegram bot](./docs/Telegram/README.md) that lets you receive notifications for new manga chapters and manage your reading list directly from Telegram.
+
+
 # Ntfy
 
 Mantium can notify a Ntfy topic when a new chapter from a manga with the status "reading" or "completed" is released.

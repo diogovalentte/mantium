@@ -59,6 +59,7 @@ type NtfyConfigs struct {
 type TelegramConfigs struct {
 	APIToken string
 	ChatIDs  []string
+	EnablePolling bool   // Controls whether bot polling is enabled for interactive buttons
 	Valid    bool
 }
 
@@ -168,6 +169,7 @@ func SetConfigs(filePath string) error {
 	if chatIDsStr != "" {
 		GlobalConfigs.Telegram.ChatIDs = strings.Split(chatIDsStr, ",")
 	}
+	GlobalConfigs.Telegram.EnablePolling = os.Getenv("TELEGRAM_BOT_ENABLE_POLLING") == "true"
 	GlobalConfigs.Telegram.Valid = GlobalConfigs.Telegram.APIToken != "" && len(GlobalConfigs.Telegram.ChatIDs) > 0
 
 	GlobalConfigs.Kaizoku.Address = os.Getenv("KAIZOKU_ADDRESS")

@@ -1,5 +1,12 @@
 # Mantium
 
+> ### This fork includes several modifications compared to the original:
+>
+> * Added [Telegram notifications](./docs/Telegram/README.md)
+> * Added [Telegram bot](./docs/Telegram/README.md) support for interacting with manga
+> * Added a filter for unread manga on the dashboard
+> * Added support for additional languages (pt, pt-BR, es) when monitoring new chapters on MangaDex
+
 **Mantium is a cross-site manga tracker**, which means that you can track manga from multiple source sites, like [Mangadex](https://mangadex.org) and [MangaPlus](https://mangaplus.shueisha.co.jp). Mantium doesn't download the chapter images; it downloads the manga metadata (name, URL, cover, etc.) and chapter metadata (number, name, URL) from the source site and shows them in a dashboard and iFrame to put in your dashboard service.
 
 - Mantium currently can natively track manga on [Manga Plus](https://mangaplus.shueisha.co.jp), [MangaDex](https://mangadex.org), [MangaHub](https://mangahub.io), [MangaUpdates](https://www.mangaupdates.com/), [RawKuma](https://rawkuma.com/), [KLManga](https://klmanga.rs/), and [JManga](https://jmanga.is), but it can also [automatically track manga from nearly all sites](#custom-manga).
@@ -112,7 +119,7 @@ You can also set Mantium to notify you when a manga with the status "reading" or
 
 Mantium has integrations, like:
 
-- [Ntfy](https://github.com/binwiederhier/ntfy) to notify you of new chapters.
+- [Ntfy](https://github.com/binwiederhier/ntfy) or [Telegram](./docs/Telegram/README.md) to notify you of new chapters.
 - [Kaizoku](https://github.com/oae/kaizoku), [Tranga](https://github.com/C9Glax/tranga/tree/master), and [Suwayomi](https://github.com/Suwayomi) to actually download your chapters.
 
 More about the integrations [here](https://github.com/diogovalentte/mantium/blob/main/integrations.md).
