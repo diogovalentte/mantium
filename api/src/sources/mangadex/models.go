@@ -14,7 +14,16 @@ type genericRelationship struct {
 type localisedStrings map[string]string
 
 func (ls localisedStrings) get() string {
+	if val, ok := ls["pt-br"]; ok {
+		return val
+	}
+	if val, ok := ls["pt"]; ok {
+		return val
+	}
 	if val, ok := ls["en"]; ok {
+		return val
+	}
+	if val, ok := ls["es"]; ok {
 		return val
 	}
 	if val, ok := ls["ja"]; ok {
