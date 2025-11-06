@@ -36,7 +36,7 @@ var Sources = map[string]models.Source{
 // Sometimes it's necessery to change the TLD of a source, for example, when the source changes its domain and the old one doesn't redirect to the new one.
 var SourcesTLDs = map[string]string{
 	"klmanga": "ist",
-	"jmanga":  "pw",
+	"jmanga":  "ltd",
 	"rawkuma": "net",
 }
 

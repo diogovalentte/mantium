@@ -14,7 +14,7 @@ Json = require("json")
 ----- VARIABLES -----
 Debug = false
 Client = Http.client({ timeout = 20, insecure_ssl = true, debug = Debug })
-Base = "https://jmanga.pw"
+Base = "https://jmanga.ltd"
 --- END VARIABLES ---
 
 ----- MAIN -----

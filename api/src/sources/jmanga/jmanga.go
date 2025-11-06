@@ -8,7 +8,7 @@ import (
 	"github.com/gocolly/colly/v2"
 )
 
-var baseSiteURL = "https://jmanga.is"
+var baseSiteURL = "https://jmanga.ltd"
 
 // Source is the struct for the JManga source
 type Source struct {

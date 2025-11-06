@@ -19,17 +19,17 @@ var chapterTestTable = []chapterTestType{
 		expected: &manga.Chapter{
 			Chapter: "18",
 			Name:    "第18話",
-			URL:     "https://jmanga.is/read/%E3%82%A2%E3%83%B3%E3%83%81%E3%83%AD%E3%83%9E%E3%83%B3%E3%82%B9/ja/chapter-18-raw/",
+			URL:     "https://jmanga.ltd/read/%E3%82%A2%E3%83%B3%E3%83%81%E3%83%AD%E3%83%9E%E3%83%B3%E3%82%B9/ja/chapter-18-raw/",
 		},
-		url: "https://jmanga.is/read/%E3%82%A2%E3%83%B3%E3%83%81%E3%83%AD%E3%83%9E%E3%83%B3%E3%82%B9-raw/",
+		url: "https://jmanga.ltd/read/%E3%82%A2%E3%83%B3%E3%83%81%E3%83%AD%E3%83%9E%E3%83%B3%E3%82%B9-raw/",
 	},
 	{
 		expected: &manga.Chapter{
 			Chapter: "13",
 			Name:    "第13話",
-			URL:     "https://jmanga.is/read/デスノート/ja/chapter-13-raw/",
+			URL:     "https://jmanga.ltd/read/デスノート/ja/chapter-13-raw/",
 		},
-		url: "https://jmanga.is/read/%E3%83%87%E3%82%B9%E3%83%8E%E3%83%BC%E3%83%88-raw/",
+		url: "https://jmanga.ltd/read/%E3%83%87%E3%82%B9%E3%83%8E%E3%83%BC%E3%83%88-raw/",
 	},
 }
 
@@ -139,11 +139,11 @@ type chaptersTestType struct {
 
 var chaptersTestTable = []chaptersTestType{
 	{
-		url:      "https://jmanga.is/read/%E3%82%A2%E3%83%B3%E3%83%81%E3%83%AD%E3%83%9E%E3%83%B3%E3%82%B9-raw/",
+		url:      "https://jmanga.ltd/read/%E3%82%A2%E3%83%B3%E3%83%81%E3%83%AD%E3%83%9E%E3%83%B3%E3%82%B9-raw/",
 		quantity: 18,
 	},
 	{
-		url:      "https://jmanga.is/read/%E3%83%87%E3%82%B9%E3%83%8E%E3%83%BC%E3%83%88-raw/",
+		url:      "https://jmanga.ltd/read/%E3%83%87%E3%82%B9%E3%83%8E%E3%83%BC%E3%83%88-raw/",
 		quantity: 13,
 	},
 }
