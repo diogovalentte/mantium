@@ -199,7 +199,7 @@ type Migration struct {
 
 // Change it in every new version
 var (
-	version        = "5.0.8"
+	version        = "5.0.9"
 	updatedMessage = ``
 )
 
