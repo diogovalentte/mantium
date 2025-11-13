@@ -102,7 +102,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 		w.WriteField("page", fmt.Sprintf("%d", pageNumber))
 		w.Close()
 
-		resp, err := s.client.Request(http.MethodPost, searchURL, &b, nil)
+		resp, err := s.client.Request(http.MethodPost, searchURL, &b, nil, w.FormDataContentType())
 		if err != nil {
 			if util.ErrorContains(err, "non-200 status code -> (404)") {
 				return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)

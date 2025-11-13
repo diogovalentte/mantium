@@ -14,26 +14,21 @@ import (
 // Client is a client for the Rawkuma API
 type Client struct {
 	client *http.Client
-	header http.Header
 }
 
 // newAPIClient creates a new Rawkuma API client
 func newAPIClient() *Client {
 	client := http.Client{}
 
-	header := http.Header{}
-	header.Set("Content-Type", "application/x-www-form-urlencoded")
-
 	kuma := &Client{
 		client: &client,
-		header: header,
 	}
 
 	return kuma
 }
 
 // Request is a helper function to make a request to the Rawkuma API
-func (c *Client) Request(method, url string, reqBody io.Reader, retBody any) (*http.Response, error) {
+func (c *Client) Request(method, url string, reqBody io.Reader, retBody any, contentType string) (*http.Response, error) {
 	errorContext := fmt.Sprintf("error while making '%s' request", method)
 
 	req, err := http.NewRequest(method, url, reqBody)
@@ -41,7 +36,9 @@ func (c *Client) Request(method, url string, reqBody io.Reader, retBody any) (*h
 		return nil, util.AddErrorContext(errorContext, err)
 	}
 
-	req.Header = c.header
+	header := http.Header{}
+	header.Set("Content-Type", contentType)
+	req.Header = header
 
 	resp, err := c.client.Do(req)
 	if err != nil {
