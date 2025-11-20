@@ -1,26 +1,27 @@
 name: Build and push Docker image
+
 on:
   workflow_dispatch:
     inputs:
       target:
-        description: 'Build target (api or dashboard)'
+        description: 'Build target'
         required: true
-        default: dashboard
+        type: choice
+        options:
+          - api
+          - dashboard
+        default: api
       image_name:
         description: 'Base image name (ex: mantium)'
         required: false
         default: mantium
-      tag:
-        description: 'Tag to push (ex: latest)'
-        required: false
-        default: latest
       push:
         description: 'Push to ghcr.io? (true/false)'
         required: false
         default: 'true'
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 concurrency:
@@ -32,9 +33,32 @@ jobs:
     runs-on: ubuntu-latest
     env:
       REGISTRY: ghcr.io
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Set up Git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version and push tag
+        id: autotag
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: patch
+          release_branches: main
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.autotag.outputs.new_tag }}
+          name: Release ${{ steps.autotag.outputs.new_tag }}
+          body: ${{ steps.autotag.outputs.changelog }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up QEMU (for multi-platform builds)
         uses: docker/setup-qemu-action@v2
@@ -66,11 +90,13 @@ jobs:
           fi
 
           IMAGE_BASE=${REGISTRY}/${{ github.repository_owner }}/${{ github.event.inputs.image_name }}${SUFFIX}
-          IMAGE_TAG=${IMAGE_BASE}:${{ github.event.inputs.tag }}
+          IMAGE_TAG=${IMAGE_BASE}:${{ steps.autotag.outputs.new_tag }}
+          IMAGE_LATEST=${IMAGE_BASE}:latest
           IMAGE_SHA=${IMAGE_BASE}:${{ github.sha }}
 
           echo "dockerfile=$DOCKERFILE" >> $GITHUB_OUTPUT
           echo "image_tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "image_latest=$IMAGE_LATEST" >> $GITHUB_OUTPUT
           echo "image_sha=$IMAGE_SHA" >> $GITHUB_OUTPUT
           echo "suffix=$SUFFIX" >> $GITHUB_OUTPUT
 
@@ -84,6 +110,7 @@ jobs:
           push: ${{ github.event.inputs.push == 'true' }}
           tags: |
             ${{ steps.prepare.outputs.image_tag }}
+            ${{ steps.prepare.outputs.image_latest }}
             ${{ steps.prepare.outputs.image_sha }}
 
       - name: Show pushed image references
@@ -94,5 +121,7 @@ jobs:
           echo "Image suffix: ${{ steps.prepare.outputs.suffix }}"
           echo "Image tags pushed:"
           echo "  ${{ steps.prepare.outputs.image_tag }}"
+          echo "  ${{ steps.prepare.outputs.image_latest }}"
           echo "  ${{ steps.prepare.outputs.image_sha }}"
+          echo "New version tag: ${{ steps.autotag.outputs.new_tag }}"
           echo "Build digest: ${{ steps.build-and-push.outputs.digest }}"

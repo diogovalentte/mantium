@@ -523,21 +523,41 @@ func (b *Bot) updateMangaStatus(callback *tgbotapi.CallbackQuery, mangaIDStr str
 
 // getMangaByID fetches a single manga by ID from the API
 func (b *Bot) getMangaByID(mangaID string) (*MangaListItem, error) {
-	// Make API request to get manga details
-	resp, err := b.apiClient.R().
-		SetResult(&MangaListItem{}).
-		Get(fmt.Sprintf("/api/mangas/%s", mangaID))
+	// Get all manga from API (no direct endpoint for single manga with full details)
+	apiURL := fmt.Sprintf("http://localhost:%s/v1/mangas", config.GlobalConfigs.API.Port)
 	
+	resp, err := http.Get(apiURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch manga %s: %w", mangaID, err)
+		return nil, fmt.Errorf("failed to fetch manga list: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var result struct {
+		Mangas []MangaListItem `json:"mangas"`
 	}
 	
-	if resp.IsError() {
-		return nil, fmt.Errorf("API error fetching manga %s: %s", mangaID, resp.Status())
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode manga list: %w", err)
 	}
-	
-	manga := resp.Result().(*MangaListItem)
-	return manga, nil
+
+	// Find the manga by ID
+	mangaIDInt, err := strconv.Atoi(mangaID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid manga ID: %s", mangaID)
+	}
+
+	for _, manga := range result.Mangas {
+		if manga.ID == mangaIDInt {
+			return &manga, nil
+		}
+	}
+
+	return nil, fmt.Errorf("manga with ID %s not found", mangaID)
 }
 
 // sendCallbackError sends an error message as callback response
