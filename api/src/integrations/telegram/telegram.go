@@ -224,63 +224,28 @@ func (b *Bot) SendMessage(ctx context.Context, messageText string, buttonLabel s
 	return nil
 }
 
-// SendChapterUpdate sends a message to all configured Telegram chats with chapter updates
-// This function includes a "Set as read" button when polling is enabled
-func (b *Bot) SendChapterUpdate(ctx context.Context, messageText string, mangaID, chapterID string, coverURL string) error {
-    // If polling is not enabled, fall back to simple message
-    if !b.polling {
-        return b.SendMessage(ctx, messageText, "", "")
-    }
+// SendChapterUpdate sends a notification about a new chapter using the standardized manga card format
+// This ensures consistent button layout across all notifications
+func (b *Bot) SendChapterUpdate(ctx context.Context, messageText string, mangaID, chapterID string, coverURL string, chapterURL string) error {
+	// If polling is not enabled, fall back to simple message
+	if !b.polling {
+		return b.SendMessage(ctx, messageText, "", "")
+	}
 
-    // Create callback data for the "Set as read" button
-    callbackData := CallbackData{
-        Action:    "set_read",
-        MangaID:   mangaID,
-        ChapterID: chapterID,
-    }
-    
-    callbackJSON, err := json.Marshal(callbackData)
-    if err != nil {
-        return util.AddErrorContext("failed to marshal callback data", err)
-    }
+	// Fetch the complete manga data to use the standardized card format
+	manga, err := b.getMangaByID(mangaID)
+	if err != nil {
+		log.Printf("Error fetching manga %s for chapter update: %v", mangaID, err)
+		// Fallback to simple message if we can't fetch manga data
+		return b.SendMessage(ctx, messageText, "", "")
+	}
 
-    for _, chatID := range b.ChatIDs {
-        msg := tgbotapi.NewMessage(chatID, messageText)
-        msg.ParseMode = "HTML"
+	// Send the manga card to all configured chat IDs with custom caption
+	for _, chatID := range b.ChatIDs {
+		b.sendMangaCard(chatID, *manga, messageText)
+	}
 
-        // Add "Set as read" button
-        keyboard := tgbotapi.NewInlineKeyboardMarkup(
-            tgbotapi.NewInlineKeyboardRow(
-                tgbotapi.NewInlineKeyboardButtonData("✓ Set as read", string(callbackJSON)),
-            ),
-        )
-        msg.ReplyMarkup = keyboard
-
-        // If cover URL is provided, send it as photo with caption
-        if coverURL != "" {
-            photo := tgbotapi.NewPhoto(chatID, tgbotapi.FileURL(coverURL))
-            photo.Caption = messageText
-            photo.ParseMode = "HTML"
-            photo.ReplyMarkup = keyboard
-            
-            _, err := b.api.Send(photo)
-            if err != nil {
-                log.Printf("Error sending photo message: %v", err)
-                // Fallback to text message if photo fails
-                _, err = b.api.Send(msg)
-                if err != nil {
-                    return util.AddErrorContext("failed to send telegram message", err)
-                }
-            }
-        } else {
-            _, err := b.api.Send(msg)
-            if err != nil {
-                return util.AddErrorContext("failed to send telegram message", err)
-            }
-        }
-    }
-
-    return nil
+	return nil
 }
 
 // startPolling starts the bot polling loop to receive updates
@@ -554,6 +519,25 @@ func (b *Bot) updateMangaStatus(callback *tgbotapi.CallbackQuery, mangaIDStr str
 	edit.ParseMode = "HTML"
 	edit.ReplyMarkup = &keyboard
 	b.api.Send(edit)
+}
+
+// getMangaByID fetches a single manga by ID from the API
+func (b *Bot) getMangaByID(mangaID string) (*MangaListItem, error) {
+	// Make API request to get manga details
+	resp, err := b.apiClient.R().
+		SetResult(&MangaListItem{}).
+		Get(fmt.Sprintf("/api/mangas/%s", mangaID))
+	
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch manga %s: %w", mangaID, err)
+	}
+	
+	if resp.IsError() {
+		return nil, fmt.Errorf("API error fetching manga %s: %s", mangaID, resp.Status())
+	}
+	
+	manga := resp.Result().(*MangaListItem)
+	return manga, nil
 }
 
 // sendCallbackError sends an error message as callback response
@@ -1107,32 +1091,83 @@ func (b *Bot) sendMangaList(chatID int64, messageID int, listType string, offset
 }
 
 // sendMangaCard sends a single manga as a photo with caption and buttons
-func (b *Bot) sendMangaCard(chatID int64, manga MangaListItem) {
-	// Build caption
-	caption := fmt.Sprintf("<b>%s</b>\n", manga.Name)
-	caption += fmt.Sprintf("%s\n\n", getStatusName(manga.Status))
+// customCaption: if provided, overrides the default caption
+func (b *Bot) sendMangaCard(chatID int64, manga MangaListItem, customCaption ...string) {
+	var caption string
 	
-	lastRead := "N/A"
-	lastReadURL := ""
-	if manga.LastReadChapter != nil {
-		lastRead = manga.LastReadChapter.Chapter
-		lastReadURL = manga.LastReadChapter.URL
+	// Use custom caption if provided, otherwise build default
+	if len(customCaption) > 0 && customCaption[0] != "" {
+		caption = customCaption[0]
+	} else {
+		// Build default caption
+		caption = fmt.Sprintf("<b>%s</b>\n", manga.Name)
+		caption += fmt.Sprintf("%s\n\n", getStatusName(manga.Status))
+		
+		lastRead := "N/A"
+		if manga.LastReadChapter != nil {
+			lastRead = manga.LastReadChapter.Chapter
+		}
+		
+		lastReleased := "N/A"
+		if manga.LastReleasedChapter != nil {
+			lastReleased = manga.LastReleasedChapter.Chapter
+		}
+		
+		caption += fmt.Sprintf("📖 Read: Ch. %s → 🆕 New: Ch. %s", lastRead, lastReleased)
+	}
+
+	// Determine which "Read" button to show based on manga state
+	var readButtonLabel string
+	var readButtonURL string
+	
+	// Helper function to increment chapter number in URL
+	getNextChapterURL := func(currentURL, currentChapter string) string {
+		// Try to parse chapter as float to handle decimals (e.g., "5.5")
+		chapterNum, err := strconv.ParseFloat(currentChapter, 64)
+		if err != nil {
+			return currentURL // Return original URL if parsing fails
+		}
+		
+		// Increment chapter by 1
+		nextChapter := chapterNum + 1
+		nextChapterStr := strconv.FormatFloat(nextChapter, 'f', -1, 64)
+		
+		// Replace old chapter number with new one in URL
+		return strings.Replace(currentURL, currentChapter, nextChapterStr, 1)
 	}
 	
-	lastReleased := "N/A"
-	if manga.LastReleasedChapter != nil {
-		lastReleased = manga.LastReleasedChapter.Chapter
+	// Logic to determine which button to show:
+	// 1. If lastRead < lastReleased → "Read Next" (next chapter after lastRead)
+	// 2. If no lastRead → "Read Latest" (lastReleased)
+	// 3. If lastRead == lastReleased → "Read Again" (lastRead)
+	if manga.LastReadChapter != nil && manga.LastReleasedChapter != nil {
+		lastReadNum, errRead := strconv.ParseFloat(manga.LastReadChapter.Chapter, 64)
+		lastReleasedNum, errReleased := strconv.ParseFloat(manga.LastReleasedChapter.Chapter, 64)
+		
+		if errRead == nil && errReleased == nil {
+			if lastReadNum < lastReleasedNum {
+				// Case 1: There are unread chapters - show "Read Next"
+				readButtonLabel = "📖 Read Next"
+				readButtonURL = getNextChapterURL(manga.LastReadChapter.URL, manga.LastReadChapter.Chapter)
+			} else if lastReadNum == lastReleasedNum {
+				// Case 3: Up to date - show "Read Again"
+				readButtonLabel = "🔄 Read Again"
+				readButtonURL = manga.LastReadChapter.URL
+			}
+		}
+	} else if manga.LastReadChapter == nil && manga.LastReleasedChapter != nil {
+		// Case 2: No last read - show "Read Latest"
+		readButtonLabel = "📖 Read Latest"
+		readButtonURL = manga.LastReleasedChapter.URL
 	}
-	
-	caption += fmt.Sprintf("📖 Read: Ch. %s → 🆕 New: Ch. %s", lastRead, lastReleased)
 
 	// Create inline keyboard
 	var buttons [][]tgbotapi.InlineKeyboardButton
 	
-	// Row 1: Read button (if last read chapter exists)
-	if lastReadURL != "" && !strings.HasPrefix(lastReadURL, "http://custom_manga") {
+	// Row 1: Read button (if URL is valid and not a custom manga)
+	if readButtonURL != "" && !strings.HasPrefix(readButtonURL, "http://custom_manga") {
 		buttons = append(buttons, tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL("📖 Read Chapter", lastReadURL),
+			tgbotapi.NewInlineKeyboardButtonURL(readButtonLabel, readButtonURL),
 		))
 	}
 	

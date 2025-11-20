@@ -2800,23 +2800,27 @@ func NotifyMangaLastReleasedChapterUpdate(m *manga.Manga) error {
 		if err != nil {
 			errors = append(errors, err)
 		} else {
+			// Build the message text with manga name and chapter
 			messageText := fmt.Sprintf("<b>New chapter of manga: %s</b>\nChapter: %s", 
 				m.Name, m.LastReleasedChapter.Chapter)
 
-			// Prepare cover image URL (convert base64 to URL if needed)
-			// For now, we'll use empty string - you can implement image hosting later
+			// Prepare cover image URL (use CoverImgURL if available)
 			coverURL := ""
 			if m.CoverImgURL != "" {
 				coverURL = m.CoverImgURL
 			}
 
+			// Get the chapter URL for the "Read Chapter" button
+			chapterURL := m.LastReleasedChapter.URL
+
 			ctx := context.Background()
 			
-			// Use the new SendChapterUpdate function which includes the "Set as read" button
+			// Send chapter update with both "Read Chapter" and "Set as read" buttons
 			err = bot.SendChapterUpdate(ctx, messageText, 
 				fmt.Sprintf("%d", m.ID), 
 				fmt.Sprintf("%s", m.LastReleasedChapter.Chapter),
-				coverURL)
+				coverURL,
+				chapterURL) // Pass the chapter URL
 			
 			if err != nil {
 				errors = append(errors, err)
