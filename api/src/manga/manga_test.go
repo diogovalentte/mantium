@@ -428,7 +428,7 @@ func TestMangaWithoutChaptersDBLifeCycle(t *testing.T) {
 func TestCustomMangaLastReleasedChapter(t *testing.T) {
 	customMangaNoBrowserHTML := &Manga{
 		Source: CustomMangaSource,
-		URL:    "https://klmanga.ing/manga-raw/%E3%83%9D%E3%83%B3%E3%82%B3%E3%83%84%E9%A2%A8%E7%B4%80%E5%A7%94%E5%93%A1%E3%81%A8%E3%82%B9%E3%82%AB%E3%83%BC%E3%83%88%E4%B8%88%E3%81%8C%E4%B8%8D%E9%81%A9%E5%88%87%E3%81%AAjk%E3%81%AE%E8%A9%B1-raw/",
+		URL:    "https://klmanga.spot/manga-raw/%E3%83%9D%E3%83%B3%E3%82%B3%E3%83%84%E9%A2%A8%E7%B4%80%E5%A7%94%E5%93%A1%E3%81%A8%E3%82%B9%E3%82%AB%E3%83%BC%E3%83%88%E4%B8%88%E3%81%8C%E4%B8%8D%E9%81%A9%E5%88%87%E3%81%AAjk%E3%81%AE%E8%A9%B1-raw/",
 		LastReleasedChapterNameSelector: &HTMLSelector{
 			Selector: "css:div.chapter-box > h4:first-child > a span:first-child",
 			Regex:    `【第(\d+(\.\d+)?)話】`,

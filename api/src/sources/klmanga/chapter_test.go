@@ -19,25 +19,25 @@ var chapterTestTable = []chapterTestType{
 		expected: &manga.Chapter{
 			Chapter: "18",
 			Name:    "アンチロマンス (Raw – Free) 【第18話】",
-			URL:     "https://klmanga.ing/manga-raw/%e3%82%a2%e3%83%b3%e3%83%81%e3%83%ad%e3%83%9e%e3%83%b3%e3%82%b9-raw-free/chapter-18/",
+			URL:     "https://klmanga.spot/manga-raw/%e3%82%a2%e3%83%b3%e3%83%81%e3%83%ad%e3%83%9e%e3%83%b3%e3%82%b9-raw-free/chapter-18/",
 		},
-		url: "https://klmanga.ing/manga-raw/%e3%82%a2%e3%83%b3%e3%83%81%e3%83%ad%e3%83%9e%e3%83%b3%e3%82%b9-raw-free/",
+		url: "https://klmanga.spot/manga-raw/%e3%82%a2%e3%83%b3%e3%83%81%e3%83%ad%e3%83%9e%e3%83%b3%e3%82%b9-raw-free/",
 	},
 	{
 		expected: &manga.Chapter{
 			Chapter: "8",
 			Name:    "アイマイミーマイン (Raw – Free) 【第8話】",
-			URL:     "https://klmanga.ing/manga-raw/%e3%82%a2%e3%82%a4%e3%83%9e%e3%82%a4%e3%83%9f%e3%83%bc%e3%83%9e%e3%82%a4%e3%83%b3-raw-free/chapter-8/",
+			URL:     "https://klmanga.spot/manga-raw/%e3%82%a2%e3%82%a4%e3%83%9e%e3%82%a4%e3%83%9f%e3%83%bc%e3%83%9e%e3%82%a4%e3%83%b3-raw-free/chapter-8/",
 		},
-		url: "https://klmanga.ing/manga-raw/%e3%82%a2%e3%82%a4%e3%83%9e%e3%82%a4%e3%83%9f%e3%83%bc%e3%83%9e%e3%82%a4%e3%83%b3-raw-free/",
+		url: "https://klmanga.spot/manga-raw/%e3%82%a2%e3%82%a4%e3%83%9e%e3%82%a4%e3%83%9f%e3%83%bc%e3%83%9e%e3%82%a4%e3%83%b3-raw-free/",
 	},
 	{
 		expected: &manga.Chapter{
 			Chapter: "20",
 			Name:    "思えば遠くにオブスクラ (Raw – Free) 【第20話】",
-			URL:     "https://klmanga.ing/manga-raw/%e6%80%9d%e3%81%88%e3%81%b0%e9%81%a0%e3%81%8f%e3%81%ab%e3%82%aa%e3%83%96%e3%82%b9%e3%82%af%e3%83%a9-raw-free/chapter-20/",
+			URL:     "https://klmanga.spot/manga-raw/%e6%80%9d%e3%81%88%e3%81%b0%e9%81%a0%e3%81%8f%e3%81%ab%e3%82%aa%e3%83%96%e3%82%b9%e3%82%af%e3%83%a9-raw-free/chapter-20/",
 		},
-		url: "https://klmanga.ing/manga-raw/%e6%80%9d%e3%81%88%e3%81%b0%e9%81%a0%e3%81%8f%e3%81%ab%e3%82%aa%e3%83%96%e3%82%b9%e3%82%af%e3%83%a9-raw-free/",
+		url: "https://klmanga.spot/manga-raw/%e6%80%9d%e3%81%88%e3%81%b0%e9%81%a0%e3%81%8f%e3%81%ab%e3%82%aa%e3%83%96%e3%82%b9%e3%82%af%e3%83%a9-raw-free/",
 	},
 }
 
@@ -142,15 +142,15 @@ type chaptersTestType struct {
 
 var chaptersTestTable = []chaptersTestType{
 	{
-		url:      "https://klmanga.ing/manga-raw/%e3%82%a2%e3%83%b3%e3%83%81%e3%83%ad%e3%83%9e%e3%83%b3%e3%82%b9-raw-free/",
+		url:      "https://klmanga.spot/manga-raw/%e3%82%a2%e3%83%b3%e3%83%81%e3%83%ad%e3%83%9e%e3%83%b3%e3%82%b9-raw-free/",
 		quantity: 18,
 	},
 	{
-		url:      "https://klmanga.ing/manga-raw/%e3%82%a2%e3%82%a4%e3%83%9e%e3%82%a4%e3%83%9f%e3%83%bc%e3%83%9e%e3%82%a4%e3%83%b3-raw-free/",
+		url:      "https://klmanga.spot/manga-raw/%e3%82%a2%e3%82%a4%e3%83%9e%e3%82%a4%e3%83%9f%e3%83%bc%e3%83%9e%e3%82%a4%e3%83%b3-raw-free/",
 		quantity: 8,
 	},
 	{
-		url:      "https://klmanga.ing/manga-raw/%e6%80%9d%e3%81%88%e3%81%b0%e9%81%a0%e3%81%8f%e3%81%ab%e3%82%aa%e3%83%96%e3%82%b9%e3%82%af%e3%83%a9-raw-free/",
+		url:      "https://klmanga.spot/manga-raw/%e6%80%9d%e3%81%88%e3%81%b0%e9%81%a0%e3%81%8f%e3%81%ab%e3%82%aa%e3%83%96%e3%82%b9%e3%82%af%e3%83%a9-raw-free/",
 		quantity: 21,
 	},
 }
