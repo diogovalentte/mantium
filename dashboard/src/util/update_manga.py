@@ -74,7 +74,7 @@ def show_update_multimanga_mangas_form(multimanga: dict[str, Any]):
 
     else:
 
-        @st.dialog("Manage Mangas", width="large", on_dismiss=set_is_dialog_open)
+        @st.dialog("Manage Mangas", width="medium", on_dismiss=set_is_dialog_open)
         def show():
             ss["is_dialog_open"] = True
             show_update_multimanga_manage_mangas(multimanga)
