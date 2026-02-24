@@ -2,24 +2,35 @@ FROM python:3.11-slim AS build
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libjpeg62-turbo-dev \
+    libpng-dev \
+    zlib1g-dev \
+    libfreetype6-dev \
+    liblcms2-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN python -m venv /venv
+ENV PATH="/venv/bin:$PATH"
+
 COPY ./dashboard/requirements.txt requirements.txt
 
 RUN pip install --upgrade pip \
-    && pip install --no-cache-dir --target=/app/deps -r requirements.txt 
+    && pip install --no-cache-dir -r requirements.txt
 
-RUN rm -rf /app/deps/**/*.dist-info/__pycache__ /app/deps/**/*.pyc /root/.cache
+FROM python:3.11-slim
 
-FROM gcr.io/distroless/python3:nonroot
-
-ENV TZ=UTC
+ENV TZ=UTC \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/venv/bin:$PATH"
 
 WORKDIR /app
 
-COPY --from=build /app/deps /app/deps
+COPY --from=build /venv /venv
 COPY ./dashboard .
-
-ENV PYTHONPATH="/app/deps"
 
 EXPOSE 8501
 
-CMD ["-m", "streamlit", "run", "01_📖_Dashboard.py", "--server.port=8501", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "01_📖_Dashboard.py", "--server.port=8501", "--server.address=0.0.0.0"]
