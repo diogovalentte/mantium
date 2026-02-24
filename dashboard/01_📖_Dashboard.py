@@ -14,7 +14,7 @@ from src.util.update_manga import (
     show_update_multimanga_form,
     show_update_multimanga_mangas_form,
 )
-from src.util.util import centered_container, get_logger, get_relative_time, tagger
+from src.util.util import centered_container, get_logger, get_relative_time, tagger, set_is_dialog_open
 from streamlit import session_state as ss
 from streamlit_extras.stylable_container import stylable_container
 from streamlit_javascript import st_javascript
@@ -290,7 +290,7 @@ class MainDashboard:
             message = ss["updated_message"]
             new_version = ss["updated_version"]
 
-            @st.dialog(f"Updated to version {new_version}!", width="large")
+            @st.dialog(f"Updated to version {new_version}!", width="large", on_dismiss=set_is_dialog_open)
             def show():
                 ss["is_dialog_open"] = True
                 st.markdown(message)
@@ -316,7 +316,7 @@ class MainDashboard:
             ss["highlighted_multimanga"] = None
         elif ss.get("update_manga_success_message", "") != "":
 
-            @st.dialog("Update Manga")
+            @st.dialog("Update Manga", on_dismiss=set_is_dialog_open)
             def show():
                 ss["is_dialog_open"] = True
                 st.success(ss["update_manga_success_message"])
@@ -325,7 +325,7 @@ class MainDashboard:
             show()
         elif ss.get("add_manga_success_message", "") != "":
 
-            @st.dialog("Add Manga")
+            @st.dialog("Add Manga", on_dismiss=set_is_dialog_open)
             def show():
                 ss["is_dialog_open"] = True
                 st.success(ss["add_manga_success_message"])
@@ -334,7 +334,7 @@ class MainDashboard:
             show()
         elif ss.get("add_manga_warning_message", "") != "":
 
-            @st.dialog("Add Manga")
+            @st.dialog("Add Manga", on_dismiss=set_is_dialog_open)
             def show():
                 ss["is_dialog_open"] = True
                 st.warning(ss["add_manga_warning_message"])
@@ -349,7 +349,7 @@ class MainDashboard:
             or ss.get("configs_update_success_message", "") != ""
         ):
 
-            @st.dialog("Settings")
+            @st.dialog("Settings", on_dismiss=set_is_dialog_open)
             def show_configs_update_message():
                 ss["is_dialog_open"] = True
                 if ss.get("configs_update_error_message", "") != "":
@@ -375,7 +375,7 @@ class MainDashboard:
                     )
                     st.info(f"Time: {last_background_error['time']}")
 
-                    @st.dialog("Last Background Error Message", width="large")
+                    @st.dialog("Last Background Error Message", width="large", on_dismiss=set_is_dialog_open)
                     def show_error_message_dialog():
                         ss["is_dialog_open"] = True
                         st.write(last_background_error["message"])
@@ -844,7 +844,7 @@ class MainDashboard:
                 on_click=highlight_manga,
             )
 
-    @st.dialog("Settings")
+    @st.dialog("Settings", on_dismiss=set_is_dialog_open)
     def show_settings(self):
         ss["is_dialog_open"] = True
         with st.form(key="configs_update_configs", border=False):

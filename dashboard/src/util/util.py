@@ -1,4 +1,5 @@
 import logging
+from streamlit import session_state as ss
 import pathlib
 from datetime import datetime, timezone
 import uuid
@@ -101,9 +102,11 @@ def get_relative_time(past_date):
     else:
         return "Just now"
 
+
 def set_custom_js_to_none():
     js = """window.parent.document.querySelectorAll('div:has(> iframe[title="streamlit_javascript.streamlit_javascript"])').forEach(div => div.parentElement.style.display = 'none');"""
     st_javascript(js, key=str(uuid.uuid4()))
+
 
 def fix_streamlit_index_html():
     """Fixes the Streamlit index.html file to allow to load mangadex images.
@@ -158,3 +161,8 @@ def get_source_name_and_colors(source: str):
             return "JManga", "white", "#7b36ce"
         case _:
             return source, "black", "white"
+
+
+def set_is_dialog_open():
+    # This is used to prevent the dialog from closing when the user is interacting with it
+    ss["is_dialog_open"] = False

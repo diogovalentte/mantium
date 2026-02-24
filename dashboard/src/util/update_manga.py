@@ -16,6 +16,7 @@ from src.util.util import (
     get_source_name_and_colors,
     get_updated_at_datetime,
     tagger,
+    set_is_dialog_open,
 )
 from streamlit import session_state as ss
 from streamlit_extras.stylable_container import stylable_container
@@ -26,14 +27,14 @@ logger = get_logger()
 def show_update_multimanga_form(manga: dict[str, Any]):
     if manga["Source"] == defaults.CUSTOM_MANGA_SOURCE:
 
-        @st.dialog(manga["Name"])
+        @st.dialog(manga["Name"], on_dismiss=set_is_dialog_open)
         def show():
             ss["is_dialog_open"] = True
             show_update_custom_manga(manga)
 
     else:
 
-        @st.dialog(manga["Name"])
+        @st.dialog(manga["Name"], on_dismiss=set_is_dialog_open)
         def show():
             ss["is_dialog_open"] = True
             e = st.empty()
@@ -57,7 +58,7 @@ def show_update_multimanga_form(manga: dict[str, Any]):
 def show_update_multimanga_mangas_form(multimanga: dict[str, Any]):
     if ss.get("show_update_multimanga_add_manga_search", False):
 
-        @st.dialog("Add Manga", width="large")
+        @st.dialog("Add Manga", width="large", on_dismiss=set_is_dialog_open)
         def show():
             ss["is_dialog_open"] = True
             show_update_multimanga_add_manga_search(multimanga)
@@ -65,7 +66,7 @@ def show_update_multimanga_mangas_form(multimanga: dict[str, Any]):
 
     elif ss.get("show_update_multimanga_add_manga_url", False):
 
-        @st.dialog("Add Manga")
+        @st.dialog("Add Manga", on_dismiss=set_is_dialog_open)
         def show():
             ss["is_dialog_open"] = True
             show_update_multimanga_add_manga_url(multimanga)
@@ -73,7 +74,7 @@ def show_update_multimanga_mangas_form(multimanga: dict[str, Any]):
 
     else:
 
-        @st.dialog("Manage Mangas", width="large")
+        @st.dialog("Manage Mangas", width="large", on_dismiss=set_is_dialog_open)
         def show():
             ss["is_dialog_open"] = True
             show_update_multimanga_manage_mangas(multimanga)

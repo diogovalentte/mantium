@@ -11,6 +11,7 @@ from src.util.util import (
     get_relative_time,
     get_updated_at_datetime,
     tagger,
+    set_is_dialog_open,
 )
 from streamlit import session_state as ss
 from streamlit_javascript import st_javascript
@@ -39,7 +40,7 @@ def show_add_manga_form(form_type: str):
 
     if form_type == "url":
 
-        @st.dialog("Add Manga")
+        @st.dialog("Add Manga", on_dismiss=set_is_dialog_open)
         def show():
             ss["is_dialog_open"] = True
             e = st.empty()
@@ -53,7 +54,7 @@ def show_add_manga_form(form_type: str):
 
     elif form_type == "search":
 
-        @st.dialog("Add Manga", width="large")
+        @st.dialog("Add Manga", width="large", on_dismiss=set_is_dialog_open)
         def show():
             ss["is_dialog_open"] = True
             e = st.empty()
@@ -67,7 +68,7 @@ def show_add_manga_form(form_type: str):
 
     elif form_type == "custom":
 
-        @st.dialog("Add Custom Manga")
+        @st.dialog("Add Custom Manga", on_dismiss=set_is_dialog_open)
         def show():
             ss["is_dialog_open"] = True
             e = st.empty()
