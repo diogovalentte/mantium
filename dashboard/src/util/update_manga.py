@@ -539,7 +539,7 @@ def show_multimanga_mangas(
             col_index = 0
         with cols_list[col_index]:
             with st.container(border=True):
-                with centered_container("center_container"):
+                with centered_container("center_container" + str(manga["ID"])):
                     show_multimanga_manga(
                         manga, multimanga_id, manga["ID"] == current_manga_id
                     )
@@ -671,7 +671,7 @@ def show_multimanga_manga(
     st.write(tags, unsafe_allow_html=True)
 
     with stylable_container(
-        key="update_manga_delete_button",
+        key="update_manga_delete_button" + str(manga["ID"]),
         css_styles="""
             button {
                 background-color: red;

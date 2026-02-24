@@ -437,7 +437,7 @@ class MainDashboard:
                 col_index = 0
             with cols_list[col_index]:
                 with st.container(border=True):
-                    with centered_container("center_container"):
+                    with centered_container("center_container" + manga["URL"]):
                         self.show_manga_grid(manga)
             col_index += 1
 

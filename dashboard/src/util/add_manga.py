@@ -327,7 +327,7 @@ def show_search_result_mangas(
             col_index = 0
         with cols_list[col_index]:
             with st.container(border=True, height=manga_container_height):
-                with centered_container("center_container"):
+                with centered_container("center_container" + manga["URL"]):
                     show_search_result_manga(manga, button_name, key_to_save_manga)
         col_index += 1
 

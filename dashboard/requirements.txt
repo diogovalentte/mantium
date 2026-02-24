@@ -58,13 +58,13 @@ st-annotated-text==4.0.1
 streamlit==1.54.0
 streamlit-browser-engine==0.0.3
 streamlit-camera-input-live==0.2.0
-streamlit-card==1.0.0
+streamlit-card==1.0.2
 streamlit-embedcode==0.1.2
-streamlit-extras==0.3.6
+streamlit-extras==0.7.8
 streamlit-faker==0.0.3
-streamlit-image-coordinates==0.1.6
+streamlit-image-coordinates==0.1.9
 streamlit-javascript==0.1.5
-streamlit-keyup==0.2.2
+streamlit-keyup==0.2.4
 streamlit-toggle-switch==1.0.2
 streamlit-vertical-slider==2.5.5
 tenacity==8.2.3
@@ -77,6 +77,6 @@ tzdata==2023.4
 tzlocal==5.2
 urllib3==2.5.0
 uvloop==0.22.1
-validators==0.22.0
+validators==0.33.0
 watchdog==3.0.0
 zipp==3.21.0
