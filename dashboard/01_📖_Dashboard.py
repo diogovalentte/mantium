@@ -382,7 +382,7 @@ class MainDashboard:
                         ss["is_dialog_open"] = True
                         st.write(last_background_error["message"])
                         with stylable_container(
-                            key="delete_background_error_button",
+                            key="delete_background_error_button_inside_dialog",
                             css_styles="""
                                 button {
                                     background-color: red;
