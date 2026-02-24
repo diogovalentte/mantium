@@ -76,6 +76,7 @@ typing_extensions==4.15.0
 tzdata==2023.4
 tzlocal==5.2
 urllib3==2.5.0
+uvloop==0.22.1
 validators==0.22.0
 watchdog==3.0.0
 zipp==3.21.0
