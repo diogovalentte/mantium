@@ -192,9 +192,11 @@ class MainDashboard:
                     }
                 }
 
-                div[data-testid="stElementContainer"]:has(div[data-testid="stImageContainer"]) {
+                /* Center manga cover images when using st.image() */
+                div[data-testid="stElementContainer"]:has([data-testid="stImageContainer"]) {
                     display: grid !important;
-                    align-items: center;
+                    width: 100%;
+                    justify-items: center;
                 }
 
                 /* General changes */
