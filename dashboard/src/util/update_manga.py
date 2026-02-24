@@ -616,15 +616,6 @@ def show_multimanga_manga(
             f"""<img src="{defaults.DEFAULT_MANGA_COVER}" width="250" height="355"/>""",
             unsafe_allow_html=True,
         )
-    # Hide the "View fullscreen" button from the image
-    hide_img_fs = """
-    <style>
-        button[title="View fullscreen"]{
-            display: none !important;
-        }
-    </style>
-    """
-    st.markdown(hide_img_fs, unsafe_allow_html=True)
 
     chapter_tag_content = f"""
         <a href="{manga["LastReleasedChapter"]["URL"]}" target="_blank" style="text-decoration: none; color: {defaults.chapter_link_tag_text_color}">
