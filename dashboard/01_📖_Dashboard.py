@@ -152,12 +152,12 @@ class MainDashboard:
                 }
 
                 /* Hide the header link button */
-                h1.manga_header > span {
+                h1.manga_header > span[data-testid="stHeaderActionElements"] {
                     display: none !important;
                 }
 
                 /* Add ellipsis (...) if the manga name is to long */
-                h1.manga_header > div > span {
+                h1.manga_header > span > div > span {
                     white-space: nowrap !important;
                     overflow: hidden !important;
                     text-overflow: ellipsis !important;
@@ -446,8 +446,7 @@ class MainDashboard:
         )
 
         st.markdown(
-            f"""<h1
-                class="manga_header" style='margin-top: 16px; margin-bottom: 8px; {"animation: pulse 2s infinite alternate;" if unread else ""}'>
+            f"""<h1 class="manga_header" style='margin-top: 16px; margin-bottom: 8px; {"animation: pulse 2s infinite alternate;" if unread else ""}'>
                     <div style='position: relative; display: flex; box-sizing: border-box;'>
                         <span>
                             {'<a class="manga_header" href="{}" target="_blank">{}</a>'.format(manga["URL"], manga["Name"]) if manga["URL"] != "" else f'<span class="manga_header">{manga["Name"]}</span>'}
