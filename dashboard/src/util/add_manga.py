@@ -1,6 +1,5 @@
 from typing import Any
 
-from src.util import util
 import src.util.defaults as defaults
 import streamlit as st
 from src.api.api_client import get_api_client
@@ -13,8 +12,9 @@ from src.util.util import (
     tagger,
     set_is_dialog_open,
 )
+from src.util.defaults import reversed_default_sources
 from streamlit import session_state as ss
-from streamlit_javascript import st_javascript
+
 
 logger = get_logger()
 
@@ -36,7 +36,7 @@ def show_add_manga_form(form_type: str):
     ss[base_key + "_rawkuma"] = {}
     ss[base_key + "_klmanga"] = {}
     ss[base_key + "_jmanga"] = {}
-    ss["add_manga_search_go_back_to_tab"] = 0
+    ss["add_manga_search_go_back_to_tab"] = None
 
     if form_type == "url":
 
@@ -238,9 +238,7 @@ def show_add_manga_form_search():
             )
 
         def on_click():
-            ss["add_manga_search_go_back_to_tab"] = list(sources.values()).index(
-                ss["add_manga_search_selected_manga"]["Source"]
-            )
+            ss["add_manga_search_go_back_to_tab"] = reversed_default_sources[ss["add_manga_search_selected_manga"]["Source"]]
             ss["add_manga_search_selected_manga"] = None
 
         st.button("Back", use_container_width=True, on_click=on_click)
@@ -248,17 +246,12 @@ def show_add_manga_form_search():
         # if change key_to_save_manga, also change it in func show_dialogs in the 01_?.py main file
         button_name, key_to_save_manga = "Select", "add_manga_search_selected_manga"
         with container:
-            tabs = st.tabs(list(sources.keys()))
+            tabs = st.tabs(list(sources.keys()), default=ss["add_manga_search_go_back_to_tab"])
             for i, source in enumerate(sources.keys()):
                 with tabs[i]:
                     show_search_manga_term_form(
                         sources[source], button_name, key_to_save_manga
                     )
-
-        tab_index = ss["add_manga_search_go_back_to_tab"]
-        js = f"""window.parent.document.querySelectorAll('button[data-baseweb="tab"]')[{tab_index}].click();"""
-        st_javascript(js)
-        util.set_custom_js_to_none()
 
 
 def show_search_manga_term_form(source: str, button_name: str, key_to_save_manga: str):

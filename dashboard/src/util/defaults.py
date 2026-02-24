@@ -7,6 +7,7 @@ default_sources = {
     "KLManga": "klmanga",
     "JManga": "jmanga",
 }
+reversed_default_sources = {v: k for k, v in default_sources.items()}
 
 manga_status_options = {
     0: "📚 All",
