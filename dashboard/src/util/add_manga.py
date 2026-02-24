@@ -54,7 +54,7 @@ def show_add_manga_form(form_type: str):
 
     elif form_type == "search":
 
-        @st.dialog("Add Manga", width="large", on_dismiss=set_is_dialog_open)
+        @st.dialog("Add Manga", width="medium", on_dismiss=set_is_dialog_open)
         def show():
             ss["is_dialog_open"] = True
             e = st.empty()

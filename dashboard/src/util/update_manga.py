@@ -58,7 +58,7 @@ def show_update_multimanga_form(manga: dict[str, Any]):
 def show_update_multimanga_mangas_form(multimanga: dict[str, Any]):
     if ss.get("show_update_multimanga_add_manga_search", False):
 
-        @st.dialog("Add Manga", width="large", on_dismiss=set_is_dialog_open)
+        @st.dialog("Add Manga", width="medium", on_dismiss=set_is_dialog_open)
         def show():
             ss["is_dialog_open"] = True
             show_update_multimanga_add_manga_search(multimanga)
