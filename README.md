@@ -1,24 +1,58 @@
 # Mantium
 
-**Mantium is a cross-site manga tracker**, which means that you can track manga from multiple source sites, like [Mangadex](https://mangadex.org) and [MangaPlus](https://mangaplus.shueisha.co.jp). Mantium doesn't download the chapter images; it downloads the manga metadata (name, URL, cover, etc.) and chapter metadata (number, name, URL) from the source site and shows them in a dashboard and iFrame to put in your dashboard service.
+**Mantium is a cross-site manga tracker**. It allows you to track manga from multiple source sites such as [Mangadex](https://mangadex.org) and [MangaPlus](https://mangaplus.shueisha.co.jp).
 
-- Mantium currently can natively track manga on [Manga Plus](https://mangaplus.shueisha.co.jp), [MangaDex](https://mangadex.org), [MangaHub](https://mangahub.io), [MangaUpdates](https://www.mangaupdates.com/), [RawKuma](https://rawkuma.com/), [KLManga](https://klmanga.rs/), and [JManga](https://jmanga.is), but it can also [automatically track manga from nearly all sites](#custom-manga).
+Mantium does **not** download the chapter images. Instead, it retrieves:
 
-**The basic workflow is:**
+- Manga metadata (name, URL, cover, etc.)
+- Chapter metadata (number, name, URL)
 
-1. You find an interesting manga on a site.
-2. Add the manga to Mantium. Set its status (reading, dropped, etc.) and (_optionally_) the last chapter you read from the list of the manga's released chapters.
-3. You also configure Mantium to periodically check for new chapters (like every 30 minutes) in your mangas and notify you when they are released.
-4. After being notified that a new chapter has been released, you read it and set it in Mantium that you have read the last released chapter.
-5. That's how you track a manga in Mantium.
+This data is displayed and managed in a web dashboard and can be embedded via an iFrame in your own dashboard.
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/W7W012U1PL)
 
+---
+
+# Supported Sources
+
+Mantium natively supports:
+
+- [Manga Plus](https://mangaplus.shueisha.co.jp)
+- [MangaDex](https://mangadex.org)
+- [MangaHub](https://mangahub.io)
+- [MangaUpdates](https://www.mangaupdates.com/)
+- [RawKuma](https://rawkuma.com/)
+- [KLManga](https://klmanga.rs/)
+- [JManga](https://jmanga.is)
+
+It can also automatically track manga from nearly all sites using the [Custom Manga](#custom-manga) feature.
+
+# Basic Workflow
+
+1. Find a manga on a supported site.
+2. Add it to Mantium.
+3. Set its status (reading, dropped, completed, etc.).
+4. Optionally set the last chapter you have read.
+5. Configure periodic checks (e.g., every 30 minutes) to detect new chapters.
+6. When notified about a new chapter, read it.
+7. Update the last read chapter in Mantium.
+
+This keeps your reading progress synchronized across sources.
+
+---
+
 # Dashboard
 
-By default, the dashboard shows the mangas with unread chapters first, ordered by the last released chapter. Unread manga names have an animation effect that changes the name color to catch your attention.
+By default, the dashboard:
 
-You have two display options: **grid view** and **list view**.
+- Shows manga with unread chapters first.
+- Orders them by latest released chapter.
+- Highlights unread manga titles with an animation effect.
+
+Two display modes are available:
+
+- Grid view
+- List view
 
 ## Grid View
 
@@ -32,7 +66,10 @@ You have two display options: **grid view** and **list view**.
   <img src="https://github.com/user-attachments/assets/8b0f810f-d2ce-4fe8-a9c5-bd215541d67b">
 </p>
 
-You can add a manga to Mantium using the manga URL or by searching for it by name in Mantium:
+You can add manga in natively supported sites in two ways:
+
+- By pasting the manga URL.
+- By searching for the manga by name directly in Mantium.
 
 |                                 Using the Manga URL                                  |                                  Searching by Name                                   |
 | :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: |
@@ -40,94 +77,177 @@ You can add a manga to Mantium using the manga URL or by searching for it by nam
 
 ## Sidebar
 
-- On the sidebar, you can:
-  - Filter the mangas by name, and status (_reading, completed, dropped, on hold, plan to read, all_).
-  - Order the mangas by name, last chapter read, last chapter upload, number of chapters, and unread (_shows unread mangas first, ordering by last upload chapter_), and reverse the sort.
-  - Click to add a manga to Mantium.
-  - Set the dashboard configs like the display mode, number of columns in the dashboard, etc.
+From the sidebar, you can:
+
+- Filter manga by:
+  - Name
+  - Status (reading, completed, dropped, on hold, plan to read, all)
+- Sort by:
+  - Name
+  - Last chapter read
+  - Last uploaded chapter
+  - Number of chapters
+  - Unread (prioritizes unread manga)
+- Reverse the sorting order.
+- Add new manga.
+- Configure dashboard settings (display mode, number of columns, etc.).
+
+---
 
 # iFrame
 
-Mantium also has an endpoint that returns an iFrame. It's a minimalist version of the dashboard, showing only mangas with unread chapters with status reading or completed. You can add it to a dashboard, for example. More about the iframe [here](https://github.com/diogovalentte/mantium/edit/main/README.md#iframe-usage).
+Mantium provides an endpoint that returns a minimalist iFrame version of the dashboard.
+
+The iFrame:
+
+- Shows only manga with unread chapters.
+- Includes only manga with status reading or completed.
+- Is designed to be embedded in external dashboards.
+- More details are available in the [iFrame usage section below](https://github.com/diogovalentte/mantium/edit/main/README.md#iframe-usage).
 
 ![image](https://github.com/diogovalentte/mantium/assets/49578155/e88d85f2-0109-444a-b225-878a5db01400)
 
 # Multimanga
 
-A **Multimanga** is like a container for multiple mangas. When you add a manga to Mantium, it creates a multimanga and adds the manga to the multimanga. You actually never interact with the manga, only the multimanga. But why?
+A **Multimanga** is a container for multiple entries of the same manga across different source sites.
 
-The **multimanga** feature solves the issue of when you want to track the **same manga** in multiple source sites, so that you are notified whenever a new chapter is released as soon as possible in whichever source. You could add the same manga for each source, but they would act as **completely different mangas**. Each one would appear on a card in the dashboard/iframe. You would need to set the last read chapter for each of them and be notified of new chapters from each of them.
+When you add a manga to Mantium, a Multimanga is automatically created. You always interact with the Multimanga — not the individual source entries.
 
-The multimanga feature solves this issue. With it, you add the same manga from multiple sources to the same multimanga and interact only with the multimanga. No multiple notifications or setting the last read chapter for all of them, you just set the multimanga last read chapter, and only one card will appear in the dashboard/iframe!
+## Why Multimanga?
+
+If you track the same manga on multiple sites independently:
+
+- Each entry appears separately in the dashboard and iFrame.
+- You receive multiple notifications.
+- You must update the last read chapter for each source.
+
+**With Multimanga:**
+
+- All sources are grouped.
+- Only one dashboard and iFrame card is shown.
+- You set the last read chapter once.
+- You receive a single notification.
 
 ## Current manga
 
-A multimanga always has a manga called **current manga**, which is one of the multimanga's mangas. The dashboard/iframe shows the current manga's name, cover image, and last released chapter. When you select the last read chapter, the list of the current manga chapters is shown. When you're notified of a new chapter, the newest chapter of the current manga is sent in the notification.
+Each Multimanga has a **current manga**, which determines:
 
-Based on the last released chapter, Mantium **tries** to set the current manga to the manga with the newest released chapter by using the following rules. Take, for example, a multimanga with two mangas. Mantium will compare the mangas last released chapter this way:
+- Which display name, cover image, and last released chapter to be shown in the dashboard and iFrame
+- Chapter list shown when selecting last read chapter
+- Chapter included in notifications
 
-1. If the chapters numbers are equal, Mantium sets the manga that released the chapter last as the current manga.
-2. If they're not equal, Mantium will pick the manga with the biggest chapter number.
-3. Depending on the manga and source, the chapter's number can not be a number at all. When one of the manga's chapter numbers is not a number, Mantium will pick the manga that released the chapter last as the current manga.
+Mantium automatically selects the current manga to be the one with the newest released chapter using these rules:
 
-Mantium decides which manga should be the current manga whenever you **add/remove** a manga from a multimanga and in the [periodic job that updates the mangas in the background](https://github.com/diogovalentte/mantium?tab=readme-ov-file#check-manga-updates-and-notify).
+1. If chapter numbers are equal → choose the one released most recently.
+2. If chapter numbers differ → choose the one with the highest chapter number.
+3. If chapter numbers are non-numeric → choose the one released most recently.
 
-The images below show the pop-up when you click the "**Highlight**" button of one of the mangas in the dashboard. It shows a form to delete the multimanga, update its status, last read chapter, and cover image, add mangas to the multimanga by searching by name or using a URL, and manage the multimanga's mangas.
+This selection runs:
+
+- When adding/removing a manga from a Multimanga.
+- During the [background update job](https://github.com/diogovalentte/mantium?tab=readme-ov-file#background-upgrades-and-notifications).
+
+You can manage Multimanga settings via the Highlight button, including:
+
+- Updating status
+- Changing last read chapter
+- Updating the cover image to one you prefer
+- Adding or removing source entries
+- Deleting the Multimanga
 
 |                                   Edit Multimanga                                    |                             Edit Multimanga Cover Image                              |                               Manage Multimanga Mangas                               |
 | :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: |
 | ![](https://github.com/user-attachments/assets/441d2423-2276-4512-ab6c-edfc80e909f2) | ![](https://github.com/user-attachments/assets/e0c4acb1-6840-4824-817c-cd208867a04a) | ![](https://github.com/user-attachments/assets/020681aa-8e59-4f2f-aefe-c92a89251fe8) |
 
+---
+
 # Custom Manga
 
-In Mantium, there are normal manga, which are those from the supported sources (_like MangaDex_), and are always inside a MultiManga, and **Custom Manga**.
+Custom Manga allows you to track content not supported natively (manga, manhwa, light novels, etc.).
 
-Custom Manga allows you to track manga, manhwa, light novels, etc., that aren't from one of the supported sources. You must manually provide the manga name, URL, cover image (_or use the default one from Mantium_), and the last chapter you read from this manga.
+You must manually provide:
 
-- Custom mangas are not part of a **multimangas**.
+- Name
+- URL
+- Cover image (or use default)
+- Last read chapter
 
-Another feature of custom manga is the **last released chapter selectors**. It allows you to provide CSS or XPATH selectors that get the manga's last released chapter and its URL from the manga page. You can provide:
+Custom manga are **not part of a Multimanga**.
 
-- **Selector**: a CSS or XPATH selector to get the HTML element from the page. Add the prefix `css:` for CSS selectors, and `xpath:` for XPATH selectors (ex: `css:div.chapter-box > h4:first-child > a span`). XPATH selectors also work with XML pages.
-- **Attribute** (optional): the attribute from the selected HTML element that contains the chapter name or URL (ex: `href`). Leave empty to get the element's text.
-- **Regex** (optional): if provided, Mantium will run this regex to get the chapter's name from the attribute/text of the HTML element got using the selector (ex: `【第(\d+(\.\d+)?)話】` get `94` from `【第94話】`)
-- **Get First** (optional): if checked, Mantium will get the first HTML element that matches the selector. If unchecked, Mantium will get the last HTML element that matches the selector.
-- **Use Browser** (optional): if checked, Mantium will use a headless browser to load the page and get the chapter information. Use this if the page needs JavaScript to show the necessary information. If unchecked, Mantium will make a simple HTTP GET request to get the page HTML.
+## Last Released Chapter Selectors
+
+Custom manga can automatically detect new chapters using selectors:
+
+- **Selector**
+  CSS or XPath selector used to locate the element.
+  Add the prefix `css:` for CSS selectors, and `xpath:` for XPATH selectors (ex: `css:div.chapter-box > h4:first-child > a span`). XPATH selectors also work with XML pages.
+- **Attribute (optional)**
+  Attribute containing the chapter name or URL (e.g., href).
+  If empty, the element text is used.
+- **Regex (optional)**
+  Extracts the chapter number from the selected value.
+- **Get First (optional)**
+  If enabled, selects the first matching element; otherwise, selects the last.
+- **Use Browser (optional)**
+  Uses a headless browser if the page requires JavaScript rendering.
+  Otherwise, a simple HTTP GET request is used.
+
+If a URL selector returns a relative path, Mantium automatically resolves it using the manga URL.
 
 > [!NOTE]
 > If the URL selector doesn't return a string that starts with `http`, Mantium will consider it a relative URL and will prepend the manga URL to it. For example, if the manga URL is `https://example.com/manga1` and the URL selector returns `/chapter1`, Mantium will consider the chapter URL to be `https://example.com/chapter1`.
 
 <img width="436" height="1351" alt="image" src="https://github.com/user-attachments/assets/a057fa8a-8ebd-4b95-a648-388d366b7fbb" />
 
-# Check manga updates and notify
+---
 
-Mantium can periodically get the metadata of the mangas you're tracking from their source sites (like every 30 minutes). If the manga metadata (like the cover image, name, or last release chapter) changes from the currently stored metadata, Mantium updates it.
+# Background Updates and Notifications
 
-You can also set Mantium to notify you when a manga with the status "reading" or "completed" has a newly released chapter.
+Mantium can periodically:
 
-- If an error occurs in the background while updating the manga's metadata or notifying, a warning will appear on the dashboard and iframe. You can disable this warning.
-- Mantium will also update and notify for changes with custom manga's last released chapter selectors in this job.
+- Refresh manga metadata from the source sites.
+- Detect new chapters.
+- Send notifications for manga with status reading or completed.
+
+If an error occurs during background processing:
+
+- A warning is displayed on the dashboard and iFrame.
+- This warning can be disabled.
+
+Custom manga selectors are also checked during background updates.
+
+---
 
 # Integrations
 
-Mantium has integrations, like:
+Mantium has integrations with:
 
-- [Ntfy](https://github.com/binwiederhier/ntfy) to notify you of new chapters.
-- [Kaizoku](https://github.com/oae/kaizoku), [Tranga](https://github.com/C9Glax/tranga/tree/master), and [Suwayomi](https://github.com/Suwayomi) to actually download your chapters.
+- [Ntfy](https://github.com/binwiederhier/ntfy) for new chapter notifications.
+- [Kaizoku](https://github.com/oae/kaizoku).
+- [Tranga](https://github.com/C9Glax/tranga/tree/master).
+- [Suwayomi](https://github.com/Suwayomi).
 
-More about the integrations [here](https://github.com/diogovalentte/mantium/blob/main/integrations.md).
+See [integrations.md](https://github.com/diogovalentte/mantium/blob/main/integrations.md) for details.
+
+---
 
 # Running
 
-By default, the API will be available on port `8080` and it's not accessible by other machines. To access the API on other machines, you run the container in [host network mode](https://docs.docker.com/network/drivers/host/) or behind a reverse proxy.
+By default:
+- API runs on port `8080`.
+- It is not exposed externally unless configured.
 
-- For convenience, you can change the API port using the environment variable `API_PORT`.
+To expose it:
+- Use [host network mode](https://docs.docker.com/network/drivers/host/), or
+- Place it behind a reverse proxy.
+
+`API_PORT` can be used to change the default port.
 
 ## Docker Compose
 
-1. There is a `docker-compose.yml` file in this repository. You can clone this repository to use this file or create one yourself.
-1. Create a `.env` file, it should be like the `.env.example` file and be in the same directory as the `docker-compose.yml` file.
-1. Start the containers:
+1. Clone the repository or create your own `docker-compose.yml` based on the one in this repository.
+1. Create a `.env` file based on `.env.example`.
+1. Start services:
 
 ```sh
 docker compose up -d
@@ -141,70 +261,92 @@ The steps are at the [bottom of this README](https://github.com/diogovalentte/ma
 
 ### iFrame usage
 
-The **Mantium API** has the endpoint `/v1/mangas/iframe` that returns an iFrame. When you add an iFrame to your dashboard, it's **>your<** web browser that fetches the iFrame from the API and shows it to you, not your dashboard service running on your server. So your browser needs to be able to access the Mantium API.
+Endpoint:
 
-- **Examples**:
-  - If you run the API on port 8080 on your server, use your server IP address + port 8080 to see the iframe, and make sure your browser can access this IP + port.
-  - If you want to use the iframe in a dashboard that uses HTTPS (like `https://dashboard.domain.com`), you also need to get the iFrame using HTTPS (like `https://mantium-api.domain.com`) to add the iFrame to your dashboard. If you try to use HTTP with your HTTPS, your browser will block the iFrame.
+```
+/v1/mangas/iframes
+```
 
-The iFrame has the following arguments:
+> [!NOTE]
+> - The endpoint is avaliable by the **API**, not the dashboard.
+>   If you run the API on port `8080` on your server, use your server IP address + port `8080`.
+> - The iFrame is fetched directly by the **web browser**, not by your dashboard server.
+> - You browser must be able to access the Mantium API.
+> - If embedding in an HTTPS dashboard, the API must also be served over HTTPS, or else your browser will block the iFrame.
 
-- `api_url` (**not optional**): The URL of the Mantium API that your browser uses to connect to the API, like `https://mantium-api.domain.com`.
-- `theme` (**optional**): The theme of the iFrame. Can be `light` or `dark`. Defaults to `light`.
-- `limit` (**optional**): The number of mangas to show in the iFrame.
-- `showBackgroundErrorWarning` (**optional**): If an error occurs in the background, a warning will appear on the iFrame. Defaults to `true`.
+#### Parameters
 
-**Example**: `https://mantium-api.domain.com/v1/mangas/iframe?api_url=http://mantium-api.domain.com&theme=dark&limit=5&showBackgroundErrorWarning=false`
+- `api_url` (required)
+  URL used by the browser to access the API.
+- `theme` (optional)
+  The iFrame theme. Can be `light` or `dark`.
+- `limit` (optional)
+  Maximum number of manga to display.
+- `showBackgroundErrorWarning` (optional)
+  If `true` (*default*), when an error occurs in the background job, a warning will appear in the iFrame.
 
-### Mantium doesn't have any authentication system
+**Example**:
 
-The dashboard and the API don't have any authentication system, so anyone who can access the dashboard or the API can do whatever they want. You can add an authentication portal like [Authelia](https://github.com/authelia/authelia) or [Authentik](https://github.com/goauthentik/authentik) in front of the dashboard to protect it and not expose the API at all.
+```
+https://mantium-api.domain.com/v1/mangas/iframe?api_url=http://mantium-api.domain.com&theme=dark&limit=5&showBackgroundErrorWarning=false
+```
 
-- If you want to use the iFrame returned by the API, you can still put an authentication portal in front of the API if the API and dashboard containers are in the same Docker network. The dashboard will communicate with the API using the API's container name.
+### Security
+
+Mantium does **not** include authentication. Anyone with access to the dashboard or API has full control.
+
+To secure it, place an authentication layer in front of it, such as:
+- [Authelia](https://github.com/authelia/authelia)
+- [Authentik](https://github.com/goauthentik/authentik)
+
+You can still use the iFrame if API and dashboard are in the same Docker network. The dashboard will communicate with the API using the API's container name.
 
 ### API
 
-The API docs are under the path `/v1/swagger/index.html`.
-
-### Manga Plus source
-
-Only the first and last chapters are available on the Manga Plus site, so most chapters do not show on Mantium. I recommend reading the manga in the other source sites, and when you get to the last chapter, remove the manga and add it again from the Manga Plus source.
-
-### KLManga and JManga sources
-
-The KLManga and JManga sources don't show the time when the chapters are released, so when you add a manga to Mantium, it sets the last released chapter's release date to the current time. In the background job that updates the mangas metadata, if it detects that the last released chapter's release date is the current time, it sets the release date to the current time.
-
-### Manga Updates source
-
-The Manga Updates source is very different from the other sources:
-
-- Mantium tracks the releases instead of actual chapters. Different groups can release the same chapter.
-- The chapters are listed by upload date. This means that if a group releases chapters 1-50 and another group rereleases chapter 2, it'll be considered the latest chapter instead of chapter 50 of the other group.
-  - This is a limitation of MangaUpdates, which can't properly sort the chapters by chapter number.
-
-### Source site down
-
-Sometimes the source sites can be down for some time, like during maintenance. In these cases, there is nothing Mantium can do about it, and all interactions with manga from these source sites will fail.
-
-### What to do when a manga is removed from the source site or its URL changes
-
-If a manga is removed from the source site (_like Mangedex_) or its URL changes, the API will not be able to track it, as it saves the manga URL in the database when you add the manga in the dashboard and continues to use this URL forever. If this happens, the dashboard/API logs will show an error like this:
+Swagger documentation:
 
 ```
-{"message":"(mangadex.org) Error while getting manga with URL 'https://mangadex.org/title/3e65d915-332b-4399-ba64-ebf0583f9887' chapters from source: Error while getting chapters metadata: Error while making 'GET' request: Non-200 status code -\u003e (404). Body: {\"statusCode\":404,\"message\":\"Not Found\"}"}
+/v1/swagger/index.html
 ```
 
-To fix this, delete the manga and add it again from another source site or use its new URL.
+### Source-Specific Notes
 
-### Source site URL changes
+**Manga Plus**
 
-Sometimes the URL of a source site changes (_like klmanga.dm to klmanga.io_). In this case, please open an issue if a new release with the updated URL has not been released yet.
+Only the first and latest chapters are available in the MangaPlus site. Intermediate chapters may not appear.
+
+I recommend reading the manga in the other source sites, and when you get to the last chapter, remove the manga and add it again from the Manga Plus source.
+
+**KLManga and JManga**
+
+These sources do not provide chapter release timestamps. Mantium sets the release time to the current time when you add the manga and when it detects a newly released chapter.
+
+**MangaUpdates**
+
+Due to MangaUpdates nature:
+
+- Mantium tracks releases, not canonical chapters.
+- Sorting is based on upload date.
+- Different groups can release the same chapter. Rereleases may appear as the newest chapter.
+
+### Source Downtime
+
+If a source site is temporarily unavailable, Mantium cannot retrieve data. All related operations will fail until the site is accessible again.
+
+### Removed or Changed URLs
+
+If a manga is removed or its URL changes:
+
+- Mantium cannot continue tracking it.
+- Delete the entry and add it again using the new URL or a different source.
+
+If a source domain changes (e.g., `klmanga.dm` → `klmanga.io`), open an issue if it has not yet been updated in Mantium.
 
 # Running manually
 
 ## Database
 
-1. Create a `docker-compose.yml` file with the database service (`Docker` and `Docker Compose` are required):
+Create a `docker-compose.yml`:
 
 ```yml
 services:
@@ -223,7 +365,7 @@ services:
     restart: unless-stopped
 ```
 
-2. Start the database container:
+Start the database service:
 
 ```sh
 docker compose up -d
@@ -231,7 +373,7 @@ docker compose up -d
 
 ## API
 
-3. Export the API environment variables. The variables below are the only ones necessary to run the API, but more can be found in the `.env.example` file.
+Export required environment variables below. Optional variables can be found in the `.env.example` file.
 
 ```
 export POSTGRES_HOST=http://localhost
@@ -242,13 +384,13 @@ export POSTGRES_PASSWORD=postgres
 export API_PORT=8080
 ```
 
-4. Inside the `api/` folder, install the API dependencies:
+Install dependencies:
 
 ```bash
 go mod download
 ```
 
-5. Start the API:
+Run:
 
 ```bash
 go run main.go
@@ -256,22 +398,26 @@ go run main.go
 
 ## Dashboard
 
-6. The dashboard expects to connect to the API on the address `http://localhost:8080`. If the API is running at a different address, export the API address environment variable:
+If the API is not running on `http://localhost:8080`, set:
 
 ```bash
-export API_ADDRESS=http://localhost:8081
+export API_ADDRESS=http://<host>:<port>
 ```
 
-7. Inside the `dashboard/` folder, install the dashboard dependencies:
+Install dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-8. Start the dashboard:
+Run:
 
 ```bash
 streamlit run 01_📖_Dashboard.py
 ```
 
-9. Access the dashboard on `http://localhost:8501`
+Access the dashboard at
+
+```
+http://localhost:8501
+```
