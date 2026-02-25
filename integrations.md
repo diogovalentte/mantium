@@ -1,74 +1,152 @@
-> Integrations are optional and disabled by default. You can be enabled them using environment variables. Check the [.env.example](https://github.com/diogovalentte/mantium/blob/main/.env.example) file for more information.
+> Integrations are optional and disabled by default. They can be enabled using environment variables. See the [.env.example](https://github.com/diogovalentte/mantium/blob/main/.env.example) file for configuration details.
 
 # Ntfy
 
-Mantium can notify a Ntfy topic when a new chapter from a manga with the status "reading" or "completed" is released.
+Mantium can publish a notification to an ntfy topic when a new chapter is released for a manga whose status is **reading** or **completed**.
+
+---
 
 # Tranga
 
-The [Tranga](https://github.com/c9glax/tranga) integration will:
+The [Tranga](https://github.com/c9glax/tranga) integration:
 
-- Try to add the manga to Tranga when you add it to the dashboard.
-  - Only the original manga of a multimanga will be added to Tranga. Mangas added to a multimanga later are not automatically added to Tranga.
-- If the background job to update the mangas metadata detects newly released chapters, it will trigger Tranga to check and download new chapters.
-- If there are already mangas on your dashboard, the API has a route to add your mangas to Tranga. To know more, check the [API docs](https://github.com/diogovalentte/mantium?tab=readme-ov-file#api).
+- Attempts to add a manga to Tranga when it is added to the Mantium dashboard.
+  - By default, only the original manga of a Multimanga is added. Entries added later to the same Multimanga are not automatically added. It can be changed in the dashboard settings.
+- When the background metadata update detects new chapters, Mantium triggers Tranga to check and download them.
+- Existing dashboard entries can be imported into Tranga through an API route (see the [API docs](https://github.com/diogovalentte/mantium?tab=readme-ov-file#api)).
 
 ## Limitations
 
-Tranga can download chapters from mangas from many sources (called connectors in Tranga). They are like Mantium source sites (_MangaDex, MangaPlus, etc._). Currently, the only connector/source site that Mantium and Tranga both share is MangaDex. This means that only mangas from MangaDex will work with this integration.
+Tranga downloads chapters through connectors (equivalent to Mantium source sites). Currently, the only shared source between Mantium and Tranga is MangaDex, so this integration works only for MangaDex entries.
+
+---
 
 # Suwayomi
 
-The [Suwayomi](https://github.com/Suwayomi) integration will:
+The [Suwayomi](https://github.com/Suwayomi) integration:
 
-- Try to add the manga to Suwayomi when you add it to the dashboard.
-  - Only the original manga of a multimanga will be added to Suwayomi. Mangas added to a multimanga later are not automatically added to Suwayomi.
-  - By default, enqueue all chapters from the manga to be downloaded by Suwayomi when adding the manga.
-    - This functionality can be disabled in the dashboard settings.
-- If the background job to update the mangas metadata detects newly released chapters, it will enqueue the chapter to be downloaded by Suwayomi.
-- If there are already mangas on your dashboard, the API has a route to add your mangas to Suwayomi. To know more, check the [API docs](https://github.com/diogovalentte/mantium?tab=readme-ov-file#api).
+- Attempts to add a manga to Suwayomi when it is added to the dashboard.
+  - By default, only the original manga of a Multimanga is added. Entries added later to the same Multimanga are not automatically added. It can be changed in the dashboard settings.
+- By default, all chapters are queued for download when the manga is added.
+  - This behavior can be disabled in the dashboard settings.
+- When the background update detects a new chapter, Mantium queues that chapter for download.
+- Existing dashboard entries can be imported into Tranga through an API route (see the [API docs](https://github.com/diogovalentte/mantium?tab=readme-ov-file#api)).
 
-## Extensions repositories and sources
+## Required extension repositories and sources
 
-Mantium expects that you installed both the [keiyoushi](https://github.com/keiyoushi/extensions) and [zosetsu-repo](https://github.com/zosetsu-repo/tachi-repo) extension repositories on your Suwayomi server.
+Mantium expects the following extension repositories to be installed on your Suwayomi server:
 
-It also expects that you have installed the MANGA Plus by SHUEISHA, MangaDex, and MangaHub sources on your server. The integration will only work with these sources, as I didn't find Suwayomi-compatible sources for the other Mantium sources.
+- https://github.com/keiyoushi/extensions
+- https://github.com/zosetsu-repo/tachi-repo
+
+It also expects the following sources to be installed:
+
+- MANGA Plus by SHUEISHA
+- MangaDex
+- MangaHub
+
+Currently, only these sources are supported because compatible extensions for the other Mantium sources are not available. If you discover a Suwayomi source compatible with Mantium sources, feel free to open an issue about it.
+
+---
 
 # Kaizoku
 
-The [Kaizoku](https://github.com/oae/kaizoku) integration will:
+The [Kaizoku](https://github.com/oae/kaizoku) integration:
 
-- Try to add the manga to Kaizoku when you add it to the dashboard.
-  - Only the original manga of a multimanga will be added to Kaizoku. Mangas added to a multimanga later are not automatically added to Kaizoku.
-- If the background job to update the mangas metadata detects newly released chapters, it will trigger Kaizoku to check and download new chapters.
-- If there are already mangas on your dashboard, the API has a route to add your mangas to Kaizoku. To know more, check the [API docs](https://github.com/diogovalentte/mantium?tab=readme-ov-file#api).
+- Attempts to add a manga to Suwayomi when it is added to the dashboard.
+  - By default, only the original manga of a Multimanga is added. Entries added later to the same Multimanga are not automatically added. It can be changed in the dashboard settings.
+- When the background update detects a new chapter, Mantium queues that chapter for download.
+- Existing dashboard entries can be imported into Tranga through an API route (see the [API docs](https://github.com/diogovalentte/mantium?tab=readme-ov-file#api)).
 
 ## Limitations
 
 #### Mangal sources
 
-Kaizoku uses [Mangal](https://github.com/metafates/mangal) under the hood to download the chapters. Mangal can only download from configured sources, but from the sources that Mantium supports, only the mangadex source is configured by default in Kaizoku, and this source doesn't work properly anymore.
+Kaizoku uses [Mangal](https://github.com/metafates/mangal) under the hood to download chapters. Mangal can download only from configured sources, and the default MangaDex source in Kaizoku no longer works reliably.
 
-In this repository, there are source files for the [MangaDex](https://github.com/diogovalentte/mantium/blob/main/defaults/MangaDex.lua), [MangaHub](https://github.com/diogovalentte/mantium/blob/main/defaults/MangaHub.lua), [RawKuma](https://github.com/diogovalentte/mantium/blob/main/defaults/RawKuma.lua), [KLManga](https://github.com/diogovalentte/mantium/blob/main/defaults/KLManga.lua), and [JManga](https://github.com/diogovalentte/mantium/blob/main/defaults/JManga.lua) in the `defaults/` folder. I recommend downloading these files and adding them to Kaizoku, this way, you will be able to download chapters from these sources.
+This repository provides updated source files in the `defaults/` directory for:
 
-> After downloading the files, add them to the folder `/config/.config/mangal/sources` of your Kaizoku Docker container, and restart it.
->
-> - If you want to use the MangaDex source, delete the source file `MangaDex.lua` in your Kaizoku container and add the one from this repository. After this, execute `sudo chattr +i <path to MangaDex.lua file>` so Kaizoku doesn't overwrite this file after the container's restart. You also will not be able to edit/delete the file after executing the command. To be able to edit/delete again, execute `sudo chattr -i <path to MangaDex.lua file>`.
-> - The KLManga source sometimes can't download some chapters when using the original `mangal` binary that Kaizoku uses, and the MangaHub source doesn't work at all. To address this, I created a [fork of mangal](https://github.com/diogovalentte/mangal), allowing it to download from these sources, and I also published a [Kaizoku docker image](https://github.com/diogovalentte/kaizoku) that uses this forked version of mangal under `ghcr.io/diogovalentte/kaizoku`. I recommend using this Docker image to download from these sources.
+- MangaDex
+- MangaHub
+- RawKuma
+- KLManga
+- JManga
 
-> The Manga Plus and MangaUpdates source sites don't have a built-in or custom source; the integration will not work with mangas tracked in them.
+You should copy these files into the Kaizoku container:
 
-> If you set the environment variable `KAIZOKU_TRY_OTHER_SOURCES` to `true`, Mantium will try to add the manga to Kaizoku using other sources if the manga's source fails instead of just returning an error.
->
-> - For example, if you set it to true and try to add a manga from Manga Plus to Kaizoku, it'll fail, and Mantium will try to add the manga from other sources, like the Mangadex source. This way, you can track the manga from Manga Plus and still have Kaizoku downloading the chapters, but from other sources.
->   - **Note**: using the example above, if Mantium detects a new chapter in Manga Plus, it'll trigger Kaizoku to check for new chapters in the Mangadex source, but maybe the newly released chapter is not available in Mangadex yet, so Kaizoku will not download the chapter.
+```
+/config/.config/mangal/sources
+```
 
-#### Anilist
+Then restart the container.
 
-When Mantium tries to add a manga to Kaizoku, it just sends a request with the manga name and the source to Kaizoku, and then Kaizoku searches for the manga [Anilist](https://anilist.co/search/manga) ID. If it finds it, it'll add the manga and start downloading chapters. If it doesn't find it, it'll not add the manga to the library. The process of searching the manga's Anilist ID is Kaizoku's job. Sometimes Kaizoku will get the wrong Anilist ID.
+**MangaDex source replacement**
 
-In my case, I tried to add 96 mangas to Kaizoku, 10 were not added because they didn't have an Anilist ID. 3 had the wrong Anilist ID, and from these, 2 I just needed to set the right Anilist ID, but one of them didn't have a page on Anilist, so I can't change it to the right Anilist ID unless the correct manga is added to Anilist.
+If you want to use MangaDex:
 
-#### Kaizoku jobs queue
+1. Remove the existing `MangaDex.lua` inside the container.
+2. Replace it with the file from this repository.
+3. Prevent Kaizoku from overwriting it:
 
-If the background job to update the mangas metadata detects newly released chapters, it will trigger Kaizoku to check and download new chapters. Kaizoku will add all mangas to the queues as jobs and process each job. The more mangas you have in Kaizoku, the more time these jobs will take. Mantium will wait for the jobs to be processed, but not forever. Mantium will timeout and return an error indicating the timeout. By default, Mantium will wait for 5 minutes, but you can change it using the environment variable `KAIZOKU_WAIT_UNTIL_EMPTY_QUEUES_TIMEOUT_MINUTES` and setting it to the number of minutes Mantium should wait.
+```
+sudo chattr +i <path to MangaDex.lua>
+```
+
+To allow editing or removal later:
+
+```
+sudo chattr -i <path to MangaDex.lua>
+```
+
+**Alternative mangal build**
+
+The original mangal binary cannot properly download from some sources (KLManga and MangaHub). A patched version is available:
+
+- Fork: https://github.com/diogovalentte/mangal
+- Kaizoku image using the fork: ghcr.io/diogovalentte/kaizoku
+
+Using this image is recommended if you intend to download from these sources. The image contains only the forked mangal binary, not the custom source files.
+
+`KAIZOKU_TRY_OTHER_SOURCES`
+
+If `KAIZOKU_TRY_OTHER_SOURCES=true`, Mantium will attempt to add the manga using a different source if the original source fails.
+
+Example:
+
+- You track a manga from Manga Plus.
+- Kaizoku cannot add it from Manga Plus.
+- Mantium attempts to add it using MangaDex instead.
+
+> [!NOTE]
+If a new chapter appears on Manga Plus, Mantium will trigger Kaizoku to check and download new chapter for the MangaDex source. If is not yet available on MangaDex, Kaizoku will not download it.
+
+**Anilist**
+
+When Mantium adds a manga to Kaizoku, it sends the manga name and source. Kaizoku searches for the manga’s AniList ID and adds it if found.
+
+Possible outcomes:
+
+- No AniList entry → manga is not added.
+- Wrong match → incorrect manga downloaded.
+
+The AniList matching process is handled entirely by Kaizoku, but, if you use my custom Kaizoku image, Kaizoku will add the manga even if it doesn't find the AniList ID.
+
+**Kaizoku job queue and timeouts**
+
+When new chapters are detected:
+
+1. Mantium requests Kaizoku to update.
+2. Kaizoku schedules jobs for all tracked manga in a **queue**.
+3. Mantium waits for completion.
+
+If the queue takes too long, Mantium times out and returns an error (*Kaizoku will continue to process the queue in background*).
+
+Default timeout: **5 minutes**
+
+You can change it using:
+
+```
+KAIZOKU_WAIT_UNTIL_EMPTY_QUEUES_TIMEOUT_MINUTES
+```
+
+Set the value to the number of minutes Mantium should wait before timing out.
