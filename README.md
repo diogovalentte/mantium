@@ -103,7 +103,7 @@ The iFrame:
 - Shows only manga with unread chapters.
 - Includes only manga with status reading or completed.
 - Is designed to be embedded in external dashboards.
-- More details are available in the [iFrame usage section below](https://github.com/diogovalentte/mantium/edit/main/README.md#iframe-usage).
+- More details are available in the [iFrame usage section below](#iframe-usage).
 
 ![image](https://github.com/diogovalentte/mantium/assets/49578155/e88d85f2-0109-444a-b225-878a5db01400)
 
