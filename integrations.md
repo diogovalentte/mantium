@@ -127,7 +127,7 @@ When Mantium adds a manga to Kaizoku, it sends the manga name and source. Kaizok
 Possible outcomes:
 
 - No AniList entry → manga is not added.
-- Wrong match → incorrect manga downloaded.
+- Wrong match → incorrect manga metadata in Kaizoku, but the correct chapters are still downloaded.
 
 The AniList matching process is handled entirely by Kaizoku, but, if you use my custom Kaizoku image, Kaizoku will add the manga even if it doesn't find the AniList ID.
 
