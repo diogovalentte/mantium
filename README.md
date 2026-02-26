@@ -66,7 +66,7 @@ Two display modes are available:
   <img src="https://github.com/user-attachments/assets/8b0f810f-d2ce-4fe8-a9c5-bd215541d67b">
 </p>
 
-You can add manga in natively supported sites in two ways:
+You can add manga from natively supported sites in two ways:
 
 - By pasting the manga URL.
 - By searching for the manga by name directly in Mantium.
