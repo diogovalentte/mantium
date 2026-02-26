@@ -176,26 +176,24 @@ Custom manga are **not part of a Multimanga**.
 
 ## Last Released Chapter Selectors
 
-Custom manga can automatically detect new chapters using selectors:
+Custom manga can automatically detect new chapters by getting the web page defined in the custom manga's URL field and applying selectors to get the chapter number and URL:
 
-- **Selector**
+- **Selector**:
   CSS or XPath selector used to locate the element.
   Add the prefix `css:` for CSS selectors, and `xpath:` for XPATH selectors (ex: `css:div.chapter-box > h4:first-child > a span`). XPATH selectors also work with XML pages.
-- **Attribute (optional)**
+- **Attribute (optional)**:
   Attribute containing the chapter name or URL (e.g., href).
   If empty, the element text is used.
-- **Regex (optional)**
+- **Regex (optional)**:
   Extracts the chapter number from the selected value.
-- **Get First (optional)**
+- **Get First (optional)**:
   If enabled, selects the first matching element; otherwise, selects the last.
-- **Use Browser (optional)**
+- **Use Browser (optional)**:
   Uses a headless browser if the page requires JavaScript rendering.
   Otherwise, a simple HTTP GET request is used.
 
-If a URL selector returns a relative path, Mantium automatically resolves it using the manga URL.
-
 > [!NOTE]
-> If the URL selector doesn't return a string that starts with `http`, Mantium will consider it a relative URL and will prepend the manga URL to it. For example, if the manga URL is `https://example.com/manga1` and the URL selector returns `/chapter1`, Mantium will consider the chapter URL to be `https://example.com/chapter1`.
+> If the URL selector doesn't return a string that starts with `http`, Mantium will consider it a relative URL and will prepend the manga URL to it. For example, if the manga URL is `https://example.com/one-piece` and the URL selector returns `/chapter1000`, Mantium will consider the chapter URL to be `https://example.com/chapter1000`.
 
 <img width="436" height="1351" alt="image" src="https://github.com/user-attachments/assets/a057fa8a-8ebd-4b95-a648-388d366b7fbb" />
 
@@ -222,10 +220,10 @@ Custom manga selectors are also checked during background updates.
 
 Mantium has integrations with:
 
-- [Ntfy](https://github.com/binwiederhier/ntfy) for new chapter notifications.
-- [Kaizoku](https://github.com/oae/kaizoku).
-- [Tranga](https://github.com/C9Glax/tranga/tree/master).
-- [Suwayomi](https://github.com/Suwayomi).
+- [Ntfy](https://github.com/binwiederhier/ntfy) for new chapter notifications
+- [Kaizoku](https://github.com/oae/kaizoku)
+- [Tranga](https://github.com/C9Glax/tranga/tree/master)
+- [Suwayomi](https://github.com/Suwayomi)
 
 See [integrations.md](https://github.com/diogovalentte/mantium/blob/main/integrations.md) for details.
 
@@ -238,7 +236,7 @@ By default:
 - It is not exposed externally unless configured.
 
 To expose it:
-- Use [host network mode](https://docs.docker.com/network/drivers/host/), or
+- Use [Docker host network mode](https://docs.docker.com/network/drivers/host/), or
 - Place it behind a reverse proxy.
 
 `API_PORT` can be used to change the default port.
@@ -264,13 +262,13 @@ The steps are at the [bottom of this README](https://github.com/diogovalentte/ma
 Endpoint:
 
 ```
-/v1/mangas/iframes
+/v1/mangas/iframe
 ```
 
 > [!NOTE]
-> - The endpoint is avaliable by the **API**, not the dashboard.
+> - The endpoint is available via the **API** container, not the dashboard.
 >   If you run the API on port `8080` on your server, use your server IP address + port `8080`.
-> - The iFrame is fetched directly by the **web browser**, not by your dashboard server.
+> - The iFrame is fetched directly by the **web browser**, not by your dashboard service.
 > - You browser must be able to access the Mantium API.
 > - If embedding in an HTTPS dashboard, the API must also be served over HTTPS, or else your browser will block the iFrame.
 
@@ -299,7 +297,7 @@ To secure it, place an authentication layer in front of it, such as:
 - [Authelia](https://github.com/authelia/authelia)
 - [Authentik](https://github.com/goauthentik/authentik)
 
-You can still use the iFrame if API and dashboard are in the same Docker network. The dashboard will communicate with the API using the API's container name.
+You can still use the iFrame if the API and dashboard are in the same Docker network. The dashboard will communicate with the API using the API's container name.
 
 ### API
 
