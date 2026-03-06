@@ -288,20 +288,20 @@ class MultiMangaAPIClient:
         chapter: str = "",
         chapter_url: str = "",
         chapter_internal_id: str = "",
+        delete_chapter: bool = False,
+        is_custom_manga: bool = False,
     ) -> dict[str, str]:
         path = "/last_read_chapter"
         url = f"{self.base_multimanga_url}{path}"
         url = f"{url}?id={multimanga_id}&manga_id={manga_id}"
 
         request_body = {
-            "chapter": {}
+            "chapter": chapter,
+            "url": chapter_url,
+            "internal_id": chapter_internal_id,
+            "delete_chapter": delete_chapter,
+            "is_custom_manga": is_custom_manga,
         }
-        if chapter:
-            request_body["chapter"]["chapter"] = chapter
-        if chapter_url:
-            request_body["chapter"]["url"] = chapter_url
-        if chapter_internal_id:
-            request_body["chapter"]["internal_id"] = chapter_internal_id
 
         res = requests.patch(url, json=request_body)
 

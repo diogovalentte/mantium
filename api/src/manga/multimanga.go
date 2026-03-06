@@ -829,6 +829,93 @@ func getMultiMangasWithMangasDB(db *sql.DB) ([]*MultiManga, error) {
 	return multiMangas, nil
 }
 
+// DeleteLastReadChapterFromDB deletes the last read chapter of the multimanga in the database
+func (mm *MultiManga) DeleteLastReadChapterFromDB() error {
+	contextError := "error deleting last read chapter '%s' of multimanga '%s' from DB"
+
+	if mm.LastReadChapter == nil {
+		return nil
+	}
+
+	db, err := db.OpenConn()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, mm.LastReadChapter, mm), err)
+	}
+	defer db.Close()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, mm.LastReadChapter, mm), err)
+	}
+
+	err = deleteMultiMangaChapter(mm.ID, mm.LastReadChapter, tx)
+	if err != nil {
+		tx.Rollback()
+		return util.AddErrorContext(fmt.Sprintf(contextError, mm.LastReadChapter, mm), err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, mm.LastReadChapter, mm), err)
+	}
+	mm.LastReadChapter = nil
+
+	return nil
+}
+
+func deleteMultiMangaChapter(mmID ID, chapter *Chapter, tx *sql.Tx) error {
+	contextError := "error deleting chapter in the database"
+
+	err := validateChapter(chapter)
+	if err != nil {
+		return util.AddErrorContext(contextError, err)
+	}
+	var query string
+	if chapter.Type == 1 {
+		query = `
+        UPDATE multimangas
+        SET last_released_chapter = NULL
+        WHERE id = $1;
+    `
+	} else {
+		query = `
+        UPDATE multimangas
+        SET last_read_chapter = NULL
+        WHERE id = $1;
+    `
+	}
+
+	result, err := tx.Exec(query, mmID)
+	if err != nil {
+		return util.AddErrorContext(contextError, err)
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return util.AddErrorContext(contextError, err)
+	}
+	if rowsAffected == 0 {
+		return util.AddErrorContext(contextError, errordefs.ErrMultiMangaNotFoundDB)
+	}
+
+	query = `
+        DELETE FROM chapters
+        WHERE multimanga_id = $1 AND url = $2 AND type = $3;
+    `
+	result, err = tx.Exec(query, mmID, chapter.URL, chapter.Type)
+	if err != nil {
+		return util.AddErrorContext(contextError, err)
+	}
+	rowsAffected, err = result.RowsAffected()
+	if err != nil {
+		return util.AddErrorContext(contextError, err)
+	}
+	if rowsAffected == 0 {
+		return util.AddErrorContext(contextError, errordefs.ErrChapterNotFoundDB)
+	}
+
+	return nil
+}
+
 func getMultiMangaFromDB(multimangaID ID, db *sql.DB) (*MultiManga, error) {
 	var currentMangaID sql.NullInt64
 	var lastReadChapterID sql.NullInt64
@@ -1051,7 +1138,7 @@ func validateMultiManga(mm *MultiManga) error {
 	return nil
 }
 
-// GetLatestManga: tries to return the manga with the latest chapter.
+// GetLatestManga tries to return the manga with the latest chapter.
 func GetLatestManga(mangas []*Manga) (*Manga, error) {
 	if len(mangas) == 0 {
 		return nil, errordefs.ErrMultiMangaMangaListIsEmpty

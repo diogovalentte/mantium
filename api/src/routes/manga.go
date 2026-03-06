@@ -44,7 +44,6 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.GET("/manga/chapters", GetMangaChapters)
 
 		// Methods for custom manga only
-		group.PATCH("/custom_manga/last_read_chapter", UpdateCustomMangaLastReadChapter)
 		group.PATCH("/custom_manga/last_released_chapter_selectors", UpdateCustomMangaLastReleasedChapterSelectors)
 		group.PATCH("/custom_manga/name", UpdateCustomMangaName)
 		group.PATCH("/custom_manga/url", UpdateCustomMangaURL)
@@ -227,100 +226,6 @@ func UpdateCustomMangaURL(c *gin.Context) {
 	dashboard.UpdateDashboard()
 
 	c.JSON(http.StatusOK, gin.H{"message": "Custom manga URL updated successfully"})
-}
-
-// @Summary Update custom manga last read chapter
-// @Description Updates a custom manga last read chapter in the database. If chapter not in body, set the last read chapter to the last released chapter if it exists, else set it to none. If both `chapter` and `chapter_url` are empty strings in the body, deletes the manga's last read chapter. You can't provide only the chapter_url. You must provide either the manga ID or the manga URL.
-// @Produce json
-// @Param id query int false "Manga ID" Example(1)
-// @Param url query string false "Manga URL" Example("https://mangadex.org/title/1/one-piece")
-// @Param chapter body UpdateMangaLastReadChapterRequest true "Chapter"
-// @Success 200 {object} responseMessage
-// @Router /custom_manga/last_read_chapter [patch]
-func UpdateCustomMangaLastReadChapter(c *gin.Context) {
-	currentTime := time.Now()
-
-	mangaIDStr := c.Query("id")
-	mangaURL := c.Query("url")
-	mangaID, mangaURL, err := getMangaIDAndURL(mangaIDStr, mangaURL)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
-
-	var requestData UpdateMangaLastReadChapterRequest
-	if err := c.ShouldBindJSON(&requestData); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid JSON fields, refer to the API documentation"})
-		return
-	}
-
-	mangaUpdate, err := manga.GetMangaDB(mangaID, mangaURL)
-	if err != nil {
-		if strings.Contains(err.Error(), errordefs.ErrMangaNotFoundDB.Error()) {
-			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-
-	if mangaUpdate.Source != manga.CustomMangaSource {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "you can only update the last read chapter for custom mangas. Update the multimanga last read chapter instead"})
-		return
-	}
-
-	if requestData.Chapter == nil {
-		if mangaUpdate.LastReleasedChapter != nil {
-			chapter := mangaUpdate.LastReleasedChapter
-			chapter.Type = 2
-			chapter.UpdatedAt = currentTime.Truncate(time.Second)
-
-			err = mangaUpdate.UpsertChapterIntoDB(chapter)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-				return
-			}
-		} else {
-			err = mangaUpdate.DeleteChaptersFromDB()
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-				return
-			}
-		}
-	} else {
-		if requestData.Chapter.Chapter == "" && requestData.Chapter.URL != "" {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "you can't provide only the chapter.url. Set both chapter.chapter and chapter.url to empty strings to delete the last read chapter"})
-			return
-		}
-
-		if requestData.Chapter.Chapter != "" {
-			chapter := &manga.Chapter{
-				Chapter:   requestData.Chapter.Chapter,
-				Name:      "Chapter " + requestData.Chapter.Chapter,
-				URL:       requestData.Chapter.URL,
-				Type:      2,
-				UpdatedAt: currentTime.Truncate(time.Second),
-			}
-			if chapter.URL == "" {
-				chapter.URL = manga.CustomMangaURLPrefix + "/" + uuid.New().String()
-			}
-			err = mangaUpdate.UpsertChapterIntoDB(chapter)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-				return
-			}
-		} else {
-			err = mangaUpdate.DeleteLastReadChapterFromDB()
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-				return
-			}
-		}
-	}
-
-	dashboard.UpdateDashboard()
-
-	c.JSON(http.StatusOK, gin.H{"message": "Manga last read chapter updated successfully"})
 }
 
 // @Summary Update custom manga last released chapter selectors
@@ -842,7 +747,7 @@ type UpdateMangaStatusRequest struct {
 }
 
 // @Summary Update multimanga last read chapter
-// @Description Updates a multimanga last read chapter in the database. It also needs to know from which manga the chapter is from. If both `chapter` and `chapter_url` are empty strings in the body, set the last read chapter to the last released chapter in the database.
+// @Description Updates a multimanga last read chapter in the database. It also needs to know from which manga the chapter is from if not a custom manga. If both `chapter` and `chapter_url` are empty strings in the body, set the last read chapter to the last released chapter in the database.
 // @Produce json
 // @Param id query int true "Multimanga ID" Example(1)
 // @Param manga_id query int true "Manga ID" Example(1)
@@ -863,14 +768,9 @@ func UpdateMultiMangaLastReadChapter(c *gin.Context) {
 		return
 	}
 
-	mangaIDStr := c.Query("manga_id")
-	if mangaIDStr == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "manga_id must be provided"})
-		return
-	}
-	mangaID, err := strconv.Atoi(mangaIDStr)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "manga_id must be a number"})
+	var requestData LastReadChapterRequest
+	if err := c.ShouldBindJSON(&requestData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid JSON fields, refer to the API documentation"})
 		return
 	}
 
@@ -884,34 +784,72 @@ func UpdateMultiMangaLastReadChapter(c *gin.Context) {
 		return
 	}
 
-	var mangaGetChapterFrom *manga.Manga
-	for _, m := range multimanga.Mangas {
-		if m.ID == manga.ID(mangaID) {
-			mangaGetChapterFrom = m
-			break
-		}
-	}
-	if mangaGetChapterFrom == nil {
-		c.JSON(http.StatusNotFound, gin.H{"message": errordefs.ErrMangaNotFoundInMultiManga.Error()})
-		return
-	}
-
-	var requestData UpdateMangaLastReadChapterRequest
-	if err := c.ShouldBindJSON(&requestData); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid JSON fields, refer to the API documentation"})
-		return
-	}
-
 	var chapter *manga.Chapter
-	if requestData.Chapter == nil || (requestData.Chapter.Chapter == "" && requestData.Chapter.URL == "") {
-		chapter = mangaGetChapterFrom.LastReleasedChapter
-	} else {
-		chapter, err = sources.GetChapterMetadata(mangaGetChapterFrom.URL, mangaGetChapterFrom.InternalID, requestData.Chapter.Chapter, requestData.Chapter.URL, requestData.Chapter.InternalID)
+	if requestData.DeleteChapter {
+		err = multimanga.DeleteLastReadChapterFromDB()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
+		c.JSON(http.StatusOK, gin.H{"message": "Multimanga last read chapter updated successfully"})
+		return
+	} else if !requestData.IsCustomManga {
+		mangaIDStr := c.Query("manga_id")
+		if mangaIDStr == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "manga_id must be provided"})
+			return
+		}
+		mangaID, err := strconv.Atoi(mangaIDStr)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "manga_id must be a number"})
+			return
+		}
+
+		var mangaToGetChapterFrom *manga.Manga
+		for _, m := range multimanga.Mangas {
+			if m.ID == manga.ID(mangaID) {
+				mangaToGetChapterFrom = m
+				break
+			}
+		}
+		if mangaToGetChapterFrom == nil {
+			c.JSON(http.StatusNotFound, gin.H{"message": errordefs.ErrMangaNotFoundInMultiManga.Error()})
+			return
+		}
+		if requestData.Chapter == "" && requestData.URL == "" {
+			chapter = mangaToGetChapterFrom.LastReleasedChapter
+		} else {
+			chapter, err = sources.GetChapterMetadata(mangaToGetChapterFrom.URL, mangaToGetChapterFrom.InternalID, requestData.Chapter, requestData.URL, requestData.InternalID)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+				return
+			}
+		}
+	} else {
+		if requestData.Chapter == "" && requestData.URL != "" {
+			chapter = multimanga.CurrentManga.LastReleasedChapter
+		} else {
+			chapter = &manga.Chapter{
+				Chapter: requestData.Chapter,
+				Name:    "Chapter " + requestData.Chapter,
+				URL:     requestData.URL,
+			}
+			if chapter.URL == "" {
+				chapter.URL = manga.CustomMangaURLPrefix + "/" + uuid.New().String()
+			}
+		}
+
+		if chapter == nil {
+			err = multimanga.DeleteLastReadChapterFromDB()
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+				return
+			}
+			c.JSON(http.StatusOK, gin.H{"message": "Multimanga last read chapter updated successfully"})
+			return
+		}
 	}
+
 	chapter.Type = 2
 	chapter.UpdatedAt = currentTime.Truncate(time.Second)
 
@@ -926,15 +864,13 @@ func UpdateMultiMangaLastReadChapter(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Multimanga last read chapter updated successfully"})
 }
 
-// UpdateMangaLastReadChapterRequest is the request body for updating a manga chapter
-type UpdateMangaLastReadChapterRequest struct {
-	Chapter *LastReadChapterRequest `json:"chapter"`
-}
-
+// LastReadChapterRequest is the request body for updating a manga chapter
 type LastReadChapterRequest struct {
-	Chapter    string `json:"chapter,omitempty"`
-	URL        string `json:"url,omitempty" binding:"omitempty,http_url"`
-	InternalID string `json:"internal_id,omitempty"`
+	IsCustomManga bool   `json:"is_custom_manga,omitempty"`
+	DeleteChapter bool   `json:"delete_chapter,omitempty"`
+	Chapter       string `json:"chapter,omitempty"`
+	URL           string `json:"url,omitempty" binding:"omitempty,http_url"`
+	InternalID    string `json:"internal_id,omitempty"`
 }
 
 // @Summary Update multimanga cover image

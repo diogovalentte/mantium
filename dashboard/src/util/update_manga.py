@@ -371,6 +371,8 @@ def update_multimanga(updated_parts):
                 chapter["Chapter"],
                 chapter["URL"],
                 chapter["InternalID"],
+                False, # TODO: fix this
+                False
             )
 
         if updated_parts["update_cover"]:
