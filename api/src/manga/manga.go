@@ -1059,7 +1059,7 @@ func GetMangaDBByURL(url string) (*Manga, error) {
 
 // GetMangasWithoutMultiMangasDB gets all mangas from the database that are not part of a multimanga or are not custom mangas.
 // Used only to get mangas to be transformed into multimangas.
-func GetMangasWithoutMultiMangasDB() ([]*Manga, error) {
+func GetMangasWithoutMultiMangasDB(customManga bool) ([]*Manga, error) {
 	contextError := "error getting mangas without multimangas from DB"
 
 	db, err := db.OpenConn()
@@ -1068,7 +1068,12 @@ func GetMangasWithoutMultiMangasDB() ([]*Manga, error) {
 	}
 	defer db.Close()
 
-	mangas, err := getMangasWithoutMultiMangasFromDB(db)
+	mangas := make([]*Manga, 0)
+	if customManga {
+		mangas, err = getMangasWithoutMultiMangasFromDB(db, true)
+	} else {
+		mangas, err = getMangasWithoutMultiMangasFromDB(db, false)
+	}
 	if err != nil {
 		return nil, util.AddErrorContext(contextError, err)
 	}
@@ -1076,7 +1081,7 @@ func GetMangasWithoutMultiMangasDB() ([]*Manga, error) {
 	return mangas, nil
 }
 
-func getMangasWithoutMultiMangasFromDB(db *sql.DB) ([]*Manga, error) {
+func getMangasWithoutMultiMangasFromDB(db *sql.DB, customManga bool) ([]*Manga, error) {
 	query := `
         SELECT 
             mangas.id AS manga_id,
@@ -1119,9 +1124,12 @@ func getMangasWithoutMultiMangasFromDB(db *sql.DB) ([]*Manga, error) {
             chapters AS last_read_chapter ON last_read_chapter.id = mangas.last_read_chapter
         WHERE
             mangas.multimanga_id is NULL
-            AND mangas.source <> $1
-        ;
     `
+	if customManga {
+		query = query + " AND mangas.source = $1;"
+	} else {
+		query = query + " AND mangas.source <> $1;"
+	}
 	rows, err := db.Query(query, CustomMangaSource)
 	if err != nil {
 		return nil, err
@@ -1191,7 +1199,6 @@ func getMangasWithoutMultiMangasFromDB(db *sql.DB) ([]*Manga, error) {
 			lastReleasedChapter.UpdatedAt = lastReleasedChapterUpdatedAt.Time
 			lastReleasedChapter.Type = Type(lastReleasedChapterType.Int32)
 			currentManga.LastReleasedChapter = &lastReleasedChapter
-
 		}
 
 		if lastReadChapterURL.Valid {

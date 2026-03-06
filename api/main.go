@@ -214,6 +214,10 @@ var migrations = []Migration{
 		Up:      updateMangas,
 	},
 	{
+		Version: "6.0.0",
+		Up:      turnCustomMangasIntoMultiMangas,
+	},
+	{
 		Version: version,
 		Up: func(_ *zerolog.Logger) error {
 			if updatedMessage != "" {
@@ -247,7 +251,26 @@ func turnMangasIntoMultiMangas(log *zerolog.Logger) error {
 	log.Info().Msg("Turning mangas into multimangas...")
 
 	contextError := "error turning all mangas into multimangas"
-	mangas, err := manga.GetMangasWithoutMultiMangasDB()
+	mangas, err := manga.GetMangasWithoutMultiMangasDB(false)
+	if err != nil {
+		return util.AddErrorContext(contextError, err)
+	}
+
+	for _, m := range mangas {
+		_, err = manga.TurnIntoMultiManga(m)
+		if err != nil {
+			return util.AddErrorContext(contextError, err)
+		}
+	}
+
+	return nil
+}
+
+func turnCustomMangasIntoMultiMangas(log *zerolog.Logger) error {
+	log.Info().Msg("Turning custom mangas into multimangas...")
+
+	contextError := "error turning all custom mangas into multimangas"
+	mangas, err := manga.GetMangasWithoutMultiMangasDB(true)
 	if err != nil {
 		return util.AddErrorContext(contextError, err)
 	}
