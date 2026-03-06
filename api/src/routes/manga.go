@@ -42,7 +42,6 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.DELETE("/manga", DeleteManga)
 		group.GET("/manga/metadata", GetMangaMetadata)
 		group.GET("/manga/chapters", GetMangaChapters)
-		group.PATCH("/manga/status", UpdateMangaStatus)
 		group.PATCH("/manga/cover_img", UpdateMangaCoverImg)
 
 		// Methods for custom manga only
@@ -181,50 +180,6 @@ func GetMangaChapters(c *gin.Context) {
 
 	resMap := map[string][]*manga.Chapter{"chapters": chapters}
 	c.JSON(http.StatusOK, resMap)
-}
-
-// @Summary Update manga status
-// @Description Updates a manga status in the database. You must provide either the manga ID or the manga URL.
-// @Produce json
-// @Param id query int false "Manga ID" Example(1)
-// @Param url query string false "Manga URL" Example("https://mangadex.org/title/1/one-piece")
-// @Param status body UpdateMangaStatusRequest true "Manga status"
-// @Success 200 {object} responseMessage
-// @Router /manga/status [patch]
-func UpdateMangaStatus(c *gin.Context) {
-	mangaIDStr := c.Query("id")
-	mangaURL := c.Query("url")
-	mangaID, mangaURL, err := getMangaIDAndURL(mangaIDStr, mangaURL)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
-
-	mangaUpdate, err := manga.GetMangaDB(mangaID, mangaURL)
-	if err != nil {
-		if strings.Contains(err.Error(), errordefs.ErrMangaNotFoundDB.Error()) {
-			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-
-	var requestData UpdateMangaStatusRequest
-	if err := c.ShouldBindJSON(&requestData); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid JSON fields, refer to the API documentation"})
-		return
-	}
-
-	err = mangaUpdate.UpdateStatusInDB(requestData.Status)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-
-	dashboard.UpdateDashboard()
-
-	c.JSON(http.StatusOK, gin.H{"message": "Manga status updated successfully"})
 }
 
 // @Summary Update custom manga name

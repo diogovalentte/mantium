@@ -72,34 +72,6 @@ class MangaAPIClient:
 
         return mangas
 
-    def update_manga_status(
-        self,
-        status: int,
-        manga_id: int = 0,
-        manga_url: str = "",
-    ) -> dict[str, str]:
-        path = "/status"
-        url = f"{self.base_manga_url}{path}"
-        url = f"{url}?id={manga_id}&url={manga_url}"
-
-        request_body = {
-            "status": status,
-        }
-
-        res = requests.patch(url, json=request_body)
-
-        if res.status_code not in self.acceptable_status_codes:
-            raise APIException(
-                "error while updating manga status",
-                url,
-                "PATCH",
-                request_body,
-                res.status_code,
-                res.text,
-            )
-
-        return res.json()
-
     def update_manga_cover_img(
         self,
         manga_id: int = 0,

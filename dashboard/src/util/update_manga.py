@@ -725,16 +725,6 @@ def show_update_custom_manga(manga: dict[str, Any]):
             key="update_custom_manga_form_url",
         )
 
-        st.selectbox(
-            "Status",
-            index=manga["Status"] - 1,
-            options=list(defaults.manga_status_options.keys())[
-                1:
-            ],  # Exclude the "All" option
-            format_func=lambda index: defaults.manga_status_options[index],
-            key="update_custom_manga_form_status",
-        )
-
         with st.expander(
             "Last Read Chapter",
         ):
@@ -846,7 +836,6 @@ def show_update_custom_manga(manga: dict[str, Any]):
             try:
                 name = ss.update_custom_manga_form_name
                 url = ss.update_custom_manga_form_url
-                status = ss.update_custom_manga_form_status
                 last_read_chapter = ss.update_custom_manga_form_last_read_chapter
                 last_read_chapter_url = ss.update_custom_manga_form_last_read_chapter_url
 
@@ -880,9 +869,6 @@ def show_update_custom_manga(manga: dict[str, Any]):
 
                     if url != manga["URL"]:
                         api_client.update_custom_manga_url(url, manga["ID"])
-
-                    if status != manga["Status"]:
-                        api_client.update_manga_status(status, manga["ID"])
 
                     if (
                         last_read_chapter != manga["LastReadChapter"]["Chapter"]
