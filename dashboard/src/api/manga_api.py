@@ -13,40 +13,6 @@ class MangaAPIClient:
         self.base_manga_url: str = urljoin(base_api_url, "/v1/manga")
         self.acceptable_status_codes: tuple = (200,)
 
-    def add_manga(
-        self,
-        manga_url: str,
-        manga_status: int,
-        manga_internal_id: str,
-        last_read_chapter: str,
-        last_read_chapter_url: str,
-        last_read_chapter_internal_id: str,
-    ) -> dict[str, str]:
-        url = self.base_manga_url
-
-        request_body = {
-            "url": manga_url,
-            "status": manga_status,
-            "manga_internal_id": manga_internal_id,
-            "last_read_chapter": last_read_chapter,
-            "last_read_chapter_url": last_read_chapter_url,
-            "last_read_chapter_internal_id": last_read_chapter_internal_id,
-        }
-
-        res = requests.post(url, json=request_body)
-
-        if res.status_code not in self.acceptable_status_codes:
-            raise APIException(
-                "error while adding manga",
-                url,
-                "POST",
-                request_body,
-                res.status_code,
-                res.text,
-            )
-
-        return res.json()
-
     def get_manga(self, manga_id: int = 0, manga_url: str = "") -> dict[str, Any]:
         url = self.base_manga_url
         url = f"{url}?id={manga_id}&url={manga_url}"

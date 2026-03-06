@@ -39,7 +39,6 @@ import (
 func MangaRoutes(group *gin.RouterGroup) {
 	{
 		// Methods for both normal manga and custom manga
-		group.POST("/manga", AddManga)
 		group.DELETE("/manga", DeleteManga)
 		group.GET("/manga", GetManga)
 		group.GET("/manga/metadata", GetMangaMetadata)
@@ -77,108 +76,6 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.POST("/mangas/add_to_suwayomi", AddMangasToSuwayomi)
 		group.GET("/mangas/stats", GetLibraryStats)
 	}
-}
-
-// @Summary Add manga
-// @Description Gets a manga metadata from source and inserts into the database.
-// @Accept json
-// @Produce json
-// @Param manga body AddMangaRequest true "Manga data"
-// @Success 200 {object} responseMessage
-// @Router /manga [post]
-func AddManga(c *gin.Context) {
-	currentTime := time.Now()
-
-	var requestData AddMangaRequest
-	if err := c.ShouldBindJSON(&requestData); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid JSON fields, refer to the API documentation"})
-		return
-	}
-
-	mangaAdd, err := sources.GetMangaMetadata(requestData.URL, requestData.MangaInternalID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-	if !slices.Contains(config.GlobalConfigs.DashboardConfigs.Manga.AllowedSources, mangaAdd.Source) {
-		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("source %s is not allowed", mangaAdd.Source)})
-		return
-	}
-
-	mangaAdd.Status = manga.Status(requestData.Status)
-
-	if requestData.LastReadChapter != "" || requestData.LastReadChapterURL != "" {
-		mangaAdd.LastReadChapter, err = sources.GetChapterMetadata(requestData.URL, requestData.MangaInternalID, requestData.LastReadChapter, requestData.LastReadChapterURL, requestData.LastReadChapterInternalID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-		mangaAdd.LastReadChapter.Type = 2
-		mangaAdd.LastReadChapter.UpdatedAt = currentTime.Truncate(time.Second)
-	}
-
-	if len(mangaAdd.CoverImg) == 0 {
-		mangaAdd.CoverImg, err = util.GetDefaultCoverImg()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-		mangaAdd.CoverImgResized = true
-	}
-
-	if mangaAdd.LastReleasedChapter != nil && mangaAdd.LastReleasedChapter.UpdatedAt.IsZero() {
-		mangaAdd.LastReleasedChapter.UpdatedAt = currentTime.Truncate(time.Second)
-	}
-
-	err = mangaAdd.InsertIntoDB()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-
-	var integrationsErrors []error
-	if config.GlobalConfigs.Kaizoku.Valid {
-		kaizoku := kaizoku.Kaizoku{}
-		kaizoku.Init()
-		err = kaizoku.AddManga(mangaAdd, config.GlobalConfigs.Kaizoku.TryOtherSources)
-		if err != nil {
-			integrationsErrors = append(integrationsErrors, util.AddErrorContext("manga added to DB, but error while adding it to Kaizoku", err))
-		}
-	}
-
-	if config.GlobalConfigs.Tranga.Valid {
-		tranga := tranga.Tranga{}
-		tranga.Init()
-		err = tranga.AddManga(mangaAdd)
-		if err != nil {
-			integrationsErrors = append(integrationsErrors, util.AddErrorContext("manga added to DB, but error while adding it to Tranga", err))
-		}
-	}
-
-	if config.GlobalConfigs.Suwayomi.Valid {
-		suwayomi := suwayomi.Suwayomi{}
-		suwayomi.Init()
-
-		err = suwayomi.AddManga(mangaAdd, config.GlobalConfigs.DashboardConfigs.Integrations.EnqueueAllSuwayomiChaptersToDownload)
-		if err != nil {
-			integrationsErrors = append(integrationsErrors, util.AddErrorContext("manga added to DB, but error while adding it to Suwayomi", err))
-		}
-	}
-
-	if len(integrationsErrors) > 0 {
-		fullMsg := "manga added to DB, but error executing integrations: "
-		for _, err := range integrationsErrors {
-			zerolog.Ctx(c.Request.Context()).Error().Err(err).Msg("error while adding manga to at least one integration")
-			fullMsg += err.Error() + " "
-		}
-		dashboard.UpdateDashboard()
-		c.JSON(http.StatusInternalServerError, gin.H{"message": fullMsg})
-		return
-	}
-
-	dashboard.UpdateDashboard()
-
-	c.JSON(http.StatusOK, gin.H{"message": "Manga added successfully"})
 }
 
 // AddMangaRequest is the request body for the AddManga route
