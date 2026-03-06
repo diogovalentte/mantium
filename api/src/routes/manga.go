@@ -39,7 +39,6 @@ import (
 func MangaRoutes(group *gin.RouterGroup) {
 	{
 		// Methods for both normal manga and custom manga
-		group.DELETE("/manga", DeleteManga)
 		group.GET("/manga/metadata", GetMangaMetadata)
 		group.GET("/manga/chapters", GetMangaChapters)
 
@@ -83,43 +82,6 @@ type AddMangaRequest struct {
 	LastReadChapterURL        string `json:"last_read_chapter_url"`
 	LastReadChapterInternalID string `json:"last_read_chapter_internal_id"`
 	Status                    int    `json:"status" binding:"required,gte=0,lte=5"`
-}
-
-// @Summary Delete manga
-// @Description Deletes a manga from the database. You must provide either the manga ID or the manga URL.
-// @Produce json
-// @Param id query int false "Manga ID" Example(1)
-// @Param url query string false "Manga URL" Example("https://mangadex.org/title/1/one-piece")
-// @Success 200 {object} responseMessage
-// @Router /manga [delete]
-func DeleteManga(c *gin.Context) {
-	mangaIDStr := c.Query("id")
-	mangaURL := c.Query("url")
-	mangaID, mangaURL, err := getMangaIDAndURL(mangaIDStr, mangaURL)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
-
-	mangaDelete, err := manga.GetMangaDB(mangaID, mangaURL)
-	if err != nil {
-		if strings.Contains(err.Error(), errordefs.ErrMangaNotFoundDB.Error()) {
-			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-
-	err = mangaDelete.DeleteFromDB()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-
-	dashboard.UpdateDashboard()
-
-	c.JSON(http.StatusOK, gin.H{"message": "Manga deleted successfully"})
 }
 
 // @Summary Get manga metadata

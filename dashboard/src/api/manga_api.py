@@ -72,24 +72,6 @@ class MangaAPIClient:
 
         return mangas
 
-    def delete_manga(self, manga_id: int = 0, manga_url: str = "") -> dict[str, str]:
-        url = self.base_manga_url
-        url = f"{url}?id={manga_id}&url={manga_url}"
-
-        res = requests.delete(url)
-
-        if res.status_code not in self.acceptable_status_codes:
-            raise APIException(
-                "error while deleting manga",
-                url,
-                "DELETE",
-                {},
-                res.status_code,
-                res.text,
-            )
-
-        return res.json()
-
     def get_manga_chapters(
         self, manga_id: int = 0, manga_url: str = "", manga_internal_id: str = ""
     ) -> list[dict]:

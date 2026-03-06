@@ -910,32 +910,6 @@ def show_update_custom_manga(manga: dict[str, Any]):
                 else:
                     ss["update_manga_error_message"] = "Error while updating manga"
 
-    with stylable_container(
-        key="update_custom_manga_delete_button",
-        css_styles="""
-            button {
-                background-color: red;
-                color: white;
-            }
-        """,
-    ):
-        if st.button(
-            "Delete",
-            use_container_width=True,
-        ):
-            try:
-                api_client.delete_manga(manga["ID"])
-            except Exception as ex:
-                logger.exception(ex)
-                ss["update_manga_error_message"] = "Error while deleting manga"
-            else:
-                ss["update_manga_success_message"] = "Manga deleted successfully"
-            if not (
-                ss.get("update_manga_error_message", "") != ""
-                or ss.get("update_manga_warning_message", "") != ""
-            ):
-                st.rerun()
-
     if ss.get("update_manga_error_message", "") != "":
         st.error(ss["update_manga_error_message"])
     if ss.get("update_manga_warning_message", "") != "":
