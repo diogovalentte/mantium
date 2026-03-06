@@ -40,7 +40,6 @@ func MangaRoutes(group *gin.RouterGroup) {
 	{
 		// Methods for both normal manga and custom manga
 		group.DELETE("/manga", DeleteManga)
-		group.GET("/manga", GetManga)
 		group.GET("/manga/metadata", GetMangaMetadata)
 		group.GET("/manga/chapters", GetMangaChapters)
 		group.PATCH("/manga/status", UpdateMangaStatus)
@@ -123,48 +122,6 @@ func DeleteManga(c *gin.Context) {
 	dashboard.UpdateDashboard()
 
 	c.JSON(http.StatusOK, gin.H{"message": "Manga deleted successfully"})
-}
-
-// @Summary Get manga
-// @Description Gets a manga from the database. You must provide either the manga ID or the manga URL.
-// @Produce json
-// @Param id query int false "Manga ID" Example(1)
-// @Param url query string false "Manga URL" Example("https://mangadex.org/title/1/one-piece")
-// @Success 200 {object} manga.Manga "{"manga": mangaObj}"
-// @Router /manga [get]
-func GetManga(c *gin.Context) {
-	mangaIDStr := c.Query("id")
-	mangaURL := c.Query("url")
-	mangaID, mangaURL, err := getMangaIDAndURL(mangaIDStr, mangaURL)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
-	}
-
-	mangaGet, err := manga.GetMangaDB(mangaID, mangaURL)
-	if err != nil {
-		if strings.Contains(err.Error(), errordefs.ErrMangaNotFoundDB.Error()) {
-			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
-			return
-		}
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-
-	if mangaGet.Source == manga.CustomMangaSource {
-		if strings.HasPrefix(mangaGet.URL, manga.CustomMangaURLPrefix) {
-			mangaGet.URL = ""
-		}
-		if mangaGet.LastReadChapter != nil && strings.HasPrefix(mangaGet.LastReadChapter.URL, manga.CustomMangaURLPrefix) {
-			mangaGet.LastReadChapter.URL = ""
-		}
-		if mangaGet.LastReleasedChapter != nil && strings.HasPrefix(mangaGet.LastReleasedChapter.URL, manga.CustomMangaURLPrefix) {
-			mangaGet.LastReadChapter.URL = ""
-		}
-	}
-
-	resMap := map[string]manga.Manga{"manga": *mangaGet}
-	c.JSON(http.StatusOK, resMap)
 }
 
 // @Summary Get manga metadata

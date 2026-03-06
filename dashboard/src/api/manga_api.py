@@ -13,48 +13,6 @@ class MangaAPIClient:
         self.base_manga_url: str = urljoin(base_api_url, "/v1/manga")
         self.acceptable_status_codes: tuple = (200,)
 
-    def get_manga(self, manga_id: int = 0, manga_url: str = "") -> dict[str, Any]:
-        url = self.base_manga_url
-        url = f"{url}?id={manga_id}&url={manga_url}"
-
-        res = requests.get(url)
-
-        if res.status_code not in self.acceptable_status_codes:
-            raise APIException(
-                "error while getting manga",
-                url,
-                "GET",
-                {},
-                res.status_code,
-                res.text,
-            )
-
-        manga = res.json().get("manga")
-        manga["CoverImg"] = bytes(manga["CoverImg"], "utf-8")
-
-        if manga["LastReleasedChapter"] is not None:
-            manga["LastReleasedChapter"]["UpdatedAt"] = get_updated_at_datetime(
-                manga["LastReleasedChapter"]["UpdatedAt"]
-            )
-        else:
-            manga["LastReleasedChapter"] = {
-                "Chapter": "",
-                "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
-                "URL": manga["URL"] if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE else "",
-            }
-        if manga["LastReadChapter"] is not None:
-            manga["LastReadChapter"]["UpdatedAt"] = get_updated_at_datetime(
-                manga["LastReadChapter"]["UpdatedAt"]
-            )
-        else:
-            manga["LastReadChapter"] = {
-                "Chapter": "",
-                "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
-                "URL": manga["URL"] if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE else "",
-            }
-
-        return manga
-
     def get_mangas(self) -> list[dict[str, Any]]:
         url = self.base_manga_url
         url = f"{url}s"
