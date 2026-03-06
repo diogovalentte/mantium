@@ -39,6 +39,7 @@ import (
 func MangaRoutes(group *gin.RouterGroup) {
 	{
 		// Methods for both normal manga and custom manga
+		group.GET("/mangas", GetMangas)
 		group.GET("/manga/metadata", GetMangaMetadata)
 		group.GET("/manga/chapters", GetMangaChapters)
 
@@ -52,6 +53,7 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.POST("/multimanga", AddMultiManga)
 		group.DELETE("/multimanga", DeleteMultiManga)
 		group.GET("/multimanga", GetMultiManga)
+		group.GET("/multimangas", GetMultiMangas)
 		group.GET("/multimanga/choose_current_manga", ChooseCurrentManga)
 		group.GET("/multimanga/chapters", GetMultiMangaChapters)
 		group.PATCH("/multimanga/status", UpdateMultiMangaStatus)
@@ -62,8 +64,6 @@ func MangaRoutes(group *gin.RouterGroup) {
 
 		// Methods for manga library
 		group.POST("/mangas/search", SearchManga)
-		group.GET("/mangas", GetMangas)
-		group.GET("/multimangas", GetMultiMangas)
 		group.GET("/mangas/iframe", GetMangasiFrame)
 		group.PATCH("/mangas/metadata", UpdateMangasMetadata)
 		group.POST("/mangas/add_to_kaizoku", AddMangasToKaizoku)
@@ -1285,31 +1285,28 @@ type SearchMangaRequest struct {
 }
 
 // @Summary Get mangas
-// @Description Gets the current manga of multimangas and all custom mangas.
+// @Description Gets the current manga of multimangas.
 // @Produce json
 // @Success 200 {array} manga.Manga "{"mangas": [mangaObj]}"
 // @Router /mangas [get]
 func GetMangas(c *gin.Context) {
-	mangas, err := manga.GetCustomMangasDB()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-	for _, m := range mangas {
-		if strings.HasPrefix(m.URL, manga.CustomMangaURLPrefix) {
-			m.URL = ""
-		}
-		if m.LastReadChapter != nil && strings.HasPrefix(m.LastReadChapter.URL, manga.CustomMangaURLPrefix) {
-			m.LastReadChapter.URL = ""
-		}
-	}
-
+	mangas := []*manga.Manga{}
+	var err error
 	multimangas, err := manga.GetMultiMangasDB(false)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 	for _, multimanga := range multimangas {
+		if multimanga.CurrentManga.Source == manga.CustomMangaSource {
+			if strings.HasPrefix(multimanga.CurrentManga.URL, manga.CustomMangaURLPrefix) {
+				multimanga.CurrentManga.URL = ""
+			}
+			if multimanga.CurrentManga.LastReadChapter != nil && strings.HasPrefix(multimanga.CurrentManga.LastReadChapter.URL, manga.CustomMangaURLPrefix) {
+				multimanga.CurrentManga.LastReadChapter.URL = ""
+			}
+		}
+
 		multimanga.CurrentManga.LastReadChapter = multimanga.LastReadChapter
 		multimanga.CurrentManga.Status = multimanga.Status
 		if multimanga.CoverImgFixed {
