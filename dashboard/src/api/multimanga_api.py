@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urljoin
 
+import base64
 import requests
 from src.exceptions import APIException
 from src.util.util import get_updated_at_datetime
@@ -14,23 +15,55 @@ class MultiMangaAPIClient:
 
     def add_multimanga(
         self,
+        manga_name: str,
         manga_url: str,
         manga_status: int,
         manga_internal_id: str,
+        cover_img_url: str,
+        cover_img: bytes,
         last_read_chapter: str,
         last_read_chapter_url: str,
         last_read_chapter_internal_id: str,
+        last_released_chapter_name_selector: str,
+        last_released_chapter_name_attribute: str,
+        last_released_chapter_name_regex: str,
+        last_released_chapter_name_get_first: str,
+        last_released_chapter_url_selector: str,
+        last_released_chapter_url_attribute: str,
+        last_released_chapter_url_get_first: str,
+        last_released_chapter_selector_use_browser: bool,
     ) -> dict[str, str]:
         url = self.base_multimanga_url
 
         request_body = {
+            "name": manga_name,
             "url": manga_url,
             "status": manga_status,
             "manga_internal_id": manga_internal_id,
-            "last_read_chapter": last_read_chapter,
-            "last_read_chapter_url": last_read_chapter_url,
-            "last_read_chapter_internal_id": last_read_chapter_internal_id,
+            "cover_img_url": cover_img_url,
+            "cover_img": base64.b64encode(cover_img).decode("utf-8") if cover_img else "",
+            "last_released_chapter_selector_use_browser": last_released_chapter_selector_use_browser,
         }
+
+        if last_read_chapter:
+            request_body["last_read_chapter"] = {
+                "chapter": last_read_chapter,
+                "url": last_read_chapter_url,
+                "internal_id": last_read_chapter_internal_id,
+            }
+        if last_released_chapter_name_selector != "":
+            request_body["last_released_chapter_name_selector"] = {
+                "selector": last_released_chapter_name_selector,
+                "attribute": last_released_chapter_name_attribute,
+                "regex": last_released_chapter_name_regex,
+                "get_first": last_released_chapter_name_get_first,
+            }
+        if last_released_chapter_url_selector != "":
+            request_body["last_released_chapter_url_selector"] = {
+                "selector": last_released_chapter_url_selector,
+                "attribute": last_released_chapter_url_attribute,
+                "get_first": last_released_chapter_url_get_first,
+            }
 
         res = requests.post(url, json=request_body)
 

@@ -87,12 +87,40 @@ def add_manga():
     with st.spinner("Adding manga..."):
         try:
             api_client.add_multimanga(
-                ss["add_manga_manga_to_add"]["manga_url"],
+                ss["add_manga_manga_to_add"]["name"],
+                ss["add_manga_manga_to_add"]["url"],
                 ss["add_manga_manga_to_add"]["status"],
                 ss["add_manga_manga_to_add"]["manga_internal_id"],
-                ss["add_manga_manga_to_add"]["chapter"],
-                ss["add_manga_manga_to_add"]["chapter_url"],
-                ss["add_manga_manga_to_add"]["chapter_internal_id"],
+                ss["add_manga_manga_to_add"]["cover_img_url"],
+                ss["add_manga_manga_to_add"]["cover_img"],
+                ss["add_manga_manga_to_add"]["last_read_chapter"]["chapter"],
+                ss["add_manga_manga_to_add"]["last_read_chapter"]["url"],
+                ss["add_manga_manga_to_add"]["last_read_chapter"]["internal_id"],
+                ss["add_manga_manga_to_add"][
+                    "last_released_chapter_name_selector"
+                ]["selector"],
+                ss["add_manga_manga_to_add"][
+                    "last_released_chapter_name_selector"
+                ]["attribute"],
+                ss["add_manga_manga_to_add"][
+                    "last_released_chapter_name_selector"
+                ]["regex"],
+                ss["add_manga_manga_to_add"][
+                    "last_released_chapter_name_selector"
+                ]["get_first"],
+                ss["add_manga_manga_to_add"][
+                    "last_released_chapter_url_selector"
+                ]["selector"],
+                ss["add_manga_manga_to_add"][
+                    "last_released_chapter_url_selector"
+                ]["attribute"],
+                ss["add_manga_manga_to_add"][
+                    "last_released_chapter_url_selector"
+                ]["get_first"],
+                ss["add_manga_manga_to_add"][
+                    "last_released_chapter_use_browser"
+                ],
+
             )
         except Exception as e:
             ex = e
@@ -100,21 +128,39 @@ def add_manga():
     ss["add_manga_search_selected_manga"] = None
     ss["add_manga_form_url"] = ""
     if ex is not None:
+        resp_text = str(ex).lower()
+        logger.exception(ex)
         if (
             "multimang added to DB, but error executing integrations:".lower()
-            in str(ex).lower()
+            in str(resp_text).lower()
         ):
-            logger.warning(ex)
+            logger.warning(resp_text)
             ss[
                 "add_manga_warning_message"
             ] = "Manga added to DB, but couldn't add it to at least one integration"
             st.rerun()
-        elif "manga already exists in DB".lower() in str(ex).lower():
+        elif "manga already exists in DB".lower() in str(resp_text).lower():
             st.warning("Manga already in Mantium")
-        elif "source" in str(ex).lower() and "is not allowed" in str(ex).lower():
+        elif "source" in str(resp_text).lower() and "is not allowed" in str(resp_text).lower():
             st.warning("Not allowed to add mangas from this source")
+        elif (
+            "duplicate key value violates unique constraint" in resp_text
+            and "chapters_pkey" in resp_text
+        ):
+            st.warning("Last read chapter URL already in Mantium")
+        elif "error while visiting manga url" in resp_text:
+            st.warning(
+                "Error while visiting the provided manga URL. Check that it's valid."
+            )
+        elif "selector not found in the page or is empty" in resp_text or "selector should start with 'css:' or 'xpath:', instead it's" in resp_text:
+            st.warning(
+                "Invalid selector or one of the provided selectors/attributes was not found in the page or is empty"
+            )
+        elif "regex did not match" in resp_text or "error compiling regex" in resp_text:
+            st.warning(
+                "Invalid regex or the chapter name selector is empty after applying the provided regex"
+            )
         else:
-            logger.exception(ex)
             st.error("Error while adding manga")
     else:
         ss["add_manga_success_message"] = "Manga added successfully"
@@ -156,12 +202,29 @@ def show_bottom_add_manga_form(manga_url: str, manga_internal_id: str):
             if chapter is None:
                 chapter = {}
             ss["add_manga_manga_to_add"] = {
-                "manga_url": manga_url,
+                "name": "",
+                "url": manga_url,
                 "status": ss.add_manga_form_status,
                 "manga_internal_id": manga_internal_id,
-                "chapter": chapter.get("Chapter", ""),
-                "chapter_url": chapter.get("URL", ""),
-                "chapter_internal_id": chapter.get("InternalID", ""),
+                "cover_img_url": "",
+                "cover_img": None,
+                "last_read_chapter": {
+                    "chapter": chapter.get("Chapter", ""),
+                    "url": chapter.get("URL", ""),
+                    "internal_id": chapter.get("InternalID", ""),
+                },
+                "last_released_chapter_name_selector": {
+                    "selector": "",
+                    "attribute": "",
+                    "regex": "",
+                    "get_first": False,
+                },
+                "last_released_chapter_url_selector": {
+                    "selector": "",
+                    "attribute": "",
+                    "get_first": False,
+                },
+                "last_released_chapter_use_browser": False,
             }
             del ss["add_manga_chapter_options"]
 
@@ -605,15 +668,17 @@ def show_add_custom_manga_form():
                 else:
                     cover_img = None
 
-                ss["add_custom_manga_manga_to_add"] = {
+                ss["add_manga_manga_to_add"] = {
                     "name": ss.add_custom_manga_form_name,
                     "url": ss.add_custom_manga_form_url,
                     "status": ss.add_custom_manga_form_status,
+                    "manga_internal_id": "",
                     "cover_img_url": ss.add_custom_manga_form_cover_img_url,
                     "cover_img": cover_img,
                     "last_read_chapter": {
                         "chapter": ss.add_custom_manga_form_last_read_chapter,
                         "url": ss.add_custom_manga_form_last_read_chapter_url,
+                        "internal_id": "",
                     },
                     "last_released_chapter_name_selector": {
                         "selector": ss.add_custom_manga_form_last_released_chapter_name_selector,
@@ -628,75 +693,5 @@ def show_add_custom_manga_form():
                     },
                     "last_released_chapter_use_browser": ss.add_custom_manga_form_last_released_chapter_use_browser,
                 }
-                add_custom_manga()
 
-
-def add_custom_manga():
-    api_client = get_api_client()
-    ex = None
-    with st.spinner("Adding manga..."):
-        try:
-            api_client.add_custom_manga(
-                ss["add_custom_manga_manga_to_add"]["name"],
-                ss["add_custom_manga_manga_to_add"]["url"],
-                ss["add_custom_manga_manga_to_add"]["status"],
-                ss["add_custom_manga_manga_to_add"]["cover_img_url"],
-                ss["add_custom_manga_manga_to_add"]["cover_img"],
-                ss["add_custom_manga_manga_to_add"]["last_read_chapter"]["chapter"],
-                ss["add_custom_manga_manga_to_add"]["last_read_chapter"]["url"],
-                ss["add_custom_manga_manga_to_add"][
-                    "last_released_chapter_name_selector"
-                ]["selector"],
-                ss["add_custom_manga_manga_to_add"][
-                    "last_released_chapter_name_selector"
-                ]["attribute"],
-                ss["add_custom_manga_manga_to_add"][
-                    "last_released_chapter_name_selector"
-                ]["regex"],
-                ss["add_custom_manga_manga_to_add"][
-                    "last_released_chapter_name_selector"
-                ]["get_first"],
-                ss["add_custom_manga_manga_to_add"][
-                    "last_released_chapter_url_selector"
-                ]["selector"],
-                ss["add_custom_manga_manga_to_add"][
-                    "last_released_chapter_url_selector"
-                ]["attribute"],
-                ss["add_custom_manga_manga_to_add"][
-                    "last_released_chapter_url_selector"
-                ]["get_first"],
-                ss["add_custom_manga_manga_to_add"][
-                    "last_released_chapter_use_browser"
-                ],
-            )
-        except Exception as e:
-            ex = e
-
-    if ex is not None:
-        resp_text = str(ex).lower()
-        logger.exception(ex)
-        if "manga already exists in DB".lower() in resp_text:
-            st.warning("Manga already in Mantium")
-        if (
-            "duplicate key value violates unique constraint" in resp_text
-            and "chapters_pkey" in resp_text
-        ):
-            st.warning("Last read chapter URL already in Mantium")
-        elif "error while visiting manga url" in resp_text:
-            st.warning(
-                "Error while visiting the provided manga URL. Check that it's valid."
-            )
-        elif "selector not found in the page or is empty" in resp_text or "selector should start with 'css:' or 'xpath:', instead it's" in resp_text:
-            st.warning(
-                "Invalid selector or one of the provided selectors/attributes was not found in the page or is empty"
-            )
-        elif "regex did not match" in resp_text or "error compiling regex" in resp_text:
-            st.warning(
-                "Invalid regex or the chapter name selector is empty after applying the provided regex"
-            )
-        else:
-            st.error("Error while adding manga")
-    else:
-        ss["add_manga_success_message"] = "Manga added successfully"
-        ss["add_manga_search_selected_manga"] = None
-        st.rerun()
+                add_manga()

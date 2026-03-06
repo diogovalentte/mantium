@@ -11,68 +11,6 @@ class CustomMangaAPIClient:
         self.base_custom_manga_url: str = urljoin(base_api_url, "/v1/custom_manga")
         self.acceptable_status_codes: tuple = (200,)
 
-    def add_custom_manga(
-        self,
-        manga_name: str,
-        manga_url: str,
-        manga_status: int,
-        cover_img_url: str,
-        cover_img: bytes,
-        last_read_chapter: str,
-        last_read_chapter_url: str,
-        last_released_chapter_name_selector: str,
-        last_released_chapter_name_attribute: str,
-        last_released_chapter_name_regex: str,
-        last_released_chapter_name_get_first: str,
-        last_released_chapter_url_selector: str,
-        last_released_chapter_url_attribute: str,
-        last_released_chapter_url_get_first: str,
-        last_released_chapter_selector_use_browser: bool,
-    ) -> dict[str, str]:
-        url = self.base_custom_manga_url
-
-        request_body = {
-            "name": manga_name,
-            "url": manga_url,
-            "status": manga_status,
-            "cover_img_url": cover_img_url,
-            "cover_img": base64.b64encode(cover_img).decode("utf-8") if cover_img else "",
-            "last_released_chapter_selector_use_browser": last_released_chapter_selector_use_browser,
-        }
-
-        if last_read_chapter:
-            request_body["last_read_chapter"] = {
-                "chapter": last_read_chapter,
-                "url": last_read_chapter_url,
-            }
-        if last_released_chapter_name_selector != "":
-            request_body["last_released_chapter_name_selector"] = {
-                "selector": last_released_chapter_name_selector,
-                "attribute": last_released_chapter_name_attribute,
-                "regex": last_released_chapter_name_regex,
-                "get_first": last_released_chapter_name_get_first,
-            }
-        if last_released_chapter_url_selector != "":
-            request_body["last_released_chapter_url_selector"] = {
-                "selector": last_released_chapter_url_selector,
-                "attribute": last_released_chapter_url_attribute,
-                "get_first": last_released_chapter_url_get_first,
-            }
-
-        res = requests.post(url, json=request_body)
-
-        if res.status_code not in self.acceptable_status_codes:
-            raise APIException(
-                "error while adding custom manga",
-                url,
-                "POST",
-                request_body,
-                res.status_code,
-                res.text,
-            )
-
-        return res.json()
-
     def update_custom_manga_name(
         self,
         name: str,

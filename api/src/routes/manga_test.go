@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
-var mangasRequestsTestTable = map[string]routes.AddMangaRequest{
+var mangasRequestsTestTable = map[string]routes.AddMultiMangaRequest{
 	"valid manga with read chapter": {
 		URL:             "https://klmanga.talk/manga-raw/大ダーク-raw-free/",
 		Status:          5,
