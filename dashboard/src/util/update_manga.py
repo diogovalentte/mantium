@@ -810,24 +810,6 @@ def show_update_custom_manga(manga: dict[str, Any]):
                 key="update_custom_manga_form_last_released_chapter_use_browser",
             )
 
-        with st.expander(
-            "Cover Image",
-        ):
-            st.text_input(
-                "Cover Image URL",
-                placeholder="https://example.com/image.jpg",
-                key="update_custom_manga_form_cover_img_url",
-            )
-            st.file_uploader(
-                "Upload Cover Image",
-                type=["png", "jpg", "jpeg"],
-                key="update_custom_manga_form_cover_img_file",
-            )
-            st.checkbox(
-                "Use Mantium default cover image",
-                key="update_custom_manga_form_use_mantim_default_cover_img",
-            )
-
         if st.form_submit_button(
             "Update",
             use_container_width=True,
@@ -848,15 +830,6 @@ def show_update_custom_manga(manga: dict[str, Any]):
                 last_released_chapter_url_get_first = ss.update_custom_manga_form_last_released_chapter_url_get_first
                 last_released_chapter_selector_use_browser = ss.update_custom_manga_form_last_released_chapter_use_browser
 
-                cover_img_url = ss.update_custom_manga_form_cover_img_url
-                cover_img = (
-                    ss.update_custom_manga_form_cover_img_file.getvalue()
-                    if ss.update_custom_manga_form_cover_img_file
-                    else None
-                )
-                use_mantium_default_cover_img = (
-                    ss.update_custom_manga_form_use_mantim_default_cover_img
-                )
                 if name == "":
                     st.warning("Provide a manga name")
                 elif last_read_chapter == "" and last_read_chapter_url != "":
@@ -910,42 +883,6 @@ def show_update_custom_manga(manga: dict[str, Any]):
                             last_released_chapter_selector_use_browser,
                             manga["ID"],
                         )
-
-                    values_count = sum(
-                        [
-                            bool(cover_img_url),
-                            bool(cover_img),
-                            use_mantium_default_cover_img,
-                        ]
-                    )
-                    match values_count:
-                        case 0:
-                            pass
-                        case 1:
-                            if cover_img_url != "" or cover_img is not None:
-                                api_client.update_manga_cover_img(
-                                    manga["ID"],
-                                    "",
-                                    "",
-                                    cover_img_url,
-                                    cover_img if cover_img else b"",
-                                    False,
-                                    False,
-                                )
-                            elif use_mantium_default_cover_img:
-                                api_client.update_manga_cover_img(
-                                    manga["ID"],
-                                    "",
-                                    "",
-                                    "",
-                                    b"",
-                                    False,
-                                    True,
-                                )
-                        case _:
-                            ss["update_manga_warning_message"] = (
-                                "To update the cover image, provide either an URL, upload a file, or check the box to use the Mantium default cover image. The other fields were updated successfully"
-                            )
 
                     if not (
                         ss.get("update_manga_error_message", "") != ""
