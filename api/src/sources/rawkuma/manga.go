@@ -60,11 +60,11 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 		var err error
 		mangaReturn.InternalID = HTMLMangaID[1]
 		mangaReturn.LastReleasedChapter, err = s.GetLastChapterMetadata("", HTMLMangaID[1])
-		mangaReturn.LastReleasedChapter.Type = 1
 		if err != nil {
 			sharedErr = err
 			return
 		}
+		mangaReturn.LastReleasedChapter.Type = 1
 	})
 
 	err := s.col.Visit(mangaURL)
