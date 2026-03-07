@@ -8,7 +8,7 @@ import streamlit as st
 from PIL import Image
 from src.api.api_client import get_api_client
 from src.exceptions import APIException
-from src.util.add_manga import show_search_manga_term_form
+from src.util.add_manga import show_add_custom_manga_form, show_search_manga_term_form
 from src.util.util import (
     centered_container,
     get_logger,
@@ -25,12 +25,6 @@ logger = get_logger()
 
 
 def show_update_multimanga_form(manga: dict[str, Any]):
-    # if manga["Source"] == defaults.CUSTOM_MANGA_SOURCE:
-    #
-    #     @st.dialog(manga["Name"], on_dismiss=set_is_dialog_open)
-    #     def show():
-    #         ss["is_dialog_open"] = True
-    #         show_update_custom_manga(manga)
     @st.dialog(manga["Name"], on_dismiss=set_is_dialog_open)
     def show():
         ss["is_dialog_open"] = True
@@ -68,6 +62,14 @@ def show_update_multimanga_mangas_form(multimanga: dict[str, Any]):
             ss["is_dialog_open"] = True
             show_update_multimanga_add_manga_url(multimanga)
             ss["show_update_multimanga_add_manga_url"] = False
+
+    elif ss.get("show_update_multimanga_add_custom_manga", False):
+
+        @st.dialog("Add Manga", on_dismiss=set_is_dialog_open)
+        def show():
+            ss["is_dialog_open"] = True
+            show_update_multimanga_add_custom_manga(multimanga)
+            ss["show_update_multimanga_add_custom_manga"] = False
 
     else:
 
@@ -206,6 +208,7 @@ def show_update_multimanga(multimanga_id):
 
             st.checkbox(
                 "Delete Last Read Chapter",
+                help="Delete the last read chapter and set it to empty. This will make Mantium consider that you haven't read any chapter.",
                 key="update_multimanga_form_delete_last_read_chapter_" + str(multimanga["ID"]),
             )
 
@@ -363,6 +366,16 @@ def show_update_multimanga(multimanga_id):
             st.rerun()
 
         if st.button(
+            "Add Custom Manga",
+            use_container_width=True,
+            type="primary",
+            key="update_multimanga_mangas_show_add_custom_manga_button",
+        ):
+            ss["show_update_multimanga_add_custom_manga"] = True
+            ss["highlighted_multimanga"] = multimanga
+            st.rerun()
+
+        if st.button(
             "Manage Mangas",
             use_container_width=True,
             type="primary",
@@ -482,8 +495,19 @@ def show_update_multimanga_add_manga_search(multimanga):
                 with st.spinner("Adding manga to multimanga..."):
                     api_client.add_manga_to_multimanga(
                         multimanga["ID"],
+                        "",
                         manga["URL"],
                         manga["InternalID"],
+                        "",
+                        b"",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        "",
+                        False
                     )
             except APIException as e:
                 if "manga already exists in DB" in str(e):
@@ -524,8 +548,19 @@ def show_update_multimanga_add_manga_url(multimanga):
             with st.spinner("Adding manga to multimanga..."):
                 api_client.add_manga_to_multimanga(
                     multimanga["ID"],
+                    "",
                     manga_url,
                     "",
+                    "",
+                    b"",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    False
                 )
         except APIException as e:
             resp_text = str(e.response_text).lower()
@@ -548,6 +583,8 @@ def show_update_multimanga_add_manga_url(multimanga):
             ss["update_manga_success_message"] = "Manga added successfully"
             st.rerun()
 
+def show_update_multimanga_add_custom_manga(multimanga):
+    show_add_custom_manga_form(multimanga["ID"])
 
 def show_update_multimanga_manage_mangas(multimanga):
     message_container = st.empty()

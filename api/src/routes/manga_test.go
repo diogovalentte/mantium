@@ -1422,7 +1422,7 @@ func TestMultiMangaLifeCycle(t *testing.T) {
 		}
 	})
 	t.Run("Add manga to multimanga's manga list", func(t *testing.T) {
-		body, err := json.Marshal(routes.AddMangaToMultiMangaRequest{MangaURL: "https://mangadex.org/title/68112dc1-2b80-4f20-beb8-2f2a8716a430"})
+		body, err := json.Marshal(routes.AddMangaToMultiMangaRequest{URL: "https://mangadex.org/title/68112dc1-2b80-4f20-beb8-2f2a8716a430"})
 		if err != nil {
 			t.Fatal(err)
 		}

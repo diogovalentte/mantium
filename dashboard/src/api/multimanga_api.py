@@ -39,7 +39,7 @@ class MultiMangaAPIClient:
             "name": manga_name,
             "url": manga_url,
             "status": manga_status,
-            "manga_internal_id": manga_internal_id,
+            "internal_id": manga_internal_id,
             "cover_img_url": cover_img_url,
             "cover_img": base64.b64encode(cover_img).decode("utf-8") if cover_img else "",
             "last_released_chapter_selector_use_browser": last_released_chapter_selector_use_browser,
@@ -215,16 +215,45 @@ class MultiMangaAPIClient:
 
     def add_manga_to_multimanga(
         self,
-        id: int,
+        multimanga_id: int,
+        manga_name: str,
         manga_url: str,
         manga_internal_id: str,
+        cover_img_url: str,
+        cover_img: bytes,
+        last_released_chapter_name_selector: str,
+        last_released_chapter_name_attribute: str,
+        last_released_chapter_name_regex: str,
+        last_released_chapter_name_get_first: str,
+        last_released_chapter_url_selector: str,
+        last_released_chapter_url_attribute: str,
+        last_released_chapter_url_get_first: str,
+        last_released_chapter_selector_use_browser: bool,
     ) -> dict[str, str]:
-        url = self.base_multimanga_url + "/manga?id=" + str(id)
+        url = self.base_multimanga_url + "/manga?id=" + str(multimanga_id)
 
         request_body = {
-            "manga_url": manga_url,
-            "manga_internal_id": manga_internal_id,
+            "name": manga_name,
+            "url": manga_url,
+            "internal_id": manga_internal_id,
+            "cover_img_url": cover_img_url,
+            "cover_img": base64.b64encode(cover_img).decode("utf-8") if cover_img else "",
+            "last_released_chapter_selector_use_browser": last_released_chapter_selector_use_browser,
         }
+
+        if last_released_chapter_name_selector != "":
+            request_body["last_released_chapter_name_selector"] = {
+                "selector": last_released_chapter_name_selector,
+                "attribute": last_released_chapter_name_attribute,
+                "regex": last_released_chapter_name_regex,
+                "get_first": last_released_chapter_name_get_first,
+            }
+        if last_released_chapter_url_selector != "":
+            request_body["last_released_chapter_url_selector"] = {
+                "selector": last_released_chapter_url_selector,
+                "attribute": last_released_chapter_url_attribute,
+                "get_first": last_released_chapter_url_get_first,
+            }
 
         res = requests.post(url, json=request_body)
 

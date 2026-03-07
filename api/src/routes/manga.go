@@ -297,7 +297,7 @@ type AddMultiMangaRequest struct {
 	LastReleasedChapterSelectorUseBrowser bool                 `json:"last_released_chapter_selector_use_browser"`
 	Name                                  string               `json:"name"`
 	URL                                   string               `json:"url" binding:"omitempty,http_url"`
-	MangaInternalID                       string               `json:"manga_internal_id"`
+	MangaInternalID                       string               `json:"internal_id"`
 	CoverImgURL                           string               `json:"cover_img_url" binding:"omitempty,http_url"`
 	Status                                int                  `json:"status" binding:"required,gte=0,lte=5"`
 	CoverImg                              []byte               `json:"cover_img"`
@@ -405,7 +405,7 @@ func AddMultiManga(c *gin.Context) {
 		if currentManga.URL != "" && (currentManga.LastReleasedChapterNameSelector != nil || currentManga.LastReleasedChapterURLSelector != nil) {
 			chapter, err := manga.GetCustomMangaLastReleasedChapter(currentManga.URL, currentManga.LastReleasedChapterNameSelector, currentManga.LastReleasedChapterURLSelector, requestData.LastReleasedChapterSelectorUseBrowser)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": "error getting last released chapter: " + err.Error()})
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "error getting custom manga last released chapter: " + err.Error()})
 				return
 			}
 			currentManga.LastReleasedChapter = chapter
@@ -1042,29 +1042,6 @@ func AddMangaToMultiManga(c *gin.Context) {
 		return
 	}
 
-	mangaAdd, err := sources.GetMangaMetadata(requestData.MangaURL, requestData.MangaInternalID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
-	if !slices.Contains(config.GlobalConfigs.DashboardConfigs.Manga.AllowedSources, mangaAdd.Source) {
-		c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("source %s is not allowed", mangaAdd.Source)})
-		return
-	}
-
-	if len(mangaAdd.CoverImg) == 0 {
-		mangaAdd.CoverImg, err = util.GetDefaultCoverImg()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-			return
-		}
-		mangaAdd.CoverImgResized = true
-	}
-
-	if mangaAdd.LastReleasedChapter != nil && mangaAdd.LastReleasedChapter.UpdatedAt.IsZero() {
-		mangaAdd.LastReleasedChapter.UpdatedAt = currentTime.Truncate(time.Second)
-	}
-
 	multimanga, err := manga.GetMultiMangaFromDB(manga.ID(multimangaID))
 	if err != nil {
 		if strings.Contains(err.Error(), errordefs.ErrMultiMangaNotFoundDB.Error()) {
@@ -1074,14 +1051,104 @@ func AddMangaToMultiManga(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
-	mangaAdd.Status = multimanga.Status // Only to make the manga valid to insert into DB, not really used
+
+	mangaAdd := &manga.Manga{
+		Status: multimanga.Status,
+	}
+
+	if requestData.Name == "" {
+		mangaAdd, err = sources.GetMangaMetadata(requestData.URL, requestData.InternalID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		if !slices.Contains(config.GlobalConfigs.DashboardConfigs.Manga.AllowedSources, mangaAdd.Source) {
+			c.JSON(http.StatusBadRequest, gin.H{"message": fmt.Sprintf("source %s is not allowed", mangaAdd.Source)})
+			return
+		}
+
+		if len(mangaAdd.CoverImg) == 0 {
+			mangaAdd.CoverImg, err = util.GetDefaultCoverImg()
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+				return
+			}
+			mangaAdd.CoverImgResized = true
+		}
+
+		if mangaAdd.LastReleasedChapter != nil && mangaAdd.LastReleasedChapter.UpdatedAt.IsZero() {
+			mangaAdd.LastReleasedChapter.UpdatedAt = currentTime.Truncate(time.Second)
+		}
+	} else {
+		if len(requestData.CoverImg) > 0 && requestData.CoverImgURL != "" {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "you must provide only one of the following: cover_img, cover_img_url"})
+			return
+		}
+
+		mangaAdd.URL = requestData.URL
+		mangaAdd.Name = requestData.Name
+		mangaAdd.Source = manga.CustomMangaSource
+		mangaAdd.LastReleasedChapterSelectorUseBrowser = requestData.LastReleasedChapterSelectorUseBrowser
+
+		if requestData.LastReleasedChapterNameSelector != nil {
+			mangaAdd.LastReleasedChapterNameSelector = (*manga.HTMLSelector)(requestData.LastReleasedChapterNameSelector)
+		}
+		if requestData.LastReleasedChapterURLSelector != nil {
+			mangaAdd.LastReleasedChapterURLSelector = (*manga.HTMLSelector)(requestData.LastReleasedChapterURLSelector)
+			mangaAdd.LastReleasedChapterURLSelector.Regex = ""
+		}
+
+		if mangaAdd.URL != "" && (mangaAdd.LastReleasedChapterNameSelector != nil || mangaAdd.LastReleasedChapterURLSelector != nil) {
+			chapter, err := manga.GetCustomMangaLastReleasedChapter(mangaAdd.URL, mangaAdd.LastReleasedChapterNameSelector, mangaAdd.LastReleasedChapterURLSelector, requestData.LastReleasedChapterSelectorUseBrowser)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "error getting custom manga last released chapter: " + err.Error()})
+				return
+			}
+			mangaAdd.LastReleasedChapter = chapter
+		}
+
+		if mangaAdd.URL == "" {
+			mangaAdd.URL = manga.CustomMangaURLPrefix + "/" + uuid.New().String()
+		}
+
+		if len(requestData.CoverImg) > 0 {
+			if !util.IsImageValid(requestData.CoverImg) {
+				c.JSON(http.StatusBadRequest, gin.H{"message": "invalid custom manga image"})
+				return
+			}
+			resizedCoverImg, err := util.ResizeImage(requestData.CoverImg, uint(util.DefaultImageWidth), uint(util.DefaultImageHeight))
+			if err == nil {
+				mangaAdd.CoverImg = resizedCoverImg
+				mangaAdd.CoverImgResized = true
+			} else {
+				mangaAdd.CoverImg = requestData.CoverImg
+				mangaAdd.CoverImgResized = false
+			}
+		} else if requestData.CoverImgURL != "" {
+			mangaAdd.CoverImg, mangaAdd.CoverImgResized, err = util.GetImageFromURL(requestData.CoverImgURL, 3, 3*time.Second)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": "invalid image: " + err.Error()})
+				return
+			}
+
+			mangaAdd.CoverImgURL = requestData.CoverImgURL
+		} else {
+			mangaAdd.CoverImg, err = util.GetDefaultCoverImg()
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+				return
+			}
+			mangaAdd.CoverImgResized = true
+		}
+	}
+
 	err = multimanga.AddManga(mangaAdd)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
 	}
 
-	if config.GlobalConfigs.DashboardConfigs.Integrations.AddAllMultiMangaMangasToDownloadIntegrations {
+	if requestData.Name == "" && config.GlobalConfigs.DashboardConfigs.Integrations.AddAllMultiMangaMangasToDownloadIntegrations {
 		var integrationsErrors []error
 		if config.GlobalConfigs.Kaizoku.Valid {
 			kaizoku := kaizoku.Kaizoku{}
@@ -1130,8 +1197,14 @@ func AddMangaToMultiManga(c *gin.Context) {
 
 // AddMangaToMultiMangaRequest is the request body for the AddManga route
 type AddMangaToMultiMangaRequest struct {
-	MangaURL        string `json:"manga_url" binding:"required,http_url"`
-	MangaInternalID string `json:"manga_internal_id"`
+	LastReleasedChapterSelectorUseBrowser bool                 `json:"last_released_chapter_selector_use_browser"`
+	Name                                  string               `json:"name"`
+	URL                                   string               `json:"url" binding:"omitempty,http_url"`
+	InternalID                            string               `json:"internal_id"`
+	CoverImgURL                           string               `json:"cover_img_url" binding:"omitempty,http_url"`
+	CoverImg                              []byte               `json:"cover_img"`
+	LastReleasedChapterNameSelector       *HTMLSelectorRequest `json:"last_released_chapter_name_selector"`
+	LastReleasedChapterURLSelector        *HTMLSelectorRequest `json:"last_released_chapter_url_selector"`
 }
 
 // @Summary Remove manga from multimanga list
