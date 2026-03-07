@@ -37,12 +37,12 @@ func (s *Source) GetChapterMetadata(mangaURL, _, chapter, chapterURL, _ string) 
 
 // GetChapterMetadataByURL scrapes the manga page and return the chapter by its URL
 func (s *Source) getChapterMetadataByURL(chapterURL string) (*manga.Chapter, error) {
-	s.resetCollector()
+	c := newCollector()
 	chapterReturn := &manga.Chapter{}
 	var sharedErr error
 	var chapterFound bool
 
-	s.c.OnHTML("ol.breadcrumb", func(e *colly.HTMLElement) {
+	c.OnHTML("ol.breadcrumb", func(e *colly.HTMLElement) {
 		if chapterFound {
 			return
 		}
@@ -63,7 +63,7 @@ func (s *Source) getChapterMetadataByURL(chapterURL string) (*manga.Chapter, err
 		chapterReturn.Name = chapterName
 	})
 
-	err := s.c.Visit(chapterURL)
+	err := c.Visit(chapterURL)
 	if err != nil {
 		if err.Error() == "Not Found" {
 			return nil, errordefs.ErrChapterNotFound
@@ -82,12 +82,12 @@ func (s *Source) getChapterMetadataByURL(chapterURL string) (*manga.Chapter, err
 
 // GetChapterMetadataByChapter scrapes the manga page and return the chapter by its chapter
 func (s *Source) getChapterMetadataByChapter(mangaURL string, chapter string) (*manga.Chapter, error) {
-	s.resetCollector()
+	c := newCollector()
 	chapterReturn := &manga.Chapter{}
 	var sharedErr error
 	var chapterFound bool
 
-	s.c.OnHTML("div.chapter-box > h4 > a", func(e *colly.HTMLElement) {
+	c.OnHTML("div.chapter-box > h4 > a", func(e *colly.HTMLElement) {
 		if chapterFound {
 			return
 		}
@@ -109,7 +109,7 @@ func (s *Source) getChapterMetadataByChapter(mangaURL string, chapter string) (*
 		chapterReturn.Name = chapterName
 	})
 
-	err := s.c.Visit(mangaURL)
+	err := c.Visit(mangaURL)
 	if err != nil {
 		if err.Error() == "Not Found" {
 			return nil, errordefs.ErrMangaNotFound
@@ -128,13 +128,13 @@ func (s *Source) getChapterMetadataByChapter(mangaURL string, chapter string) (*
 
 // GetLastChapterMetadata scrapes the manga page and return the latest chapter
 func (s *Source) GetLastChapterMetadata(mangaURL string, _ string) (*manga.Chapter, error) {
-	s.resetCollector()
+	c := newCollector()
 
 	errorContext := "error while getting last chapter metadata"
 	chapterReturn := &manga.Chapter{}
 	var sharedErr error
 
-	s.c.OnHTML("div.chapter-box > h4:first-child > a:first-child", func(e *colly.HTMLElement) {
+	c.OnHTML("div.chapter-box > h4:first-child > a:first-child", func(e *colly.HTMLElement) {
 		chapterName := strings.TrimSpace(e.DOM.Find("span").Text())
 		chapter, err := extractChapter(chapterName)
 		if err != nil {
@@ -148,7 +148,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL string, _ string) (*manga.Chapt
 		chapterReturn.Name = chapterName
 	})
 
-	err := s.c.Visit(mangaURL)
+	err := c.Visit(mangaURL)
 	if err != nil {
 		if err.Error() == "Not Found" {
 			return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
@@ -167,13 +167,13 @@ func (s *Source) GetLastChapterMetadata(mangaURL string, _ string) (*manga.Chapt
 
 // GetChaptersMetadata scrapes the manga page and return the chapters
 func (s *Source) GetChaptersMetadata(mangaURL, _ string) ([]*manga.Chapter, error) {
-	s.resetCollector()
+	c := newCollector()
 
 	errorContext := "error while getting chapters metadata"
 	chapters := []*manga.Chapter{}
 	var sharedErr error
 
-	s.c.OnHTML("div.chapter-box > h4 > a", func(e *colly.HTMLElement) {
+	c.OnHTML("div.chapter-box > h4 > a", func(e *colly.HTMLElement) {
 		chapterName := strings.TrimSpace(e.DOM.Find("span").Text())
 		chapter, err := extractChapter(chapterName)
 		if err != nil {
@@ -192,7 +192,7 @@ func (s *Source) GetChaptersMetadata(mangaURL, _ string) ([]*manga.Chapter, erro
 		chapters = append(chapters, chapterAdd)
 	})
 
-	err := s.c.Visit(mangaURL)
+	err := c.Visit(mangaURL)
 	if err != nil {
 		if err.Error() == "Not Found" {
 			return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)

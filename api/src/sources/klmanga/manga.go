@@ -16,7 +16,7 @@ import (
 
 // GetMangaMetadata scrapes the manga page and return the manga data
 func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
-	s.resetCollector()
+	c := newCollector()
 
 	errorContext := "error while getting manga metadata"
 
@@ -27,7 +27,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	var sharedErr error
 
 	// manga name
-	s.c.OnHTML("h1.name", func(e *colly.HTMLElement) {
+	c.OnHTML("h1.name", func(e *colly.HTMLElement) {
 		name := e.Text
 		name = strings.TrimSuffix(name, " (RAW – Free)")
 		name = strings.TrimSuffix(name, " (RAW - Free)")
@@ -36,7 +36,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	})
 
 	// manga cover
-	s.c.OnHTML("div.main-thumb > img", func(e *colly.HTMLElement) {
+	c.OnHTML("div.main-thumb > img", func(e *colly.HTMLElement) {
 		coverURL := e.Attr("src")
 
 		var coverImg []byte
@@ -51,7 +51,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	})
 
 	// last released chapter
-	s.c.OnHTML("div.chapter-box > h4:first-child > a", func(e *colly.HTMLElement) {
+	c.OnHTML("div.chapter-box > h4:first-child > a", func(e *colly.HTMLElement) {
 		chapterName := strings.TrimSpace(e.DOM.Find("span").Text())
 		chapter, err := extractChapter(chapterName)
 		if err != nil {
@@ -68,7 +68,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 		}
 	})
 
-	err := s.c.Visit(mangaURL)
+	err := c.Visit(mangaURL)
 	if err != nil {
 		if err.Error() == "Not Found" {
 			return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
@@ -93,11 +93,11 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 	var mangaCount int
 
 	for mangaCount < limit {
-		s.resetCollector()
+		c := newCollector()
 		var sharedErr error
 		nextPage := false
 
-		s.c.OnHTML("div.row > div.col-sm-4 > div.entry", func(e *colly.HTMLElement) {
+		c.OnHTML("div.row > div.col-sm-4 > div.entry", func(e *colly.HTMLElement) {
 			if mangaCount >= limit {
 				return
 			}
@@ -129,12 +129,12 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 			mangaCount++
 		})
 
-		s.c.OnHTML("span.page-numbers.current + a.page-numbers", func(_ *colly.HTMLElement) {
+		c.OnHTML("span.page-numbers.current + a.page-numbers", func(_ *colly.HTMLElement) {
 			nextPage = true
 		})
 
 		mangaURL := fmt.Sprintf("%s/page/%d/?s=%s", baseSiteURL, pageNumber, term)
-		err := s.c.Visit(mangaURL)
+		err := c.Visit(mangaURL)
 		if err != nil {
 			if err.Error() == "Not Found" {
 				return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)

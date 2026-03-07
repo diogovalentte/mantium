@@ -11,9 +11,7 @@ import (
 var baseSiteURL = "https://klmanga.talk"
 
 // Source is the struct for the KLManga source
-type Source struct {
-	c *colly.Collector
-}
+type Source struct{}
 
 func (Source) GetName() string {
 	return "klmanga"
@@ -27,14 +25,6 @@ func newCollector() *colly.Collector {
 	)
 
 	return c
-}
-
-func (s *Source) resetCollector() {
-	if s.c != nil {
-		s.c.Wait()
-	}
-
-	s.c = newCollector()
 }
 
 func extractChapter(s string) (string, error) {
