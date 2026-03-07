@@ -555,7 +555,7 @@ def show_add_custom_manga_form(multimanga_id: int = 0):
             key=key_prefix + "status",
         )
 
-        if multimanga_id == "":
+        if multimanga_id == 0:
             with st.expander(
                 "Last Read Chapter",
             ):
@@ -691,7 +691,7 @@ def show_add_custom_manga_form(multimanga_id: int = 0):
                     "last_released_chapter_use_browser": ss[key_prefix + "last_released_chapter_use_browser"],
                 }
 
-                if not multimanga_id:
+                if multimanga_id == 0:
                     ss["add_manga_manga_to_add"]["last_read_chapter"] = {
                         "chapter": ss[key_prefix + "last_read_chapter"],
                         "url": ss[key_prefix + "last_read_chapter_url"],

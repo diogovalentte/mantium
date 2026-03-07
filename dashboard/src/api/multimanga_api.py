@@ -162,6 +162,19 @@ class MultiMangaAPIClient:
                     "URL": "",
                     "FromSourceSite": False,
                 }
+            if manga["LastReleasedChapterNameSelector"] is None:
+                manga["LastReleasedChapterNameSelector"] = {
+                    "Selector": "",
+                    "Attribute": "",
+                    "Regex": "",
+                    "GetFirst": False,
+                }
+            if manga["LastReleasedChapterURLSelector"] is None:
+                manga["LastReleasedChapterURLSelector"] = {
+                    "Selector": "",
+                    "Attribute": "",
+                    "GetFirst": False,
+                }
 
         return multimanga
 
@@ -209,6 +222,19 @@ class MultiMangaAPIClient:
                 "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
                 "URL": "",
                 "FromSourceSite": False,
+            }
+        if manga["LastReleasedChapterNameSelector"] is None:
+            manga["LastReleasedChapterNameSelector"] = {
+                "Selector": "",
+                "Attribute": "",
+                "Regex": "",
+                "GetFirst": False,
+            }
+        if manga["LastReleasedChapterURLSelector"] is None:
+            manga["LastReleasedChapterURLSelector"] = {
+                "Selector": "",
+                "Attribute": "",
+                "GetFirst": False,
             }
 
         return manga

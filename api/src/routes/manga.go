@@ -47,6 +47,7 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.PATCH("/custom_manga/last_released_chapter_selectors", UpdateCustomMangaLastReleasedChapterSelectors)
 		group.PATCH("/custom_manga/name", UpdateCustomMangaName)
 		group.PATCH("/custom_manga/url", UpdateCustomMangaURL)
+		group.PATCH("/custom_manga/cover_img", UpdateCustomMangaCoverImg)
 
 		// Methods for multimanga only
 		group.POST("/multimanga", AddMultiManga)
@@ -889,6 +890,136 @@ type LastReadChapterRequest struct {
 	InternalID     string `json:"internal_id,omitempty"`
 }
 
+// @Summary Update custom manga cover image
+// @Description Updates a custom manga cover image in the database. You must provide only one of the following: cover_img, cover_img_url, use_mantium_default_img.
+// @Produce json
+// @Param id query int false "Manga ID" Example(1)
+// @Param cover_img formData file false "Manga cover image file. Remember to set the Content-Type header to 'multipart/form-data' when sending the request."
+// @Param cover_img_url query string false "Manga cover image URL" Example("https://example.com/cover.jpg")
+// @Param use_mantium_default_img query bool false "Update manga cover image to  Mantium's default cover image" Example(true)
+// @Success 200 {object} responseMessage
+// @Router /manga/cover_img [patch]
+func UpdateCustomMangaCoverImg(c *gin.Context) {
+	mangaIDStr := c.Query("id")
+	coverImgURL := c.Query("cover_img_url")
+	useMantiumDefaultImg := c.Query("use_mantium_default_img")
+
+	var coverImg []byte
+	var requestFile multipart.File
+	requestFile, _, err := c.Request.FormFile("cover_img")
+	if err != nil {
+		if err != http.ErrMissingFile && err != http.ErrNotMultipart {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	} else {
+		defer requestFile.Close()
+		coverImg, err = io.ReadAll(requestFile)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	}
+
+	var score int
+	if coverImgURL != "" {
+		score++
+	}
+
+	if useMantiumDefaultImg != "" {
+		switch useMantiumDefaultImg {
+		case "true":
+			score++
+		case "false":
+		default:
+			c.JSON(http.StatusBadRequest, gin.H{"message": "use_mantium_default_img must be a boolean"})
+			return
+		}
+	}
+	if len(coverImg) != 0 {
+		score++
+	}
+
+	switch score {
+	case 0:
+		c.JSON(http.StatusBadRequest, gin.H{"message": "you must provide one of the following: cover_img, cover_img_url, use_mantium_default_img"})
+		return
+	case 1:
+	default:
+		c.JSON(http.StatusBadRequest, gin.H{"message": "you must provide only one of the following: cover_img, cover_img_url, use_mantium_default_img"})
+		return
+	}
+
+	mangaID, _, err := getMangaIDAndURL(mangaIDStr, "")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	mangaToUpdate, err := manga.GetMangaDB(mangaID, "")
+	if err != nil {
+		if strings.Contains(err.Error(), errordefs.ErrMangaNotFoundDB.Error()) {
+			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+
+	retries := 3
+	retryInterval := 3 * time.Second
+	if len(coverImg) != 0 {
+		if !util.IsImageValid(coverImg) {
+			c.JSON(http.StatusBadRequest, gin.H{"message": "invalid image"})
+			return
+		}
+
+		mangaToUpdate.CoverImgFixed = true
+		resizedCoverImg, err := util.ResizeImage(coverImg, uint(util.DefaultImageWidth), uint(util.DefaultImageHeight))
+		if err == nil {
+			err = mangaToUpdate.UpdateCoverImgInDB(resizedCoverImg, true, coverImgURL)
+		} else {
+			err = mangaToUpdate.UpdateCoverImgInDB(coverImg, false, coverImgURL)
+		}
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	} else if coverImgURL != "" {
+		coverImg, isImgRezied, err := util.GetImageFromURL(coverImgURL, retries, retryInterval)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": "invalid image: " + err.Error()})
+			return
+		}
+
+		mangaToUpdate.CoverImgFixed = true
+
+		err = mangaToUpdate.UpdateCoverImgInDB(coverImg, isImgRezied, coverImgURL)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	} else if useMantiumDefaultImg != "" {
+		defaultCoverImg, err := util.GetDefaultCoverImg()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+		mangaToUpdate.CoverImgFixed = true
+
+		err = mangaToUpdate.UpdateCoverImgInDB(defaultCoverImg, true, "")
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	}
+
+	dashboard.UpdateDashboard()
+
+	c.JSON(http.StatusOK, gin.H{"message": "Manga cover image updated successfully"})
+}
+
 // @Summary Update multimanga cover image
 // @Description Updates a multimanga cover image in the database. You must provide only one of the following: cover_img, cover_img_url, use_current_manga_cover_img.
 // @Produce json
@@ -1079,6 +1210,7 @@ func AddMangaToMultiManga(c *gin.Context) {
 		if mangaAdd.LastReleasedChapter != nil && mangaAdd.LastReleasedChapter.UpdatedAt.IsZero() {
 			mangaAdd.LastReleasedChapter.UpdatedAt = currentTime.Truncate(time.Second)
 		}
+		mangaAdd.Status = multimanga.Status
 	} else {
 		if len(requestData.CoverImg) > 0 && requestData.CoverImgURL != "" {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "you must provide only one of the following: cover_img, cover_img_url"})

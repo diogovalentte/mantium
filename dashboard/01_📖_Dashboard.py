@@ -11,6 +11,7 @@ from src.util import defaults
 from src.util import util
 from src.util.add_manga import show_add_manga_form
 from src.util.update_manga import (
+    show_update_custom_manga,
     show_update_multimanga_form,
     show_update_multimanga_mangas_form,
 )
@@ -316,6 +317,18 @@ class MainDashboard:
         elif ss.get("highlighted_multimanga", None) is not None:
             show_update_multimanga_mangas_form(ss["highlighted_multimanga"])
             ss["highlighted_multimanga"] = None
+        elif ss.get("highlighted_custom_manga", None) is not None:
+
+            def on_dismiss():
+                set_is_dialog_open()
+                ss["highlighted_custom_manga"] = None
+
+            @st.dialog("Update Custom Manga", on_dismiss=on_dismiss)
+            def show():
+                ss["is_dialog_open"] = True
+                show_update_custom_manga(ss["highlighted_custom_manga"])
+
+            show()
         elif ss.get("update_manga_success_message", "") != "":
 
             @st.dialog("Update Manga", on_dismiss=set_is_dialog_open)

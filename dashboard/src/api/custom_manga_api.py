@@ -105,3 +105,28 @@ class CustomMangaAPIClient:
             )
 
         return res.json()
+
+    def update_custom_manga_cover_img(
+        self,
+        manga_id: int = 0,
+        cover_img_url: str = "",
+        cover_img: bytes = b"",
+        use_mantium_default_img: bool = False,
+    ) -> dict[str, str]:
+        path = "/cover_img"
+        url = f"{self.base_custom_manga_url}{path}"
+        url = f"{url}?id={manga_id}&{'&cover_img_url=%s' % cover_img_url if cover_img_url else ''}{'&use_mantium_default_img=%s' % str(use_mantium_default_img).lower() if use_mantium_default_img else ''}"
+
+        res = requests.patch(url, files={"cover_img": cover_img})
+
+        if res.status_code not in self.acceptable_status_codes:
+            raise APIException(
+                "error while updating custom manga cover image",
+                url,
+                "PATCH",
+                {},
+                res.status_code,
+                res.text,
+            )
+
+        return res.json()

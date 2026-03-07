@@ -992,6 +992,14 @@ func getMultiMangaMangasFromDB(multiMangaID ID, db *sql.DB) ([]*Manga, error) {
             mangas.cover_img AS manga_cover_img,
             mangas.cover_img_resized AS manga_cover_img_resized,
             mangas.last_read_chapter AS manga_last_read_chapter_id,
+			mangas.last_released_chapter_name_selector,
+			mangas.last_released_chapter_name_attribute,
+			mangas.last_released_chapter_name_regex,
+			mangas.last_released_chapter_name_get_first,
+			mangas.last_released_chapter_url_selector,
+			mangas.last_released_chapter_url_attribute,
+			mangas.last_released_chapter_url_get_first,
+			mangas.last_released_chapter_selector_use_browser,
             
             last_released_chapter.url AS last_released_chapter_url,
             last_released_chapter.chapter AS last_released_chapter,
@@ -1021,6 +1029,10 @@ func getMultiMangaMangasFromDB(multiMangaID ID, db *sql.DB) ([]*Manga, error) {
 		var lastReleasedChapter Chapter
 
 		var (
+			lastReleasedChapterNameSelector, lastReleasedChapterNameAttribute, lastReleasedChapterNameRegex sql.NullString
+			lastReleasedChapterURLSelector, lastReleasedChapterURLAttribute                                 sql.NullString
+			lastReleasedChapterNameGetFirst, lastReleasedChapterURLGetFirst                                 sql.NullBool
+
 			lastReleasedChapterURL, lastReleasedChapterChapter, lastReleasedChapterName, lastReleasedChapterInternalID sql.NullString
 			lastReleasedChapterUpdatedAt                                                                               sql.NullTime
 			lastReleasedChapterType                                                                                    sql.NullInt32
@@ -1031,6 +1043,10 @@ func getMultiMangaMangasFromDB(multiMangaID ID, db *sql.DB) ([]*Manga, error) {
 			&currentManga.InternalID, &currentManga.PreferredGroup, &currentManga.MultiMangaID, &currentManga.CoverImgURL,
 			&currentManga.CoverImg, &currentManga.CoverImgResized, &currentManga.LastReadChapter,
 
+			&lastReleasedChapterNameSelector, &lastReleasedChapterNameAttribute, &lastReleasedChapterNameRegex, &lastReleasedChapterNameGetFirst,
+			&lastReleasedChapterURLSelector, &lastReleasedChapterURLAttribute, &lastReleasedChapterURLGetFirst,
+			&currentManga.LastReleasedChapterSelectorUseBrowser,
+
 			&lastReleasedChapterURL, &lastReleasedChapterChapter, &lastReleasedChapterName,
 			&lastReleasedChapterInternalID, &lastReleasedChapterUpdatedAt, &lastReleasedChapterType,
 		)
@@ -1039,6 +1055,22 @@ func getMultiMangaMangasFromDB(multiMangaID ID, db *sql.DB) ([]*Manga, error) {
 		}
 
 		currentManga.SearchNames = []string{currentManga.Name}
+
+		if lastReleasedChapterNameSelector.Valid && lastReleasedChapterNameSelector.String != "" {
+			currentManga.LastReleasedChapterNameSelector = &HTMLSelector{
+				Selector:  lastReleasedChapterNameSelector.String,
+				Attribute: lastReleasedChapterNameAttribute.String,
+				Regex:     lastReleasedChapterNameRegex.String,
+				GetFirst:  lastReleasedChapterNameGetFirst.Bool,
+			}
+		}
+		if lastReleasedChapterURLSelector.Valid && lastReleasedChapterURLSelector.String != "" {
+			currentManga.LastReleasedChapterURLSelector = &HTMLSelector{
+				Selector:  lastReleasedChapterURLSelector.String,
+				Attribute: lastReleasedChapterURLAttribute.String,
+				GetFirst:  lastReleasedChapterURLGetFirst.Bool,
+			}
+		}
 
 		if lastReleasedChapterURL.Valid {
 			lastReleasedChapter.URL = lastReleasedChapterURL.String

@@ -95,6 +95,7 @@ def show_update_multimanga(multimanga_id):
     other_manga_source_name = ""
     if "update_multimanga_chapter_options" in ss:
         del ss["update_multimanga_chapter_options"]
+        del ss["update_multimanga_chapter_options_from_manga_id"]
 
     for manga in multimanga["Mangas"]:
         if manga["Source"] == defaults.CUSTOM_MANGA_SOURCE:
@@ -115,6 +116,7 @@ def show_update_multimanga(multimanga_id):
                             manga_to_get_chapters["InternalID"],
                         )
                     )
+                    ss["update_multimanga_chapter_options_from_manga_id"] = manga_to_get_chapters["ID"]
                     if multimanga["CurrentManga"]["ID"] != manga_to_get_chapters["ID"]:
                         other_manga_source_name = get_source_name_and_colors(manga_to_get_chapters["Source"])[0]
                     break
@@ -288,6 +290,7 @@ def show_update_multimanga(multimanga_id):
                     ss["update_multimanga_updated_parts"]["chapter_from_chapters_list"] = ss[
                         "update_multimanga_form_chapter_from_chapters_list_" + str(multimanga["ID"])
                     ]
+                    ss["update_multimanga_updated_parts"]["chapter_from_chapters_list_from_manga_id"] = ss.get("update_multimanga_chapter_options_from_manga_id", 0)
                     ss["update_multimanga_updated_parts"]["chapter_manual"] = {
                         "chapter": ss["update_multimanga_form_chapter_manual_chapter_" + str(multimanga["ID"])],
                         "url": ss["update_multimanga_form_chapter_manual_url_" + str(multimanga["ID"])]
@@ -416,7 +419,7 @@ def update_multimanga(updated_parts):
         ):
             api_client.update_multimanga_last_read_chapter(
                 multimanga["ID"],
-                multimanga["CurrentManga"]["ID"],
+                updated_parts["chapter_from_chapters_list_from_manga_id"],
                 chapter_from_chapters_list["Chapter"],
                 chapter_from_chapters_list["URL"],
                 chapter_from_chapters_list["InternalID"],
@@ -759,6 +762,19 @@ def show_multimanga_manga(
 
     st.write(tags, unsafe_allow_html=True)
 
+    if manga["Source"] == defaults.CUSTOM_MANGA_SOURCE:
+        def on_click():
+            ss["highlighted_custom_manga"] = manga
+
+        if st.button(
+            "Edit",
+            key="update_multimanga_mangas_edit_custom_manga_button_" + str(manga["ID"]),
+            use_container_width=True,
+            type="primary",
+            on_click=on_click,
+        ):
+            st.rerun()
+
     with stylable_container(
         key="update_manga_delete_button" + str(manga["ID"]),
         css_styles="""
@@ -813,24 +829,6 @@ def show_update_custom_manga(manga: dict[str, Any]):
             help="The URL of the manga in the source site. It's used by the Last Released Chapter selectors to check for new chapters if you provided the selectors. If you have to change both the URL and selectors to make them work, DON'T update them at the same time. Clear the selectors, update the URL, then update the selectors.",
             key="update_custom_manga_form_url",
         )
-
-        with st.expander(
-            "Last Read Chapter",
-        ):
-            st.text_input(
-                "Last Read Chapter",
-                value=manga["LastReadChapter"]["Chapter"],
-                placeholder="1000",
-                help="Can be a number or text",
-                key="update_custom_manga_form_last_read_chapter",
-            )
-
-            st.text_input(
-                "Chapter URL",
-                value=manga["LastReadChapter"]["URL"],
-                placeholder="https://randomsite.com/title/one-piece/chapter/1000",
-                key="update_custom_manga_form_last_read_chapter_url",
-            )
 
         with st.expander(
             "Last Released Chapter",
@@ -899,6 +897,24 @@ def show_update_custom_manga(manga: dict[str, Any]):
                 key="update_custom_manga_form_last_released_chapter_use_browser",
             )
 
+        with st.expander(
+            "Cover Image",
+        ):
+            st.text_input(
+                "Cover Image URL",
+                placeholder="https://example.com/image.jpg",
+                key="update_custom_manga_form_cover_img_url",
+            )
+            st.file_uploader(
+                "Upload Cover Image",
+                type=["png", "jpg", "jpeg"],
+                key="update_custom_manga_form_cover_img_file",
+            )
+            st.checkbox(
+                "Use Mantium default cover image",
+                key="update_custom_manga_form_use_mantim_default_cover_img",
+            )
+
         if st.form_submit_button(
             "Update",
             use_container_width=True,
@@ -907,8 +923,6 @@ def show_update_custom_manga(manga: dict[str, Any]):
             try:
                 name = ss.update_custom_manga_form_name
                 url = ss.update_custom_manga_form_url
-                last_read_chapter = ss.update_custom_manga_form_last_read_chapter
-                last_read_chapter_url = ss.update_custom_manga_form_last_read_chapter_url
 
                 last_released_chapter_name_selector = ss.update_custom_manga_form_last_chapter_name_selector
                 last_released_chapter_name_attribute = ss.update_custom_manga_form_last_chapter_name_attribute
@@ -919,29 +933,24 @@ def show_update_custom_manga(manga: dict[str, Any]):
                 last_released_chapter_url_get_first = ss.update_custom_manga_form_last_released_chapter_url_get_first
                 last_released_chapter_selector_use_browser = ss.update_custom_manga_form_last_released_chapter_use_browser
 
+                cover_img_url = ss.update_custom_manga_form_cover_img_url
+                cover_img = (
+                    ss.update_custom_manga_form_cover_img_file.getvalue()
+                    if ss.update_custom_manga_form_cover_img_file
+                    else None
+                )
+                use_mantium_default_cover_img = (
+                    ss.update_custom_manga_form_use_mantim_default_cover_img
+                )
+
                 if name == "":
                     st.warning("Provide a manga name")
-                elif last_read_chapter == "" and last_read_chapter_url != "":
-                    ss["update_manga_warning_message"] = (
-                        "If providing a chapter URL, also provide a chapter number"
-                    )
                 else:
                     if name != manga["Name"]:
                         api_client.update_custom_manga_name(name, manga["ID"])
 
                     if url != manga["URL"]:
                         api_client.update_custom_manga_url(url, manga["ID"])
-
-                    if (
-                        last_read_chapter != manga["LastReadChapter"]["Chapter"]
-                        or last_read_chapter_url != manga["LastReadChapter"]["URL"]
-                    ):
-                        api_client.update_custom_manga_last_read_chapter(
-                            manga["ID"],
-                            "",
-                            last_read_chapter,
-                            last_read_chapter_url,
-                        )
 
                     if (
                         last_released_chapter_name_selector
@@ -973,6 +982,36 @@ def show_update_custom_manga(manga: dict[str, Any]):
                             manga["ID"],
                         )
 
+                    values_count = sum(
+                        [
+                            bool(cover_img_url),
+                            bool(cover_img),
+                            use_mantium_default_cover_img,
+                        ]
+                    )
+                    match values_count:
+                        case 0:
+                            pass
+                        case 1:
+                            if cover_img_url != "" or cover_img is not None:
+                                api_client.update_custom_manga_cover_img(
+                                    manga["ID"],
+                                    cover_img_url,
+                                    cover_img if cover_img else b"",
+                                    False,
+                                )
+                            elif use_mantium_default_cover_img:
+                                api_client.update_custom_manga_cover_img(
+                                    manga["ID"],
+                                    "",
+                                    b"",
+                                    True,
+                                )
+                        case _:
+                            ss["update_manga_warning_message"] = (
+                                "To update the cover image, provide either an URL, upload a file, or check the box to use the Mantium default cover image. The other fields were updated successfully"
+                            )
+
                     if not (
                         ss.get("update_manga_error_message", "") != ""
                         or ss.get("update_manga_warning_message", "") != ""
@@ -980,6 +1019,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
                         ss["update_manga_success_message"] = (
                             "Manga updated successfully"
                         )
+                        ss["highlighted_custom_manga"] = None
                         st.rerun()
             except Exception as ex:
                 resp_text = str(ex).lower()
