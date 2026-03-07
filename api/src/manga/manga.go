@@ -833,6 +833,7 @@ func getMangaFromDB(mangaID ID, mangaURL string, db *sql.DB) (*Manga, error) {
 		lastReadChapterURL, lastReadChapterChapter, lastReadChapterName, lastReadChapterInternalID sql.NullString
 		lastReadChapterUpdatedAt                                                                   sql.NullTime
 		lastReadChapterType                                                                        sql.NullInt32
+		lastReadChapterFromSourceSite                                                              sql.NullBool
 	)
 	if mangaID > 0 {
 		query := `
@@ -870,7 +871,8 @@ func getMangaFromDB(mangaID ID, mangaURL string, db *sql.DB) (*Manga, error) {
                 last_read_chapter.name AS last_read_chapter_name,
                 last_read_chapter.internal_id AS last_read_chapter_internal_id,
                 last_read_chapter.updated_at AS last_read_chapter_updated_at,
-                last_read_chapter.type AS last_read_chapter_type
+                last_read_chapter.type AS last_read_chapter_type,
+                last_read_chapter.from_source_site AS last_read_chapter_from_source_site
             FROM 
                 mangas
             LEFT JOIN 
@@ -893,7 +895,7 @@ func getMangaFromDB(mangaID ID, mangaURL string, db *sql.DB) (*Manga, error) {
 			&lastReleasedChapterInternalID, &lastReleasedChapterUpdatedAt, &lastReleasedChapterType,
 
 			&lastReadChapterURL, &lastReadChapterChapter, &lastReadChapterName,
-			&lastReadChapterInternalID, &lastReadChapterUpdatedAt, &lastReadChapterType,
+			&lastReadChapterInternalID, &lastReadChapterUpdatedAt, &lastReadChapterType, &lastReadChapterFromSourceSite,
 		)
 		currentManga.SearchNames = []string{currentManga.Name}
 		if err != nil {
@@ -938,7 +940,8 @@ func getMangaFromDB(mangaID ID, mangaURL string, db *sql.DB) (*Manga, error) {
                 last_read_chapter.name AS last_read_chapter_name,
                 last_read_chapter.internal_id AS last_read_chapter_internal_id,
                 last_read_chapter.updated_at AS last_read_chapter_updated_at,
-                last_read_chapter.type AS last_read_chapter_type
+                last_read_chapter.type AS last_read_chapter_type,
+                last_read_chapter.from_source_site AS last_read_chapter_from_source_site
             FROM 
                 mangas
             LEFT JOIN 
@@ -961,7 +964,7 @@ func getMangaFromDB(mangaID ID, mangaURL string, db *sql.DB) (*Manga, error) {
 			&lastReleasedChapterInternalID, &lastReleasedChapterUpdatedAt, &lastReleasedChapterType,
 
 			&lastReadChapterURL, &lastReadChapterChapter, &lastReadChapterName,
-			&lastReadChapterInternalID, &lastReadChapterUpdatedAt, &lastReadChapterType,
+			&lastReadChapterInternalID, &lastReadChapterUpdatedAt, &lastReadChapterType, &lastReadChapterFromSourceSite,
 		)
 		currentManga.SearchNames = []string{currentManga.Name}
 		if err != nil {
@@ -1011,6 +1014,7 @@ func getMangaFromDB(mangaID ID, mangaURL string, db *sql.DB) (*Manga, error) {
 		lastReadChapter.InternalID = lastReadChapterInternalID.String
 		lastReadChapter.UpdatedAt = lastReadChapterUpdatedAt.Time
 		lastReadChapter.Type = Type(lastReadChapterType.Int32)
+		lastReadChapter.FromSourceSite = lastReadChapterFromSourceSite.Bool
 		currentManga.LastReadChapter = &lastReadChapter
 	}
 
@@ -1115,7 +1119,8 @@ func getMangasWithoutMultiMangasFromDB(db *sql.DB, customManga bool) ([]*Manga, 
             last_read_chapter.name AS last_read_chapter_name,
             last_read_chapter.internal_id AS last_read_chapter_internal_id,
             last_read_chapter.updated_at AS last_read_chapter_updated_at,
-            last_read_chapter.type AS last_read_chapter_type
+            last_read_chapter.type AS last_read_chapter_type,
+			last_read_chapter.from_source_site AS last_read_chapter_from_source_site
         FROM 
             mangas
         LEFT JOIN 
@@ -1153,6 +1158,7 @@ func getMangasWithoutMultiMangasFromDB(db *sql.DB, customManga bool) ([]*Manga, 
 			lastReadChapterURL, lastReadChapterChapter, lastReadChapterName, lastReadChapterInternalID sql.NullString
 			lastReadChapterUpdatedAt                                                                   sql.NullTime
 			lastReadChapterType                                                                        sql.NullInt32
+			lastReadChapterFromSourceSite                                                              sql.NullBool
 		)
 
 		err := rows.Scan(
@@ -1168,7 +1174,7 @@ func getMangasWithoutMultiMangasFromDB(db *sql.DB, customManga bool) ([]*Manga, 
 			&lastReleasedChapterInternalID, &lastReleasedChapterUpdatedAt, &lastReleasedChapterType,
 
 			&lastReadChapterURL, &lastReadChapterChapter, &lastReadChapterName,
-			&lastReadChapterInternalID, &lastReadChapterUpdatedAt, &lastReadChapterType,
+			&lastReadChapterInternalID, &lastReadChapterUpdatedAt, &lastReadChapterType, &lastReadChapterFromSourceSite,
 		)
 		if err != nil {
 			return nil, err
@@ -1208,6 +1214,7 @@ func getMangasWithoutMultiMangasFromDB(db *sql.DB, customManga bool) ([]*Manga, 
 			lastReadChapter.InternalID = lastReadChapterInternalID.String
 			lastReadChapter.UpdatedAt = lastReadChapterUpdatedAt.Time
 			lastReadChapter.Type = Type(lastReadChapterType.Int32)
+			lastReadChapter.FromSourceSite = lastReadChapterFromSourceSite.Bool
 			currentManga.LastReadChapter = &lastReadChapter
 		}
 
@@ -1274,7 +1281,8 @@ func getCustomMangasFromDB(db *sql.DB) ([]*Manga, error) {
             last_read_chapter.name AS last_read_chapter_name,
             last_read_chapter.internal_id AS last_read_chapter_internal_id,
             last_read_chapter.updated_at AS last_read_chapter_updated_at,
-            last_read_chapter.type AS last_read_chapter_type
+            last_read_chapter.type AS last_read_chapter_type,
+			last_read_chapter.from_source_site AS last_read_chapter_from_source_site
         FROM 
             mangas
         LEFT JOIN 
@@ -1308,6 +1316,7 @@ func getCustomMangasFromDB(db *sql.DB) ([]*Manga, error) {
 			lastReadChapterURL, lastReadChapterChapter, lastReadChapterName, lastReadChapterInternalID sql.NullString
 			lastReadChapterUpdatedAt                                                                   sql.NullTime
 			lastReadChapterType                                                                        sql.NullInt32
+			lastReadChapterFromSourceSite                                                              sql.NullBool
 		)
 
 		err := rows.Scan(
@@ -1323,7 +1332,7 @@ func getCustomMangasFromDB(db *sql.DB) ([]*Manga, error) {
 			&lastReleasedChapterInternalID, &lastReleasedChapterUpdatedAt, &lastReleasedChapterType,
 
 			&lastReadChapterURL, &lastReadChapterChapter, &lastReadChapterName,
-			&lastReadChapterInternalID, &lastReadChapterUpdatedAt, &lastReadChapterType,
+			&lastReadChapterInternalID, &lastReadChapterUpdatedAt, &lastReadChapterType, &lastReadChapterFromSourceSite,
 		)
 		if err != nil {
 			return nil, err
@@ -1364,6 +1373,7 @@ func getCustomMangasFromDB(db *sql.DB) ([]*Manga, error) {
 			lastReadChapter.InternalID = lastReadChapterInternalID.String
 			lastReadChapter.UpdatedAt = lastReadChapterUpdatedAt.Time
 			lastReadChapter.Type = Type(lastReadChapterType.Int32)
+			lastReadChapter.FromSourceSite = lastReadChapterFromSourceSite.Bool
 			currentManga.LastReadChapter = &lastReadChapter
 		}
 

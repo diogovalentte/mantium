@@ -159,6 +159,8 @@ def get_source_name_and_colors(source: str):
             return "KLManga", "white", "#ee2631"
         case "jmanga":
             return "JManga", "white", "#7b36ce"
+        case "custom_manga":
+            return "Custom Manga", "black", "white"
         case _:
             return source, "black", "white"
 
@@ -166,3 +168,21 @@ def get_source_name_and_colors(source: str):
 def set_is_dialog_open():
     # This is used to prevent the dialog from closing when the user is interacting with it
     ss["is_dialog_open"] = False
+
+
+def is_unread_chapter(last_read_chapter: str, last_released_chapter: str) -> bool:
+    """Returns True if the multimanga has unread chapters, False otherwise."""
+
+    # if changing this logic, also change the sort_mangas function in manga_api.py
+    if last_read_chapter == last_released_chapter:
+        return False
+    elif last_released_chapter == "":
+        return False
+
+    try:
+        last_read_chapter_number = float(last_read_chapter)
+        last_released_chapter_number = float(last_released_chapter)
+    except ValueError:
+        return True
+
+    return last_read_chapter_number < last_released_chapter_number

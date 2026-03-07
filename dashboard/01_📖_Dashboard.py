@@ -442,10 +442,7 @@ class MainDashboard:
             col_index += 1
 
     def show_manga_grid(self, manga: dict[str, Any]):
-        unread = (
-            (manga["LastReadChapter"]["Chapter"] != manga["LastReleasedChapter"]["Chapter"])
-            and not (manga["Source"] == defaults.CUSTOM_MANGA_SOURCE and manga["LastReleasedChapter"]["Chapter"] == "")
-        )
+        unread = util.is_unread_chapter(manga["LastReadChapter"]["Chapter"], manga["LastReleasedChapter"]["Chapter"])
 
         st.markdown(
             f"""<h1 class="manga_header" style='margin-top: 16px; margin-bottom: 8px; {"animation: pulse 2s infinite alternate;" if unread else ""}'>
@@ -589,14 +586,9 @@ class MainDashboard:
                         manga.get("LastReadChapter", {}).get("Chapter")
                         != manga["LastReleasedChapter"]["Chapter"]
                     ):
-                        if manga["Source"] == defaults.CUSTOM_MANGA_SOURCE:
-                            self.api_client.update_custom_manga_last_read_chapter(
-                                manga["ID"], manga["URL"], set_to_last_released_chapter=True
-                            )
-                        else:
-                            self.api_client.update_multimanga_last_read_chapter(
-                                manga["MultiMangaID"], manga["ID"]
-                            )
+                        self.api_client.update_multimanga_last_read_chapter(
+                            manga["MultiMangaID"], manga["ID"]
+                        )
 
                 st.button(
                     "Set last read",
@@ -667,10 +659,7 @@ class MainDashboard:
                 vertical_alignment="center",
             )
 
-        unread = (
-            (manga["LastReadChapter"]["Chapter"] != manga["LastReleasedChapter"]["Chapter"])
-            and not (manga["Source"] == defaults.CUSTOM_MANGA_SOURCE and manga["LastReleasedChapter"]["Chapter"] == "")
-        )
+        unread = util.is_unread_chapter(manga["LastReadChapter"]["Chapter"], manga["LastReleasedChapter"]["Chapter"])
 
         with name_col:
             st.markdown(
@@ -820,14 +809,9 @@ class MainDashboard:
                     manga.get("LastReadChapter", {}).get("Chapter")
                     != manga["LastReleasedChapter"]["Chapter"]
                 ):
-                    if manga["Source"] == defaults.CUSTOM_MANGA_SOURCE:
-                        self.api_client.update_custom_manga_last_read_chapter(
-                            manga["ID"], manga["URL"], set_to_last_released_chapter=True
-                        )
-                    else:
-                        self.api_client.update_multimanga_last_read_chapter(
-                            manga["MultiMangaID"], manga["ID"]
-                        )
+                    self.api_client.update_multimanga_last_read_chapter(
+                        manga["MultiMangaID"], manga["ID"]
+                    )
 
             st.button(
                 "Set last read",

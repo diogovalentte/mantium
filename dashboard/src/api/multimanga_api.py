@@ -124,7 +124,8 @@ class MultiMangaAPIClient:
             multimanga["CurrentManga"]["LastReadChapter"] = {
                 "Chapter": "",
                 "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
-                "URL": multimanga["CurrentManga"]["URL"],
+                "URL": "",
+                "FromSourceSite": False,
             }
         if multimanga["LastReadChapter"] is not None:
             multimanga["LastReadChapter"]["UpdatedAt"] = get_updated_at_datetime(
@@ -134,7 +135,8 @@ class MultiMangaAPIClient:
             multimanga["LastReadChapter"] = {
                 "Chapter": "",
                 "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
-                "URL": multimanga["CurrentManga"]["URL"],
+                "URL": "",
+                "FromSourceSite": False,
             }
 
         for manga in multimanga["Mangas"]:
@@ -157,7 +159,8 @@ class MultiMangaAPIClient:
                 manga["LastReadChapter"] = {
                     "Chapter": "",
                     "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
-                    "URL": manga["URL"],
+                    "URL": "",
+                    "FromSourceSite": False,
                 }
 
         return multimanga
@@ -204,7 +207,8 @@ class MultiMangaAPIClient:
             manga["LastReadChapter"] = {
                 "Chapter": "",
                 "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
-                "URL": manga["URL"],
+                "URL": "",
+                "FromSourceSite": False,
             }
 
         return manga
@@ -289,7 +293,7 @@ class MultiMangaAPIClient:
         chapter_url: str = "",
         chapter_internal_id: str = "",
         delete_chapter: bool = False,
-        is_custom_manga: bool = False,
+        from_source_site: bool = True,
     ) -> dict[str, str]:
         path = "/last_read_chapter"
         url = f"{self.base_multimanga_url}{path}"
@@ -300,7 +304,7 @@ class MultiMangaAPIClient:
             "url": chapter_url,
             "internal_id": chapter_internal_id,
             "delete_chapter": delete_chapter,
-            "is_custom_manga": is_custom_manga,
+            "from_source_site": from_source_site,
         }
 
         res = requests.patch(url, json=request_body)

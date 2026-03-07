@@ -321,6 +321,7 @@ func AddMultiManga(c *gin.Context) {
 	currentTime := time.Now()
 
 	var requestData AddMultiMangaRequest
+	var err error
 	if err := c.ShouldBindJSON(&requestData); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid JSON fields, refer to the API documentation"})
 		return
@@ -333,7 +334,7 @@ func AddMultiManga(c *gin.Context) {
 			return
 		}
 
-		currentManga, err := sources.GetMangaMetadata(requestData.URL, requestData.MangaInternalID)
+		currentManga, err = sources.GetMangaMetadata(requestData.URL, requestData.MangaInternalID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
@@ -343,7 +344,7 @@ func AddMultiManga(c *gin.Context) {
 			return
 		}
 
-		if requestData.LastReadChapter.Chapter != "" || requestData.LastReadChapter.URL != "" {
+		if requestData.LastReadChapter != nil && (requestData.LastReadChapter.Chapter != "" || requestData.LastReadChapter.URL != "") {
 			currentManga.LastReadChapter, err = sources.GetChapterMetadata(requestData.URL, requestData.MangaInternalID, requestData.LastReadChapter.Chapter, requestData.LastReadChapter.URL, requestData.LastReadChapter.InternalID)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -351,6 +352,7 @@ func AddMultiManga(c *gin.Context) {
 			}
 			currentManga.LastReadChapter.Type = 2
 			currentManga.LastReadChapter.UpdatedAt = currentTime.Truncate(time.Second)
+			currentManga.LastReadChapter.FromSourceSite = true
 		}
 
 		if len(currentManga.CoverImg) == 0 {
@@ -387,11 +389,12 @@ func AddMultiManga(c *gin.Context) {
 
 		if requestData.LastReadChapter != nil {
 			currentManga.LastReadChapter = &manga.Chapter{
-				Chapter:   requestData.LastReadChapter.Chapter,
-				Name:      "Chapter " + requestData.LastReadChapter.Chapter,
-				URL:       requestData.LastReadChapter.URL,
-				Type:      2,
-				UpdatedAt: currentTime.Truncate(time.Second),
+				Chapter:        requestData.LastReadChapter.Chapter,
+				Name:           "Chapter " + requestData.LastReadChapter.Chapter,
+				URL:            requestData.LastReadChapter.URL,
+				Type:           2,
+				UpdatedAt:      currentTime.Truncate(time.Second),
+				FromSourceSite: false,
 			}
 
 			if requestData.LastReadChapter.URL == "" {
@@ -445,7 +448,7 @@ func AddMultiManga(c *gin.Context) {
 	}
 
 	currentManga.Status = manga.Status(requestData.Status)
-	err := manga.ValidateStatus(currentManga.Status)
+	err = manga.ValidateStatus(currentManga.Status)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
@@ -574,6 +577,10 @@ func GetMultiManga(c *gin.Context) {
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 		return
+	}
+
+	if multimangaGet.LastReadChapter != nil && strings.HasPrefix(multimangaGet.LastReadChapter.URL, manga.CustomMangaURLPrefix) {
+		multimangaGet.LastReadChapter.URL = ""
 	}
 
 	resMap := map[string]manga.MultiManga{"multimanga": *multimangaGet}
@@ -793,7 +800,14 @@ func UpdateMultiMangaLastReadChapter(c *gin.Context) {
 		}
 		c.JSON(http.StatusOK, gin.H{"message": "Multimanga last read chapter updated successfully"})
 		return
-	} else if !requestData.IsCustomManga {
+	} else if requestData.Chapter == "" && requestData.URL == "" {
+		chapter = multimanga.CurrentManga.LastReleasedChapter
+		if multimanga.CurrentManga.Source == manga.CustomMangaSource {
+			chapter.FromSourceSite = false
+		} else {
+			chapter.FromSourceSite = true
+		}
+	} else if requestData.FromSourceSite {
 		mangaIDStr := c.Query("manga_id")
 		if mangaIDStr == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "manga_id must be provided"})
@@ -825,6 +839,7 @@ func UpdateMultiMangaLastReadChapter(c *gin.Context) {
 				return
 			}
 		}
+		chapter.FromSourceSite = true
 	} else {
 		if requestData.Chapter == "" && requestData.URL != "" {
 			chapter = multimanga.CurrentManga.LastReleasedChapter
@@ -848,6 +863,7 @@ func UpdateMultiMangaLastReadChapter(c *gin.Context) {
 			c.JSON(http.StatusOK, gin.H{"message": "Multimanga last read chapter updated successfully"})
 			return
 		}
+		chapter.FromSourceSite = false
 	}
 
 	chapter.Type = 2
@@ -866,11 +882,11 @@ func UpdateMultiMangaLastReadChapter(c *gin.Context) {
 
 // LastReadChapterRequest is the request body for updating a manga chapter
 type LastReadChapterRequest struct {
-	IsCustomManga bool   `json:"is_custom_manga,omitempty"`
-	DeleteChapter bool   `json:"delete_chapter,omitempty"`
-	Chapter       string `json:"chapter,omitempty"`
-	URL           string `json:"url,omitempty" binding:"omitempty,http_url"`
-	InternalID    string `json:"internal_id,omitempty"`
+	FromSourceSite bool   `json:"from_source_site,omitempty"`
+	DeleteChapter  bool   `json:"delete_chapter,omitempty"`
+	Chapter        string `json:"chapter,omitempty"`
+	URL            string `json:"url,omitempty" binding:"omitempty,http_url"`
+	InternalID     string `json:"internal_id,omitempty"`
 }
 
 // @Summary Update multimanga cover image
@@ -1238,13 +1254,13 @@ func GetMangas(c *gin.Context) {
 			if strings.HasPrefix(multimanga.CurrentManga.URL, manga.CustomMangaURLPrefix) {
 				multimanga.CurrentManga.URL = ""
 			}
-			if multimanga.CurrentManga.LastReadChapter != nil && strings.HasPrefix(multimanga.CurrentManga.LastReadChapter.URL, manga.CustomMangaURLPrefix) {
-				multimanga.CurrentManga.LastReadChapter.URL = ""
-			}
 		}
 
-		multimanga.CurrentManga.LastReadChapter = multimanga.LastReadChapter
 		multimanga.CurrentManga.Status = multimanga.Status
+		multimanga.CurrentManga.LastReadChapter = multimanga.LastReadChapter
+		if multimanga.CurrentManga.LastReadChapter != nil && strings.HasPrefix(multimanga.CurrentManga.LastReadChapter.URL, manga.CustomMangaURLPrefix) {
+			multimanga.CurrentManga.LastReadChapter.URL = ""
+		}
 		if multimanga.CoverImgFixed {
 			multimanga.CurrentManga.CoverImg = multimanga.CoverImg
 			multimanga.CurrentManga.CoverImgURL = multimanga.CoverImgURL

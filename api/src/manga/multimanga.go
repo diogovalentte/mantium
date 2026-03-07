@@ -606,7 +606,8 @@ func getMultiMangasWithoutMangasDB(db *sql.DB) ([]*MultiManga, error) {
             last_read_chapter.name AS last_read_chapter_name,
             last_read_chapter.internal_id AS last_read_chapter_internal_id,
             last_read_chapter.updated_at AS last_read_chapter_updated_at,
-            last_read_chapter.type AS last_read_chapter_type
+            last_read_chapter.type AS last_read_chapter_type,
+			last_read_chapter.from_source_site AS last_read_chapter_from_source_site
         FROM 
             multimangas AS mm
         LEFT JOIN 
@@ -647,6 +648,7 @@ func getMultiMangasWithoutMangasDB(db *sql.DB) ([]*MultiManga, error) {
 			multiLastReadChapterURL, multiLastReadChapterChapter, multiLastReadChapterName, multiLastReadChapterInternalID sql.NullString
 			multiLastReadChapterUpdatedAt                                                                                  sql.NullTime
 			multiLastReadChapterType                                                                                       sql.NullInt32
+			multiLastReadChapterFromSourceSite                                                                             sql.NullBool
 		)
 
 		altNames := []byte{}
@@ -679,6 +681,7 @@ func getMultiMangasWithoutMangasDB(db *sql.DB) ([]*MultiManga, error) {
 			&multiLastReadChapterInternalID,
 			&multiLastReadChapterUpdatedAt,
 			&multiLastReadChapterType,
+			&multiLastReadChapterFromSourceSite,
 		)
 		if err != nil {
 			return nil, err
@@ -708,6 +711,7 @@ func getMultiMangasWithoutMangasDB(db *sql.DB) ([]*MultiManga, error) {
 			multiLastReadChapter.InternalID = multiLastReadChapterInternalID.String
 			multiLastReadChapter.UpdatedAt = multiLastReadChapterUpdatedAt.Time
 			multiLastReadChapter.Type = Type(multiLastReadChapterType.Int32)
+			multiLastReadChapter.FromSourceSite = multiLastReadChapterFromSourceSite.Bool
 			multimanga.LastReadChapter = &multiLastReadChapter
 		}
 
@@ -744,7 +748,8 @@ func getMultiMangasWithMangasDB(db *sql.DB) ([]*MultiManga, error) {
             last_read_chapter.name AS last_read_chapter_name,
             last_read_chapter.internal_id AS last_read_chapter_internal_id,
             last_read_chapter.updated_at AS last_read_chapter_updated_at,
-            last_read_chapter.type AS last_read_chapter_type
+            last_read_chapter.type AS last_read_chapter_type,
+			last_read_chapter.from_source_site AS last_read_chapter_from_source_site
         FROM 
             multimangas
         LEFT JOIN 
@@ -770,6 +775,7 @@ func getMultiMangasWithMangasDB(db *sql.DB) ([]*MultiManga, error) {
 			multiLastReadChapterURL, multiLastReadChapterChapter, multiLastReadChapterName, multiLastReadChapterInternalID sql.NullString
 			multiLastReadChapterUpdatedAt                                                                                  sql.NullTime
 			multiLastReadChapterType                                                                                       sql.NullInt32
+			multiLastReadChapterFromSourceSite                                                                             sql.NullBool
 		)
 
 		err = rows.Scan(
@@ -786,6 +792,7 @@ func getMultiMangasWithMangasDB(db *sql.DB) ([]*MultiManga, error) {
 			&multiLastReadChapterInternalID,
 			&multiLastReadChapterUpdatedAt,
 			&multiLastReadChapterType,
+			&multiLastReadChapterFromSourceSite,
 		)
 		if err != nil {
 			return nil, err
@@ -798,6 +805,7 @@ func getMultiMangasWithMangasDB(db *sql.DB) ([]*MultiManga, error) {
 			multiLastReadChapter.InternalID = multiLastReadChapterInternalID.String
 			multiLastReadChapter.UpdatedAt = multiLastReadChapterUpdatedAt.Time
 			multiLastReadChapter.Type = Type(multiLastReadChapterType.Int32)
+			multiLastReadChapter.FromSourceSite = multiLastReadChapterFromSourceSite.Bool
 			multimanga.LastReadChapter = &multiLastReadChapter
 		}
 
@@ -944,9 +952,11 @@ func getMultiMangaFromDB(multimangaID ID, db *sql.DB) (*MultiManga, error) {
 	}
 	mm.Mangas = mangas
 	for _, manga := range mm.Mangas {
+		if strings.HasPrefix(manga.URL, CustomMangaURLPrefix) {
+			manga.URL = ""
+		}
 		if manga.ID == ID(currentMangaID.Int64) {
 			mm.CurrentManga = manga
-			break
 		}
 	}
 
@@ -1091,6 +1101,10 @@ func turnMangaIntoMultiMangaInDB(m *Manga, tx *sql.Tx) (*MultiManga, error) {
 	err = deleteMangaDB(m, tx)
 	if err != nil {
 		return nil, err
+	}
+
+	if m.Source == CustomMangaSource && m.LastReadChapter != nil {
+		m.LastReadChapter.FromSourceSite = false
 	}
 
 	multiManga := &MultiManga{

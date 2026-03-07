@@ -1,4 +1,3 @@
-import base64
 from typing import Any
 from urllib.parse import urljoin
 
@@ -53,41 +52,6 @@ class CustomMangaAPIClient:
                 url,
                 "PATCH",
                 {},
-                res.status_code,
-                res.text,
-            )
-
-        return res.json()
-
-    def update_custom_manga_last_read_chapter(
-        self,
-        manga_id: int = 0,
-        manga_url: str = "",
-        chapter: str = "",
-        chapter_url: str = "",
-        set_to_last_released_chapter: bool = False,
-    ) -> dict[str, str]:
-        path = "/last_read_chapter"
-        url = f"{self.base_custom_manga_url}{path}"
-        url = (
-            f"{url}?id={manga_id}&url={manga_url}"
-        )
-
-        request_body = {}
-        if not set_to_last_released_chapter:
-            request_body["chapter"] = {
-                "chapter": chapter,
-                "url": chapter_url,
-            }
-
-        res = requests.patch(url, json=request_body)
-
-        if res.status_code not in self.acceptable_status_codes:
-            raise APIException(
-                "error while updating custom manga last read chapter",
-                url,
-                "PATCH",
-                request_body,
                 res.status_code,
                 res.text,
             )

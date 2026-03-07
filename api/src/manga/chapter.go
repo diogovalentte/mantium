@@ -24,7 +24,7 @@ type Chapter struct {
 	// The timezone should be the default/system timezone.
 	UpdatedAt time.Time
 	// URL is the URL of the chapter
-    // If custom manga chapter doesn't have a URL provided by the user, it should be like http://custom_manga/<uuid>.
+	// If custom manga chapter doesn't have a URL provided by the user, it should be like http://custom_manga/<uuid>.
 	URL string
 	// Chapter usually is the chapter number, but in some cases it can be a one-shot or a special chapter
 	Chapter string
@@ -33,10 +33,12 @@ type Chapter struct {
 	// InteralID is a unique identifier for the chapter in the source
 	InternalID string
 	Type       Type
+	// Whether the chapter was added by the user or it was scraped from the source.
+	FromSourceSite bool
 }
 
 func (c Chapter) String() string {
-	return fmt.Sprintf("Chapter{URL: %s, Chapter: %s, Name: %s, InternalID: %s, UpdatedAt: %s, Type: %d}", c.URL, c.Chapter, c.Name, c.InternalID, c.UpdatedAt, c.Type)
+	return fmt.Sprintf("Chapter{URL: %s, Chapter: %s, Name: %s, InternalID: %s, UpdatedAt: %s, Type: %d, FromSourceSite: %t}", c.URL, c.Chapter, c.Name, c.InternalID, c.UpdatedAt, c.Type, c.FromSourceSite)
 }
 
 func getChapterDB(id int, db *sql.DB) (*Chapter, error) {
@@ -45,12 +47,12 @@ func getChapterDB(id int, db *sql.DB) (*Chapter, error) {
 	var chapter Chapter
 	err := db.QueryRow(`
         SELECT
-            url, chapter, name, internal_id, updated_at, type
+            url, chapter, name, internal_id, updated_at, type, from_source_site
         FROM
             chapters
         WHERE
             id = $1;
-    `, id).Scan(&chapter.URL, &chapter.Chapter, &chapter.Name, &chapter.InternalID, &chapter.UpdatedAt, &chapter.Type)
+    `, id).Scan(&chapter.URL, &chapter.Chapter, &chapter.Name, &chapter.InternalID, &chapter.UpdatedAt, &chapter.Type, &chapter.FromSourceSite)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, util.AddErrorContext(fmt.Sprintf(contextError, id), errordefs.ErrChapterNotFoundDB)
@@ -78,13 +80,13 @@ func upsertMangaChapter(mangaID ID, chapter *Chapter, tx *sql.Tx) error {
 
 	var chapterID int
 	err = tx.QueryRow(`
-        INSERT INTO chapters (manga_id, url, chapter, name, internal_id, updated_at, type)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO chapters (manga_id, url, chapter, name, internal_id, updated_at, type, from_source_site)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         ON CONFLICT ON CONSTRAINT chapters_manga_id_type_unique
         DO UPDATE
-            SET url = EXCLUDED.url, chapter = EXCLUDED.chapter, name = EXCLUDED.name, internal_id = EXCLUDED.internal_id, updated_at = EXCLUDED.updated_at
+            SET url = EXCLUDED.url, chapter = EXCLUDED.chapter, name = EXCLUDED.name, internal_id = EXCLUDED.internal_id, updated_at = EXCLUDED.updated_at, from_source_site = EXCLUDED.from_source_site
         RETURNING id;
-    `, mangaID, chapter.URL, chapter.Chapter, chapter.Name, chapter.InternalID, chapter.UpdatedAt, chapter.Type).Scan(&chapterID)
+    `, mangaID, chapter.URL, chapter.Chapter, chapter.Name, chapter.InternalID, chapter.UpdatedAt, chapter.Type, chapter.FromSourceSite).Scan(&chapterID)
 	if err != nil {
 		return util.AddErrorContext(contextError, err)
 	}
@@ -136,13 +138,13 @@ func upsertMultiMangaChapter(multiMangaID ID, chapter *Chapter, tx *sql.Tx) erro
 
 	var chapterID int
 	err = tx.QueryRow(`
-        INSERT INTO chapters (multimanga_id, url, chapter, name, internal_id, updated_at, type)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO chapters (multimanga_id, url, chapter, name, internal_id, updated_at, type, from_source_site)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         ON CONFLICT ON CONSTRAINT chapters_multimanga_id_type_unique
         DO UPDATE
-            SET url = EXCLUDED.url, chapter = EXCLUDED.chapter, name = EXCLUDED.name, internal_id = EXCLUDED.internal_id, updated_at = EXCLUDED.updated_at
+            SET url = EXCLUDED.url, chapter = EXCLUDED.chapter, name = EXCLUDED.name, internal_id = EXCLUDED.internal_id, updated_at = EXCLUDED.updated_at, from_source_site = EXCLUDED.from_source_site
         RETURNING id;
-    `, multiMangaID, chapter.URL, chapter.Chapter, chapter.Name, chapter.InternalID, chapter.UpdatedAt, chapter.Type).Scan(&chapterID)
+    `, multiMangaID, chapter.URL, chapter.Chapter, chapter.Name, chapter.InternalID, chapter.UpdatedAt, chapter.Type, chapter.FromSourceSite).Scan(&chapterID)
 	if err != nil {
 		return util.AddErrorContext(contextError, err)
 	}

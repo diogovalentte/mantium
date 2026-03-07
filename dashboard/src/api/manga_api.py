@@ -54,6 +54,7 @@ class MangaAPIClient:
                     "Chapter": "",
                     "UpdatedAt": datetime.min.replace(tzinfo=timezone.utc),
                     "URL": manga["URL"] if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE else "",
+                    "FromSourceSite": False,
                 }
 
             if manga["LastReleasedChapterNameSelector"] is None:
@@ -132,23 +133,26 @@ class MangaAPIClient:
                 1 = Read chapters, sorted by last chapter release date (desc).
 
             Unread chapters are prioritized over read chapters."""
-            if (
-                manga["LastReadChapter"]["Chapter"]
-                != manga["LastReleasedChapter"]["Chapter"]
-            ):
-                if (manga["Source"] == defaults.CUSTOM_MANGA_SOURCE and manga["LastReleasedChapter"]["Chapter"] == ""):
-                    return (1, -manga["LastReadChapter"]["UpdatedAt"].timestamp())
-                if manga["LastReleasedChapter"]["UpdatedAt"] == datetime.min.replace(
-                    tzinfo=timezone.utc
-                ):
-                    return (0, -float("inf"))
-                return (0, -manga["LastReleasedChapter"]["UpdatedAt"].timestamp())
-            else:
-                if manga["LastReleasedChapter"]["UpdatedAt"] == datetime.min.replace(
-                    tzinfo=timezone.utc
-                ):
-                    return (1, float("inf"))
+
+            # If changing this logic, also change the is_unread_chapter function in util.py
+            last_read_chapter = manga["LastReadChapter"]["Chapter"]
+            last_released_chapter = manga["LastReleasedChapter"]["Chapter"]
+
+            if last_read_chapter == last_released_chapter:
                 return (1, -manga["LastReleasedChapter"]["UpdatedAt"].timestamp())
+            elif last_released_chapter == "":
+                return (1, -manga["LastReadChapter"]["UpdatedAt"].timestamp())
+
+            try:
+                last_read_chapter_number = float(last_read_chapter)
+                last_released_chapter_number = float(last_released_chapter)
+            except ValueError:
+                return (0, -manga["LastReleasedChapter"]["UpdatedAt"].timestamp())
+
+            if last_read_chapter_number < last_released_chapter_number:
+                return (0, -manga["LastReleasedChapter"]["UpdatedAt"].timestamp())
+
+            return (1, -manga["LastReadChapter"]["UpdatedAt"].timestamp())
 
         def chapters_released_sorting(manga: dict[str, Any]) -> float:
             chapter = manga["LastReleasedChapter"]["Chapter"]

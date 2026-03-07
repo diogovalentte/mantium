@@ -103,7 +103,8 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
           "name" varchar(255),
           "internal_id" VARCHAR(100) NOT NULL DEFAULT '',
           "updated_at" timestamp,
-          "type" smallint,
+          "type" smallint NOT NULL CONSTRAINT chapter_type_check CHECK (type IN (1, 2)),
+          "from_source_site" bool NOT NULL DEFAULT TRUE,
           PRIMARY KEY ("url", "type")
         );
 
@@ -176,6 +177,20 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
                 ALTER TABLE "chapters" ADD CONSTRAINT chapters_manga_id_type_unique UNIQUE (manga_id, type);
        		end if;
        	end $$;
+
+		do $$
+		begin
+			if not exists (
+				select 1
+				from pg_catalog.pg_constraint
+				where conname = 'chapter_type_check'
+			) then
+				ALTER TABLE "chapters"
+				ADD CONSTRAINT chapter_type_check
+				CHECK (type IN (1, 2));
+			end if;
+		end
+		$$;
     `)
 	if err != nil {
 		tx.Rollback()
@@ -219,6 +234,7 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
 		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "last_released_chapter_selector_use_browser" boolean NOT NULL DEFAULT FALSE;
         ALTER TABLE "chapters" ADD COLUMN IF NOT EXISTS "internal_id" VARCHAR(100) NOT NULL DEFAULT '';
         ALTER TABLE "chapters" ADD COLUMN IF NOT EXISTS "multimanga_id" integer DEFAULT NULL;
+		ALTER TABLE "chapters" ADD COLUMN IF NOT EXISTS "from_source_site" boolean NOT NULL DEFAULT TRUE;
         ALTER TABLE "chapters" ALTER COLUMN "manga_id" DROP NOT NULL;
         ALTER TABLE "chapters" ALTER COLUMN "url" TYPE text;
         ALTER TABLE "multimangas" ALTER COLUMN "cover_img_url" TYPE text;
