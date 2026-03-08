@@ -684,7 +684,7 @@ def show_multimanga_manga(
     st.markdown(improve_headers, unsafe_allow_html=True)
     st.markdown(
         f"""<h1
-            class="manga_header" style='text-align: center; margin-top: {margin}px; margin-bottom: {margin}px; font-size: {font_size}px;'>
+            class="manga_header" style='padding-top: 16px; text-align: center; margin-top: {margin}px; margin-bottom: {margin}px; font-size: {font_size}px;'>
                 <a class="manga_header" href="{manga["URL"]}" target="_blank">{manga["Name"]}</a>
             </h1>
         """,
