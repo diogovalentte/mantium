@@ -777,11 +777,15 @@ def show_multimanga_manga(
 
     with stylable_container(
         key="update_manga_delete_button" + str(manga["ID"]),
-        css_styles="""
-            button {
+        css_styles=f"""
+            button {{
                 background-color: red;
                 color: white;
-            }
+            }}
+
+            .st-key-st-key-update_manga_delete_button{manga['ID']} > div:first-child {{
+                margin-bottom: 0rem !important;
+            }}
         """,
     ):
         if st.button(

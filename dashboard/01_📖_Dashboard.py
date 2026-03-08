@@ -401,6 +401,10 @@ class MainDashboard:
                                     background-color: red;
                                     color: white;
                                 }
+
+                                .st-key-st-key-delete_background_error_button_inside_dialog > div:first-child {
+                                    margin-bottom: 0rem !important;
+                                }
                             """,
                         ):
                             if st.button(
@@ -425,6 +429,10 @@ class MainDashboard:
                             button {
                                 background-color: red;
                                 color: white;
+                            }
+
+                            .st-key-st-key-delete_background_error_button > div:first-child {
+                                margin-bottom: 0rem !important;
                             }
                         """,
                     ):
