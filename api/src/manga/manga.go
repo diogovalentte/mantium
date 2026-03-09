@@ -98,36 +98,6 @@ func (m Manga) String() string {
 		m.ID, m.Source, m.URL, m.Name, m.SearchNames, m.InternalID, m.Status, m.CoverImgResized, m.CoverImgURL, m.CoverImgFixed, m.PreferredGroup, m.MultiMangaID, m.LastReleasedChapter, m.LastReadChapter, m.LastReleasedChapterNameSelector, m.LastReleasedChapterURLSelector, m.LastReleasedChapterSelectorUseBrowser)
 }
 
-// InsertIntoDB saves the manga into the database
-func (m *Manga) InsertIntoDB() error {
-	contextError := "error inserting manga '%s' into DB"
-
-	db, err := db.OpenConn()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
-	}
-
-	mangaID, err := insertMangaIntoDB(m, tx)
-	if err != nil {
-		tx.Rollback()
-		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
-	}
-	m.ID = mangaID
-
-	return nil
-}
-
 func insertMangaIntoDB(m *Manga, tx *sql.Tx) (ID, error) {
 	err := validateManga(m)
 	if err != nil {
@@ -186,35 +156,6 @@ func insertMangaIntoDB(m *Manga, tx *sql.Tx) (ID, error) {
 	return mangaID, nil
 }
 
-// DeleteFromDB deletes the manga and its chapters from the database if they exists.
-func (m *Manga) DeleteFromDB() error {
-	contextError := "error deleting manga '%s' from DB"
-
-	db, err := db.OpenConn()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
-	}
-
-	err = deleteMangaDB(m, tx)
-	if err != nil {
-		tx.Rollback()
-		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
-	}
-
-	return nil
-}
-
 // Will delete chapters too if the manga has chapters
 // because of the foreign key constraint ON DELETE CASCADE
 func deleteMangaDB(m *Manga, tx *sql.Tx) error {
@@ -237,81 +178,6 @@ func deleteMangaDB(m *Manga, tx *sql.Tx) error {
             DELETE FROM mangas
             WHERE url = $1;
         `, m.URL)
-		if err != nil {
-			return err
-		}
-	} else {
-		return errordefs.ErrMangaHasNoIDOrURL
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rowsAffected == 0 {
-		return errordefs.ErrMangaNotFoundDB
-	}
-
-	return nil
-}
-
-// UpdateStatusInDB updates the manga status in the database
-func (m *Manga) UpdateStatusInDB(status Status) error {
-	contextError := "error updating manga '%s' status to '%d' in DB"
-
-	db, err := db.OpenConn()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m, status), err)
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m, status), err)
-	}
-
-	err = updateMangaStatusDB(m, status, tx)
-	if err != nil {
-		tx.Rollback()
-		return util.AddErrorContext(fmt.Sprintf(contextError, m, status), err)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m, status), err)
-	}
-	m.Status = status
-
-	return nil
-}
-
-func updateMangaStatusDB(m *Manga, status Status, tx *sql.Tx) error {
-	err := validateManga(m)
-	if err != nil {
-		return err
-	}
-
-	err = ValidateStatus(status)
-	if err != nil {
-		return err
-	}
-
-	var result sql.Result
-	if m.ID > 0 {
-		result, err = tx.Exec(`
-            UPDATE mangas
-            SET status = $1
-            WHERE id = $2;
-        `, status, m.ID)
-		if err != nil {
-			return err
-		}
-	} else if m.URL != "" {
-		result, err = tx.Exec(`
-            UPDATE mangas
-            SET status = $1
-            WHERE url = $2;
-        `, status, m.URL)
 		if err != nil {
 			return err
 		}
@@ -361,115 +227,6 @@ func (m *Manga) UpsertChapterIntoDB(chapter *Chapter) error {
 	} else {
 		m.LastReadChapter = chapter
 	}
-
-	return nil
-}
-
-// DeleteLastReadChapterFromDB deletes the last read chapter of the manga in the database
-func (m *Manga) DeleteLastReadChapterFromDB() error {
-	contextError := "error deleting last read chapter '%s' of manga '%s' from DB"
-
-	if m.LastReadChapter == nil {
-		return nil
-	}
-
-	db, err := db.OpenConn()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReadChapter, m), err)
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReadChapter, m), err)
-	}
-
-	err = deleteMangaChapter(m.ID, m.LastReadChapter, tx)
-	if err != nil {
-		tx.Rollback()
-		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReadChapter, m), err)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReadChapter, m), err)
-	}
-	m.LastReadChapter = nil
-
-	return nil
-}
-
-// DeleteLastReleasedChapterFromDB deletes the last released chapter of the manga from the database
-func (m *Manga) DeleteLastReleasedChapterFromDB() error {
-	contextError := "error deleting last released chapter '%s' of manga '%s' from DB"
-
-	if m.LastReleasedChapter == nil {
-		return nil
-	}
-
-	db, err := db.OpenConn()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m), err)
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m), err)
-	}
-
-	err = deleteMangaChapter(m.ID, m.LastReleasedChapter, tx)
-	if err != nil {
-		tx.Rollback()
-		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m), err)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m), err)
-	}
-	m.LastReleasedChapter = nil
-
-	return nil
-}
-
-// DeleteChaptersFromDB deletes the last released and last read chapters of the manga from the database
-func (m *Manga) DeleteChaptersFromDB() error {
-	contextError := "error deleting last released chapter '%s' and last read chapter '%s' of manga '%s' from DB"
-
-	db, err := db.OpenConn()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m.LastReadChapter, m), err)
-	}
-	defer db.Close()
-
-	tx, err := db.Begin()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m.LastReadChapter, m), err)
-	}
-
-	if m.LastReleasedChapter != nil {
-		err = deleteMangaChapter(m.ID, m.LastReleasedChapter, tx)
-		if err != nil {
-			tx.Rollback()
-			return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m.LastReadChapter, m), err)
-		}
-	}
-
-	if m.LastReadChapter != nil {
-		err = deleteMangaChapter(m.ID, m.LastReadChapter, tx)
-		if err != nil {
-			tx.Rollback()
-			return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m.LastReadChapter, m), err)
-		}
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, m.LastReleasedChapter, m.LastReadChapter, m), err)
-	}
-	m.LastReleasedChapter = nil
-	m.LastReadChapter = nil
 
 	return nil
 }
@@ -1049,16 +806,6 @@ func getMangaIDByURL(url string) (ID, error) {
 	}
 
 	return mangaID, nil
-}
-
-// GetMangaDBByID gets a manga from the database by its ID
-func GetMangaDBByID(mangaID ID) (*Manga, error) {
-	return GetMangaDB(mangaID, "")
-}
-
-// GetMangaDBByURL gets a manga from the database by its URL
-func GetMangaDBByURL(url string) (*Manga, error) {
-	return GetMangaDB(0, url)
 }
 
 // GetMangasWithoutMultiMangasDB gets all mangas from the database that are not part of a multimanga or are not custom mangas.
@@ -1752,10 +1499,6 @@ func validateManga(m *Manga) error {
 		return util.AddErrorContext(contextError, fmt.Errorf("manga is nil"))
 	}
 
-	err := ValidateStatus(m.Status)
-	if err != nil {
-		return util.AddErrorContext(contextError, err)
-	}
 	if m.Source == "" {
 		return util.AddErrorContext(contextError, fmt.Errorf("manga source is empty"))
 	}
