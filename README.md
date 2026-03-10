@@ -157,7 +157,7 @@ You can manage Multimanga settings via the Highlight button, including:
 
 |                                   Edit Multimanga                                    |                             Edit Multimanga Cover Image                              |                               Manage Multimanga Mangas                               |
 | :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: |
-| ![](https://github.com/user-attachments/assets/441d2423-2276-4512-ab6c-edfc80e909f2) | ![](https://github.com/user-attachments/assets/e0c4acb1-6840-4824-817c-cd208867a04a) | ![](https://github.com/user-attachments/assets/020681aa-8e59-4f2f-aefe-c92a89251fe8) |
+| ![](https://github.com/user-attachments/assets/caf8c6f9-c7e3-42f1-bfa3-a42dfbfe80c1) | ![](https://github.com/user-attachments/assets/abd9027f-bd4b-4b4c-983d-fc11bb9e2d01) | ![](https://github.com/user-attachments/assets/9c36585d-4ecb-4cb0-b04f-3eb701529dcf) |
 
 ---
 
@@ -170,9 +170,7 @@ You must manually provide:
 - Name
 - URL
 - Cover image (or use default)
-- Last read chapter
-
-Custom manga are **not part of a Multimanga**.
+- Last released chapter selectors
 
 ## Last Released Chapter Selectors
 
@@ -195,7 +193,7 @@ Custom manga can automatically detect new chapters by getting the web page defin
 > [!NOTE]
 > If the URL selector doesn't return a string that starts with `http`, Mantium will consider it a relative URL and will prepend the manga URL to it. For example, if the manga URL is `https://example.com/one-piece` and the URL selector returns `/chapter1000`, Mantium will consider the chapter URL to be `https://example.com/chapter1000`.
 
-<img width="436" height="1351" alt="image" src="https://github.com/user-attachments/assets/a057fa8a-8ebd-4b95-a648-388d366b7fbb" />
+<img width="855" height="1335" alt="image" src="https://github.com/user-attachments/assets/4e844149-964e-463f-821f-f59a45c9a644" />
 
 ---
 
@@ -211,6 +209,7 @@ If an error occurs during background processing:
 
 - A warning is displayed on the dashboard and iFrame.
 - This warning can be disabled.
+- You can set the minimum number of consecutive errors that must happen to show the warnings.
 
 Custom manga selectors are also checked during background updates.
 
