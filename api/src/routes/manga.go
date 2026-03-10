@@ -754,6 +754,15 @@ type UpdateMangaStatusRequest struct {
 	Status manga.Status `json:"status" binding:"required,gte=0,lte=5"`
 }
 
+// LastReadChapterRequest is the request body for updating a manga chapter
+type LastReadChapterRequest struct {
+	FromSourceSite bool   `json:"from_source_site,omitempty"`
+	DeleteChapter  bool   `json:"delete_chapter,omitempty"`
+	Chapter        string `json:"chapter,omitempty"`
+	URL            string `json:"url,omitempty" binding:"omitempty,http_url"`
+	InternalID     string `json:"internal_id,omitempty"`
+}
+
 // @Summary Update multimanga last read chapter
 // @Description Updates a multimanga last read chapter in the database. It also needs to know from which manga the chapter is from if not a custom manga. If both `chapter` and `chapter_url` are empty strings in the body, set the last read chapter to the last released chapter in the database.
 // @Produce json
@@ -879,15 +888,6 @@ func UpdateMultiMangaLastReadChapter(c *gin.Context) {
 	dashboard.UpdateDashboard()
 
 	c.JSON(http.StatusOK, gin.H{"message": "Multimanga last read chapter updated successfully"})
-}
-
-// LastReadChapterRequest is the request body for updating a manga chapter
-type LastReadChapterRequest struct {
-	FromSourceSite bool   `json:"from_source_site,omitempty"`
-	DeleteChapter  bool   `json:"delete_chapter,omitempty"`
-	Chapter        string `json:"chapter,omitempty"`
-	URL            string `json:"url,omitempty" binding:"omitempty,http_url"`
-	InternalID     string `json:"internal_id,omitempty"`
 }
 
 // @Summary Update custom manga cover image
@@ -1542,11 +1542,7 @@ func GetMangasiFrame(c *gin.Context) {
 		}
 	}
 
-	allMangas, err := manga.GetCustomMangasDB()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
+	allMangas := []*manga.Manga{}
 	multimangas, err := manga.GetMultiMangasDB(false)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -1765,37 +1761,6 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
     </style>
 
     <script>
-      function setCustomMangaLastReadChapter(mangaId) {
-        try {
-            var xhr = new XMLHttpRequest();
-            var url = '{{ .APIURL }}/v1/custom_manga/last_read_chapter?id=' + encodeURIComponent(mangaId);
-            xhr.open('PATCH', url, true);
-            xhr.setRequestHeader('Content-Type', 'application/json');
-
-            xhr.onload = function () {
-              if (xhr.status >= 200 && xhr.status < 300) {
-                console.log('Request to update manga', mangaId, ' last read chapter finished with success:', xhr.responseText);
-                location.reload();
-              } else {
-                console.log('Request to update manga', mangaId, ' last read chapter failed:', xhr.responseText);
-                handleSetLastReadChapterError("manga-" + mangaId)
-              }
-            };
-
-            xhr.onerror = function () {
-              console.log('Request to update manga', mangaId, ' last read chapter failed:', xhr.responseText);
-              handleSetLastReadChapterError(mangaId)
-            };
-
-            var body = {};
-
-            xhr.send(JSON.stringify(body));
-        } catch (error) {
-            console.log('Request to update manga', mangaId, ' last read chapter failed:', error);
-            handleSetLastReadChapterError("manga-" + mangaId)
-        }
-      }
-
       function setMultiMangaLastReadChapter(multimangaId, mangaId) {
         try {
             var xhr = new XMLHttpRequest();
@@ -1927,11 +1892,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
         />
 
         <div class="text-wrap">
-			{{ if isCustomMangaURL .URL }}
-				<span class="manga-name">{{ .Name }}</span>
-			{{ else }}
-				<a href="{{ .URL }}" target="_blank" class="manga-name">{{ .Name }}</a>
-			{{ end }}
+			<a href="{{ .URL }}" target="_blank" class="manga-name">{{ .Name }}</a>
         </div>
 
         <div class="new-chapter-container">
@@ -1948,7 +1909,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
 			{{ end }}
 
 			<div>
-				<button id="manga-{{ .ID }}" onclick="{{ if isCustomManga .Source }}setCustomMangaLastReadChapter('{{ .ID }}'){{ else }}setMultiMangaLastReadChapter('{{ .MultiMangaID }}', '{{ .ID }}'){{ end }}" class="set-last-read-button" onmouseenter="this.style.cursor='pointer';">Set last read</button>
+				<button id="manga-{{ .ID }}" onclick="setMultiMangaLastReadChapter('{{ .MultiMangaID }}', '{{ .ID }}')" class="set-last-read-button" onmouseenter="this.style.cursor='pointer';">Set last read</button>
 			</div>
         </div>
 
@@ -1980,12 +1941,6 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
 	encodeImageF := template.FuncMap{
 		"encodeImage": func(bytes []byte) string {
 			return base64.StdEncoding.EncodeToString(bytes)
-		},
-		"isCustomManga": func(source string) bool {
-			return source == manga.CustomMangaSource
-		},
-		"isCustomMangaURL": func(url string) bool {
-			return strings.HasPrefix(url, manga.CustomMangaURLPrefix)
 		},
 	}
 
