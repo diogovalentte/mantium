@@ -55,10 +55,11 @@ type NtfyConfigs struct {
 
 // PeriodicallyUpdateMangasConfigs is a struct that holds the configurations for updating mangas metadata periodically.
 type PeriodicallyUpdateMangasConfigs struct {
-	Update       bool
-	Notify       bool
-	Minutes      int
-	ParallelJobs int
+	Update            bool
+	Notify            bool
+	Minutes           int
+	ParallelJobs      int
+	ConsecutiveErrors int
 }
 
 // KaizokuConfigs is a struct that holds the configurations for the Kaizoku integration.
@@ -213,6 +214,16 @@ func SetConfigs(filePath string) error {
 		}
 	}
 	GlobalConfigs.PeriodicallyUpdateMangas.Minutes = minutes
+
+	consecutiveTimes := 5
+	envConsecutiveTimes := os.Getenv("UPDATE_MANGAS_PERIODICALLY_NUMBER_OF_CONSECUTIVE_ERRORS_TO_SHOW")
+	if envConsecutiveTimes != "" {
+		consecutiveTimes, err = strconv.Atoi(envConsecutiveTimes)
+		if err != nil {
+			return fmt.Errorf("error converting UPDATE_MANGAS_PERIODICALLY_NUMBER_OF_CONSECUTIVE_ERRORS_TO_SHOW '%s' to int: %s", envConsecutiveTimes, err)
+		}
+	}
+	GlobalConfigs.PeriodicallyUpdateMangas.ConsecutiveErrors = consecutiveTimes
 
 	updateMangasJobGoRoutines := 1
 	if envUpdateMangasJobGoRoutines := os.Getenv("UPDATE_MANGAS_JOB_PARALLEL_JOBS"); envUpdateMangasJobGoRoutines != "" {

@@ -164,7 +164,7 @@ func setUpdateMangasMetadataPeriodicallyJob(log *zerolog.Logger) {
 				res, err := util.RequestUpdateMangasMetadata(configs.Notify)
 				if err != nil {
 					errMessage := fmt.Sprintf("Error updating mangas metadata in background: %s", err)
-					log.Error().Msgf(errMessage)
+					log.Error().Msg(errMessage)
 					log.Error().Msgf("Request response: %v", res)
 
 					if res != nil {
@@ -175,7 +175,7 @@ func setUpdateMangasMetadataPeriodicallyJob(log *zerolog.Logger) {
 						} else {
 							respMessage = fmt.Sprintf("Request response text: %s", string(body))
 						}
-						log.Error().Msgf(respMessage)
+						log.Error().Msg(respMessage)
 						dashboard.SetLastBackgroundError(fmt.Sprintf("%s\n%s", errMessage, respMessage))
 						res.Body.Close() // cannot be defer because it's an infinite loop
 					} else {
@@ -183,6 +183,7 @@ func setUpdateMangasMetadataPeriodicallyJob(log *zerolog.Logger) {
 					}
 				} else {
 					log.Info().Msg("Mangas metadata updated")
+					dashboard.ResetConsecutiveErrors()
 				}
 			}
 		}()
