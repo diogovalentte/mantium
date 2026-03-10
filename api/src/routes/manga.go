@@ -2598,6 +2598,10 @@ func updateMultiMangaMetadata(multimanga *manga.MultiManga, retries int, retryIn
 	var mangasHaveNewChapter bool
 
 	for _, mangaToUpdate := range multimanga.Mangas {
+		if mangaToUpdate.Source == manga.CustomMangaSource {
+			continue
+		}
+
 		var updatedManga *manga.Manga
 		for i := 0; i < retries; i++ {
 			updatedManga, err = sources.GetMangaMetadata(mangaToUpdate.URL, mangaToUpdate.InternalID)
