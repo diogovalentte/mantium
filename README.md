@@ -57,13 +57,13 @@ Two display modes are available:
 ## Grid View
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/0c696396-fc78-4843-bdad-710888c0d016">
+  <img src="https://github.com/user-attachments/assets/404a5108-52d2-43a7-9bf3-81fa6721409a">
 </p>
 
 ## List View
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/8b0f810f-d2ce-4fe8-a9c5-bd215541d67b">
+  <img src="https://github.com/user-attachments/assets/93308cdb-93c0-420b-a32e-def5760b8671">
 </p>
 
 You can add manga from natively supported sites in two ways:
