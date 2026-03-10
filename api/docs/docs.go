@@ -15,79 +15,6 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/custom_manga": {
-            "post": {
-                "description": "Inserts a custom manga into the database.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "Add custom manga",
-                "parameters": [
-                    {
-                        "description": "Manga data",
-                        "name": "manga",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/routes.AddCustomMangaRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/routes.responseMessage"
-                        }
-                    }
-                }
-            }
-        },
-        "/custom_manga/last_read_chapter": {
-            "patch": {
-                "description": "Updates a custom manga last read chapter in the database. If chapter not in body, set the last read chapter to the last released chapter if it exists, else set it to none. If both ` + "`" + `chapter` + "`" + ` and ` + "`" + `chapter_url` + "`" + ` are empty strings in the body, deletes the manga's last read chapter. You can't provide only the chapter_url. You must provide either the manga ID or the manga URL.",
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "Update custom manga last read chapter",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Manga ID",
-                        "name": "id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "\"https://mangadex.org/title/1/one-piece\"",
-                        "description": "Manga URL",
-                        "name": "url",
-                        "in": "query"
-                    },
-                    {
-                        "description": "Chapter",
-                        "name": "chapter",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/routes.UpdateMangaLastReadChapterRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/routes.responseMessage"
-                        }
-                    }
-                }
-            }
-        },
         "/custom_manga/last_released_chapter_selectors": {
             "patch": {
                 "description": "Update custom manga last released chapter selectors.",
@@ -303,99 +230,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/manga": {
-            "get": {
-                "description": "Gets a manga from the database. You must provide either the manga ID or the manga URL.",
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "Get manga",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Manga ID",
-                        "name": "id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "\"https://mangadex.org/title/1/one-piece\"",
-                        "description": "Manga URL",
-                        "name": "url",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "{\"manga\": mangaObj}",
-                        "schema": {
-                            "$ref": "#/definitions/manga.Manga"
-                        }
-                    }
-                }
-            },
-            "post": {
-                "description": "Gets a manga metadata from source and inserts into the database.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "Add manga",
-                "parameters": [
-                    {
-                        "description": "Manga data",
-                        "name": "manga",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/routes.AddMangaRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/routes.responseMessage"
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "description": "Deletes a manga from the database. You must provide either the manga ID or the manga URL.",
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "Delete manga",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Manga ID",
-                        "name": "id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "\"https://mangadex.org/title/1/one-piece\"",
-                        "description": "Manga URL",
-                        "name": "url",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/routes.responseMessage"
-                        }
-                    }
-                }
-            }
-        },
         "/manga/chapters": {
             "get": {
                 "description": "Get a manga chapters from the source. You must provide either the manga ID or the manga URL.",
@@ -441,31 +275,17 @@ const docTemplate = `{
         },
         "/manga/cover_img": {
             "patch": {
-                "description": "Updates a manga/custom manga cover image in the database. You must provide either the manga ID or the manga URL. You must provide only one of the following: cover_img, cover_img_url, get_cover_img_from_source. If it's a custom manga, using get_cover_img_from_source will return an error message.",
+                "description": "Updates a custom manga cover image in the database. You must provide only one of the following: cover_img, cover_img_url, use_mantium_default_img.",
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Update manga cover image",
+                "summary": "Update custom manga cover image",
                 "parameters": [
                     {
                         "type": "integer",
                         "example": 1,
                         "description": "Manga ID",
                         "name": "id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "\"https://mangadex.org/title/1/one-piece\"",
-                        "description": "Manga URL",
-                        "name": "url",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "\"1as4fa7\"",
-                        "description": "Manga Internal ID",
-                        "name": "manga_internal_id",
                         "in": "query"
                     },
                     {
@@ -479,13 +299,6 @@ const docTemplate = `{
                         "example": "\"https://example.com/cover.jpg\"",
                         "description": "Manga cover image URL",
                         "name": "cover_img_url",
-                        "in": "query"
-                    },
-                    {
-                        "type": "boolean",
-                        "example": true,
-                        "description": "Let Mantium fetch the cover image from the source site",
-                        "name": "get_cover_img_from_source",
                         "in": "query"
                     },
                     {
@@ -528,48 +341,6 @@ const docTemplate = `{
                         "description": "{\"manga\": mangaObj}",
                         "schema": {
                             "$ref": "#/definitions/manga.Manga"
-                        }
-                    }
-                }
-            }
-        },
-        "/manga/status": {
-            "patch": {
-                "description": "Updates a manga status in the database. You must provide either the manga ID or the manga URL.",
-                "produces": [
-                    "application/json"
-                ],
-                "summary": "Update manga status",
-                "parameters": [
-                    {
-                        "type": "integer",
-                        "example": 1,
-                        "description": "Manga ID",
-                        "name": "id",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "example": "\"https://mangadex.org/title/1/one-piece\"",
-                        "description": "Manga URL",
-                        "name": "url",
-                        "in": "query"
-                    },
-                    {
-                        "description": "Manga status",
-                        "name": "status",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/routes.UpdateMangaStatusRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/routes.responseMessage"
                         }
                     }
                 }
@@ -618,7 +389,7 @@ const docTemplate = `{
         },
         "/mangas": {
             "get": {
-                "description": "Gets the current manga of multimangas and all custom mangas.",
+                "description": "Gets the current manga of multimangas.",
                 "produces": [
                     "application/json"
                 ],
@@ -892,7 +663,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/routes.AddMangaRequest"
+                            "$ref": "#/definitions/routes.AddMultiMangaRequest"
                         }
                     }
                 ],
@@ -1044,7 +815,7 @@ const docTemplate = `{
         },
         "/multimanga/last_read_chapter": {
             "patch": {
-                "description": "Updates a multimanga last read chapter in the database. It also needs to know from which manga the chapter is from. If both ` + "`" + `chapter` + "`" + ` and ` + "`" + `chapter_url` + "`" + ` are empty strings in the body, set the last read chapter to the last released chapter in the database.",
+                "description": "Updates a multimanga last read chapter in the database. It also needs to know from which manga the chapter is from if not a custom manga. If both ` + "`" + `chapter` + "`" + ` and ` + "`" + `chapter_url` + "`" + ` are empty strings in the body, set the last read chapter to the last released chapter in the database.",
                 "produces": [
                     "application/json"
                 ],
@@ -1072,7 +843,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/routes.UpdateMangaLastReadChapterRequest"
+                            "$ref": "#/definitions/routes.UpdateLastReadChapterRequest"
                         }
                     }
                 ],
@@ -1280,6 +1051,10 @@ const docTemplate = `{
         "dashboard.BackgroundError": {
             "type": "object",
             "properties": {
+                "consecutiveErrors": {
+                    "description": "Number of consecutive errors. Used to avoid spamming the dashboard with the same error.",
+                    "type": "integer"
+                },
                 "message": {
                     "description": "Error message.",
                     "type": "string"
@@ -1296,6 +1071,10 @@ const docTemplate = `{
                 "chapter": {
                     "description": "Chapter usually is the chapter number, but in some cases it can be a one-shot or a special chapter",
                     "type": "string"
+                },
+                "fromSourceSite": {
+                    "description": "Whether the chapter was added by the user or it was scraped from the source.",
+                    "type": "boolean"
                 },
                 "internalID": {
                     "description": "InteralID is a unique identifier for the chapter in the source",
@@ -1326,6 +1105,9 @@ const docTemplate = `{
             "properties": {
                 "Attribute": {
                     "type": "string"
+                },
+                "GetFirst": {
+                    "type": "boolean"
                 },
                 "Regex": {
                     "type": "string"
@@ -1387,6 +1169,10 @@ const docTemplate = `{
                             "$ref": "#/definitions/manga.HTMLSelector"
                         }
                     ]
+                },
+                "lastReleasedChapterSelectorUseBrowser": {
+                    "description": "LastReleasedChapterSelectorUseBrowser is true if the LastReleasedChapterNameSelector and LastReleasedChapterURLSelector should be used with a browser (Rod).",
+                    "type": "boolean"
                 },
                 "lastReleasedChapterURLSelector": {
                     "description": "LastReleasedChapterURLSelector is the selector used to find the last released chapter URL in the source website",
@@ -1506,10 +1292,41 @@ const docTemplate = `{
                 }
             }
         },
-        "routes.AddCustomMangaRequest": {
+        "routes.AddMangaToMultiMangaRequest": {
+            "type": "object",
+            "properties": {
+                "cover_img": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "cover_img_url": {
+                    "type": "string"
+                },
+                "internal_id": {
+                    "type": "string"
+                },
+                "last_released_chapter_name_selector": {
+                    "$ref": "#/definitions/routes.HTMLSelectorRequest"
+                },
+                "last_released_chapter_selector_use_browser": {
+                    "type": "boolean"
+                },
+                "last_released_chapter_url_selector": {
+                    "$ref": "#/definitions/routes.HTMLSelectorRequest"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "routes.AddMultiMangaRequest": {
             "type": "object",
             "required": [
-                "name",
                 "status"
             ],
             "properties": {
@@ -1522,10 +1339,16 @@ const docTemplate = `{
                 "cover_img_url": {
                     "type": "string"
                 },
+                "internal_id": {
+                    "type": "string"
+                },
                 "last_read_chapter": {
                     "type": "object",
                     "properties": {
                         "chapter": {
+                            "type": "string"
+                        },
+                        "internal_id": {
                             "type": "string"
                         },
                         "url": {
@@ -1535,6 +1358,9 @@ const docTemplate = `{
                 },
                 "last_released_chapter_name_selector": {
                     "$ref": "#/definitions/routes.HTMLSelectorRequest"
+                },
+                "last_released_chapter_selector_use_browser": {
+                    "type": "boolean"
                 },
                 "last_released_chapter_url_selector": {
                     "$ref": "#/definitions/routes.HTMLSelectorRequest"
@@ -1552,49 +1378,6 @@ const docTemplate = `{
                 }
             }
         },
-        "routes.AddMangaRequest": {
-            "type": "object",
-            "required": [
-                "status",
-                "url"
-            ],
-            "properties": {
-                "last_read_chapter": {
-                    "type": "string"
-                },
-                "last_read_chapter_internal_id": {
-                    "type": "string"
-                },
-                "last_read_chapter_url": {
-                    "type": "string"
-                },
-                "manga_internal_id": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "integer",
-                    "maximum": 5,
-                    "minimum": 0
-                },
-                "url": {
-                    "type": "string"
-                }
-            }
-        },
-        "routes.AddMangaToMultiMangaRequest": {
-            "type": "object",
-            "required": [
-                "manga_url"
-            ],
-            "properties": {
-                "manga_internal_id": {
-                    "type": "string"
-                },
-                "manga_url": {
-                    "type": "string"
-                }
-            }
-        },
         "routes.HTMLSelectorRequest": {
             "type": "object",
             "required": [
@@ -1604,24 +1387,13 @@ const docTemplate = `{
                 "attribute": {
                     "type": "string"
                 },
+                "get_first": {
+                    "type": "boolean"
+                },
                 "regex": {
                     "type": "string"
                 },
                 "selector": {
-                    "type": "string"
-                }
-            }
-        },
-        "routes.LastReadChapterRequest": {
-            "type": "object",
-            "properties": {
-                "chapter": {
-                    "type": "string"
-                },
-                "internal_id": {
-                    "type": "string"
-                },
-                "url": {
                     "type": "string"
                 }
             }
@@ -1644,6 +1416,26 @@ const docTemplate = `{
                 }
             }
         },
+        "routes.UpdateLastReadChapterRequest": {
+            "type": "object",
+            "properties": {
+                "chapter": {
+                    "type": "string"
+                },
+                "delete_chapter": {
+                    "type": "boolean"
+                },
+                "from_source_site": {
+                    "type": "boolean"
+                },
+                "internal_id": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
         "routes.UpdateLastReleasedChapterSelectorsRequest": {
             "type": "object",
             "properties": {
@@ -1652,14 +1444,9 @@ const docTemplate = `{
                 },
                 "url_selector": {
                     "$ref": "#/definitions/routes.HTMLSelectorRequest"
-                }
-            }
-        },
-        "routes.UpdateMangaLastReadChapterRequest": {
-            "type": "object",
-            "properties": {
-                "chapter": {
-                    "$ref": "#/definitions/routes.LastReadChapterRequest"
+                },
+                "use_browser": {
+                    "type": "boolean"
                 }
             }
         },

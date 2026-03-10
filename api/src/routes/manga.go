@@ -315,7 +315,7 @@ type AddMultiMangaRequest struct {
 // @Description Gets a manga metadata from source and inserts it as the current manga of a new multimanga into the database.
 // @Accept json
 // @Produce json
-// @Param manga body AddMangaRequest true "Current manga data"
+// @Param manga body AddMultiMangaRequest true "Current manga data"
 // @Success 200 {object} responseMessage
 // @Router /multimanga [post]
 func AddMultiManga(c *gin.Context) {
@@ -754,8 +754,8 @@ type UpdateMangaStatusRequest struct {
 	Status manga.Status `json:"status" binding:"required,gte=0,lte=5"`
 }
 
-// LastReadChapterRequest is the request body for updating a manga chapter
-type LastReadChapterRequest struct {
+// UpdateLastReadChapterRequest is the request body for updating a manga chapter
+type UpdateLastReadChapterRequest struct {
 	FromSourceSite bool   `json:"from_source_site,omitempty"`
 	DeleteChapter  bool   `json:"delete_chapter,omitempty"`
 	Chapter        string `json:"chapter,omitempty"`
@@ -768,7 +768,7 @@ type LastReadChapterRequest struct {
 // @Produce json
 // @Param id query int true "Multimanga ID" Example(1)
 // @Param manga_id query int true "Manga ID" Example(1)
-// @Param chapter body UpdateMangaLastReadChapterRequest true "Chapter"
+// @Param chapter body UpdateLastReadChapterRequest true "Chapter"
 // @Success 200 {object} responseMessage
 // @Router /multimanga/last_read_chapter [patch]
 func UpdateMultiMangaLastReadChapter(c *gin.Context) {
@@ -785,7 +785,7 @@ func UpdateMultiMangaLastReadChapter(c *gin.Context) {
 		return
 	}
 
-	var requestData LastReadChapterRequest
+	var requestData UpdateLastReadChapterRequest
 	if err := c.ShouldBindJSON(&requestData); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid JSON fields, refer to the API documentation"})
 		return
