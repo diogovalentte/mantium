@@ -200,8 +200,43 @@ type Migration struct {
 
 // Change it in every new version
 var (
-	version        = "5.1.1"
-	updatedMessage = ``
+	version        = "6.0.1"
+	updatedMessage = `
+# Custom Manga in MultiManga
+Previously, custom manga were different from normal manga because they were not integrated into multimanga. Now, all previous custom manga are turned into multimanga, and new custom manga added to Mantium automatically are turned into multimanga.
+
+You can also add custom manga to multimanga and be treated like normal manga tracked by native sources:
+
+|                                 MultiManga Edit Form                                 |                                  Edit Custom Manga form                                   |
+| :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: |
+| ![](https://github.com/user-attachments/assets/254919b4-1ad6-4dc9-a838-c6da8be73daa) | ![](https://github.com/user-attachments/assets/43edab08-9610-4bd1-a447-2e56cf57cd31) |
+
+You can edit the custom manga properties with the multimanga "**Manage Mangas**" button:
+
+![](https://github.com/user-attachments/assets/e868c0c1-83c0-4249-b618-2039394b8ab6)
+
+
+# Custom Last Read Chapter
+Previously, you could only set the last read chapter for normal manga by selecting one from the current manga chapters list, or manually setting it with custom manga.
+
+Now that normal manga and custom manga are integrated in multimanga, you can select the chapter from the multimanga's current manga (_or the next normal manga candidate if the current manga is a custom manga_), manually provide it, or just delete the last read chapter:
+
+
+![](https://github.com/user-attachments/assets/c990d54b-0a13-4b7e-bf0e-8519fb4882a4)
+
+# Consecutive Background Errors
+Added the UPDATE_MANGAS_PERIODICALLY_NUMBER_OF_CONSECUTIVE_ERRORS_TO_SHOW environment variable. Previously, every time an error happened a warning would show in the dashboard and iFrame (_if enabled_). Now, it'll only show when an error occurs $x$ consecutive times based on this new env var.
+
+When the background job finishes without errors, it resets the counter.
+
+# API Breaking Changes
+Due to the changes mentioned above, the API was changed. Some methods were deleted, changed, and added.
+
+# Other changes:
+
+- Fixed: RawKuma nil pointer dereference error.
+- Improved: dashboard CSS for manga header, forms with a red button.
+	`
 )
 
 // If the current version in the database is lower than the Version field, the Up function will be executed.
