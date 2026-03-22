@@ -1812,6 +1812,12 @@ func getSelectorFromPageUsingHTTPRequest(url string, selector *HTMLSelector) (st
 
 	var selection string
 	if after, ok := strings.CutPrefix(selector.Selector, "css:"); ok {
+		if strings.TrimSpace(after) == "" {
+			return "", util.AddErrorContext(
+				fmt.Sprintf(contextError, selector, url),
+				fmt.Errorf("css selector is empty after prefix"),
+			)
+		}
 		c.OnHTML(after, func(e *colly.HTMLElement) {
 			if selector.GetFirst && selection != "" {
 				return
@@ -1824,6 +1830,13 @@ func getSelectorFromPageUsingHTTPRequest(url string, selector *HTMLSelector) (st
 			}
 		})
 	} else if after, ok := strings.CutPrefix(selector.Selector, "xpath:"); ok {
+		if strings.TrimSpace(after) == "" {
+			return "", util.AddErrorContext(
+				fmt.Sprintf(contextError, selector, url),
+				fmt.Errorf("xpath selector is empty after prefix"),
+			)
+		}
+
 		c.OnXML(after, func(e *colly.XMLElement) {
 			if selector.GetFirst && selection != "" {
 				return
