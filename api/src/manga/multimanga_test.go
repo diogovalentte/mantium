@@ -181,14 +181,12 @@ func TestMultiMangaDBLifeCycle(t *testing.T) {
 			t.Fatal(err)
 		}
 	})
-	t.Run("Should remove a manga from a multimanga list", func(t *testing.T) {
+	t.Run("Should remove a manga from a multimanga list and set the current manga again", func(t *testing.T) {
 		err := multiManga.RemoveManga(multiManga.Mangas[1])
 		if err != nil {
 			t.Fatal(err)
 		}
-	})
-	t.Run("Should update the current manga of a multimanga 2", func(t *testing.T) {
-		err := multiManga.UpdateCurrentMangaInDB()
+		err = multiManga.UpdateCurrentMangaInDB()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -201,6 +199,12 @@ func TestMultiMangaDBLifeCycle(t *testing.T) {
 	})
 	t.Run("Should update the current manga of a multimanga 3", func(t *testing.T) {
 		err := multiManga.UpdateCurrentMangaInDB()
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+	t.Run("Should delete the last read chapter from a multimanga", func(t *testing.T) {
+		err := multiManga.DeleteLastReadChapterFromDB()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -223,28 +227,6 @@ func TestMultiMangaDBLifeCycle(t *testing.T) {
 	})
 	t.Run("Should delete a multimanga from DB", func(t *testing.T) {
 		err = multiManga.DeleteFromDB()
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-}
-
-func TestMangaIntoMultiMangaDBLifeCycle(t *testing.T) {
-	manga := getMangaCopy(multiMangaTest.Mangas[0])
-	var multiManga *MultiManga
-
-	t.Run("Should turn a manga into a multimanga into DB", func(t *testing.T) {
-		err := manga.InsertIntoDB()
-		if err != nil {
-			t.Fatal(err)
-		}
-		multiManga, err = TurnIntoMultiManga(manga)
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-	t.Run("Should delete a multimanga from DB", func(t *testing.T) {
-		err := multiManga.DeleteFromDB()
 		if err != nil {
 			t.Fatal(err)
 		}
