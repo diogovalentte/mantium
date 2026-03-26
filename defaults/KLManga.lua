@@ -90,7 +90,7 @@ function ChapterPages(chapterURL)
         end
 
         local js = el:text()
-        if contains(js, "decode_images_g") then
+        if contains(js, "decode_images") then
             chapter_id_js = js
         elseif contains(js, [["nonce_a":"]]) then
             nonce_a_js = js
@@ -102,7 +102,6 @@ function ChapterPages(chapterURL)
     end
 
     local chapter_id = extractChapterID(chapter_id_js)
-    local number = extractNumber(chapter_id_js)
     local nonce_a = extractNonceA(nonce_a_js)
 
     local current_domain = getCurrentDomain()
@@ -111,10 +110,8 @@ function ChapterPages(chapterURL)
     local page_idx = 1
     local img_index = 0
     while true do
-        local data = "action=z_do_ajax&_action=decode_images_g&chapter_id="
+        local data = "action=z_do_ajax&_action=decode_images&reading_chapter="
             .. chapter_id
-            .. "&p="
-            .. number
             .. "&img_index="
             .. img_index
             .. "&nonce_a="
@@ -130,6 +127,9 @@ function ChapterPages(chapterURL)
         local image_urls = extractImageURLs(json["mes"])
 
         for _, url in ipairs(image_urls) do
+            if hasPrefix(url, "https://placehold.co") then
+                error("got placeholder image, likely chapter is not available")
+            end
             local page = { url = url, index = page_idx }
             table.insert(pages, page)
             page_idx = page_idx + 1
@@ -183,7 +183,7 @@ function extractChapter(s)
 end
 
 function extractChapterID(s)
-    local chapter_id = string.match(s, "chapter_id:%s*'([^']+)'")
+    local chapter_id = string.match(s, "reading_chapter:%s*(%d+)")
     if chapter_id then
         return chapter_id
     end
@@ -196,14 +196,6 @@ function extractNonceA(s)
         return nonce_a
     end
     error("could not find nonce_a")
-end
-
-function extractNumber(s)
-    local number = string.match(s, "p:%s*([^,]+),")
-    if number then
-        return number
-    end
-    error("could not extract number")
 end
 
 function contains(str, substring)
