@@ -15,7 +15,7 @@ HttpUtil = require("http_util")
 ----- VARIABLES -----
 Debug = false
 Client = Http.client({ timeout = 20, insecure_ssl = true, debug = Debug })
-Base = "https://klmanga.voto"
+Base = "https://klmanga.mom"
 --- END VARIABLES ---
 
 ----- MAIN -----
@@ -119,6 +119,7 @@ function ChapterPages(chapterURL)
 
         request = Http.request("POST", req_url, data)
         request:header_set("content-type", "application/x-www-form-urlencoded; charset=UTF-8")
+        request:header_set("Referer", current_domain)
         result = Client:do_request(request)
 
         local json = Json.decode(result.body)
