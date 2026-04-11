@@ -209,8 +209,8 @@ def show_update_multimanga(multimanga_id):
             )
 
             st.checkbox(
-                "Delete Last Read Chapter",
-                help="Delete the last read chapter and set it to empty. This will make Mantium consider that you haven't read any chapter.",
+                "Reset Last Read Chapter",
+                help="Reset the last read chapter. This will make Mantium consider that you haven't read any chapter.",
                 key="update_multimanga_form_delete_last_read_chapter_" + str(multimanga["ID"]),
             )
 
