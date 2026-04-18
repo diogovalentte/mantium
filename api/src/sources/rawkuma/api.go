@@ -38,6 +38,7 @@ func (c *Client) Request(method, url string, reqBody io.Reader, retBody any, con
 
 	header := http.Header{}
 	header.Set("Content-Type", contentType)
+	header.Set("User-Agent", userAgent)
 	req.Header = header
 
 	resp, err := c.client.Do(req)
