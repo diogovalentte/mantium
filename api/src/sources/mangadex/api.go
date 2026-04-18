@@ -57,7 +57,7 @@ func (c *Client) Request(method, url string, reqBody io.Reader, retBody any) (*h
 			body, _ := io.ReadAll(resp.Body)
 			return nil, util.AddErrorContext(errorContext, fmt.Errorf("error while decoding API error response into ErrorResponse. Body: %s", string(body)))
 		}
-		return nil, util.AddErrorContext(errorContext, fmt.Errorf(er.GetErrors()))
+		return nil, util.AddErrorContext(errorContext, fmt.Errorf("%s", er.GetErrors()))
 	}
 
 	if retBody != nil {

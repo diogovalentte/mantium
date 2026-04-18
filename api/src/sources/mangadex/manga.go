@@ -2,6 +2,7 @@ package mangadex
 
 import (
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -108,8 +109,20 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 
 	errorContext := "error while searching manga"
 
-	term = strings.ReplaceAll(term, " ", "+")
-	searchURL := fmt.Sprintf("%s/manga?title=%s&includes[]=cover_art&limit=%d&offset=0&order[relevance]=desc&contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic", baseAPIURL, term, limit)
+	baseURL := fmt.Sprintf("%s/manga", baseAPIURL)
+	params := url.Values{}
+	params.Add("title", term)
+	params.Add("includes[]", "cover_art")
+	params.Add("limit", fmt.Sprintf("%d", limit))
+	params.Add("offset", "0")
+	params.Add("order[relevance]", "desc")
+	params.Add("contentRating[]", "safe")
+	params.Add("contentRating[]", "suggestive")
+	params.Add("contentRating[]", "erotica")
+	params.Add("contentRating[]", "pornographic")
+
+	searchURL := baseURL + "?" + params.Encode()
+
 	var searchAPIResp searchMangaAPIResponse
 	_, err := s.client.Request("GET", searchURL, nil, &searchAPIResp)
 	if err != nil {
