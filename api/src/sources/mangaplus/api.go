@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"google.golang.org/protobuf/proto"
+	"github.com/google/uuid"
 
 	"github.com/diogovalentte/mantium/api/src/util"
 )
@@ -23,6 +24,7 @@ func NewMangaPlusClient() *Client {
 	header := http.Header{
 		"Accept":     []string{"*/*"},
 		"User-Agent": []string{"okhttp/4.9.0"},
+		"SESSION-TOKEN": []string{uuid.New().String()},
 	}
 	dex := &Client{
 		client: &client,
