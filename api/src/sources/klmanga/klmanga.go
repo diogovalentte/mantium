@@ -8,7 +8,7 @@ import (
 	"github.com/gocolly/colly/v2"
 )
 
-var baseSiteURL = "https://klmanga.click"
+var baseSiteURL = "https://klmanga.today"
 
 // Source is the struct for the KLManga source
 type Source struct{}
