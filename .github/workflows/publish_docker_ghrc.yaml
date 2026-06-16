@@ -65,12 +65,15 @@ jobs:
           labels: ${{ steps.api-image-meta.outputs.labels }}
 
       - name: Create payload file
+        if: always()
+        id: create-payload
         run: |
           REPO_FULL="${{ github.repository }}"
           REPO_NAME="${REPO_FULL##*/}"
           echo "{\"repository\": {\"name\": \"${REPO_NAME}\"}}" > payload.json
 
       - name: Send GitHub webhook
+        if: steps.create-payload.outcome == 'success'
         env:
           WEBHOOK_SERVER: ${{ secrets.WEBHOOK_SERVER }}
           WEBHOOK_SERVER_SECRET: ${{ secrets.WEBHOOK_SERVER_SECRET }}
