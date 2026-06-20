@@ -3,7 +3,6 @@ package util
 
 import (
 	"bytes"
-	"crypto/tls"
 	"fmt"
 	"image"
 	"image/jpeg"
@@ -77,11 +76,6 @@ func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgB
 
 	httpClient := &http.Client{
 		Timeout: 10 * time.Second,
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{
-				MaxVersion: tls.VersionTLS12,
-			},
-		},
 	}
 
 	imageBytes := make([]byte, 0)
@@ -96,6 +90,8 @@ func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgB
 		}
 
 		req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0")
+		req.Header.Set("Sec-Fetch-Dest", "document")
+		req.Header.Set("Sec-Fetch-Mode", "navigate")
 
 		resp, err := httpClient.Do(req)
 		if err != nil {
