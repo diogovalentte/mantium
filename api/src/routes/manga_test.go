@@ -41,7 +41,7 @@ func TestMain(m *testing.M) {
 
 var mangasRequestsTestTable = map[string]routes.AddMultiMangaRequest{
 	"valid manga with read chapter": {
-		URL:    "https://klmanga.today/manga-raw/大ダーク-raw-free/",
+		URL:    "https://klmanga.date/manga-raw/大ダーク-raw-free/",
 		Status: 5,
 		LastReadChapter: &struct {
 			Chapter    string `json:"chapter"`
