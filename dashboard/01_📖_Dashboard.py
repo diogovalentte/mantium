@@ -458,7 +458,7 @@ class MainDashboard:
                 col_index = 0
             with cols_list[col_index]:
                 with st.container(border=True):
-                    with centered_container("center_container" + str(manga["ID"])):
+                    with centered_container("show_mangas_grid_view_center_container" + str(manga["ID"])):
                         self.show_manga_grid(manga)
             col_index += 1
 

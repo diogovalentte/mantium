@@ -631,7 +631,7 @@ def show_multimanga_mangas(
             col_index = 0
         with cols_list[col_index]:
             with st.container(border=True):
-                with centered_container("center_container" + str(manga["ID"])):
+                with centered_container("show_multimanga_mangas_center_container" + str(manga["ID"])):
                     show_multimanga_manga(
                         manga, multimanga_id, manga["ID"] == current_manga_id
                     )
