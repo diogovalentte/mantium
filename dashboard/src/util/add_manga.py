@@ -1,4 +1,6 @@
 from typing import Any
+import uuid
+import hashlib
 
 import src.util.defaults as defaults
 import streamlit as st
@@ -390,7 +392,14 @@ def show_search_result_mangas(
             col_index = 0
         with cols_list[col_index]:
             with st.container(border=True, height=manga_container_height):
-                with centered_container("center_container" + manga["URL"]):
+                # Japanese characters are replaced with "-" in the key, so we need to hash the URL to get a unique key for each manga
+                key = (
+                    "center_container_show_search_result_mangas"
+                    + hashlib.md5(manga["URL"].encode()).hexdigest()
+                    + str(uuid.uuid4()) # JManga returns the same manga multiple times sometimes
+                )
+                print(f"manga name: {manga['Name']}, manga url: {manga['URL']}, key: {key}")
+                with centered_container(key):
                     show_search_result_manga(manga, button_name, key_to_save_manga)
         col_index += 1
 
