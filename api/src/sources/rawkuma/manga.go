@@ -37,6 +37,9 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 
 	// manga cover
 	s.col.OnHTML("article img.wp-post-image", func(e *colly.HTMLElement) {
+		if mangaReturn.CoverImgURL != "" {
+			return
+		}
 		coverURL := e.Attr("src")
 
 		coverImg, resized, err := util.GetImageFromURL(coverURL, 3, 1*time.Second)
