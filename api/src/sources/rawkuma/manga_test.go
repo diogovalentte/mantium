@@ -32,7 +32,7 @@ var mangasTestTable = []mangaTestType{
 				Type:      1,
 			},
 		},
-		url: "https://rawkuma.net/manga/go-toubun-no-hanayome",
+		url: "https://rawkuma.net/manga/futari-switch/",
 	},
 	{
 		expected: &manga.Manga{
