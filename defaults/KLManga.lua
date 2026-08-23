@@ -15,7 +15,7 @@ HttpUtil = require("http_util")
 ----- VARIABLES -----
 Debug = false
 Client = Http.client({ timeout = 20, insecure_ssl = true, debug = Debug })
-Base = "https://klmanga.cheap"
+Base = "https://klmanga.help"
 --- END VARIABLES ---
 
 ----- MAIN -----
@@ -92,17 +92,14 @@ function ChapterPages(chapterURL)
         local js = el:text()
         if contains(js, "decode_images") then
             chapter_id_js = js
-        elseif contains(js, [["nonce_a":"]]) then
-            nonce_a_js = js
         end
     end)
 
-    if chapter_id_js == "" or nonce_a_js == "" then
+    if chapter_id_js == "" then
         error("could not find necessary data in the HTML")
     end
 
     local chapter_id = extractChapterID(chapter_id_js)
-    local nonce_a = extractNonceA(nonce_a_js)
 
     local current_domain = getCurrentDomain()
 
@@ -114,8 +111,6 @@ function ChapterPages(chapterURL)
             .. chapter_id
             .. "&img_index="
             .. img_index
-            .. "&nonce_a="
-            .. nonce_a
 
         request = Http.request("POST", req_url, data)
         request:header_set("content-type", "application/x-www-form-urlencoded; charset=UTF-8")
@@ -189,14 +184,6 @@ function extractChapterID(s)
         return chapter_id
     end
     error("could not find chapter id")
-end
-
-function extractNonceA(s)
-    local nonce_a = string.match(s, [["nonce_a":"(.-)"]])
-    if nonce_a then
-        return nonce_a
-    end
-    error("could not find nonce_a")
 end
 
 function contains(str, substring)
