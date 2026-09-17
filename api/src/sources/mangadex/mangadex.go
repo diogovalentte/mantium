@@ -10,16 +10,10 @@ var (
 )
 
 // Source is the implementation of the manga.Source interface for the MangaDex source
-type Source struct {
-	client *Client
-}
+// It holds no mutable state: the Sources registry shares one instance
+// across every request, so any field written per call would be a race.
+type Source struct{}
 
 func (Source) GetName() string {
 	return "mangadex"
-}
-
-func (s *Source) checkClient() {
-	if s.client == nil {
-		s.client = mangadexClient
-	}
 }

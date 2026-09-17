@@ -18,7 +18,6 @@ import (
 
 // GetMangaMetadata returns the metadata of a manga given its URL.
 func (s *Source) GetMangaMetadata(mangaURL, mangaInternalID string) (*manga.Manga, error) {
-	s.checkClient()
 
 	errorContext := "error while getting manga metadata"
 	var err error
@@ -34,7 +33,7 @@ func (s *Source) GetMangaMetadata(mangaURL, mangaInternalID string) (*manga.Mang
 
 	mangaAPIURL := fmt.Sprintf("%s/v1/series/%s", baseAPIURL, mangaInternalID)
 	var mangaAPIResp seriesAPIResp
-	_, err = s.client.Request("GET", mangaAPIURL, nil, &mangaAPIResp)
+	_, err = mangaUpdatesClient.Request("GET", mangaAPIURL, nil, &mangaAPIResp)
 	if err != nil {
 		return nil, util.AddErrorContext(errorContext, err)
 	}
@@ -73,7 +72,6 @@ func (s *Source) GetMangaMetadata(mangaURL, mangaInternalID string) (*manga.Mang
 }
 
 func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, error) {
-	s.checkClient()
 
 	errorContext := "error while searching manga"
 
@@ -86,7 +84,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 
 	searchURL := fmt.Sprintf("%s/v1/series/search", baseAPIURL)
 	var searchResp searchResultResponse
-	_, err := s.client.Request("POST", searchURL, payload, &searchResp)
+	_, err := mangaUpdatesClient.Request("POST", searchURL, payload, &searchResp)
 	if err != nil {
 		return nil, util.AddErrorContext(errorContext, err)
 	}

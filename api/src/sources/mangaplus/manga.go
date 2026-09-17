@@ -17,14 +17,13 @@ import (
 
 // GetMangaMetadata scrapes the manga page and return the manga data
 func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
-	s.checkClient()
 	errorContext := "error while getting manga metadata"
 
 	mangaID, err := getMangaID(mangaURL)
 	if err != nil {
 		return nil, util.AddErrorContext(errorContext, err)
 	}
-	_, response, err := s.client.Request(fmt.Sprintf("%s/title_detailV3?title_id=%d", baseAPIURL, mangaID))
+	_, response, err := mangaplusClient.Request(fmt.Sprintf("%s/title_detailV3?title_id=%d", baseAPIURL, mangaID))
 	if err != nil {
 		if util.ErrorContains(err, "non-200 status code -> (404)") {
 			return nil, errordefs.ErrMangaNotFound
@@ -73,11 +72,10 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 }
 
 func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, error) {
-	s.checkClient()
 
 	errorContext := "error while searching manga"
 
-	_, response, err := s.client.Request(fmt.Sprintf("%s/title_list/allV2", baseAPIURL))
+	_, response, err := mangaplusClient.Request(fmt.Sprintf("%s/title_list/allV2", baseAPIURL))
 	if err != nil {
 		if util.ErrorContains(err, "non-200 status code -> (404)") {
 			return nil, errordefs.ErrMangaNotFound

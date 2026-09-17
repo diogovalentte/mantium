@@ -15,7 +15,6 @@ import (
 
 // GetMangaMetadata scrapes the manga page and return the manga data
 func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
-	s.checkClient()
 
 	errorContext := "error while getting manga metadata"
 
@@ -34,7 +33,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	payload := strings.NewReader(query)
 
 	var mangaAPIResp getMangaAPIResponse
-	_, err = s.client.Request("POST", baseAPIURL, payload, &mangaAPIResp)
+	_, err = mangahubClient.Request("POST", baseAPIURL, payload, &mangaAPIResp)
 	if err != nil {
 		if util.ErrorContains(err, "non-200 status code -> (404)") {
 			return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
@@ -102,7 +101,6 @@ type getMangaAPIResponse struct {
 }
 
 func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, error) {
-	s.checkClient()
 
 	errorContext := "error while getting manga metadata"
 
@@ -113,7 +111,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 	payload := strings.NewReader(query)
 
 	var searchAPIResp searchAPIResponse
-	_, err := s.client.Request("POST", baseAPIURL, payload, &searchAPIResp)
+	_, err := mangahubClient.Request("POST", baseAPIURL, payload, &searchAPIResp)
 	if err != nil {
 		return nil, util.AddErrorContext(errorContext, err)
 	}

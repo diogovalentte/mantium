@@ -28,7 +28,6 @@ func (s *Source) GetChapterMetadata(mangaURL, _, chapter, _, _ string) (*manga.C
 
 // GetChapterMetadataByChapter returns the chapter by its chapter
 func (s *Source) GetChapterMetadataByChapter(mangaURL, _, chapter string) (*manga.Chapter, error) {
-	s.checkClient()
 
 	mangaSlug, err := getMangaSlug(mangaURL)
 	if err != nil {
@@ -45,7 +44,7 @@ func (s *Source) GetChapterMetadataByChapter(mangaURL, _, chapter string) (*mang
 	payload := strings.NewReader(query)
 
 	var mangaAPIResp getChapterAPIResponse
-	_, err = s.client.Request("POST", baseAPIURL, payload, &mangaAPIResp)
+	_, err = mangahubClient.Request("POST", baseAPIURL, payload, &mangaAPIResp)
 	if err != nil {
 		if util.ErrorContains(err, "non-200 status code -> (404)") {
 			return nil, errordefs.ErrChapterNotFound
@@ -93,7 +92,6 @@ type getMangaAPIChapter struct {
 
 // GetLastChapterMetadata returns the latest chapter
 func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, error) {
-	s.checkClient()
 
 	errorContext := "error while getting last chapter metadata of manga with URL '%s'"
 
@@ -109,7 +107,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, err
 	payload := strings.NewReader(query)
 
 	var mangaAPIResp getMangaAPIResponse
-	_, err = s.client.Request("POST", baseAPIURL, payload, &mangaAPIResp)
+	_, err = mangahubClient.Request("POST", baseAPIURL, payload, &mangaAPIResp)
 	if err != nil {
 		if util.ErrorContains(err, "non-200 status code -> (404)") {
 			return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), errordefs.ErrMangaNotFound)
@@ -136,7 +134,6 @@ func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, err
 
 // GetChaptersMetadata returns the manga chapters
 func (s *Source) GetChaptersMetadata(mangaURL, _ string) ([]*manga.Chapter, error) {
-	s.checkClient()
 
 	errorContext := "error while getting chapters metadata"
 
@@ -152,7 +149,7 @@ func (s *Source) GetChaptersMetadata(mangaURL, _ string) ([]*manga.Chapter, erro
 	payload := strings.NewReader(query)
 
 	var mangaAPIResp getMangaAPIResponse
-	_, err = s.client.Request("POST", baseAPIURL, payload, &mangaAPIResp)
+	_, err = mangahubClient.Request("POST", baseAPIURL, payload, &mangaAPIResp)
 	if err != nil {
 		if util.ErrorContains(err, "non-200 status code -> (404)") {
 			return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)

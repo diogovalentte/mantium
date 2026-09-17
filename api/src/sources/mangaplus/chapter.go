@@ -31,13 +31,12 @@ func (s *Source) GetChapterMetadata(mangaURL, _, chapter, _, _ string) (*manga.C
 // Chapter is expected to be a clean chapter. For example, in the site, a chapter can be like "# 025",
 // but here it should be "25". Use the function cleanChapter to clean the chapter.
 func (s *Source) GetChapterMetadataByChapter(mangaURL, _, chapter string) (*manga.Chapter, error) {
-	s.checkClient()
 
 	mangaID, err := getMangaID(mangaURL)
 	if err != nil {
 		return nil, err
 	}
-	_, response, err := s.client.Request(fmt.Sprintf("%s/title_detailV3?title_id=%d", baseAPIURL, mangaID))
+	_, response, err := mangaplusClient.Request(fmt.Sprintf("%s/title_detailV3?title_id=%d", baseAPIURL, mangaID))
 	if err != nil {
 		if util.ErrorContains(err, "non-200 status code -> (404)") {
 			return nil, errordefs.ErrMangaNotFound
@@ -62,7 +61,6 @@ func (s *Source) GetChapterMetadataByChapter(mangaURL, _, chapter string) (*mang
 
 // GetLastChapterMetadata returns the manga last released chapter
 func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, error) {
-	s.checkClient()
 
 	errorContext := "error while getting last chapter metadata of manga with URL '%s'"
 
@@ -70,7 +68,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, err
 	if err != nil {
 		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), err)
 	}
-	_, response, err := s.client.Request(fmt.Sprintf("%s/title_detailV3?title_id=%d", baseAPIURL, mangaID))
+	_, response, err := mangaplusClient.Request(fmt.Sprintf("%s/title_detailV3?title_id=%d", baseAPIURL, mangaID))
 	if err != nil {
 		if util.ErrorContains(err, "non-200 status code -> (404)") {
 			return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), errordefs.ErrMangaNotFound)
@@ -89,13 +87,12 @@ func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, err
 
 // GetChaptersMetadata returns all the chapters of a manga
 func (s *Source) GetChaptersMetadata(mangaURL, _ string) ([]*manga.Chapter, error) {
-	s.checkClient()
 
 	mangaID, err := getMangaID(mangaURL)
 	if err != nil {
 		return nil, err
 	}
-	_, response, err := s.client.Request(fmt.Sprintf("%s/title_detailV3?title_id=%d", baseAPIURL, mangaID))
+	_, response, err := mangaplusClient.Request(fmt.Sprintf("%s/title_detailV3?title_id=%d", baseAPIURL, mangaID))
 	if err != nil {
 		if util.ErrorContains(err, "non-200 status code -> (404)") {
 			return nil, errordefs.ErrMangaNotFound

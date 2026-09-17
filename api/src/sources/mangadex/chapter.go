@@ -27,7 +27,6 @@ func (s *Source) GetChapterMetadata(_, _, _, chapterURL, _ string) (*manga.Chapt
 
 // getChapterMetadataByURL scrapes the manga page and return the chapter by its URL
 func (s *Source) getChapterMetadataByURL(chapterURL string) (*manga.Chapter, error) {
-	s.checkClient()
 
 	chapterReturn := &manga.Chapter{}
 	chapterReturn.URL = chapterURL
@@ -39,7 +38,7 @@ func (s *Source) getChapterMetadataByURL(chapterURL string) (*manga.Chapter, err
 
 	chapterAPIURL := fmt.Sprintf("%s/chapter/%s", baseAPIURL, chapterID)
 	var chapterAPIResp getChapterAPIResponse
-	_, err = s.client.Request("GET", chapterAPIURL, nil, &chapterAPIResp)
+	_, err = mangadexClient.Request("GET", chapterAPIURL, nil, &chapterAPIResp)
 	if err != nil {
 		if util.ErrorContains(err, "non-200 status code -> (404)") {
 			return nil, errordefs.ErrChapterNotFound
@@ -87,7 +86,6 @@ type getChapterAPIResponse struct {
 
 // GetLastChapterMetadata returns the last chapter of a manga by its URL
 func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, error) {
-	s.checkClient()
 
 	errorContext := "error while getting last chapter metadata of manga with URL '%s'"
 
@@ -99,7 +97,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, err
 	// URL gets the last chapter of the manga
 	mangaAPIURL := fmt.Sprintf("%s/manga/%s/feed?contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&translatedLanguage[]=en&order[chapter]=desc&limit=1&offset=0", baseAPIURL, mangaID)
 	var feedAPIResp getMangaFeedAPIResponse
-	_, err = s.client.Request("GET", mangaAPIURL, nil, &feedAPIResp)
+	_, err = mangadexClient.Request("GET", mangaAPIURL, nil, &feedAPIResp)
 	if err != nil {
 		if util.ErrorContains(err, "non-200 status code -> (404)") {
 			return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), errordefs.ErrChapterNotFound)
@@ -143,7 +141,6 @@ func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, err
 
 // GetChaptersMetadata returns the chapters of a manga by its URL
 func (s *Source) GetChaptersMetadata(mangaURL, _ string) ([]*manga.Chapter, error) {
-	s.checkClient()
 
 	errorContext := "error while getting chapters metadata"
 
@@ -194,7 +191,7 @@ func generateMangaFeed(s *Source, mangaURL string, chaptersChan chan<- *manga.Ch
 	for totalChapters >= requestOffset {
 		mangaAPIURL := fmt.Sprintf("%s/manga/%s/feed?contentRating[]=safe&contentRating[]=suggestive&contentRating[]=erotica&contentRating[]=pornographic&translatedLanguage[]=en&order[chapter]=desc&limit=%d&offset=%d", baseAPIURL, mangaID, requestLimit, requestOffset)
 		var feedAPIResp getMangaFeedAPIResponse
-		_, err = s.client.Request("GET", mangaAPIURL, nil, &feedAPIResp)
+		_, err = mangadexClient.Request("GET", mangaAPIURL, nil, &feedAPIResp)
 		if err != nil {
 			if util.ErrorContains(err, "non-200 status code -> (404)") {
 				err = util.AddErrorContext(err.Error(), errordefs.ErrMangaNotFound)

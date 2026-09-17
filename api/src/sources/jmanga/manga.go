@@ -14,7 +14,7 @@ import (
 
 // GetMangaMetadata scrapes the manga page and return the manga data
 func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
-	s.resetCollector()
+	c := newCollector()
 
 	errorContext := "error while getting manga metadata"
 
@@ -25,12 +25,12 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	var sharedErr error
 
 	// manga name
-	s.c.OnHTML("h2.manga-name", func(e *colly.HTMLElement) {
+	c.OnHTML("h2.manga-name", func(e *colly.HTMLElement) {
 		mangaReturn.Name = e.Text
 	})
 
 	// manga cover
-	s.c.OnHTML("div.manga-poster img", func(e *colly.HTMLElement) {
+	c.OnHTML("div.manga-poster img", func(e *colly.HTMLElement) {
 		coverURL := e.Attr("data-src")
 
 		var coverImg []byte
@@ -45,7 +45,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	})
 
 	// last released chapter
-	s.c.OnHTML("ul#ja-chaps > li:first-child", func(e *colly.HTMLElement) {
+	c.OnHTML("ul#ja-chaps > li:first-child", func(e *colly.HTMLElement) {
 		chapterName := e.DOM.Find("span.name > strong").Text()
 		chapter, err := extractChapter(chapterName)
 		if err != nil {
@@ -62,7 +62,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 		}
 	})
 
-	err := s.c.Visit(mangaURL)
+	err := c.Visit(mangaURL)
 	if err != nil {
 		if err.Error() == "Not Found" {
 			return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
@@ -80,14 +80,14 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 }
 
 func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, error) {
-	s.resetCollector()
+	c := newCollector()
 
 	errorContext := "error while searching manga"
 	mangaSearchResults := []*models.MangaSearchResult{}
 	var sharedErr error
 	var mangaCount int
 
-	s.c.OnHTML("div.manga_list-sbs div.item", func(e *colly.HTMLElement) {
+	c.OnHTML("div.manga_list-sbs div.item", func(e *colly.HTMLElement) {
 		if mangaCount >= limit {
 			return
 		}
@@ -125,7 +125,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 
 	term = url.QueryEscape(term)
 	mangaURL := baseSiteURL + "/?q=" + term
-	err := s.c.Visit(mangaURL)
+	err := c.Visit(mangaURL)
 	if err != nil {
 		if err.Error() == "Not Found" {
 			return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)

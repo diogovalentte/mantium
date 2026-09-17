@@ -14,7 +14,6 @@ import (
 
 // GetChapterMetadata returns a chapter by its chapter or URL
 func (s *Source) GetChapterMetadata(mangaURL, mangaInternalID, chapter, _, chapterInternalID string) (*manga.Chapter, error) {
-	s.checkClient()
 
 	errorContext := "error while getting metadata of chapter"
 	var err error
@@ -70,7 +69,6 @@ func (s *Source) GetChapterMetadata(mangaURL, mangaInternalID, chapter, _, chapt
 }
 
 func (s *Source) GetLastChapterMetadata(mangaURL, mangaInternalID string) (*manga.Chapter, error) {
-	s.checkClient()
 
 	errorContext := "error while getting last chapter metadata of manga with URL '%s' and internal ID '%s'"
 	var err error
@@ -110,7 +108,6 @@ func (s *Source) GetLastChapterMetadata(mangaURL, mangaInternalID string) (*mang
 
 // GetChaptersMetadata returns the chapters of a manga
 func (s *Source) GetChaptersMetadata(mangaURL, mangaInternalID string) ([]*manga.Chapter, error) {
-	s.checkClient()
 
 	errorContext := "error while getting chapters metadata"
 	var err error
@@ -171,7 +168,7 @@ func (s *Source) generateMangaChapters(mangaInternalID string, chaptersChan chan
 		json.NewEncoder(payload).Encode(body)
 
 		var chaptersAPIResp getChaptersAPIResponse
-		_, err := s.client.Request("POST", releasesAPIURL, payload, &chaptersAPIResp)
+		_, err := mangaUpdatesClient.Request("POST", releasesAPIURL, payload, &chaptersAPIResp)
 		if err != nil {
 			errChan <- err
 			return

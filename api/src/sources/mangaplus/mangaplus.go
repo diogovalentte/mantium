@@ -1,9 +1,9 @@
 package mangaplus
 
 // Source is the struct for a mangaplus source
-type Source struct {
-	client *Client
-}
+// It holds no mutable state: the Sources registry shares one instance
+// across every request, so any field written per call would be a race.
+type Source struct{}
 
 func (Source) GetName() string {
 	return "mangaplus"
@@ -15,9 +15,3 @@ var (
 	baseAPIURL      = "https://jumpg-webapi.tokyo-cdn.com/api"
 	mangaplusClient = NewMangaPlusClient()
 )
-
-func (s *Source) checkClient() {
-	if s.client == nil {
-		s.client = mangaplusClient
-	}
-}

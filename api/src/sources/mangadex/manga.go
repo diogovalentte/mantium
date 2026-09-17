@@ -15,7 +15,6 @@ import (
 
 // GetMangaMetadata returns the metadata of a manga given its URL
 func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
-	s.checkClient()
 
 	errorContext := "error while getting manga metadata"
 
@@ -29,7 +28,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 
 	mangaAPIURL := fmt.Sprintf("%s/manga/%s?includes[]=cover_art", baseAPIURL, mangadexMangaID)
 	var mangaAPIResp getMangaAPIResponse
-	_, err = s.client.Request("GET", mangaAPIURL, nil, &mangaAPIResp)
+	_, err = mangadexClient.Request("GET", mangaAPIURL, nil, &mangaAPIResp)
 	if err != nil {
 		if util.ErrorContains(err, "non-200 status code -> (404)") {
 			return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
@@ -105,7 +104,6 @@ type getMangaAPIResponse struct {
 }
 
 func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, error) {
-	s.checkClient()
 
 	errorContext := "error while searching manga"
 
@@ -124,7 +122,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 	searchURL := baseURL + "?" + params.Encode()
 
 	var searchAPIResp searchMangaAPIResponse
-	_, err := s.client.Request("GET", searchURL, nil, &searchAPIResp)
+	_, err := mangadexClient.Request("GET", searchURL, nil, &searchAPIResp)
 	if err != nil {
 		return nil, util.AddErrorContext(errorContext, err)
 	}
