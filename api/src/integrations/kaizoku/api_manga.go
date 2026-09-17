@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
+	"slices"
 
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/sources"
@@ -105,39 +107,60 @@ func (k *Kaizoku) GetManga(mangaName string) (*Manga, error) {
 func (k *Kaizoku) AddManga(manga *manga.Manga, tryOtherSources bool) error {
 	errorContext := "(kaizoku) error while adding manga '%s' / '%s'"
 
-	var lastError error
-	var errors []error
-	for source := range sources.GetSources() {
-		lastError = k.addMangaToKaizoku(manga)
-		if lastError != nil {
-			errors = append(errors, fmt.Errorf("error with source '%s': %s", manga.Source, lastError))
-			if tryOtherSources {
-				manga.Source = source
-				continue
-			}
-		}
-		break
+	err := k.addMangaToKaizoku(manga.Name, manga.Source)
+	if err == nil {
+		return nil
 	}
-	if lastError != nil {
-		if len(errors) == 1 {
-			return util.AddErrorContext(fmt.Sprintf(errorContext, manga.Name, manga.URL), errors[0])
-		}
-		return util.AddErrorContext(fmt.Sprintf(errorContext, manga.Name, manga.URL), fmt.Errorf("error with all sources: %s", errors))
+	errors := []error{fmt.Errorf("error with source '%s': %s", manga.Source, err)}
+
+	if !tryOtherSources {
+		return util.AddErrorContext(fmt.Sprintf(errorContext, manga.Name, manga.URL), errors[0])
 	}
 
-	return nil
+	// Iterate in a stable order so a retry behaves the same way twice, and
+	// never mutate the manga the caller passed in: the other integrations
+	// still need its original source to match its URL.
+	otherSources := slices.Sorted(maps.Keys(sources.GetSources()))
+	for _, source := range otherSources {
+		if source == manga.Source {
+			continue
+		}
+
+		err = k.addMangaToKaizoku(manga.Name, source)
+		if err == nil {
+			return nil
+		}
+		errors = append(errors, fmt.Errorf("error with source '%s': %s", source, err))
+	}
+
+	return util.AddErrorContext(fmt.Sprintf(errorContext, manga.Name, manga.URL), fmt.Errorf("error with all sources: %s", errors))
 }
 
-func (k *Kaizoku) addMangaToKaizoku(manga *manga.Manga) error {
-	mangaTitle := manga.Name
+func (k *Kaizoku) addMangaToKaizoku(mangaTitle, mangaSourceName string) error {
 	mangaInterval := k.DefaultInterval
-	mangaSource, err := k.getKaizokuSource(manga.Source)
+	mangaSource, err := k.getKaizokuSource(mangaSourceName)
 	if err != nil {
 		return err
 	}
-	reqBody := fmt.Sprintf(`{"0":{"json":{"title":"%s","source":"%s","interval":"%s"}}}`, mangaTitle, mangaSource, mangaInterval)
 
-	jsonData, err := json.Marshal(reqBody)
+	// Kaizoku's tRPC endpoint expects the procedure input as a JSON-encoded
+	// string, hence the second Marshal. Building the inner object with the
+	// encoder keeps titles containing quotes or backslashes from producing
+	// invalid JSON.
+	payload, err := json.Marshal(map[string]any{
+		"0": map[string]any{
+			"json": map[string]any{
+				"title":    mangaTitle,
+				"source":   mangaSource,
+				"interval": mangaInterval,
+			},
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("error while marshalling request body: %s", err)
+	}
+
+	jsonData, err := json.Marshal(string(payload))
 	if err != nil {
 		return fmt.Errorf("error while marshalling request body: %s", err)
 	}
@@ -153,7 +176,7 @@ func (k *Kaizoku) addMangaToKaizoku(manga *manga.Manga) error {
 		if util.ErrorContains(err, fmt.Sprintf("Cannot find the %s.", mangaTitle)) {
 			return fmt.Errorf("cannot find the manga. Maybe there is no Anilist page for this manga (Kaizoku can't add mangas that don't have one): Kaizoku API error: %s", err.Error())
 		}
-		return nil
+		return err
 	}
 
 	return nil
