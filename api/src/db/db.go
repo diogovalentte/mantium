@@ -5,11 +5,20 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"sync"
+	"sync/atomic"
+	"time"
 
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/rs/zerolog"
 
 	"github.com/diogovalentte/mantium/api/src/util"
+)
+
+const (
+	maxOpenConns    = 25
+	maxIdleConns    = 5
+	connMaxIdleTime = 5 * time.Minute
 )
 
 type dbConfigs struct {
@@ -40,8 +49,29 @@ func (c *dbConfigs) String() string {
 	return fmt.Sprintf("host=%s port=%s user=%s dbname=%s", c.Host, c.Port, c.User, c.DB)
 }
 
-// OpenConn opens a connection to the database
+var (
+	instance atomic.Pointer[sql.DB]
+	openMu   sync.Mutex
+)
+
+// OpenConn returns the database handle, opening it on first use.
+//
+// *sql.DB is a pool, not a connection, and it is safe for concurrent use, so
+// there is exactly one for the whole process. Callers must not close it:
+// every call site used to open its own pool and close it again, which meant a
+// fresh TCP connection and a round trip per database operation.
 func OpenConn() (*sql.DB, error) {
+	if db := instance.Load(); db != nil {
+		return db, nil
+	}
+
+	openMu.Lock()
+	defer openMu.Unlock()
+
+	if db := instance.Load(); db != nil {
+		return db, nil
+	}
+
 	configs := getConfigs()
 
 	db, err := sql.Open("postgres", configs.connString())
@@ -49,13 +79,33 @@ func OpenConn() (*sql.DB, error) {
 		return nil, util.AddErrorContext("error opening database connection", err)
 	}
 
-	err = db.Ping()
-	if err != nil {
+	db.SetMaxOpenConns(maxOpenConns)
+	db.SetMaxIdleConns(maxIdleConns)
+	db.SetConnMaxIdleTime(connMaxIdleTime)
+
+	// Not cached on failure, so a database that is still starting up can be
+	// picked up by a later call instead of poisoning every one of them.
+	if err = db.Ping(); err != nil {
 		db.Close()
 		return nil, util.AddErrorContext(fmt.Sprintf("error pinging database %s", configs), err)
 	}
 
+	instance.Store(db)
+
 	return db, nil
+}
+
+// CloseConn closes the shared pool. Only meant for process shutdown and tests.
+func CloseConn() error {
+	openMu.Lock()
+	defer openMu.Unlock()
+
+	db := instance.Swap(nil)
+	if db == nil {
+		return nil
+	}
+
+	return db.Close()
 }
 
 // CreateTables creates the tables in the database

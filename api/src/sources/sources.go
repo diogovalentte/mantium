@@ -153,7 +153,6 @@ func ChangeSourceTLDInDB(sourceName, newTLD string) error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, sourceName, newTLD), err)
 	}
-	defer _db.Close()
 
 	// Runs on every start, so skip the rows that already have the right TLD
 	// instead of rewriting the whole table and leaving dead tuples behind.

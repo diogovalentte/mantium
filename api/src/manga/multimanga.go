@@ -54,7 +54,6 @@ func (mm *MultiManga) InsertIntoDB() error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, mm), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -136,7 +135,6 @@ func (mm *MultiManga) DeleteFromDB() error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, mm), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -192,7 +190,6 @@ func (mm *MultiManga) UpdateStatusInDB(status Status) error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, mm), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -255,7 +252,6 @@ func (mm *MultiManga) UpdateCoverImgInDB(coverImg []byte, coverImgResized bool, 
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, mm, coverImgURL, len(coverImg)), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -315,7 +311,6 @@ func (mm *MultiManga) UpsertChapterIntoDB(chapter *Chapter) error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, chapter, mm), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -351,7 +346,6 @@ func (mm *MultiManga) UpdateCurrentMangaInDB() error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, mm, m), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -423,7 +417,6 @@ func (mm *MultiManga) AddManga(m *Manga) error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -470,7 +463,6 @@ func (mm *MultiManga) RemoveManga(m *Manga) error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -530,7 +522,6 @@ func GetMultiMangaFromDB(multimangaID ID) (*MultiManga, error) {
 	if err != nil {
 		return nil, util.AddErrorContext(fmt.Sprintf(contextError, multimangaID), err)
 	}
-	defer db.Close()
 
 	mm, err := getMultiMangaFromDB(multimangaID, db)
 	if err != nil {
@@ -553,7 +544,6 @@ func GetMultiMangasDB(getMangas bool) ([]*MultiManga, error) {
 	if err != nil {
 		return nil, util.AddErrorContext(contextError, err)
 	}
-	defer db.Close()
 
 	var multimangas []*MultiManga
 	if !getMangas {
@@ -864,7 +854,6 @@ func (mm *MultiManga) DeleteLastReadChapterFromDB() error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, mm.LastReadChapter, mm), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -1138,7 +1127,6 @@ func TurnIntoMultiManga(m *Manga) (*MultiManga, error) {
 	if err != nil {
 		return nil, util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {

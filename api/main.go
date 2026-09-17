@@ -40,7 +40,6 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	defer _db.Close()
 
 	log.Info().Msg("Creating tables and applying DB migrations...")
 	err = db.CreateTables(_db, log)
@@ -237,7 +236,6 @@ var migrations = []Migration{
 			if err != nil {
 				return util.AddErrorContext("error opening database connection", err)
 			}
-			defer db.Close()
 			_, err = db.Exec(query, version)
 			if err != nil {
 				return util.AddErrorContext("error updating version in database", err)
