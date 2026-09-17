@@ -15,7 +15,7 @@ from src.util.update_manga import (
     show_update_multimanga_form,
     show_update_multimanga_mangas_form,
 )
-from src.util.util import centered_container, get_logger, get_relative_time, tagger, set_is_dialog_open
+from src.util.util import centered_container, escape_html, get_logger, get_relative_time, safe_href, tagger, set_is_dialog_open
 from streamlit import session_state as ss
 from streamlit_extras.stylable_container import stylable_container
 from streamlit_javascript import st_javascript
@@ -45,6 +45,7 @@ class MainDashboard:
         self.sidebar()
 
         mangas = self.api_client.get_mangas()
+        total_mangas = len(mangas)
         filter_by_status = ss.get(
             "status_filter",
             self.status_filter_key,
@@ -55,7 +56,7 @@ class MainDashboard:
                 manga
                 for manga in mangas
                 if manga["Status"] == filter_by_status
-                and filter_by_name_term in ("".join(manga["SearchNames"])).upper()
+                and filter_by_name_term in ("\n".join(manga["SearchNames"])).upper()
             ]
         elif filter_by_status != 0:
             mangas = [manga for manga in mangas if manga["Status"] == filter_by_status]
@@ -63,7 +64,7 @@ class MainDashboard:
             mangas = [
                 manga
                 for manga in mangas
-                if filter_by_name_term in ("".join(manga["SearchNames"])).upper()
+                if filter_by_name_term in ("\n".join(manga["SearchNames"])).upper()
             ]
 
         mangas = self.api_client.sort_mangas(
@@ -77,7 +78,11 @@ class MainDashboard:
 
         can_load_more = False
 
-        if ss["configs"]["display"]["displayMode"] == "List View":
+        # The status filter defaults to "Reading", so an empty result is common
+        # and used to render nothing at all - no message, no way back.
+        if len(mangas) == 0:
+            self.show_empty_state(total_mangas)
+        elif ss["configs"]["display"]["displayMode"] == "List View":
             max_mangas_to_show = defaults.list_view_number_of_rows_to_show_first
             if len(mangas) > max_mangas_to_show:
                 self.show_mangas_list_view(mangas[:max_mangas_to_show])
@@ -137,6 +142,25 @@ class MainDashboard:
         js = """(window.parent.document.querySelector('meta[name="referrer"]') || window.parent.document.head.appendChild(Object.assign(window.parent.document.createElement("meta"), { name: "referrer" }))).setAttribute("content", "no-referrer");"""
         st_javascript(js)
         util.set_custom_js_to_none()
+
+    def show_empty_state(self, total_mangas: int):
+        if total_mangas == 0:
+            st.info(
+                "Your library is empty. Use **Add Manga** in the sidebar to get"
+                " started."
+            )
+            return
+
+        st.info("No manga matches the current filters.")
+
+        def clear_filters():
+            # Widget-backed keys can only be assigned from a callback, which
+            # runs before the widgets are instantiated on the next rerun.
+            ss["status_filter"] = 0
+            ss["search_manga"] = ""
+            ss["show_more_manga"] = False
+
+        st.button("Clear filters", on_click=clear_filters)
 
     def set_css(self):
         improve_css = """
@@ -223,10 +247,13 @@ class MainDashboard:
                 js = """window.parent.document.querySelector(".main").scrollTop = 0;"""
                 st_javascript(js)
 
+            # No index= here on purpose: Clear filters writes this key through
+            # the Session State API, and Streamlit warns when a widget has both
+            # an explicit default and a value set that way.
+            ss.setdefault("status_filter", self.status_filter_key)
             st.selectbox(
                 "Status",
                 defaults.manga_status_options,
-                index=self.sort_option_index,
                 on_change=status_filter_callback,
                 format_func=lambda index: defaults.manga_status_options[index],
                 key="status_filter",
@@ -238,7 +265,7 @@ class MainDashboard:
             st.selectbox(
                 "Sort By",
                 defaults.sort_options,
-                index=self.status_filter_key,
+                index=self.sort_option_index,
                 on_change=sort_callback,
                 key="mangas_sort",
             )
@@ -468,7 +495,7 @@ class MainDashboard:
             f"""<h1 class="manga_header" style='padding-bottom: 24px; margin-top: 16px; margin-bottom: 8px; {"animation: pulse 2s infinite alternate;" if unread else ""}'>
                     <div style='position: relative; display: flex; box-sizing: border-box;'>
                         <span>
-                            {'<a class="manga_header" href="{}" target="_blank">{}</a>'.format(manga["URL"], manga["Name"]) if manga["URL"] != "" else f'<span class="manga_header">{manga["Name"]}</span>'}
+                            {'<a class="manga_header" href="{}" target="_blank">{}</a>'.format(safe_href(manga["URL"]), escape_html(manga["Name"])) if safe_href(manga["URL"]) != "" else '<span class="manga_header">{}</span>'.format(escape_html(manga["Name"]))}
                         </span>
                     </div>
                 </h1>
@@ -687,7 +714,7 @@ class MainDashboard:
                     class="manga_header" style='font-size: 25px; {"animation: pulse 2s infinite alternate;" if unread else ""}'>
                         <div style='position: relative; display: flex; box-sizing: border-box;'>
                             <span>
-                                {'<a class="manga_header" href="{}" target="_blank">{}</a>'.format(manga["URL"], manga["Name"]) if manga["URL"] != "" else f'<span class="manga_header">{manga["Name"]}</span>'}
+                                {'<a class="manga_header" href="{}" target="_blank">{}</a>'.format(safe_href(manga["URL"]), escape_html(manga["Name"])) if safe_href(manga["URL"]) != "" else '<span class="manga_header">{}</span>'.format(escape_html(manga["Name"]))}
                             </span>
                         </div>
                     </h1>

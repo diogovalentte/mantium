@@ -1,5 +1,4 @@
 from typing import Any
-import uuid
 import hashlib
 
 import src.util.defaults as defaults
@@ -8,9 +7,11 @@ from src.api.api_client import get_api_client
 from src.exceptions import APIException
 from src.util.util import (
     centered_container,
+    escape_html,
     get_logger,
     get_relative_time,
     get_updated_at_datetime,
+    safe_href,
     tagger,
     set_is_dialog_open,
 )
@@ -387,7 +388,17 @@ def show_search_result_mangas(
     """
     manga_container_height = 660
     col_index = 0
+    # Some sources return the same manga more than once - JManga answers
+    # "one" with OMEGA ONE twice, under two spellings and two cover URLs.
+    # Showing it twice is wrong on its own, and two entries sharing a URL and
+    # a cover would collide on the select button's key and raise
+    # StreamlitDuplicateElementKey, taking the whole search down.
+    seen_urls = set()
     for manga in mangas:
+        if manga["URL"] in seen_urls:
+            continue
+        seen_urls.add(manga["URL"])
+
         if col_index == len(cols_list):
             col_index = 0
         with cols_list[col_index]:
@@ -396,9 +407,7 @@ def show_search_result_mangas(
                 key = (
                     "center_container_show_search_result_mangas"
                     + hashlib.md5(manga["URL"].encode()).hexdigest()
-                    + str(uuid.uuid4()) # JManga returns the same manga multiple times sometimes
                 )
-                print(f"manga name: {manga['Name']}, manga url: {manga['URL']}, key: {key}")
                 with centered_container(key):
                     show_search_result_manga(manga, button_name, key_to_save_manga)
         col_index += 1
@@ -457,7 +466,7 @@ def show_search_result_manga(
     st.markdown(
         f"""<h1
             class="manga_header" style='text-align: center; margin-top: {margin}px; margin-bottom: {margin}px; font-size: {font_size}px;'>
-                <a class="manga_header" href="{manga["URL"]}" target="_blank">{manga["Name"]}</a>
+                <a class="manga_header" href="{safe_href(manga["URL"])}" target="_blank">{escape_html(manga["Name"])}</a>
             </h1>
         """,
         unsafe_allow_html=True,

@@ -11,10 +11,12 @@ from src.exceptions import APIException
 from src.util.add_manga import show_add_custom_manga_form, show_search_manga_term_form
 from src.util.util import (
     centered_container,
+    escape_html,
     get_logger,
     get_relative_time,
     get_source_name_and_colors,
     get_updated_at_datetime,
+    safe_href,
     tagger,
     set_is_dialog_open,
 )
@@ -155,7 +157,7 @@ def show_update_multimanga(multimanga_id):
                         )
                     else:
                         st.warning(
-                            f"Could not get the chapters list from the current manga. Maybe the source site is down or the manga URL changed in the source site. Others manga returned empty chapters list."
+                            "Could not get the chapters list from the current manga. Maybe the source site is down or the manga URL changed in the source site. The other mangas returned an empty chapters list."
                         )
             elif ss.get("update_multimanga_chapter_options", []) != [] and other_manga_source_name != "" and multimanga["CurrentManga"]["Source"] != defaults.CUSTOM_MANGA_SOURCE:
                 st.warning(
@@ -181,7 +183,7 @@ def show_update_multimanga(multimanga_id):
 
             st.selectbox(
                 "From chapters list",
-                help="Select the chapter from the chapters list if you want to update it to a chapter that was released from source site. If the chapter you want to update to is not in the chapters list, write it manually in the text input bellow.",
+                help="Select the chapter from the chapters list if you want to update it to a chapter that was released from source site. If the chapter you want to update to is not in the chapters list, write it manually in the text input below.",
                 index=last_read_chapter_idx,
                 options=ss.get("update_multimanga_chapter_options", []),
                 format_func=lambda chapter: f"Ch. {chapter['Chapter']}{(' (' + get_relative_time(get_updated_at_datetime(chapter['UpdatedAt']))) + ')' if chapter['UpdatedAt'] != '0001-01-01T00:00:00Z' else ''}",
@@ -190,7 +192,7 @@ def show_update_multimanga(multimanga_id):
 
             if last_read_chapter_idx is None and multimanga["LastReadChapter"]["Chapter"] != "" and multimanga["LastReadChapter"]["FromSourceSite"] and ss.get("update_multimanga_chapter_options", []) != []:
                 st.warning(
-                    "Last read chapter not found in chapters list. Select it again, leave empty or write it manually bellow."
+                    "Last read chapter not found in chapters list. Select it again, leave it empty, or write it manually below."
                 )
 
             st.divider()
@@ -688,7 +690,7 @@ def show_multimanga_manga(
     st.markdown(
         f"""<h1
             class="manga_header" style='padding-top: 16px; text-align: center; margin-top: {margin}px; margin-bottom: {margin}px; font-size: {font_size}px;'>
-                <a class="manga_header" href="{manga["URL"]}" target="_blank">{manga["Name"]}</a>
+                <a class="manga_header" href="{safe_href(manga["URL"])}" target="_blank">{escape_html(manga["Name"])}</a>
             </h1>
         """,
         unsafe_allow_html=True,
