@@ -238,7 +238,7 @@ class MainDashboard:
             st.selectbox(
                 "Sort By",
                 defaults.sort_options,
-                index=self.status_filter_key,
+                index=self.sort_option_index,
                 on_change=sort_callback,
                 key="mangas_sort",
             )
