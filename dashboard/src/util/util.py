@@ -1,3 +1,4 @@
+import html
 import logging
 from streamlit import session_state as ss
 import pathlib
@@ -186,3 +187,27 @@ def is_unread_chapter(last_read_chapter: str, last_released_chapter: str) -> boo
         return True
 
     return last_read_chapter_number < last_released_chapter_number
+
+
+def escape_html(value) -> str:
+    """Escape a value that is interpolated into an unsafe_allow_html block.
+
+    Manga names reach the cards unescaped today, so a custom manga named
+    "Teste <b>NEGRITO</b>" renders the tag as markup instead of showing it:
+    the name displayed is not the name stored. Streamlit strips event
+    handlers, so this is a correctness problem rather than a scripting one.
+    """
+    return html.escape(str(value), quote=True)
+
+
+def safe_href(url) -> str:
+    """Return url escaped for an href attribute, or "" if it is not a web URL.
+
+    A custom manga's URL field is free text, so it can hold anything - only
+    http and https should ever end up in a link.
+    """
+    url = str(url).strip()
+    if not url.lower().startswith(("http://", "https://")):
+        return ""
+
+    return html.escape(url, quote=True)

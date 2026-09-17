@@ -11,10 +11,12 @@ from src.exceptions import APIException
 from src.util.add_manga import show_add_custom_manga_form, show_search_manga_term_form
 from src.util.util import (
     centered_container,
+    escape_html,
     get_logger,
     get_relative_time,
     get_source_name_and_colors,
     get_updated_at_datetime,
+    safe_href,
     tagger,
     set_is_dialog_open,
 )
@@ -688,7 +690,7 @@ def show_multimanga_manga(
     st.markdown(
         f"""<h1
             class="manga_header" style='padding-top: 16px; text-align: center; margin-top: {margin}px; margin-bottom: {margin}px; font-size: {font_size}px;'>
-                <a class="manga_header" href="{manga["URL"]}" target="_blank">{manga["Name"]}</a>
+                <a class="manga_header" href="{safe_href(manga["URL"])}" target="_blank">{escape_html(manga["Name"])}</a>
             </h1>
         """,
         unsafe_allow_html=True,

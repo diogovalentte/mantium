@@ -15,7 +15,7 @@ from src.util.update_manga import (
     show_update_multimanga_form,
     show_update_multimanga_mangas_form,
 )
-from src.util.util import centered_container, get_logger, get_relative_time, tagger, set_is_dialog_open
+from src.util.util import centered_container, escape_html, get_logger, get_relative_time, safe_href, tagger, set_is_dialog_open
 from streamlit import session_state as ss
 from streamlit_extras.stylable_container import stylable_container
 from streamlit_javascript import st_javascript
@@ -495,7 +495,7 @@ class MainDashboard:
             f"""<h1 class="manga_header" style='padding-bottom: 24px; margin-top: 16px; margin-bottom: 8px; {"animation: pulse 2s infinite alternate;" if unread else ""}'>
                     <div style='position: relative; display: flex; box-sizing: border-box;'>
                         <span>
-                            {'<a class="manga_header" href="{}" target="_blank">{}</a>'.format(manga["URL"], manga["Name"]) if manga["URL"] != "" else f'<span class="manga_header">{manga["Name"]}</span>'}
+                            {'<a class="manga_header" href="{}" target="_blank">{}</a>'.format(safe_href(manga["URL"]), escape_html(manga["Name"])) if safe_href(manga["URL"]) != "" else '<span class="manga_header">{}</span>'.format(escape_html(manga["Name"]))}
                         </span>
                     </div>
                 </h1>
@@ -714,7 +714,7 @@ class MainDashboard:
                     class="manga_header" style='font-size: 25px; {"animation: pulse 2s infinite alternate;" if unread else ""}'>
                         <div style='position: relative; display: flex; box-sizing: border-box;'>
                             <span>
-                                {'<a class="manga_header" href="{}" target="_blank">{}</a>'.format(manga["URL"], manga["Name"]) if manga["URL"] != "" else f'<span class="manga_header">{manga["Name"]}</span>'}
+                                {'<a class="manga_header" href="{}" target="_blank">{}</a>'.format(safe_href(manga["URL"]), escape_html(manga["Name"])) if safe_href(manga["URL"]) != "" else '<span class="manga_header">{}</span>'.format(escape_html(manga["Name"]))}
                             </span>
                         </div>
                     </h1>
