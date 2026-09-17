@@ -2509,33 +2509,22 @@ func KaizokuTriggerChaptersDownload(logger *zerolog.Logger) error {
 }
 
 func waitUntilEmptyCheckFixOutOfSyncChaptersQueues(kaizoku *kaizoku.Kaizoku, timeout time.Duration, retryInterval time.Duration, logger *zerolog.Logger) error {
-	result := make(chan error)
-	go func() {
-		for {
-			jobsCount, err := getCheckFixOutOfSyncChaptersActiveWaitingJobs(kaizoku)
-			if err != nil {
-				result <- err
-				return
-			}
-			logger.Debug().Msgf("Jobs in checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues: %d", jobsCount)
-			if jobsCount == 0 {
-				result <- nil
-				return
-			}
-			time.Sleep(retryInterval)
-		}
-	}()
-
-	select {
-	case <-time.After(timeout):
-		return fmt.Errorf("timeout while waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku. Current timeout is %s, maybe try to increase it?", timeout.String())
-	case err := <-result:
+	deadline := time.Now().Add(timeout)
+	for {
+		jobsCount, err := getCheckFixOutOfSyncChaptersActiveWaitingJobs(kaizoku)
 		if err != nil {
 			return err
 		}
-	}
+		logger.Debug().Msgf("Jobs in checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues: %d", jobsCount)
+		if jobsCount == 0 {
+			return nil
+		}
 
-	return nil
+		if time.Now().Add(retryInterval).After(deadline) {
+			return fmt.Errorf("timeout while waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku. Current timeout is %s, maybe try to increase it?", timeout.String())
+		}
+		time.Sleep(retryInterval)
+	}
 }
 
 func retryKaizokuJob(jobFunc func() error, maxRetries int, retryInterval time.Duration, logger *zerolog.Logger, errorMessage string) error {
