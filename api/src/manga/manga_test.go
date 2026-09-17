@@ -89,7 +89,6 @@ func TestMangaDBLifeCycle(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer db.Close()
 
 		tx, err := db.Begin()
 		if err != nil {
@@ -263,7 +262,6 @@ func TestMangaWithoutChaptersDBLifeCycle(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer db.Close()
 
 		tx, err := db.Begin()
 		if err != nil {

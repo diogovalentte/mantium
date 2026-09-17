@@ -5,11 +5,20 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"sync"
+	"sync/atomic"
+	"time"
 
 	_ "github.com/lib/pq" // postgres driver
 	"github.com/rs/zerolog"
 
 	"github.com/diogovalentte/mantium/api/src/util"
+)
+
+const (
+	maxOpenConns    = 25
+	maxIdleConns    = 5
+	connMaxIdleTime = 5 * time.Minute
 )
 
 type dbConfigs struct {
@@ -20,31 +29,83 @@ type dbConfigs struct {
 	Password string
 }
 
-func getConnString() string {
-	configs := &dbConfigs{
+func getConfigs() *dbConfigs {
+	return &dbConfigs{
 		Host:     os.Getenv("POSTGRES_HOST"),
 		Port:     os.Getenv("POSTGRES_PORT"),
 		DB:       os.Getenv("POSTGRES_DB"),
 		User:     os.Getenv("POSTGRES_USER"),
 		Password: os.Getenv("POSTGRES_PASSWORD"),
 	}
-
-	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", configs.Host, configs.Port, configs.User, configs.Password, configs.DB)
 }
 
-// OpenConn opens a connection to the database
+func (c *dbConfigs) connString() string {
+	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", c.Host, c.Port, c.User, c.Password, c.DB)
+}
+
+// String describes the target database without the password, so it is safe to
+// put in an error message or a log line.
+func (c *dbConfigs) String() string {
+	return fmt.Sprintf("host=%s port=%s user=%s dbname=%s", c.Host, c.Port, c.User, c.DB)
+}
+
+var (
+	instance atomic.Pointer[sql.DB]
+	openMu   sync.Mutex
+)
+
+// OpenConn returns the database handle, opening it on first use.
+//
+// *sql.DB is a pool, not a connection, and it is safe for concurrent use, so
+// there is exactly one for the whole process. Callers must not close it:
+// every call site used to open its own pool and close it again, which meant a
+// fresh TCP connection and a round trip per database operation.
 func OpenConn() (*sql.DB, error) {
-	db, err := sql.Open("postgres", getConnString())
+	if db := instance.Load(); db != nil {
+		return db, nil
+	}
+
+	openMu.Lock()
+	defer openMu.Unlock()
+
+	if db := instance.Load(); db != nil {
+		return db, nil
+	}
+
+	configs := getConfigs()
+
+	db, err := sql.Open("postgres", configs.connString())
 	if err != nil {
 		return nil, util.AddErrorContext("error opening database connection", err)
 	}
 
-	err = db.Ping()
-	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf("error pinging database %s", getConnString()), err)
+	db.SetMaxOpenConns(maxOpenConns)
+	db.SetMaxIdleConns(maxIdleConns)
+	db.SetConnMaxIdleTime(connMaxIdleTime)
+
+	// Not cached on failure, so a database that is still starting up can be
+	// picked up by a later call instead of poisoning every one of them.
+	if err = db.Ping(); err != nil {
+		db.Close()
+		return nil, util.AddErrorContext(fmt.Sprintf("error pinging database %s", configs), err)
 	}
 
+	instance.Store(db)
+
 	return db, nil
+}
+
+// CloseConn closes the shared pool. Only meant for process shutdown and tests.
+func CloseConn() error {
+	openMu.Lock()
+	defer openMu.Unlock()
+
+	db := instance.Swap(nil)
+	if db == nil {
+		return nil
+	}
+
+	return db.Close()
 }
 
 // CreateTables creates the tables in the database
@@ -238,6 +299,12 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
         ALTER TABLE "chapters" ALTER COLUMN "manga_id" DROP NOT NULL;
         ALTER TABLE "chapters" ALTER COLUMN "url" TYPE text;
         ALTER TABLE "multimangas" ALTER COLUMN "cover_img_url" TYPE text;
+
+        -- Postgres does not index the referencing side of a foreign key, so
+        -- every join on multimanga_id and every cascading delete of a
+        -- multimanga had to scan the whole mangas table.
+        CREATE INDEX IF NOT EXISTS "mangas_multimanga_id_idx" ON "mangas" ("multimanga_id");
+        CREATE INDEX IF NOT EXISTS "mangas_source_idx" ON "mangas" ("source");
 
         do $$
        	begin

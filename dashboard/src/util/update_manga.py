@@ -104,9 +104,11 @@ def show_update_multimanga(multimanga_id):
     if len(multimanga["Mangas"]) != len(custom_manga_ids):
         with st.spinner("Getting manga chapters..."):
             used_ids = custom_manga_ids.copy()
-            for manga in multimanga["Mangas"]:
-                if manga["Source"] == defaults.CUSTOM_MANGA_SOURCE:
-                    continue
+            # One attempt per non-custom manga: each candidate the API hands us
+            # is excluded from the next attempt, so a source that fails is never
+            # picked twice and every source gets tried once.
+            for _ in range(len(multimanga["Mangas"]) - len(custom_manga_ids)):
+                manga_to_get_chapters = None
                 try:
                     manga_to_get_chapters = api_client.choose_current_manga(multimanga["ID"], exclude_manga_ids=used_ids)
                     ss["update_multimanga_chapter_options"] = (
@@ -123,7 +125,8 @@ def show_update_multimanga(multimanga_id):
                 except APIException as e:
                     logger.exception(e)
                 finally:
-                    used_ids.append(manga["ID"])
+                    if manga_to_get_chapters is not None:
+                        used_ids.append(manga_to_get_chapters["ID"])
 
     with st.form(key="update_multimanga_form", border=False):
         st.selectbox(

@@ -1,4 +1,5 @@
 import requests
+from src.api.timeouts import REQUEST_TIMEOUT
 from src.exceptions import APIException
 
 
@@ -14,7 +15,7 @@ class DashboardAPIClient:
         url = self.base_api_url + "/v1/health"
 
         try:
-            res = requests.get(url)
+            res = requests.get(url, timeout=REQUEST_TIMEOUT)
         except requests.exceptions.ConnectionError:
             raise Exception(
                 "error while checking the health of the API at "
@@ -40,7 +41,7 @@ class DashboardAPIClient:
         """
         url = self.base_api_url + "/v1/dashboard/last_update"
 
-        res = requests.get(url)
+        res = requests.get(url, timeout=REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
@@ -62,7 +63,7 @@ class DashboardAPIClient:
         """
         url = self.base_api_url + "/v1/dashboard/configs"
 
-        res = requests.get(url)
+        res = requests.get(url, timeout=REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
@@ -87,7 +88,7 @@ class DashboardAPIClient:
         """
         url = self.base_api_url + "/v1/dashboard/configs"
 
-        res = requests.post(url, json=configs)
+        res = requests.post(url, json=configs, timeout=REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
@@ -107,7 +108,7 @@ class DashboardAPIClient:
         """
         url = self.base_api_url + "/v1/dashboard/last_background_error"
 
-        res = requests.get(url)
+        res = requests.get(url, timeout=REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
@@ -129,7 +130,7 @@ class DashboardAPIClient:
         """
         url = self.base_api_url + "/v1/dashboard/last_background_error"
 
-        res = requests.delete(url)
+        res = requests.delete(url, timeout=REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
@@ -149,7 +150,7 @@ class DashboardAPIClient:
         """
         url = self.base_api_url + "/v1/dashboard/updated_message"
 
-        res = requests.get(url)
+        res = requests.get(url, timeout=REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(

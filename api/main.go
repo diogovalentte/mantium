@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -40,7 +39,6 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	defer _db.Close()
 
 	log.Info().Msg("Creating tables and applying DB migrations...")
 	err = db.CreateTables(_db, log)
@@ -123,10 +121,22 @@ func init() {
 }
 
 func main() {
-	router := api.SetupRouter()
-	router.SetTrustedProxies(nil)
+	log := util.GetLogger(zerolog.Level(config.GlobalConfigs.API.LogLevelInt))
 
-	router.Run(":" + os.Getenv("API_PORT"))
+	router := api.SetupRouter()
+	if err := router.SetTrustedProxies(nil); err != nil {
+		log.Fatal().Err(err).Msg("Error configuring trusted proxies")
+	}
+
+	port := config.GlobalConfigs.API.Port
+	if port == "" {
+		port = "8080"
+	}
+
+	log.Info().Msgf("Starting the API on port %s", port)
+	if err := router.Run(":" + port); err != nil {
+		log.Fatal().Err(err).Msg("Error starting the API")
+	}
 }
 
 func updateMangasTLDs() error {
@@ -237,7 +247,6 @@ var migrations = []Migration{
 			if err != nil {
 				return util.AddErrorContext("error opening database connection", err)
 			}
-			defer db.Close()
 			_, err = db.Exec(query, version)
 			if err != nil {
 				return util.AddErrorContext("error updating version in database", err)

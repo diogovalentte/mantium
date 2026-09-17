@@ -14,7 +14,6 @@ func LoadConfigsFromDB(configs *DashboardConfigs) error {
 	if err != nil {
 		return util.AddErrorContext(contextError, err)
 	}
-	defer db.Close()
 
 	err = db.QueryRow(`
 		SELECT
@@ -42,7 +41,6 @@ func SetDefaultConfigsInDB() error {
 	if err != nil {
 		return util.AddErrorContext(contextError, err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -80,7 +78,6 @@ func SaveConfigsToDB(configs *DashboardConfigs) error {
 	if err != nil {
 		return util.AddErrorContext(contextError, err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {

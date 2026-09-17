@@ -54,7 +54,6 @@ func (mm *MultiManga) InsertIntoDB() error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, mm), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -136,7 +135,6 @@ func (mm *MultiManga) DeleteFromDB() error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, mm), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -192,7 +190,6 @@ func (mm *MultiManga) UpdateStatusInDB(status Status) error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, mm), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -255,7 +252,6 @@ func (mm *MultiManga) UpdateCoverImgInDB(coverImg []byte, coverImgResized bool, 
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, mm, coverImgURL, len(coverImg)), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -315,7 +311,6 @@ func (mm *MultiManga) UpsertChapterIntoDB(chapter *Chapter) error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, chapter, mm), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -351,7 +346,6 @@ func (mm *MultiManga) UpdateCurrentMangaInDB() error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, mm, m), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -423,7 +417,6 @@ func (mm *MultiManga) AddManga(m *Manga) error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -470,7 +463,6 @@ func (mm *MultiManga) RemoveManga(m *Manga) error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -530,7 +522,6 @@ func GetMultiMangaFromDB(multimangaID ID) (*MultiManga, error) {
 	if err != nil {
 		return nil, util.AddErrorContext(fmt.Sprintf(contextError, multimangaID), err)
 	}
-	defer db.Close()
 
 	mm, err := getMultiMangaFromDB(multimangaID, db)
 	if err != nil {
@@ -553,7 +544,6 @@ func GetMultiMangasDB(getMangas bool) ([]*MultiManga, error) {
 	if err != nil {
 		return nil, util.AddErrorContext(contextError, err)
 	}
-	defer db.Close()
 
 	var multimangas []*MultiManga
 	if !getMangas {
@@ -728,6 +718,10 @@ func getMultiMangasWithoutMangasDB(db *sql.DB) ([]*MultiManga, error) {
 		multiMangas = append(multiMangas, &multimanga)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return multiMangas, nil
 }
 
@@ -765,6 +759,7 @@ func getMultiMangasWithMangasDB(db *sql.DB) ([]*MultiManga, error) {
 	defer rows.Close()
 
 	var multiMangas []*MultiManga
+	var currentMangaIDs []int
 
 	for rows.Next() {
 		var multimanga MultiManga
@@ -809,14 +804,26 @@ func getMultiMangasWithMangasDB(db *sql.DB) ([]*MultiManga, error) {
 			multimanga.LastReadChapter = &multiLastReadChapter
 		}
 
-		mangas, err := getMultiMangaMangasFromDB(multimanga.ID, db)
-		if err != nil {
-			return nil, err
-		}
-		multimanga.Mangas = mangas
+		multiMangas = append(multiMangas, &multimanga)
+		currentMangaIDs = append(currentMangaIDs, currentMangaID)
+	}
 
-		for _, manga := range mangas {
-			if manga.ID == ID(currentMangaID) {
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// One query for every multimanga's mangas, instead of one per multimanga
+	// issued while the outer result set is still open.
+	mangasByMultiManga, err := queryMultiMangaMangas(db, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	for i, multimanga := range multiMangas {
+		multimanga.Mangas = mangasByMultiManga[multimanga.ID]
+
+		for _, manga := range multimanga.Mangas {
+			if manga.ID == ID(currentMangaIDs[i]) {
 				multimanga.CurrentManga = manga
 				break
 			}
@@ -826,12 +833,10 @@ func getMultiMangasWithMangasDB(db *sql.DB) ([]*MultiManga, error) {
 			return nil, fmt.Errorf("current manga of multimanga with ID '%d' not found in DB", multimanga.ID)
 		}
 
-		err = validateMultiManga(&multimanga)
+		err = validateMultiManga(multimanga)
 		if err != nil {
 			return nil, err
 		}
-
-		multiMangas = append(multiMangas, &multimanga)
 	}
 
 	return multiMangas, nil
@@ -849,7 +854,6 @@ func (mm *MultiManga) DeleteLastReadChapterFromDB() error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, mm.LastReadChapter, mm), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -977,6 +981,17 @@ func getMultiMangaFromDB(multimangaID ID, db *sql.DB) (*MultiManga, error) {
 }
 
 func getMultiMangaMangasFromDB(multiMangaID ID, db *sql.DB) ([]*Manga, error) {
+	mangasByMultiManga, err := queryMultiMangaMangas(db, &multiMangaID)
+	if err != nil {
+		return nil, err
+	}
+
+	return mangasByMultiManga[multiMangaID], nil
+}
+
+// queryMultiMangaMangas loads the mangas of one multimanga, or of every
+// multimanga when multiMangaID is nil, grouped by multimanga.
+func queryMultiMangaMangas(db *sql.DB, multiMangaID *ID) (map[ID][]*Manga, error) {
 	query := `
         SELECT 
             multimangas.status AS multimanga_status,
@@ -1013,16 +1028,21 @@ func getMultiMangaMangasFromDB(multiMangaID ID, db *sql.DB) ([]*Manga, error) {
             mangas ON mangas.multimanga_id = multimangas.id
         LEFT JOIN 
             chapters AS last_released_chapter ON last_released_chapter.id = mangas.last_released_chapter
-        WHERE 
-            multimangas.id = $1
     `
-	rows, err := db.Query(query, multiMangaID)
+
+	var args []any
+	if multiMangaID != nil {
+		query += "\n        WHERE multimangas.id = $1"
+		args = append(args, *multiMangaID)
+	}
+
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var mangas []*Manga
+	mangas := make(map[ID][]*Manga)
 
 	for rows.Next() {
 		var currentManga Manga
@@ -1087,7 +1107,11 @@ func getMultiMangaMangasFromDB(multiMangaID ID, db *sql.DB) ([]*Manga, error) {
 			return nil, err
 		}
 
-		mangas = append(mangas, &currentManga)
+		mangas[currentManga.MultiMangaID] = append(mangas[currentManga.MultiMangaID], &currentManga)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return mangas, nil
@@ -1103,7 +1127,6 @@ func TurnIntoMultiManga(m *Manga) (*MultiManga, error) {
 	if err != nil {
 		return nil, util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {

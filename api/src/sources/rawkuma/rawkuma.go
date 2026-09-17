@@ -3,15 +3,17 @@ package rawkuma
 
 import (
 	"github.com/gocolly/colly/v2"
+
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 var baseSiteURL = "https://rawkuma.net"
 
-// Source is the struct for the Rawkuma source
-type Source struct {
-	col    *colly.Collector
-	client *Client
-}
+// Source is the struct for the Rawkuma source.
+// It holds no mutable state: the Sources registry shares one instance across
+// every request, so a collector kept on the struct would be swapped and
+// visited by concurrent goroutines, mixing up results between mangas.
+type Source struct{}
 
 func (Source) GetName() string {
 	return "rawkuma"
@@ -23,18 +25,7 @@ func newCollector() *colly.Collector {
 	c := colly.NewCollector(
 		colly.UserAgent(userAgent),
 	)
+	c.SetRequestTimeout(util.ExternalRequestTimeout)
 
 	return c
-}
-
-func (s *Source) resetCollector() {
-	if s.col != nil {
-		s.col.Wait()
-	}
-
-	s.col = newCollector()
-}
-
-func (s *Source) resetAPIClient() {
-	s.client = newAPIClient()
 }

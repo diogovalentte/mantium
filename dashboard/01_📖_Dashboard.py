@@ -39,7 +39,6 @@ class MainDashboard:
         self.set_css()
 
         ss["is_dialog_open"] = False
-        self.check_dashboard_error()
 
         ss["updated_message"], ss["updated_version"] = self.api_client.get_updated_message()
 
@@ -983,13 +982,6 @@ class MainDashboard:
                     ss["configs_update_error_message"] = "Error while saving settings"
                     st.rerun()
 
-    def check_dashboard_error(self):
-        if ss.get("dashboard_error", False):
-            st.error("An unexcepted error occurred. Please check the DASHBOARD logs.")
-            st.info("You can try to refresh the page.")
-            ss["dashboard_error"] = False
-            st.stop()
-
     @st.fragment(run_every=5)
     def update_dashboard_job(self):
         last_update = self.api_client.check_for_updates()
@@ -1018,11 +1010,14 @@ def main(api_client):
 
 if __name__ == "__main__":
     api_client = get_api_client()
-    api_client.check_health()
 
+    # st.rerun() and st.stop() raise BaseException subclasses, so they pass
+    # through this handler untouched.
     try:
+        api_client.check_health()
         main(api_client)
     except Exception as e:
         logger.exception(e)
-        ss["dashboard_error"] = True
-        st.rerun()
+        st.error("An unexpected error occurred. Please check the DASHBOARD logs.")
+        st.info("You can try to refresh the page.")
+        st.stop()

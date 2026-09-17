@@ -3,6 +3,7 @@ from typing import Any
 from urllib.parse import urljoin
 
 import requests
+from src.api.timeouts import SOURCE_REQUEST_TIMEOUT
 import src.util.defaults as defaults
 from src.exceptions import APIException
 from src.util.util import get_updated_at_datetime
@@ -17,7 +18,7 @@ class MangaAPIClient:
         url = self.base_manga_url
         url = f"{url}s"
 
-        res = requests.get(url)
+        res = requests.get(url, timeout=SOURCE_REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
@@ -82,7 +83,7 @@ class MangaAPIClient:
             f"{url}?id={manga_id}&url={manga_url}&manga_internal_id={manga_internal_id}"
         )
 
-        res = requests.get(url)
+        res = requests.get(url, timeout=SOURCE_REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
@@ -108,7 +109,7 @@ class MangaAPIClient:
             "source": source,
         }
 
-        res = requests.post(url, json=request_body)
+        res = requests.post(url, json=request_body, timeout=SOURCE_REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(

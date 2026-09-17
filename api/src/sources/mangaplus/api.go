@@ -20,7 +20,9 @@ type Client struct {
 
 // NewMangaPlusClient creates a new Manga Plus API client
 func NewMangaPlusClient() *Client {
-	client := http.Client{}
+	client := http.Client{
+		Timeout: util.ExternalRequestTimeout,
+	}
 	header := http.Header{
 		"Accept":     []string{"*/*"},
 		"User-Agent": []string{"okhttp/4.9.0"},

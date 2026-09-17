@@ -1,5 +1,9 @@
-# Outdated tests, need to be updated
+# Outdated: these call MangaAPIClient methods that moved to MultiMangaAPIClient
+# and CustomMangaAPIClient in the multimanga refactor. They also need a running
+# API and database, so they are marked integration and skipped by default.
 from datetime import datetime
+
+import pytest
 
 from src.api.manga_api import MangaAPIClient
 
@@ -62,6 +66,7 @@ test_mangas = {
 }
 
 
+@pytest.mark.integration
 class TestMangaAPI:
     def setup_method(self, _):
         self.manga = MangaAPIClient("http://localhost:8080")

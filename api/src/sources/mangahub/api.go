@@ -23,6 +23,7 @@ type Client struct {
 // NewMangaHubClient creates a new MangaHub API client
 func NewMangaHubClient() *Client {
 	client := http.Client{
+		Timeout: util.ExternalRequestTimeout,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
 				MaxVersion: tls.VersionTLS12,

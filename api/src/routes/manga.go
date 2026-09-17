@@ -1514,6 +1514,7 @@ func GetMangasiFrame(c *gin.Context) {
 		limit, err = strconv.Atoi(queryLimit)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"message": "limit must be a number"})
+			return
 		}
 	}
 
@@ -2016,57 +2017,42 @@ func UpdateMangasMetadata(c *gin.Context) {
 	type result struct {
 		mangaWithNewChapters *manga.Manga
 		multimangaErrors     []string
+		newMetadata          bool
 	}
 
-	results := make(chan result, len(multimangas))
+	results := make(chan result, len(mangas)+len(multimangas))
 	var wg sync.WaitGroup
 
-	// Custom Mangas
-	chunkSize := (len(mangas) + config.GlobalConfigs.PeriodicallyUpdateMangas.ParallelJobs - 1) / config.GlobalConfigs.PeriodicallyUpdateMangas.ParallelJobs
-	for i := 0; i < config.GlobalConfigs.PeriodicallyUpdateMangas.ParallelJobs; i++ {
-		start := i * chunkSize
-		end := start + chunkSize
-		end = min(end, len(mangas))
-		chunk := mangas[start:end]
+	parallelJobs := config.GlobalConfigs.PeriodicallyUpdateMangas.ParallelJobs
 
+	// Custom Mangas
+	for _, chunk := range util.ChunkSlice(mangas, parallelJobs) {
 		wg.Add(1)
 		go func(chunk []*manga.Manga) {
 			defer wg.Done()
 			for _, mangaToUpdate := range chunk {
 				mangaWithNewChapters, multimangaErrors := updateCustomMangaMetadata(mangaToUpdate, retries, retryInterval, logger)
-				if mangaWithNewChapters != nil {
-					newMetadata = true
-				}
-				result := result{
+				results <- result{
 					mangaWithNewChapters: mangaWithNewChapters,
 					multimangaErrors:     multimangaErrors,
+					newMetadata:          mangaWithNewChapters != nil,
 				}
-				results <- result
 			}
 		}(chunk)
 	}
 
 	// MultiMangas
-	chunkSize = (len(multimangas) + config.GlobalConfigs.PeriodicallyUpdateMangas.ParallelJobs - 1) / config.GlobalConfigs.PeriodicallyUpdateMangas.ParallelJobs
-	for i := 0; i < config.GlobalConfigs.PeriodicallyUpdateMangas.ParallelJobs; i++ {
-		start := i * chunkSize
-		end := start + chunkSize
-		end = min(end, len(multimangas))
-		chunk := multimangas[start:end]
-
+	for _, chunk := range util.ChunkSlice(multimangas, parallelJobs) {
 		wg.Add(1)
 		go func(chunk []*manga.MultiManga) {
 			defer wg.Done()
 			for _, multimangaToUpdate := range chunk {
 				mangaWithNewChapters, multimangaNewMetadata, multimangaErrors := updateMultiMangaMetadata(multimangaToUpdate, retries, retryInterval, logger)
-				if multimangaNewMetadata {
-					newMetadata = true
-				}
-				result := result{
+				results <- result{
 					mangaWithNewChapters: mangaWithNewChapters,
 					multimangaErrors:     multimangaErrors,
+					newMetadata:          multimangaNewMetadata,
 				}
-				results <- result
 			}
 		}(chunk)
 	}
@@ -2077,6 +2063,9 @@ func UpdateMangasMetadata(c *gin.Context) {
 	}()
 
 	for res := range results {
+		if res.newMetadata {
+			newMetadata = true
+		}
 		if res.mangaWithNewChapters != nil {
 			mangasWithNewChapter = append(mangasWithNewChapter, res.mangaWithNewChapters)
 		}
@@ -2520,33 +2509,22 @@ func KaizokuTriggerChaptersDownload(logger *zerolog.Logger) error {
 }
 
 func waitUntilEmptyCheckFixOutOfSyncChaptersQueues(kaizoku *kaizoku.Kaizoku, timeout time.Duration, retryInterval time.Duration, logger *zerolog.Logger) error {
-	result := make(chan error)
-	go func() {
-		for {
-			jobsCount, err := getCheckFixOutOfSyncChaptersActiveWaitingJobs(kaizoku)
-			if err != nil {
-				result <- err
-				return
-			}
-			logger.Debug().Msgf("Jobs in checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues: %d", jobsCount)
-			if jobsCount == 0 {
-				result <- nil
-				return
-			}
-			time.Sleep(retryInterval)
-		}
-	}()
-
-	select {
-	case <-time.After(timeout):
-		return fmt.Errorf("timeout while waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku. Current timeout is %s, maybe try to increase it?", timeout.String())
-	case err := <-result:
+	deadline := time.Now().Add(timeout)
+	for {
+		jobsCount, err := getCheckFixOutOfSyncChaptersActiveWaitingJobs(kaizoku)
 		if err != nil {
 			return err
 		}
-	}
+		logger.Debug().Msgf("Jobs in checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues: %d", jobsCount)
+		if jobsCount == 0 {
+			return nil
+		}
 
-	return nil
+		if time.Now().Add(retryInterval).After(deadline) {
+			return fmt.Errorf("timeout while waiting for checkOutOfSyncChaptersQueue and fixOutOfSyncChaptersQueue queues to be empty in Kaizoku. Current timeout is %s, maybe try to increase it?", timeout.String())
+		}
+		time.Sleep(retryInterval)
+	}
 }
 
 func retryKaizokuJob(jobFunc func() error, maxRetries int, retryInterval time.Duration, logger *zerolog.Logger, errorMessage string) error {

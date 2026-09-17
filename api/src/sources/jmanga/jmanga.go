@@ -6,14 +6,17 @@ import (
 	"regexp"
 
 	"github.com/gocolly/colly/v2"
+
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 var baseSiteURL = "https://jmanga.ltd"
 
-// Source is the struct for the JManga source
-type Source struct {
-	c *colly.Collector
-}
+// Source is the struct for the JManga source.
+// It holds no mutable state: the Sources registry shares one instance across
+// every request, so a collector kept on the struct would be swapped and
+// visited by concurrent goroutines, mixing up results between mangas.
+type Source struct{}
 
 func (Source) GetName() string {
 	return "jmanga"
@@ -25,16 +28,9 @@ func newCollector() *colly.Collector {
 	c := colly.NewCollector(
 		colly.UserAgent(userAgent),
 	)
+	c.SetRequestTimeout(util.ExternalRequestTimeout)
 
 	return c
-}
-
-func (s *Source) resetCollector() {
-	if s.c != nil {
-		s.c.Wait()
-	}
-
-	s.c = newCollector()
 }
 
 func extractChapter(s string) (string, error) {

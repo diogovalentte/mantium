@@ -205,7 +205,6 @@ func (m *Manga) UpsertChapterIntoDB(chapter *Chapter) error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, chapter, m), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -239,7 +238,6 @@ func (m *Manga) UpdateNameInDB(name string) error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, name), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -310,7 +308,6 @@ func (m *Manga) UpdateURLInDB(URL string) error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, URL), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -350,7 +347,6 @@ func (m *Manga) UpdateCustomMangaURLInDB(URL string) error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, URL), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -429,7 +425,6 @@ func (m *Manga) UpdateCoverImgInDB(coverImg []byte, coverImgResized bool, coverI
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, coverImgURL, len(coverImg)), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -504,7 +499,6 @@ func UpdateMangaMetadataDB(m *Manga) error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -561,7 +555,6 @@ func GetMangaDB(mangaID ID, mangaURL string) (*Manga, error) {
 	if err != nil {
 		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaID, mangaURL), err)
 	}
-	defer db.Close()
 
 	mangaGet, err := getMangaFromDB(mangaID, mangaURL, db)
 	if err != nil {
@@ -790,7 +783,6 @@ func getMangaIDByURL(url string) (ID, error) {
 	if err != nil {
 		return -1, util.AddErrorContext(fmt.Sprintf(contextError, url), err)
 	}
-	defer db.Close()
 
 	var mangaID ID
 	err = db.QueryRow(`
@@ -817,7 +809,6 @@ func GetMangasWithoutMultiMangasDB(customManga bool) ([]*Manga, error) {
 	if err != nil {
 		return nil, util.AddErrorContext(contextError, err)
 	}
-	defer db.Close()
 
 	mangas := make([]*Manga, 0)
 	if customManga {
@@ -973,6 +964,10 @@ func getMangasWithoutMultiMangasFromDB(db *sql.DB, customManga bool) ([]*Manga, 
 		mangas = append(mangas, &currentManga)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return mangas, nil
 }
 
@@ -984,7 +979,6 @@ func GetCustomMangasDB() ([]*Manga, error) {
 	if err != nil {
 		return nil, util.AddErrorContext(contextError, err)
 	}
-	defer db.Close()
 
 	mangas, err := getCustomMangasFromDB(db)
 	if err != nil {
@@ -1132,6 +1126,10 @@ func getCustomMangasFromDB(db *sql.DB) ([]*Manga, error) {
 		mangas = append(mangas, &currentManga)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return mangas, nil
 }
 
@@ -1142,7 +1140,6 @@ func GetLibraryStats() (map[string]int, error) {
 	if err != nil {
 		return nil, util.AddErrorContext(contextError, err)
 	}
-	defer db.Close()
 
 	stats, err := getLibraryStatsFromDB(db)
 	if err != nil {
@@ -1187,6 +1184,10 @@ func getLibraryStatsFromDB(db *sql.DB) (map[string]int, error) {
 		stats[status] = totalMangas
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	query = `
         SELECT
             COUNT(*) AS total_mangas, 
@@ -1224,6 +1225,10 @@ func getLibraryStatsFromDB(db *sql.DB) (map[string]int, error) {
 		} else {
 			stats[status] = totalMangas
 		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	var unread, total, read int
@@ -1305,7 +1310,6 @@ func (m *Manga) UpdateSourceInDB(source string) error {
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, source), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -1385,7 +1389,6 @@ func (m *Manga) UpdateLastReleasedChapterSelectorsInDB(nameSelector, URLSelector
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, nameSelector, URLSelector), err)
 	}
-	defer db.Close()
 
 	tx, err := db.Begin()
 	if err != nil {

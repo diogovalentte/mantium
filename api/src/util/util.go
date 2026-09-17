@@ -19,6 +19,18 @@ import (
 	"golang.org/x/image/webp"
 )
 
+// ExternalRequestTimeout bounds a single request to a manga source or to an
+// integration. Without it a peer that accepts the connection and then never
+// answers blocks the caller forever: a source hanging like that used to wedge
+// the periodic update goroutine permanently, with no error and no recovery.
+const ExternalRequestTimeout = 60 * time.Second
+
+// SelfRequestTimeout is a backstop for the loopback call the periodic job makes
+// to Mantium's own update-all-metadata route. That route walks every manga, so
+// it is legitimately slow; what keeps it bounded is ExternalRequestTimeout on
+// each source. This only stops the goroutine from blocking forever if it is not.
+const SelfRequestTimeout = 6 * time.Hour
+
 var logger *zerolog.Logger
 
 // GetLogger returns the zerolog logger instance
@@ -78,49 +90,24 @@ func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgB
 		Timeout: 10 * time.Second,
 	}
 
-	imageBytes := make([]byte, 0)
+	if retries < 1 {
+		retries = 1
+	}
+
+	var imageBytes []byte
+	var lastErr error
 	for i := 0; i < retries; i++ {
-		req, err := http.NewRequest("GET", url, nil)
-		if err != nil {
-			if i == retries-1 {
-				return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), AddErrorContext("error while creating request", err))
-			}
+		if i > 0 {
 			time.Sleep(retryInterval)
-			continue
 		}
 
-		req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0")
-		req.Header.Set("Sec-Fetch-Dest", "document")
-		req.Header.Set("Sec-Fetch-Mode", "navigate")
-
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			if i == retries-1 {
-				return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), AddErrorContext("error while executing request", err))
-			}
-			time.Sleep(retryInterval)
-			continue
+		imageBytes, lastErr = downloadImage(httpClient, url)
+		if lastErr == nil {
+			break
 		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode != http.StatusOK {
-			if i == retries-1 {
-				defer resp.Body.Close()
-				body, _ := io.ReadAll(resp.Body)
-				return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), fmt.Errorf("non-200 status code -> (%d). Body: %s", resp.StatusCode, string(body)))
-			}
-			time.Sleep(retryInterval)
-			continue
-		}
-
-		imageBytes, err = io.ReadAll(resp.Body)
-		if err != nil {
-			if i == retries-1 {
-				return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), AddErrorContext("could not read the image data from request body", err))
-			}
-			time.Sleep(retryInterval)
-			continue
-		}
+	}
+	if lastErr != nil {
+		return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), lastErr)
 	}
 
 	if strings.HasSuffix(url, ".webp") {
@@ -149,6 +136,37 @@ func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgB
 	}
 
 	return img, resized, nil
+}
+
+// downloadImage performs a single image download attempt and always closes the
+// response body before returning.
+func downloadImage(httpClient *http.Client, url string) ([]byte, error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, AddErrorContext("error while creating request", err)
+	}
+
+	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0")
+	req.Header.Set("Sec-Fetch-Dest", "document")
+	req.Header.Set("Sec-Fetch-Mode", "navigate")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, AddErrorContext("error while executing request", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("non-200 status code -> (%d). Body: %s", resp.StatusCode, string(body))
+	}
+
+	imageBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, AddErrorContext("could not read the image data from request body", err)
+	}
+
+	return imageBytes, nil
 }
 
 func webpToJPEG(webpImgBytes []byte) ([]byte, error) {
@@ -246,7 +264,9 @@ func GetRFC3339Datetime(date string) (time.Time, error) {
 func RequestUpdateMangasMetadata(notify bool) (*http.Response, error) {
 	contextErrror := "error requesting to update mangas metadata (notify is %v)"
 
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: SelfRequestTimeout,
+	}
 
 	apiPort := os.Getenv("API_PORT")
 	if apiPort == "" {
@@ -291,4 +311,25 @@ func GetDomain(rawURL string) (string, error) {
 		return "", fmt.Errorf("invalid URL: missing scheme or host")
 	}
 	return parsed.Scheme + "://" + parsed.Host, nil
+}
+
+// ChunkSlice splits items into at most n contiguous chunks of roughly equal
+// size. An empty slice yields no chunks, n below 1 is treated as 1, and n
+// larger than len(items) is capped so no empty or inverted chunk is produced.
+func ChunkSlice[T any](items []T, n int) [][]T {
+	if len(items) == 0 {
+		return nil
+	}
+	if n < 1 {
+		n = 1
+	}
+	n = min(n, len(items))
+
+	chunkSize := (len(items) + n - 1) / n
+	chunks := make([][]T, 0, n)
+	for start := 0; start < len(items); start += chunkSize {
+		chunks = append(chunks, items[start:min(start+chunkSize, len(items))])
+	}
+
+	return chunks
 }

@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from src.util import get_relative_time
+from src.util.util import get_relative_time
 
 test_get_relative_time_table = [
     {

@@ -20,7 +20,7 @@ import (
 
 // GetMangaMetadata scrapes the manga page and return the manga data
 func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
-	s.resetCollector()
+	c := newCollector()
 
 	errorContext := "error while getting manga metadata"
 
@@ -31,12 +31,12 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	var sharedErr error
 
 	// manga name
-	s.col.OnHTML("h1[itemprop='name']", func(e *colly.HTMLElement) {
+	c.OnHTML("h1[itemprop='name']", func(e *colly.HTMLElement) {
 		mangaReturn.Name = strings.TrimSpace(e.Text)
 	})
 
 	// manga cover
-	s.col.OnHTML("article img.wp-post-image", func(e *colly.HTMLElement) {
+	c.OnHTML("article img.wp-post-image", func(e *colly.HTMLElement) {
 		if mangaReturn.CoverImgURL != "" {
 			return
 		}
@@ -51,7 +51,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	})
 
 	// last released chapter
-	s.col.OnResponse(func(r *colly.Response) {
+	c.OnResponse(func(r *colly.Response) {
 		body := string(r.Body)
 		re := regexp.MustCompile(`wp-admin/admin-ajax\.php\?manga_id=(\d+)(?:&|$)`)
 		HTMLMangaID := re.FindStringSubmatch(body)
@@ -70,7 +70,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 		mangaReturn.LastReleasedChapter.Type = 1
 	})
 
-	err := s.col.Visit(mangaURL)
+	err := c.Visit(mangaURL)
 	if err != nil {
 		if err.Error() == "Not Found" {
 			return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
@@ -89,7 +89,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 
 func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, error) {
 	errorContext := "error while searching manga"
-	s.resetAPIClient()
+	client := newAPIClient()
 	mangaSearchResults := []*models.MangaSearchResult{}
 	pageNumber := 1
 	var mangaCount int
@@ -105,7 +105,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 		w.WriteField("page", fmt.Sprintf("%d", pageNumber))
 		w.Close()
 
-		resp, err := s.client.Request(http.MethodPost, searchURL, &b, nil, w.FormDataContentType())
+		resp, err := client.Request(http.MethodPost, searchURL, &b, nil, w.FormDataContentType())
 		if err != nil {
 			if util.ErrorContains(err, "non-200 status code -> (404)") {
 				return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)

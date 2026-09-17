@@ -25,6 +25,7 @@ func GetNtfyPublisher() (*Publisher, error) {
 	}
 
 	customClient := &http.Client{
+		Timeout: util.ExternalRequestTimeout,
 		Transport: &customNtfyTransport{
 			ntfyToken: configs.Token,
 		},

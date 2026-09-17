@@ -31,12 +31,12 @@ func (s *Source) GetChapterMetadata(_, _, _, chapterURL, _ string) (*manga.Chapt
 
 // GetChapterMetadataByURL scrapes the manga page and return the chapter by its URL
 func (s *Source) getChapterMetadataByURL(chapterURL string) (*manga.Chapter, error) {
-	s.resetCollector()
+	c := newCollector()
 	chapterReturn := &manga.Chapter{}
 	chapterReturn.URL = chapterURL
 	var sharedErr error
 
-	s.col.OnHTML("time[itemprop='dateCreated']", func(e *colly.HTMLElement) {
+	c.OnHTML("time[itemprop='dateCreated']", func(e *colly.HTMLElement) {
 		releaseTime, err := util.GetRFC3339Datetime(e.Attr("datetime"))
 		if err != nil {
 			sharedErr = util.AddErrorContext(errordefs.ErrChapterAttributesNotFound.Message, err)
@@ -49,7 +49,7 @@ func (s *Source) getChapterMetadataByURL(chapterURL string) (*manga.Chapter, err
 		chapterReturn.Name = "Chapter " + chapterReturn.Chapter
 	})
 
-	err := s.col.Visit(chapterURL)
+	err := c.Visit(chapterURL)
 	if err != nil {
 		if err.Error() == "Not Found" {
 			return nil, errordefs.ErrChapterNotFound
@@ -87,10 +87,10 @@ func (s *Source) GetChaptersMetadata(mangaURL, mangaInternalID string) ([]*manga
 	errorContext := "error while getting chapters metadata"
 
 	if mangaInternalID == "" {
-		s.resetCollector()
+		c := newCollector()
 		var sharedErr error
 
-		s.col.OnResponse(func(r *colly.Response) {
+		c.OnResponse(func(r *colly.Response) {
 			body := string(r.Body)
 			re := regexp.MustCompile(`wp-admin/admin-ajax\.php\?manga_id=(\d+)(?:&|$)`)
 			HTMLMangaID := re.FindStringSubmatch(body)
@@ -101,7 +101,7 @@ func (s *Source) GetChaptersMetadata(mangaURL, mangaInternalID string) ([]*manga
 			mangaInternalID = HTMLMangaID[1]
 		})
 
-		err := s.col.Visit(mangaURL)
+		err := c.Visit(mangaURL)
 		if err != nil {
 			if err.Error() == "Not Found" {
 				return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
@@ -122,8 +122,7 @@ func (s *Source) GetChaptersMetadata(mangaURL, mangaInternalID string) ([]*manga
 }
 
 func getChapterList(internalMangaID string) ([]*manga.Chapter, error) {
-	s := Source{}
-	s.resetCollector()
+	c := newCollector()
 
 	mangaID, err := strconv.Atoi(internalMangaID)
 	if err != nil {
@@ -137,7 +136,7 @@ func getChapterList(internalMangaID string) ([]*manga.Chapter, error) {
 	chapters := []*manga.Chapter{}
 	var sharedErr error
 
-	s.col.OnHTML("div#chapter-list > div > a", func(e *colly.HTMLElement) {
+	c.OnHTML("div#chapter-list > div > a", func(e *colly.HTMLElement) {
 		chapter := &manga.Chapter{}
 		chapter.URL = e.Attr("href")
 		chapter.Name = e.DOM.Find("span").Text()
@@ -157,7 +156,7 @@ func getChapterList(internalMangaID string) ([]*manga.Chapter, error) {
 		chapters = append(chapters, chapter)
 	})
 
-	err = s.col.Visit(fmt.Sprintf("%s%d", chapterListURL, mangaID))
+	err = c.Visit(fmt.Sprintf("%s%d", chapterListURL, mangaID))
 	if err != nil {
 		if err.Error() == "Not Found" {
 			return nil, errordefs.ErrMangaNotFound

@@ -18,7 +18,9 @@ type Client struct {
 
 // newAPIClient creates a new Rawkuma API client
 func newAPIClient() *Client {
-	client := http.Client{}
+	client := http.Client{
+		Timeout: util.ExternalRequestTimeout,
+	}
 
 	kuma := &Client{
 		client: &client,

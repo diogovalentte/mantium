@@ -111,15 +111,11 @@ type DashboardConfigs struct {
 var (
 	ValidDisplayModeValues = []string{"Grid View", "List View"}
 	ValidAddingMethods     = []string{"Search", "URL"}
-	SourcesList            = []string{
-		"mangadex",
-		"mangahub",
-		"mangaplus",
-		"mangaupdates",
-		"rawkuma",
-		"klmanga",
-		"jmanga",
-	}
+
+	// SourcesList is the names of the registered manga sources. The sources
+	// package fills it from its own registry at init, so the two cannot drift
+	// apart the way a second hand-maintained list did.
+	SourcesList []string
 )
 
 var oldConfigsFilePath = "./configs/configs.json"
@@ -232,12 +228,15 @@ func SetConfigs(filePath string) error {
 			return fmt.Errorf("error converting UPDATE_MANGAS_JOB_PARALLEL_JOBS '%s' to int: %s", envUpdateMangasJobGoRoutines, err)
 		}
 	}
+	if updateMangasJobGoRoutines < 1 {
+		return fmt.Errorf("error parsing UPDATE_MANGAS_JOB_PARALLEL_JOBS '%d': must be 1 or greater", updateMangasJobGoRoutines)
+	}
 	GlobalConfigs.PeriodicallyUpdateMangas.ParallelJobs = updateMangasJobGoRoutines
 
 	GlobalConfigs.DashboardConfigs.Manga.AllowedSources = SourcesList
 	envAllowedSources := os.Getenv("ALLOWED_SOURCES")
 	if envAllowedSources != "" {
-		GlobalConfigs.DashboardConfigs.Manga.AllowedSources = strings.Split(envAllowedSources, ",")
+		GlobalConfigs.DashboardConfigs.Manga.AllowedSources = splitAndTrim(envAllowedSources)
 		for _, source := range GlobalConfigs.DashboardConfigs.Manga.AllowedSources {
 			if !slices.Contains(SourcesList, source) {
 				return fmt.Errorf("error parsing ALLOWED_SOURCES '%s': source '%s' not found in available sources: %s", envAllowedSources, source, SourcesList)
@@ -248,7 +247,7 @@ func SetConfigs(filePath string) error {
 	GlobalConfigs.DashboardConfigs.Manga.AllowedAddingMethods = ValidAddingMethods
 	envAllowedAddingMethods := os.Getenv("ALLOWED_ADDING_METHODS")
 	if envAllowedAddingMethods != "" {
-		GlobalConfigs.DashboardConfigs.Manga.AllowedAddingMethods = strings.Split(envAllowedAddingMethods, ",")
+		GlobalConfigs.DashboardConfigs.Manga.AllowedAddingMethods = splitAndTrim(envAllowedAddingMethods)
 		for _, method := range GlobalConfigs.DashboardConfigs.Manga.AllowedAddingMethods {
 			if !slices.Contains(ValidAddingMethods, method) {
 				return fmt.Errorf("error parsing ALLOWED_ADDING_METHODS '%s': method '%s' not found in available methods: %s", envAllowedAddingMethods, method, ValidAddingMethods)
@@ -257,4 +256,16 @@ func SetConfigs(filePath string) error {
 	}
 
 	return nil
+}
+
+// splitAndTrim splits a comma separated environment variable, dropping the
+// whitespace around each entry: "mangadex, mangahub" should not be rejected
+// for a source named " mangahub".
+func splitAndTrim(value string) []string {
+	parts := strings.Split(value, ",")
+	for i, part := range parts {
+		parts[i] = strings.TrimSpace(part)
+	}
+
+	return parts
 }
