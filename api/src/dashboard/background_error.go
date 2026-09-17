@@ -32,7 +32,10 @@ func GetLastBackgroundError() BackgroundError {
 	lastBackgroundError.mu.Lock()
 	defer lastBackgroundError.mu.Unlock()
 
-	if lastBackgroundError.ConsecutiveErrors <= config.GlobalConfigs.PeriodicallyUpdateMangas.ConsecutiveErrors {
+	// Show it from the configured count onwards, not one past it: with the
+	// default of 5 the warning only appeared on the sixth consecutive error.
+	configured := config.GlobalConfigs.PeriodicallyUpdateMangas.ConsecutiveErrors
+	if lastBackgroundError.ConsecutiveErrors == 0 || lastBackgroundError.ConsecutiveErrors < configured {
 		return BackgroundError{}
 	}
 
