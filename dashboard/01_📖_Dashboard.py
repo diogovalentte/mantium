@@ -45,6 +45,7 @@ class MainDashboard:
         self.sidebar()
 
         mangas = self.api_client.get_mangas()
+        total_mangas = len(mangas)
         filter_by_status = ss.get(
             "status_filter",
             self.status_filter_key,
@@ -77,7 +78,11 @@ class MainDashboard:
 
         can_load_more = False
 
-        if ss["configs"]["display"]["displayMode"] == "List View":
+        # The status filter defaults to "Reading", so an empty result is common
+        # and used to render nothing at all - no message, no way back.
+        if len(mangas) == 0:
+            self.show_empty_state(total_mangas)
+        elif ss["configs"]["display"]["displayMode"] == "List View":
             max_mangas_to_show = defaults.list_view_number_of_rows_to_show_first
             if len(mangas) > max_mangas_to_show:
                 self.show_mangas_list_view(mangas[:max_mangas_to_show])
@@ -137,6 +142,25 @@ class MainDashboard:
         js = """(window.parent.document.querySelector('meta[name="referrer"]') || window.parent.document.head.appendChild(Object.assign(window.parent.document.createElement("meta"), { name: "referrer" }))).setAttribute("content", "no-referrer");"""
         st_javascript(js)
         util.set_custom_js_to_none()
+
+    def show_empty_state(self, total_mangas: int):
+        if total_mangas == 0:
+            st.info(
+                "Your library is empty. Use **Add Manga** in the sidebar to get"
+                " started."
+            )
+            return
+
+        st.info("No manga matches the current filters.")
+
+        def clear_filters():
+            # Widget-backed keys can only be assigned from a callback, which
+            # runs before the widgets are instantiated on the next rerun.
+            ss["status_filter"] = 0
+            ss["search_manga"] = ""
+            ss["show_more_manga"] = False
+
+        st.button("Clear filters", on_click=clear_filters)
 
     def set_css(self):
         improve_css = """
@@ -223,10 +247,13 @@ class MainDashboard:
                 js = """window.parent.document.querySelector(".main").scrollTop = 0;"""
                 st_javascript(js)
 
+            # No index= here on purpose: Clear filters writes this key through
+            # the Session State API, and Streamlit warns when a widget has both
+            # an explicit default and a value set that way.
+            ss.setdefault("status_filter", self.status_filter_key)
             st.selectbox(
                 "Status",
                 defaults.manga_status_options,
-                index=self.sort_option_index,
                 on_change=status_filter_callback,
                 format_func=lambda index: defaults.manga_status_options[index],
                 key="status_filter",
