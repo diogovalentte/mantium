@@ -5,9 +5,12 @@ package sources
 
 import (
 	"fmt"
+	"maps"
 	"net/url"
+	"slices"
 	"strings"
 
+	"github.com/diogovalentte/mantium/api/src/config"
 	"github.com/diogovalentte/mantium/api/src/db"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/sources/jmanga"
@@ -21,7 +24,8 @@ import (
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
-// Sources - also update SourcesList on config.go
+// Sources is the registry of manga sources, keyed by the name that identifies
+// them in a URL.
 var Sources = map[string]models.Source{
 	"mangadex":     &mangadex.Source{},
 	"mangahub":     &mangahub.Source{},
@@ -30,6 +34,12 @@ var Sources = map[string]models.Source{
 	"rawkuma":      &rawkuma.Source{},
 	"klmanga":      &klmanga.Source{},
 	"jmanga":       &jmanga.Source{},
+}
+
+func init() {
+	// config cannot import this package, so publish the source names to it.
+	// Runs before main's init, which is what calls config.SetConfigs.
+	config.SourcesList = slices.Sorted(maps.Keys(Sources))
 }
 
 // SourcesTLDs specifies the TLDs of the sources.
