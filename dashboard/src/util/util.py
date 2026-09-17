@@ -37,7 +37,7 @@ def remove_nano_from_datetime(datetime_string: str):
 def centered_container(key: str):
     css_styles = """
         div {
-            /* remove comment bellow to also center text */
+            /* remove comment below to also center text */
             /* display: flex; */
             justify-content: center;
         }

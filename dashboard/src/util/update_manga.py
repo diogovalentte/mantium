@@ -155,7 +155,7 @@ def show_update_multimanga(multimanga_id):
                         )
                     else:
                         st.warning(
-                            f"Could not get the chapters list from the current manga. Maybe the source site is down or the manga URL changed in the source site. Others manga returned empty chapters list."
+                            "Could not get the chapters list from the current manga. Maybe the source site is down or the manga URL changed in the source site. The other mangas returned an empty chapters list."
                         )
             elif ss.get("update_multimanga_chapter_options", []) != [] and other_manga_source_name != "" and multimanga["CurrentManga"]["Source"] != defaults.CUSTOM_MANGA_SOURCE:
                 st.warning(
@@ -181,7 +181,7 @@ def show_update_multimanga(multimanga_id):
 
             st.selectbox(
                 "From chapters list",
-                help="Select the chapter from the chapters list if you want to update it to a chapter that was released from source site. If the chapter you want to update to is not in the chapters list, write it manually in the text input bellow.",
+                help="Select the chapter from the chapters list if you want to update it to a chapter that was released from source site. If the chapter you want to update to is not in the chapters list, write it manually in the text input below.",
                 index=last_read_chapter_idx,
                 options=ss.get("update_multimanga_chapter_options", []),
                 format_func=lambda chapter: f"Ch. {chapter['Chapter']}{(' (' + get_relative_time(get_updated_at_datetime(chapter['UpdatedAt']))) + ')' if chapter['UpdatedAt'] != '0001-01-01T00:00:00Z' else ''}",
@@ -190,7 +190,7 @@ def show_update_multimanga(multimanga_id):
 
             if last_read_chapter_idx is None and multimanga["LastReadChapter"]["Chapter"] != "" and multimanga["LastReadChapter"]["FromSourceSite"] and ss.get("update_multimanga_chapter_options", []) != []:
                 st.warning(
-                    "Last read chapter not found in chapters list. Select it again, leave empty or write it manually bellow."
+                    "Last read chapter not found in chapters list. Select it again, leave it empty, or write it manually below."
                 )
 
             st.divider()
