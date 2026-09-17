@@ -20,28 +20,39 @@ type dbConfigs struct {
 	Password string
 }
 
-func getConnString() string {
-	configs := &dbConfigs{
+func getConfigs() *dbConfigs {
+	return &dbConfigs{
 		Host:     os.Getenv("POSTGRES_HOST"),
 		Port:     os.Getenv("POSTGRES_PORT"),
 		DB:       os.Getenv("POSTGRES_DB"),
 		User:     os.Getenv("POSTGRES_USER"),
 		Password: os.Getenv("POSTGRES_PASSWORD"),
 	}
+}
 
-	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", configs.Host, configs.Port, configs.User, configs.Password, configs.DB)
+func (c *dbConfigs) connString() string {
+	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", c.Host, c.Port, c.User, c.Password, c.DB)
+}
+
+// String describes the target database without the password, so it is safe to
+// put in an error message or a log line.
+func (c *dbConfigs) String() string {
+	return fmt.Sprintf("host=%s port=%s user=%s dbname=%s", c.Host, c.Port, c.User, c.DB)
 }
 
 // OpenConn opens a connection to the database
 func OpenConn() (*sql.DB, error) {
-	db, err := sql.Open("postgres", getConnString())
+	configs := getConfigs()
+
+	db, err := sql.Open("postgres", configs.connString())
 	if err != nil {
 		return nil, util.AddErrorContext("error opening database connection", err)
 	}
 
 	err = db.Ping()
 	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf("error pinging database %s", getConnString()), err)
+		db.Close()
+		return nil, util.AddErrorContext(fmt.Sprintf("error pinging database %s", configs), err)
 	}
 
 	return db, nil
