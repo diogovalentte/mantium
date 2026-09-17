@@ -2016,6 +2016,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 	type result struct {
 		mangaWithNewChapters *manga.Manga
 		multimangaErrors     []string
+		newMetadata          bool
 	}
 
 	results := make(chan result, len(mangas)+len(multimangas))
@@ -2030,14 +2031,11 @@ func UpdateMangasMetadata(c *gin.Context) {
 			defer wg.Done()
 			for _, mangaToUpdate := range chunk {
 				mangaWithNewChapters, multimangaErrors := updateCustomMangaMetadata(mangaToUpdate, retries, retryInterval, logger)
-				if mangaWithNewChapters != nil {
-					newMetadata = true
-				}
-				result := result{
+				results <- result{
 					mangaWithNewChapters: mangaWithNewChapters,
 					multimangaErrors:     multimangaErrors,
+					newMetadata:          mangaWithNewChapters != nil,
 				}
-				results <- result
 			}
 		}(chunk)
 	}
@@ -2049,14 +2047,11 @@ func UpdateMangasMetadata(c *gin.Context) {
 			defer wg.Done()
 			for _, multimangaToUpdate := range chunk {
 				mangaWithNewChapters, multimangaNewMetadata, multimangaErrors := updateMultiMangaMetadata(multimangaToUpdate, retries, retryInterval, logger)
-				if multimangaNewMetadata {
-					newMetadata = true
-				}
-				result := result{
+				results <- result{
 					mangaWithNewChapters: mangaWithNewChapters,
 					multimangaErrors:     multimangaErrors,
+					newMetadata:          multimangaNewMetadata,
 				}
-				results <- result
 			}
 		}(chunk)
 	}
@@ -2067,6 +2062,9 @@ func UpdateMangasMetadata(c *gin.Context) {
 	}()
 
 	for res := range results {
+		if res.newMetadata {
+			newMetadata = true
+		}
 		if res.mangaWithNewChapters != nil {
 			mangasWithNewChapter = append(mangasWithNewChapter, res.mangaWithNewChapters)
 		}
