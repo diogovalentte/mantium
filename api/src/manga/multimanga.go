@@ -728,6 +728,10 @@ func getMultiMangasWithoutMangasDB(db *sql.DB) ([]*MultiManga, error) {
 		multiMangas = append(multiMangas, &multimanga)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return multiMangas, nil
 }
 
@@ -832,6 +836,10 @@ func getMultiMangasWithMangasDB(db *sql.DB) ([]*MultiManga, error) {
 		}
 
 		multiMangas = append(multiMangas, &multimanga)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return multiMangas, nil
@@ -1088,6 +1096,10 @@ func getMultiMangaMangasFromDB(multiMangaID ID, db *sql.DB) ([]*Manga, error) {
 		}
 
 		mangas = append(mangas, &currentManga)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return mangas, nil

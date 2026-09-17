@@ -973,6 +973,10 @@ func getMangasWithoutMultiMangasFromDB(db *sql.DB, customManga bool) ([]*Manga, 
 		mangas = append(mangas, &currentManga)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return mangas, nil
 }
 
@@ -1132,6 +1136,10 @@ func getCustomMangasFromDB(db *sql.DB) ([]*Manga, error) {
 		mangas = append(mangas, &currentManga)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return mangas, nil
 }
 
@@ -1187,6 +1195,10 @@ func getLibraryStatsFromDB(db *sql.DB) (map[string]int, error) {
 		stats[status] = totalMangas
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	query = `
         SELECT
             COUNT(*) AS total_mangas, 
@@ -1224,6 +1236,10 @@ func getLibraryStatsFromDB(db *sql.DB) (map[string]int, error) {
 		} else {
 			stats[status] = totalMangas
 		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	var unread, total, read int
