@@ -292,3 +292,24 @@ func GetDomain(rawURL string) (string, error) {
 	}
 	return parsed.Scheme + "://" + parsed.Host, nil
 }
+
+// ChunkSlice splits items into at most n contiguous chunks of roughly equal
+// size. An empty slice yields no chunks, n below 1 is treated as 1, and n
+// larger than len(items) is capped so no empty or inverted chunk is produced.
+func ChunkSlice[T any](items []T, n int) [][]T {
+	if len(items) == 0 {
+		return nil
+	}
+	if n < 1 {
+		n = 1
+	}
+	n = min(n, len(items))
+
+	chunkSize := (len(items) + n - 1) / n
+	chunks := make([][]T, 0, n)
+	for start := 0; start < len(items); start += chunkSize {
+		chunks = append(chunks, items[start:min(start+chunkSize, len(items))])
+	}
+
+	return chunks
+}

@@ -2018,17 +2018,13 @@ func UpdateMangasMetadata(c *gin.Context) {
 		multimangaErrors     []string
 	}
 
-	results := make(chan result, len(multimangas))
+	results := make(chan result, len(mangas)+len(multimangas))
 	var wg sync.WaitGroup
 
-	// Custom Mangas
-	chunkSize := (len(mangas) + config.GlobalConfigs.PeriodicallyUpdateMangas.ParallelJobs - 1) / config.GlobalConfigs.PeriodicallyUpdateMangas.ParallelJobs
-	for i := 0; i < config.GlobalConfigs.PeriodicallyUpdateMangas.ParallelJobs; i++ {
-		start := i * chunkSize
-		end := start + chunkSize
-		end = min(end, len(mangas))
-		chunk := mangas[start:end]
+	parallelJobs := config.GlobalConfigs.PeriodicallyUpdateMangas.ParallelJobs
 
+	// Custom Mangas
+	for _, chunk := range util.ChunkSlice(mangas, parallelJobs) {
 		wg.Add(1)
 		go func(chunk []*manga.Manga) {
 			defer wg.Done()
@@ -2047,13 +2043,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 	}
 
 	// MultiMangas
-	chunkSize = (len(multimangas) + config.GlobalConfigs.PeriodicallyUpdateMangas.ParallelJobs - 1) / config.GlobalConfigs.PeriodicallyUpdateMangas.ParallelJobs
-	for i := 0; i < config.GlobalConfigs.PeriodicallyUpdateMangas.ParallelJobs; i++ {
-		start := i * chunkSize
-		end := start + chunkSize
-		end = min(end, len(multimangas))
-		chunk := multimangas[start:end]
-
+	for _, chunk := range util.ChunkSlice(multimangas, parallelJobs) {
 		wg.Add(1)
 		go func(chunk []*manga.MultiManga) {
 			defer wg.Done()

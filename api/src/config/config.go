@@ -232,6 +232,9 @@ func SetConfigs(filePath string) error {
 			return fmt.Errorf("error converting UPDATE_MANGAS_JOB_PARALLEL_JOBS '%s' to int: %s", envUpdateMangasJobGoRoutines, err)
 		}
 	}
+	if updateMangasJobGoRoutines < 1 {
+		return fmt.Errorf("error parsing UPDATE_MANGAS_JOB_PARALLEL_JOBS '%d': must be 1 or greater", updateMangasJobGoRoutines)
+	}
 	GlobalConfigs.PeriodicallyUpdateMangas.ParallelJobs = updateMangasJobGoRoutines
 
 	GlobalConfigs.DashboardConfigs.Manga.AllowedSources = SourcesList
