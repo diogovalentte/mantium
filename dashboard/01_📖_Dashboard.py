@@ -55,7 +55,7 @@ class MainDashboard:
                 manga
                 for manga in mangas
                 if manga["Status"] == filter_by_status
-                and filter_by_name_term in ("".join(manga["SearchNames"])).upper()
+                and filter_by_name_term in ("\n".join(manga["SearchNames"])).upper()
             ]
         elif filter_by_status != 0:
             mangas = [manga for manga in mangas if manga["Status"] == filter_by_status]
@@ -63,7 +63,7 @@ class MainDashboard:
             mangas = [
                 manga
                 for manga in mangas
-                if filter_by_name_term in ("".join(manga["SearchNames"])).upper()
+                if filter_by_name_term in ("\n".join(manga["SearchNames"])).upper()
             ]
 
         mangas = self.api_client.sort_mangas(
