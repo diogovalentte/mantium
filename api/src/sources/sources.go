@@ -155,18 +155,17 @@ func ChangeSourceTLDInDB(sourceName, newTLD string) error {
 	}
 	defer _db.Close()
 
-	query := fmt.Sprintf(`
+	// Runs on every start, so skip the rows that already have the right TLD
+	// instead of rewriting the whole table and leaving dead tuples behind.
+	const query = `
 		UPDATE mangas
 		SET
-			url = REGEXP_REPLACE(
-				url,
-				'(https?://[^/]+?)\.[a-z]+',
-				'\1.%s'
-			)
+			url = REGEXP_REPLACE(url, '(https?://[^/]+?)\.[a-z]+', '\1.' || $1)
 		WHERE
-			source = '%s'
-	`, newTLD, sourceName)
-	_, err = _db.Exec(query)
+			source = $2
+			AND url <> REGEXP_REPLACE(url, '(https?://[^/]+?)\.[a-z]+', '\1.' || $1)
+	`
+	_, err = _db.Exec(query, newTLD, sourceName)
 	if err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, sourceName, newTLD), err)
 	}
