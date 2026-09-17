@@ -19,7 +19,9 @@ type Client struct {
 
 // NewMangadexClient creates a new Mangadex API client
 func NewMangadexClient() *Client {
-	client := http.Client{}
+	client := http.Client{
+		Timeout: util.ExternalRequestTimeout,
+	}
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")

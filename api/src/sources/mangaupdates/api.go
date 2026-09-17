@@ -20,7 +20,9 @@ type Client struct {
 
 // NewMangaUpdatesClient creates a new MangaUpdates API client
 func NewMangaUpdatesClient() *Client {
-	client := http.Client{}
+	client := http.Client{
+		Timeout: util.ExternalRequestTimeout,
+	}
 
 	header := http.Header{}
 	header.Set("Content-Type", "application/json")

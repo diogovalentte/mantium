@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/diogovalentte/mantium/api/src/config"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 type Kaizoku struct {
@@ -15,5 +16,5 @@ type Kaizoku struct {
 func (k *Kaizoku) Init() {
 	k.Address = config.GlobalConfigs.Kaizoku.Address
 	k.DefaultInterval = config.GlobalConfigs.Kaizoku.DefaultInterval
-	k.c = &http.Client{}
+	k.c = &http.Client{Timeout: util.ExternalRequestTimeout}
 }

@@ -19,6 +19,18 @@ import (
 	"golang.org/x/image/webp"
 )
 
+// ExternalRequestTimeout bounds a single request to a manga source or to an
+// integration. Without it a peer that accepts the connection and then never
+// answers blocks the caller forever: a source hanging like that used to wedge
+// the periodic update goroutine permanently, with no error and no recovery.
+const ExternalRequestTimeout = 60 * time.Second
+
+// SelfRequestTimeout is a backstop for the loopback call the periodic job makes
+// to Mantium's own update-all-metadata route. That route walks every manga, so
+// it is legitimately slow; what keeps it bounded is ExternalRequestTimeout on
+// each source. This only stops the goroutine from blocking forever if it is not.
+const SelfRequestTimeout = 6 * time.Hour
+
 var logger *zerolog.Logger
 
 // GetLogger returns the zerolog logger instance
@@ -252,7 +264,9 @@ func GetRFC3339Datetime(date string) (time.Time, error) {
 func RequestUpdateMangasMetadata(notify bool) (*http.Response, error) {
 	contextErrror := "error requesting to update mangas metadata (notify is %v)"
 
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: SelfRequestTimeout,
+	}
 
 	apiPort := os.Getenv("API_PORT")
 	if apiPort == "" {

@@ -6,6 +6,8 @@ import (
 	"regexp"
 
 	"github.com/gocolly/colly/v2"
+
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 var baseSiteURL = "https://jmanga.ltd"
@@ -26,6 +28,7 @@ func newCollector() *colly.Collector {
 	c := colly.NewCollector(
 		colly.UserAgent(userAgent),
 	)
+	c.SetRequestTimeout(util.ExternalRequestTimeout)
 
 	return c
 }

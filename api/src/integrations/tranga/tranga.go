@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/diogovalentte/mantium/api/src/config"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 type Tranga struct {
@@ -13,7 +14,7 @@ type Tranga struct {
 }
 
 func (t *Tranga) Init() {
-	t.c = &http.Client{}
+	t.c = &http.Client{Timeout: util.ExternalRequestTimeout}
 	t.Address = config.GlobalConfigs.Tranga.Address
 	t.DefaultInterval = config.GlobalConfigs.Tranga.DefaultInterval
 }
