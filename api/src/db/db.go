@@ -250,6 +250,12 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
         ALTER TABLE "chapters" ALTER COLUMN "url" TYPE text;
         ALTER TABLE "multimangas" ALTER COLUMN "cover_img_url" TYPE text;
 
+        -- Postgres does not index the referencing side of a foreign key, so
+        -- every join on multimanga_id and every cascading delete of a
+        -- multimanga had to scan the whole mangas table.
+        CREATE INDEX IF NOT EXISTS "mangas_multimanga_id_idx" ON "mangas" ("multimanga_id");
+        CREATE INDEX IF NOT EXISTS "mangas_source_idx" ON "mangas" ("source");
+
         do $$
        	begin
        		if not exists (
