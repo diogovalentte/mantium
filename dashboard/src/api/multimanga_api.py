@@ -4,6 +4,7 @@ from urllib.parse import urljoin
 
 import base64
 import requests
+from src.api.timeouts import SOURCE_REQUEST_TIMEOUT
 from src.exceptions import APIException
 from src.util.util import get_updated_at_datetime
 
@@ -65,7 +66,7 @@ class MultiMangaAPIClient:
                 "get_first": last_released_chapter_url_get_first,
             }
 
-        res = requests.post(url, json=request_body)
+        res = requests.post(url, json=request_body, timeout=SOURCE_REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
@@ -83,7 +84,7 @@ class MultiMangaAPIClient:
         url = self.base_multimanga_url
         url = f"{url}?id={multimanga_id}"
 
-        res = requests.get(url)
+        res = requests.get(url, timeout=SOURCE_REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
@@ -187,7 +188,7 @@ class MultiMangaAPIClient:
         if exclude_manga_ids:
             url = f"{url}&exclude_manga_ids={','.join(map(str, exclude_manga_ids))}"
 
-        res = requests.get(url)
+        res = requests.get(url, timeout=SOURCE_REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
@@ -281,7 +282,7 @@ class MultiMangaAPIClient:
                 "get_first": last_released_chapter_url_get_first,
             }
 
-        res = requests.post(url, json=request_body)
+        res = requests.post(url, json=request_body, timeout=SOURCE_REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
@@ -299,7 +300,7 @@ class MultiMangaAPIClient:
         url = self.base_multimanga_url + "/manga"
         url = f"{url}?id={id}&manga_id={manga_id}"
 
-        res = requests.delete(url)
+        res = requests.delete(url, timeout=SOURCE_REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
@@ -326,7 +327,7 @@ class MultiMangaAPIClient:
             "status": status,
         }
 
-        res = requests.patch(url, json=request_body)
+        res = requests.patch(url, json=request_body, timeout=SOURCE_REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
@@ -362,7 +363,7 @@ class MultiMangaAPIClient:
             "from_source_site": from_source_site,
         }
 
-        res = requests.patch(url, json=request_body)
+        res = requests.patch(url, json=request_body, timeout=SOURCE_REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
@@ -387,7 +388,7 @@ class MultiMangaAPIClient:
         url = f"{self.base_multimanga_url}{path}"
         url = f"{url}?id={id}{'&cover_img_url=%s' % cover_img_url if cover_img_url else ''}{f'&use_current_manga_cover_img={str(use_current_manga_cover_img).lower()}' if use_current_manga_cover_img else ''}"
 
-        res = requests.patch(url, files={"cover_img": cover_img})
+        res = requests.patch(url, files={"cover_img": cover_img}, timeout=SOURCE_REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
@@ -405,7 +406,7 @@ class MultiMangaAPIClient:
         url = self.base_multimanga_url
         url = f"{url}?id={multimanga_id}"
 
-        res = requests.delete(url)
+        res = requests.delete(url, timeout=SOURCE_REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
@@ -424,7 +425,7 @@ class MultiMangaAPIClient:
         url = f"{self.base_multimanga_url}{path}"
         url = f"{url}?id={multimanga_id}&manga_id={manga_id}"
 
-        res = requests.get(url)
+        res = requests.get(url, timeout=SOURCE_REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(

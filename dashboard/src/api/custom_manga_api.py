@@ -2,6 +2,7 @@ from typing import Any
 from urllib.parse import urljoin
 
 import requests
+from src.api.timeouts import SOURCE_REQUEST_TIMEOUT
 from src.exceptions import APIException
 
 
@@ -20,7 +21,7 @@ class CustomMangaAPIClient:
         url = f"{self.base_custom_manga_url}{path}"
         url = f"{url}?id={manga_id}&url={manga_url}&name={name}"
 
-        res = requests.patch(url)
+        res = requests.patch(url, timeout=SOURCE_REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
@@ -44,7 +45,7 @@ class CustomMangaAPIClient:
         url = f"{self.base_custom_manga_url}{path}"
         url = f"{url}?id={manga_id}&url={manga_url}&new_url={new_url}"
 
-        res = requests.patch(url)
+        res = requests.patch(url, timeout=SOURCE_REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
@@ -92,7 +93,7 @@ class CustomMangaAPIClient:
                 "get_first": last_released_chapter_url_get_first,
             }
 
-        res = requests.patch(url, json=request_body)
+        res = requests.patch(url, json=request_body, timeout=SOURCE_REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
@@ -117,7 +118,7 @@ class CustomMangaAPIClient:
         url = f"{self.base_custom_manga_url}{path}"
         url = f"{url}?id={manga_id}&{'&cover_img_url=%s' % cover_img_url if cover_img_url else ''}{'&use_mantium_default_img=%s' % str(use_mantium_default_img).lower() if use_mantium_default_img else ''}"
 
-        res = requests.patch(url, files={"cover_img": cover_img})
+        res = requests.patch(url, files={"cover_img": cover_img}, timeout=SOURCE_REQUEST_TIMEOUT)
 
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
