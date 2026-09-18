@@ -45,7 +45,7 @@ func init() {
 // SourcesTLDs specifies the TLDs of the sources.
 // Sometimes it's necessery to change the TLD of a source, for example, when the source changes its domain and the old one doesn't redirect to the new one.
 var SourcesTLDs = map[string]string{
-	"klmanga": "cam",
+	"klmanga": "town",
 	"jmanga":  "ltd",
 	"rawkuma": "net",
 }

@@ -10,7 +10,7 @@ import (
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
-var baseSiteURL = "https://klmanga.cam"
+var baseSiteURL = "https://klmanga.town"
 
 // Source is the struct for the KLManga source
 type Source struct{}
