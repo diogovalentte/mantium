@@ -80,6 +80,8 @@ You should copy these files into the Kaizoku container:
 
 Then restart the container.
 
+The KLManga and JManga files find the current domain of the site by themselves, starting from their `Base` variable. If that stops working, set `Base` to the new domain and `DiscoverDomain` to `false`.
+
 **MangaDex source replacement**
 
 If you want to use MangaDex:
