@@ -63,10 +63,9 @@ func init() {
 		}
 	}
 
-	log.Info().Msg("Updating manga URLs TLDs...")
-	err = updateMangasTLDs()
-	if err != nil {
-		panic(err)
+	log.Info().Msg("Updating the domains of the sources that move...")
+	if err = sources.UpdateSourcesDomains(log); err != nil {
+		log.Error().Err(err).Msg("Error updating the sources domains")
 	}
 
 	log.Info().Msg("Getting version from DB...")
@@ -137,17 +136,6 @@ func main() {
 	if err := router.Run(":" + port); err != nil {
 		log.Fatal().Err(err).Msg("Error starting the API")
 	}
-}
-
-func updateMangasTLDs() error {
-	for k, v := range sources.SourcesTLDs {
-		err := sources.ChangeSourceTLDInDB(k, v)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 // setUpdateMangasMetadataPeriodicallyJob sets a job to update mangas metadata periodically

@@ -124,7 +124,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 	})
 
 	term = url.QueryEscape(term)
-	mangaURL := baseSiteURL + "/?q=" + term
+	mangaURL := siteURL.Get() + "/?q=" + term
 	err := c.Visit(mangaURL)
 	if err != nil {
 		if err.Error() == "Not Found" {

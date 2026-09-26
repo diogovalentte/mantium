@@ -95,7 +95,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 	var mangaCount int
 
 	for mangaCount < limit {
-		searchURL := fmt.Sprintf("%s/wp-admin/admin-ajax.php?action=advanced_search", baseSiteURL)
+		searchURL := fmt.Sprintf("%s/wp-admin/admin-ajax.php?action=advanced_search", siteURL.Get())
 
 		var b bytes.Buffer
 		w := multipart.NewWriter(&b)

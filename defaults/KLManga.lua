@@ -1,6 +1,6 @@
 --------------------------------------
 -- @name    KLManga
--- @url     https://klmanga.fi
+-- @url     https://klmanga.zone
 -- @author  diogovalentte
 -- @license MIT
 --------------------------------------
@@ -15,7 +15,9 @@ HttpUtil = require("http_util")
 ----- VARIABLES -----
 Debug = false
 Client = Http.client({ timeout = 20, insecure_ssl = true, debug = Debug })
-Base = "https://klmanga.town"
+Base = "https://klmanga.zone"
+DiscoverDomain = true
+CurrentDomain = nil
 --- END VARIABLES ---
 
 ----- MAIN -----
@@ -25,7 +27,7 @@ Base = "https://klmanga.town"
 -- @return Table of tables with the following fields: name, url
 function SearchManga(query)
     query = HttpUtil.query_escape(query)
-    local req_url = Base .. "/?s=" .. query
+    local req_url = getCurrentDomain() .. "/?s=" .. query
     local request = Http.request("GET", req_url)
     local result = Client:do_request(request)
     local doc = Html.parse(result.body)
@@ -51,6 +53,7 @@ end
 -- @return Table of tables with the following fields: name, url
 
 function MangaChapters(mangaURL)
+    mangaURL = rebaseURL(mangaURL)
     local request = Http.request("GET", mangaURL)
     local result = Client:do_request(request)
     local doc = Html.parse(result.body)
@@ -76,6 +79,7 @@ end
 -- @param chapterURL URL of the chapter
 -- @return Table of tables with the following fields: url, index
 function ChapterPages(chapterURL)
+    chapterURL = rebaseURL(chapterURL)
     local request = Http.request("GET", chapterURL)
     local result = Client:do_request(request)
     local doc = Html.parse(result.body)
@@ -209,23 +213,44 @@ function reverseTableInPlace(tbl)
     end
 end
 
--- Get the current domain of the website.
--- The domain varies a lot.
+-- The site moves to a new domain every few weeks and redirects the old ones.
+-- Base is only the starting point: the current domain is read from the
+-- canonical link of the page Base ends up at, and the manga and chapter URLs
+-- are moved to it, since the old domains don't always keep the path.
+-- Set DiscoverDomain to false to always use Base as it is.
 function getCurrentDomain()
-    local request = Http.request("GET", Base)
-    local result = Client:do_request(request)
-    local doc = Html.parse(result.body)
-    local domain = ""
-
-    doc:find("header.site-header"):each(function(_, el)
-        domain = el:find("img"):parent():attr("href")
-    end)
-
-    if domain == "" then
-        error("could not find domain")
+    if CurrentDomain ~= nil then
+        return CurrentDomain
+    end
+    CurrentDomain = Base
+    if not DiscoverDomain then
+        return CurrentDomain
     end
 
-    return domain
+    local ok, result = pcall(function()
+        return Client:do_request(Http.request("GET", Base))
+    end)
+    if not ok or result == nil or result.body == nil then
+        return CurrentDomain
+    end
+
+    local href = ""
+    Html.parse(result.body):find('link[rel="canonical"]'):each(function(_, el)
+        href = el:attr("href") or ""
+    end)
+    local domain = string.match(href, "^(https?://[^/]+)")
+    if domain ~= nil and string.find(domain, "klmanga", 1, true) ~= nil then
+        CurrentDomain = domain
+    end
+
+    return CurrentDomain
+end
+
+function rebaseURL(url)
+    local domain = getCurrentDomain()
+    return (string.gsub(url, "^https?://[^/]+", function()
+        return domain
+    end, 1))
 end
 
 --- END HELPERS ---

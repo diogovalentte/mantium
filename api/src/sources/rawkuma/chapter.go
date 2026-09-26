@@ -132,7 +132,7 @@ func getChapterList(internalMangaID string) ([]*manga.Chapter, error) {
 		return nil, util.AddErrorContext("error while getting manga chapter list", errordefs.ErrMangaHasNoIDOrURL)
 	}
 
-	chapterListURL := baseSiteURL + "/wp-admin/admin-ajax.php?page=1&action=chapter_list&manga_id="
+	chapterListURL := siteURL.Get() + "/wp-admin/admin-ajax.php?page=1&action=chapter_list&manga_id="
 	chapters := []*manga.Chapter{}
 	var sharedErr error
 

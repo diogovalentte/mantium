@@ -1,6 +1,6 @@
 --------------------------------------
 -- @name    JManga
--- @url     https://jmanga.ac
+-- @url     https://jmanga.locker
 -- @author  diogovalentte
 -- @license MIT
 --------------------------------------
@@ -14,7 +14,9 @@ Json = require("json")
 ----- VARIABLES -----
 Debug = false
 Client = Http.client({ timeout = 20, insecure_ssl = true, debug = Debug })
-Base = "https://jmanga.ltd"
+Base = "https://jmanga.locker"
+DiscoverDomain = true
+CurrentDomain = nil
 --- END VARIABLES ---
 
 ----- MAIN -----
@@ -24,7 +26,7 @@ Base = "https://jmanga.ltd"
 -- @return Table of tables with the following fields: name, url
 function SearchManga(query)
     query = query:gsub(" ", "+")
-    local req_url = Base .. "/?q=" .. encode_query_args(query)
+    local req_url = getCurrentDomain() .. "/?q=" .. encode_query_args(query)
     local request = Http.request("GET", req_url)
     local result = Client:do_request(request)
     local doc = Html.parse(result.body)
@@ -47,6 +49,7 @@ end
 -- @return Table of tables with the following fields: name, url
 
 function MangaChapters(mangaURL)
+    mangaURL = rebaseURL(mangaURL)
     local request = Http.request("GET", mangaURL)
     local result = Client:do_request(request)
     local doc = Html.parse(result.body)
@@ -70,6 +73,7 @@ end
 -- @param chapterURL URL of the chapter
 -- @return Table of tables with the following fields: url, index
 function ChapterPages(chapterURL)
+    chapterURL = rebaseURL(chapterURL)
     local request = Http.request("GET", chapterURL)
     local result = Client:do_request(request)
     local doc = Html.parse(result.body)
@@ -89,7 +93,7 @@ function ChapterPages(chapterURL)
         error("could not extract data-id")
     end
 
-    request = Http.request("GET", Base .. "/json/chapter?mode=vertical&id=" .. data_id)
+    request = Http.request("GET", getCurrentDomain() .. "/json/chapter?mode=vertical&id=" .. data_id)
     result = Client:do_request(request)
     local json = Json.decode(result.body)
     doc = Html.parse(json["html"])
@@ -150,6 +154,46 @@ function encode_query_args(str)
         return string.format("%%%02X", string.byte(c))
     end)
     return str
+end
+
+-- The site moves to a new domain every few weeks and redirects the old ones.
+-- Base is only the starting point: the current domain is read from the
+-- canonical link of the page Base ends up at, and the manga and chapter URLs
+-- are moved to it, since the old domains don't always keep the path.
+-- Set DiscoverDomain to false to always use Base as it is.
+function getCurrentDomain()
+    if CurrentDomain ~= nil then
+        return CurrentDomain
+    end
+    CurrentDomain = Base
+    if not DiscoverDomain then
+        return CurrentDomain
+    end
+
+    local ok, result = pcall(function()
+        return Client:do_request(Http.request("GET", Base))
+    end)
+    if not ok or result == nil or result.body == nil then
+        return CurrentDomain
+    end
+
+    local href = ""
+    Html.parse(result.body):find('link[rel="canonical"]'):each(function(_, el)
+        href = el:attr("href") or ""
+    end)
+    local domain = string.match(href, "^(https?://[^/]+)")
+    if domain ~= nil and string.find(domain, "jmanga", 1, true) ~= nil then
+        CurrentDomain = domain
+    end
+
+    return CurrentDomain
+end
+
+function rebaseURL(url)
+    local domain = getCurrentDomain()
+    return (string.gsub(url, "^https?://[^/]+", function()
+        return domain
+    end, 1))
 end
 
 --- END HELPERS ---
