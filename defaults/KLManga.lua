@@ -193,7 +193,9 @@ end
 function extractImageURLs(str)
     local urls = {}
     for url in string.gmatch(str, "src=[\"'](https?://[^\"']+)[\"']") do
-        table.insert(urls, url)
+        if not string.find(url, "/wp-content/themes/", 1, true) then
+            table.insert(urls, url)
+        end
     end
     return urls
 end
