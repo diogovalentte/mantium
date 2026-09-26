@@ -155,8 +155,8 @@ func getSourceStoredBaseURLs(sourceName string) ([]string, error) {
 	return baseURLs, nil
 }
 
-// changeSourceBaseURLInDB points the URLs of the source's mangas to baseURL,
-// keeping the path.
+// changeSourceBaseURLInDB points the URLs of the source's mangas and chapters
+// to baseURL, keeping the path.
 func changeSourceBaseURLInDB(sourceName, baseURL string) error {
 	contextError := "error changing the base URL of source '%s' to '%s' in DB"
 
@@ -165,21 +165,68 @@ func changeSourceBaseURLInDB(sourceName, baseURL string) error {
 		return util.AddErrorContext(fmt.Sprintf(contextError, sourceName, baseURL), err)
 	}
 
-	// Runs on every start and before every update, so skip the rows that are
-	// already right instead of rewriting the whole table. Also skip the ones
-	// whose new URL is taken by another row, since url is the primary key.
-	const query = `
-		UPDATE mangas
-		SET url = REGEXP_REPLACE(url, '^https?://[^/]+', $1)
-		WHERE source = $2
-			AND SUBSTRING(url FROM '^https?://[^/]+') IS DISTINCT FROM $1
-			AND NOT EXISTS (
-				SELECT 1 FROM mangas other
-				WHERE other.url = REGEXP_REPLACE(mangas.url, '^https?://[^/]+', $1)
-			)
-	`
-	_, err = _db.Exec(query, baseURL, sourceName)
+	tx, err := _db.Begin()
 	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, sourceName, baseURL), err)
+	}
+	defer tx.Rollback()
+
+	// Both run on every start and before every update, so they skip the rows
+	// that are already right instead of rewriting the tables. url is part of
+	// the primary key in both, so a row whose new URL is taken, by an existing
+	// row or by another row moving to the same URL, is skipped.
+	const mangasQuery = `
+		WITH moving AS (
+			SELECT DISTINCT ON (new_url) id, new_url
+			FROM (
+				SELECT id, REGEXP_REPLACE(url, '^https?://[^/]+', $1) AS new_url
+				FROM mangas
+				WHERE source = $2
+					AND SUBSTRING(url FROM '^https?://[^/]+') IS DISTINCT FROM $1
+			) candidates
+			WHERE NOT EXISTS (SELECT 1 FROM mangas other WHERE other.url = candidates.new_url)
+			ORDER BY new_url, id
+		)
+		UPDATE mangas
+		SET url = moving.new_url
+		FROM moving
+		WHERE mangas.id = moving.id
+	`
+	if _, err = tx.Exec(mangasQuery, baseURL, sourceName); err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, sourceName, baseURL), err)
+	}
+
+	// The last released chapter belongs to a manga of the source. The last
+	// read chapter belongs to a multimanga, which can mix sources, so it's
+	// matched by the source name in the host, like urlToSource does.
+	const chaptersQuery = `
+		WITH moving AS (
+			SELECT DISTINCT ON (new_url, type) id, new_url
+			FROM (
+				SELECT c.id, c.type, REGEXP_REPLACE(c.url, '^https?://[^/]+', $1) AS new_url
+				FROM chapters c
+				WHERE SUBSTRING(c.url FROM '^https?://[^/]+') IS DISTINCT FROM $1
+					AND (
+						c.manga_id IN (SELECT id FROM mangas WHERE source = $2)
+						OR (c.multimanga_id IS NOT NULL AND SUBSTRING(c.url FROM '^https?://([^/:]+)') LIKE '%' || $2 || '%')
+					)
+			) candidates
+			WHERE NOT EXISTS (
+				SELECT 1 FROM chapters other
+				WHERE other.url = candidates.new_url AND other.type = candidates.type
+			)
+			ORDER BY new_url, type, id
+		)
+		UPDATE chapters
+		SET url = moving.new_url
+		FROM moving
+		WHERE chapters.id = moving.id
+	`
+	if _, err = tx.Exec(chaptersQuery, baseURL, sourceName); err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, sourceName, baseURL), err)
+	}
+
+	if err = tx.Commit(); err != nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, sourceName, baseURL), err)
 	}
 
