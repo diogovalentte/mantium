@@ -30,7 +30,7 @@ The [Suwayomi](https://github.com/Suwayomi) integration:
 - By default, all chapters are queued for download when the manga is added.
   - This behavior can be disabled in the dashboard settings.
 - When the background update detects a new chapter, Mantium queues that chapter for download.
-- Existing dashboard entries can be imported into Tranga through an API route (see the [API docs](https://github.com/diogovalentte/mantium?tab=readme-ov-file#api)).
+- Existing dashboard entries can be imported into Suwayomi through an API route (see the [API docs](https://github.com/diogovalentte/mantium?tab=readme-ov-file#api)).
 
 ## Required extension repositories and sources
 
@@ -53,10 +53,10 @@ Currently, only these sources are supported because compatible extensions for th
 
 The [Kaizoku](https://github.com/oae/kaizoku) integration:
 
-- Attempts to add a manga to Suwayomi when it is added to the dashboard.
+- Attempts to add a manga to Kaizoku when it is added to the dashboard.
   - By default, only the original manga of a Multimanga is added. Entries added later to the same Multimanga are not automatically added. It can be changed in the dashboard settings.
 - When the background update detects a new chapter, Mantium queues that chapter for download.
-- Existing dashboard entries can be imported into Tranga through an API route (see the [API docs](https://github.com/diogovalentte/mantium?tab=readme-ov-file#api)).
+- Existing dashboard entries can be imported into Kaizoku through an API route (see the [API docs](https://github.com/diogovalentte/mantium?tab=readme-ov-file#api)).
 
 ## Limitations
 
