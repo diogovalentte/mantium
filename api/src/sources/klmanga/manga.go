@@ -133,7 +133,7 @@ func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, er
 			nextPage = true
 		})
 
-		mangaURL := fmt.Sprintf("%s/page/%d/?s=%s", baseSiteURL, pageNumber, term)
+		mangaURL := fmt.Sprintf("%s/page/%d/?s=%s", siteURL.Get(), pageNumber, term)
 		err := c.Visit(mangaURL)
 		if err != nil {
 			if err.Error() == "Not Found" {

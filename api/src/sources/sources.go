@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/diogovalentte/mantium/api/src/config"
-	"github.com/diogovalentte/mantium/api/src/db"
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/sources/jmanga"
 	"github.com/diogovalentte/mantium/api/src/sources/klmanga"
@@ -40,14 +39,6 @@ func init() {
 	// config cannot import this package, so publish the source names to it.
 	// Runs before main's init, which is what calls config.SetConfigs.
 	config.SourcesList = slices.Sorted(maps.Keys(Sources))
-}
-
-// SourcesTLDs specifies the TLDs of the sources.
-// Sometimes it's necessery to change the TLD of a source, for example, when the source changes its domain and the old one doesn't redirect to the new one.
-var SourcesTLDs = map[string]string{
-	"klmanga": "town",
-	"jmanga":  "ltd",
-	"rawkuma": "net",
 }
 
 // RegisterSource registers a new source
@@ -153,33 +144,6 @@ func GetMangaChapters(mangaURL, mangaInternalID string) ([]*manga.Chapter, error
 	}
 
 	return chapters, nil
-}
-
-// ChangeSourceTLDInDB changes the TLD of a source in the database
-func ChangeSourceTLDInDB(sourceName, newTLD string) error {
-	contextError := "error changing source TLD in DB for source '%s' to '%s'"
-
-	_db, err := db.OpenConn()
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, sourceName, newTLD), err)
-	}
-
-	// Runs on every start, so skip the rows that already have the right TLD
-	// instead of rewriting the whole table and leaving dead tuples behind.
-	const query = `
-		UPDATE mangas
-		SET
-			url = REGEXP_REPLACE(url, '(https?://[^/]+?)\.[a-z]+', '\1.' || $1)
-		WHERE
-			source = $2
-			AND url <> REGEXP_REPLACE(url, '(https?://[^/]+?)\.[a-z]+', '\1.' || $1)
-	`
-	_, err = _db.Exec(query, newTLD, sourceName)
-	if err != nil {
-		return util.AddErrorContext(fmt.Sprintf(contextError, sourceName, newTLD), err)
-	}
-
-	return nil
 }
 
 func urlToSource(urlString string) (string, error) {

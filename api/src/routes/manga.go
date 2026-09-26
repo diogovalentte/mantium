@@ -1989,6 +1989,11 @@ func UpdateMangasMetadata(c *gin.Context) {
 		"kaizoku":        {},
 		"suwayomi":       {},
 	}
+
+	if err := sources.UpdateSourcesDomains(logger); err != nil {
+		errors["manga_metadata"] = append(errors["manga_metadata"], err.Error())
+	}
+
 	var newMetadata bool
 	var trangaInt *tranga.Tranga
 	if config.GlobalConfigs.Tranga.Valid {

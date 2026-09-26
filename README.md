@@ -22,8 +22,8 @@ Mantium natively supports:
 - [MangaHub](https://mangahub.io)
 - [MangaUpdates](https://www.mangaupdates.com/)
 - [RawKuma](https://rawkuma.com/)
-- [KLManga](https://klmanga.rs/)
-- [JManga](https://jmanga.is)
+- [KLManga](https://klmanga.zone/)
+- [JManga](https://jmanga.locker)
 
 It can also automatically track manga from nearly all sites using the [Custom Manga](#custom-manga) feature.
 
@@ -337,7 +337,7 @@ If a manga is removed or its URL changes:
 - Mantium cannot continue tracking it.
 - Delete the entry and add it again using the new URL or a different source.
 
-If a source domain changes (e.g., `klmanga.dm` → `klmanga.io`), open an issue if it has not yet been updated in Mantium.
+If a source domain changes (e.g., `klmanga.town` → `klmanga.zone`), Mantium usually finds the new one by itself: on startup and before every update of all mangas, it follows the redirects of the KLManga, JManga and RawKuma domains it knows, and moves the URLs of your mangas to the domain they end up at. If it doesn't (the old domain stopped redirecting, for example), open an issue.
 
 # Running manually
 
