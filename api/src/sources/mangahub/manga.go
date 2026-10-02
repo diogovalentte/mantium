@@ -27,7 +27,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 	mangaReturn.Source = "mangahub"
 
 	query := `
-        {"query":"{manga(x:m01,slug:\"%s\"){title,image,latestChapter}}"}
+        {"query":"{manga(x:m01,slug:\"%s\"){title,image,latestChapter,chapters{number,title,slug,date}}}"}
     `
 	query = fmt.Sprintf(query, mangaSlug)
 	payload := strings.NewReader(query)
@@ -65,7 +65,7 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 
 	// Last Released Chapter
 	if mangaAPIResp.Data.Manga.LastestChapter != 0 {
-		lastReleasedChapter, err := s.GetChapterMetadataByChapter(mangaURL, "", strconv.FormatFloat(mangaAPIResp.Data.Manga.LastestChapter, 'f', -1, 64))
+		lastReleasedChapter, err := findChapterInResponse(mangaAPIResp.Data.Manga.Chapters, strconv.FormatFloat(mangaAPIResp.Data.Manga.LastestChapter, 'f', -1, 64), mangaSlug)
 		if err != nil {
 			if !util.ErrorContains(err, errordefs.ErrChapterNotFound.Message) {
 				return nil, util.AddErrorContext(errorContext, err)
