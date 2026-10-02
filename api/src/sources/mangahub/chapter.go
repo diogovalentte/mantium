@@ -34,20 +34,20 @@ func (s *Source) GetChapterMetadataByChapter(mangaURL, _, chapter string) (*mang
 		return nil, err
 	}
 
-	chapterReturn := &manga.Chapter{}
-
+	// The API's chapter(...) query is refused without a per client encryption
+	// handshake that is rate limited per IP, so the chapter is looked up in the
+	// manga's chapter list instead.
 	query := `
-        {"query":"{chapter(x:m01,slug:\"MANGA-SLUG\",number:CHAPTER-NUMBER){number,title,slug,date,manga{slug}}}"}
+        {"query":"{manga(x:m01,slug:\"MANGA-SLUG\"){chapters{number,title,slug,date}}}"}
     `
 	query = strings.ReplaceAll(query, "MANGA-SLUG", mangaSlug)
-	query = strings.ReplaceAll(query, "CHAPTER-NUMBER", chapter)
 	payload := strings.NewReader(query)
 
-	var mangaAPIResp getChapterAPIResponse
+	var mangaAPIResp getMangaAPIResponse
 	_, err = mangahubClient.Request("POST", baseAPIURL, payload, &mangaAPIResp)
 	if err != nil {
 		if util.ErrorContains(err, "non-200 status code -> (404)") {
-			return nil, errordefs.ErrChapterNotFound
+			return nil, errordefs.ErrMangaNotFound
 		}
 		return nil, err
 	}
@@ -56,28 +56,28 @@ func (s *Source) GetChapterMetadataByChapter(mangaURL, _, chapter string) (*mang
 		switch mangaAPIResp.Errors[0].Message {
 		case "Cannot read properties of undefined (reading 'mangaID')":
 			return nil, errordefs.ErrMangaNotFound
-		case "Cannot convert undefined or null to object":
-			return nil, errordefs.ErrChapterNotFound
 		default:
 			return nil, fmt.Errorf("error while getting chapter from response: %s", mangaAPIResp.Errors[0].Message)
 		}
 	}
 
-	chapterReturn, err = getChapterFromResponse(&mangaAPIResp.Data.Chapter, mangaSlug)
-	if err != nil {
-		return nil, err
-	}
-
-	return chapterReturn, nil
+	return findChapterInResponse(mangaAPIResp.Data.Manga.Chapters, chapter, mangaSlug)
 }
 
-type getChapterAPIResponse struct {
-	Errors []struct {
-		Message string `json:"message"`
-	} `json:"errors"`
-	Data struct {
-		Chapter getMangaAPIChapter `json:"chapter"`
-	} `json:"data"`
+// findChapterInResponse returns the chapter with the given number from a manga's chapter list
+func findChapterInResponse(chapters []*getMangaAPIChapter, chapter, mangaSlug string) (*manga.Chapter, error) {
+	number, err := strconv.ParseFloat(chapter, 64)
+	if err != nil {
+		return nil, errordefs.ErrChapterNotFound
+	}
+
+	for _, c := range chapters {
+		if c.Number == number {
+			return getChapterFromResponse(c, mangaSlug)
+		}
+	}
+
+	return nil, errordefs.ErrChapterNotFound
 }
 
 type getMangaAPIChapter struct {
@@ -101,7 +101,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, err
 	}
 
 	query := `
-        {"query":"{manga(x:m01,slug:\"MANGA-SLUG\"){latestChapter}}"}
+        {"query":"{manga(x:m01,slug:\"MANGA-SLUG\"){latestChapter,chapters{number,title,slug,date}}}"}
     `
 	query = strings.ReplaceAll(query, "MANGA-SLUG", mangaSlug)
 	payload := strings.NewReader(query)
@@ -124,7 +124,7 @@ func (s *Source) GetLastChapterMetadata(mangaURL, _ string) (*manga.Chapter, err
 		}
 	}
 
-	chapterReturn, err := s.GetChapterMetadataByChapter(mangaURL, "", strconv.FormatFloat(mangaAPIResp.Data.Manga.LastestChapter, 'f', -1, 64))
+	chapterReturn, err := findChapterInResponse(mangaAPIResp.Data.Manga.Chapters, strconv.FormatFloat(mangaAPIResp.Data.Manga.LastestChapter, 'f', -1, 64), mangaSlug)
 	if err != nil {
 		return nil, util.AddErrorContext(fmt.Sprintf(errorContext, mangaURL), err)
 	}
