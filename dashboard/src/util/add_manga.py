@@ -563,17 +563,17 @@ def show_add_custom_manga_form(multimanga_id: int = 0):
             key=key_prefix + "url",
         )
 
-        st.selectbox(
-            "Status",
-            index=0,
-            options=list(defaults.manga_status_options.keys())[
-                1:
-            ],  # Exclude the "All" option
-            format_func=lambda index: defaults.manga_status_options[index],
-            key=key_prefix + "status",
-        )
-
         if multimanga_id == 0:
+            st.selectbox(
+                "Status",
+                index=0,
+                options=list(defaults.manga_status_options.keys())[
+                    1:
+                ],  # Exclude the "All" option
+                format_func=lambda index: defaults.manga_status_options[index],
+                key=key_prefix + "status",
+            )
+
             with st.expander(
                 "Last Read Chapter",
             ):
@@ -691,7 +691,7 @@ def show_add_custom_manga_form(multimanga_id: int = 0):
                 ss["add_manga_manga_to_add" if multimanga_id == 0 else "update_multimanga_mangas_add_manga_selected_manga"] = {
                     "name": ss[key_prefix + "name"],
                     "url": ss[key_prefix + "url"],
-                    "status": ss[key_prefix + "status"],
+                    "status": ss.get(key_prefix + "status", ""),
                     "manga_internal_id": "",
                     "cover_img_url": ss[key_prefix + "cover_img_url"],
                     "cover_img": cover_img,
