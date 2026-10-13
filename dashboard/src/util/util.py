@@ -59,6 +59,11 @@ def get_api_error_detail(ex: Exception) -> str:
     return str(message).strip().splitlines()[0]
 
 
+# Client-side validation of URL text inputs (st.text_input(validate=...)). The
+# browser can skip it, so the forms still check with get_invalid_url_message.
+URL_INPUT_VALIDATION = (r"^https?://[^\s/?#]+\S*$", "Must start with http:// or https://")
+
+
 def get_invalid_url_message(field: str, url: str) -> str | None:
     """Returns a message if the URL is provided but isn't a valid http(s) URL."""
     if url == "":

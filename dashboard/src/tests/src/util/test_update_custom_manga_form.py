@@ -165,3 +165,11 @@ def test_clear_works_when_the_presets_fail_to_load(api):
     at.button(key=P + "update").click().run()
     assert_no_exception(at)
     assert update_args(api)[3:11] == ("", "", "", False, "", "", False, False)
+
+
+def test_url_inputs_are_validated_in_the_browser(api):
+    at = run_app(manga())
+    for key in ("url", "cover_img_url"):
+        widget = at.text_input(key=P + key)
+        assert widget.proto.type == widget.proto.URL, key
+        assert widget.proto.validate_regex, key

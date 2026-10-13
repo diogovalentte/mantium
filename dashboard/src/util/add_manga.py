@@ -6,6 +6,7 @@ import streamlit as st
 from src.api.api_client import get_api_client
 from src.exceptions import APIException
 from src.util.util import (
+    URL_INPUT_VALIDATION,
     centered_container,
     escape_html,
     get_api_error_detail,
@@ -238,6 +239,8 @@ def show_add_manga_form_url():
     manga_url = st.text_input(
         "Manga URL",
         placeholder="https://mangahub.io/manga/one-piece",
+        type="url",
+        validate=URL_INPUT_VALIDATION,
         key="add_manga_form_url",
     )
 
@@ -996,6 +999,8 @@ def show_add_custom_manga_form(multimanga_id: int = 0):
         st.text_input(
             "Manga URL",
             placeholder="https://randomsite.com/title/one-piece",
+            type="url",
+            validate=URL_INPUT_VALIDATION,
             key=key_prefix + "url",
             on_change=on_custom_manga_url_change,
             args=(key_prefix,),
@@ -1023,6 +1028,8 @@ def show_add_custom_manga_form(multimanga_id: int = 0):
             st.text_input(
                 "Cover Image URL",
                 placeholder="https://example.com/image.jpg",
+                type="url",
+                validate=URL_INPUT_VALIDATION,
                 key=key_prefix + "cover_img_url",
             )
             st.file_uploader(
@@ -1046,6 +1053,8 @@ def show_add_custom_manga_form(multimanga_id: int = 0):
                     "Chapter URL",
                     placeholder="https://randomsite.com/title/one-piece/chapter/1000",
                     help="Optional. Can provide only the chapter above.",
+                    type="url",
+                    validate=URL_INPUT_VALIDATION,
                     key=key_prefix + "last_read_chapter_url",
                 )
 

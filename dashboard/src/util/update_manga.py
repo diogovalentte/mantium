@@ -18,6 +18,7 @@ from src.util.add_manga import (
     show_search_manga_term_form,
 )
 from src.util.util import (
+    URL_INPUT_VALIDATION,
     centered_container,
     escape_html,
     get_api_error_detail,
@@ -221,6 +222,8 @@ def show_update_multimanga(multimanga_id):
                 help="Cannot set only the URL without the chapter, chapter field must be filled. If chapter is not filled, set to the last released chapter.",
                 value=multimanga["LastReadChapter"]["URL"] if not multimanga["LastReadChapter"]["FromSourceSite"] else "",
                 placeholder="https://randomsite.com/title/one-piece/chapter/1000",
+                type="url",
+                validate=URL_INPUT_VALIDATION,
                 key="update_multimanga_form_chapter_manual_url_" + str(multimanga["ID"]),
             )
 
@@ -241,6 +244,8 @@ def show_update_multimanga(multimanga_id):
             st.text_input(
                 "Cover Image URL",
                 placeholder="https://example.com/image.jpg",
+                type="url",
+                validate=URL_INPUT_VALIDATION,
                 key="update_multimanga_form_cover_img_url_" + str(multimanga["ID"]),
             )
             st.file_uploader(
@@ -560,6 +565,8 @@ def show_update_multimanga_add_manga_url(multimanga):
     manga_url = st.text_input(
         "Manga URL",
         placeholder="https://mangahub.io/manga/one-piece",
+        type="url",
+        validate=URL_INPUT_VALIDATION,
         key="update_multimanga_mangas_add_manga_url_provided_url",
     )
     if manga_url != "":
@@ -865,6 +872,8 @@ def show_update_custom_manga(manga: dict[str, Any]):
             "Manga URL",
             placeholder="https://randomsite.com/title/one-piece",
             help="The URL of the manga in the source site. It's used by the Last Released Chapter selectors to check for new chapters if you provided the selectors. You can change the URL and the selectors at the same time.",
+            type="url",
+            validate=URL_INPUT_VALIDATION,
             key=key_prefix + "url",
             on_change=on_custom_manga_url_change,
             args=(key_prefix,),
@@ -878,6 +887,8 @@ def show_update_custom_manga(manga: dict[str, Any]):
             st.text_input(
                 "Cover Image URL",
                 placeholder="https://example.com/image.jpg",
+                type="url",
+                validate=URL_INPUT_VALIDATION,
                 key=key_prefix + "cover_img_url",
             )
             st.file_uploader(
