@@ -50,6 +50,7 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.PATCH("/custom_manga/url", UpdateCustomMangaURL)
 		group.PATCH("/custom_manga/cover_img", UpdateCustomMangaCoverImg)
 		group.POST("/custom_manga/test_selectors", TestCustomMangaSelectors)
+		group.PATCH("/custom_manga", UpdateCustomManga)
 
 		// Methods for multimanga only
 		group.POST("/multimanga", AddMultiManga)
@@ -292,6 +293,117 @@ type UpdateLastReleasedChapterSelectorsRequest struct {
 	LastReleasedChapterNameSelector       *HTMLSelectorRequest `json:"name_selector"`
 	LastReleasedChapterURLSelector        *HTMLSelectorRequest `json:"url_selector"`
 	LastReleasedChapterSelectorUseBrowser bool                 `json:"use_browser"`
+}
+
+// UpdateCustomMangaRequest is the request body for the UpdateCustomManga route
+type UpdateCustomMangaRequest struct {
+	Name                                  string               `json:"name" binding:"required"`
+	URL                                   string               `json:"url" binding:"omitempty,http_url"`
+	LastReleasedChapterNameSelector       *HTMLSelectorRequest `json:"name_selector"`
+	LastReleasedChapterURLSelector        *HTMLSelectorRequest `json:"url_selector"`
+	LastReleasedChapterSelectorUseBrowser bool                 `json:"use_browser"`
+	CoverImgURL                           string               `json:"cover_img_url" binding:"omitempty,http_url"`
+	CoverImg                              []byte               `json:"cover_img"`
+	UseMantiumDefaultCoverImg             bool                 `json:"use_mantium_default_cover_img"`
+}
+
+// @Summary Update custom manga
+// @Description Updates all the custom manga fields at once: name, URL, last released chapter selectors and, optionally, cover image. If the URL or selectors changed, the last released chapter is got using the new URL and selectors before saving anything, so an invalid combination saves nothing. An empty URL removes the manga URL. Provide at most one of cover_img, cover_img_url and use_mantium_default_cover_img; if none, the cover image is kept. If the error is caused by the request data, the response has a "user_message" field explaining it.
+// @Accept json
+// @Produce json
+// @Param id query int true "Manga ID" Example(1)
+// @Param manga body UpdateCustomMangaRequest true "Custom manga data"
+// @Success 200 {object} responseMessage
+// @Router /custom_manga [patch]
+func UpdateCustomManga(c *gin.Context) {
+	var requestData UpdateCustomMangaRequest
+	if err := c.ShouldBindJSON(&requestData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid JSON fields, refer to the API documentation"})
+		return
+	}
+
+	mangaID, _, err := getMangaIDAndURL(c.Query("id"), "")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	coverOptions := 0
+	for _, provided := range []bool{len(requestData.CoverImg) > 0, requestData.CoverImgURL != "", requestData.UseMantiumDefaultCoverImg} {
+		if provided {
+			coverOptions++
+		}
+	}
+	if coverOptions > 1 {
+		c.JSON(http.StatusBadRequest, errorResponse(&errordefs.UserError{Message: "To update the cover image, provide only one of: an image URL, an uploaded file, or the Mantium default cover image"}))
+		return
+	}
+
+	mangaToUpdate, err := manga.GetMangaDB(mangaID, "")
+	if err != nil {
+		if strings.Contains(err.Error(), errordefs.ErrMangaNotFoundDB.Error()) {
+			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return
+	}
+	if mangaToUpdate.Source != manga.CustomMangaSource {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "you can only update custom mangas"})
+		return
+	}
+
+	update := manga.CustomMangaUpdate{
+		Name:         requestData.Name,
+		URL:          requestData.URL,
+		NameSelector: (*manga.HTMLSelector)(requestData.LastReleasedChapterNameSelector),
+		URLSelector:  (*manga.HTMLSelector)(requestData.LastReleasedChapterURLSelector),
+		UseBrowser:   requestData.LastReleasedChapterSelectorUseBrowser,
+	}
+	switch {
+	case len(requestData.CoverImg) > 0:
+		if !util.IsImageValid(requestData.CoverImg) {
+			c.JSON(http.StatusBadRequest, errorResponse(&errordefs.UserError{Message: "The uploaded cover image is not a valid image"}))
+			return
+		}
+		update.UpdateCoverImg = true
+		update.CoverImg, err = util.ResizeImage(requestData.CoverImg, uint(util.DefaultImageWidth), uint(util.DefaultImageHeight))
+		update.CoverImgResized = err == nil
+		if err != nil {
+			update.CoverImg = requestData.CoverImg
+		}
+	case requestData.CoverImgURL != "":
+		update.UpdateCoverImg = true
+		update.CoverImgURL = requestData.CoverImgURL
+		update.CoverImg, update.CoverImgResized, err = util.GetImageFromURL(requestData.CoverImgURL, 3, 3*time.Second)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, errorResponse(util.AddErrorContext("error getting cover image", &errordefs.UserError{Message: "Couldn't get the cover image from the URL", Err: err})))
+			return
+		}
+	case requestData.UseMantiumDefaultCoverImg:
+		update.UpdateCoverImg = true
+		update.CoverImgResized = true
+		update.CoverImg, err = util.GetDefaultCoverImg()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
+	}
+
+	err = mangaToUpdate.UpdateCustomMangaInDB(update)
+	if err != nil {
+		status := http.StatusInternalServerError
+		var userErr *errordefs.UserError
+		if errors.As(err, &userErr) {
+			status = http.StatusBadRequest
+		}
+		c.JSON(status, errorResponse(err))
+		return
+	}
+
+	dashboard.UpdateDashboard()
+
+	c.JSON(http.StatusOK, gin.H{"message": "Custom manga updated successfully"})
 }
 
 // TestCustomMangaSelectorsRequest is the request body for the TestCustomMangaSelectors route

@@ -1,3 +1,4 @@
+import base64
 from typing import Any
 from urllib.parse import urlencode, urljoin
 
@@ -53,6 +54,63 @@ class CustomMangaAPIClient:
                 url,
                 "PATCH",
                 {},
+                res.status_code,
+                res.text,
+            )
+
+        return res.json()
+
+    def update_custom_manga(
+        self,
+        manga_id: int,
+        name: str,
+        manga_url: str,
+        last_released_chapter_name_selector: str,
+        last_released_chapter_name_attribute: str,
+        last_released_chapter_name_regex: str,
+        last_released_chapter_name_get_first: bool,
+        last_released_chapter_url_selector: str,
+        last_released_chapter_url_attribute: str,
+        last_released_chapter_url_get_first: bool,
+        last_released_chapter_selector_use_browser: bool,
+        cover_img_url: str = "",
+        cover_img: bytes = b"",
+        use_mantium_default_cover_img: bool = False,
+    ) -> dict[str, str]:
+        """Updates all the custom manga fields at once. Nothing is saved if any of them is invalid."""
+        url = f"{self.base_custom_manga_url}?{urlencode({'id': manga_id})}"
+
+        request_body: dict[str, Any] = {
+            "name": name,
+            "url": manga_url,
+            "use_browser": last_released_chapter_selector_use_browser,
+            "cover_img_url": cover_img_url,
+            "cover_img": base64.b64encode(cover_img).decode("utf-8") if cover_img else "",
+            "use_mantium_default_cover_img": use_mantium_default_cover_img,
+        }
+        if last_released_chapter_name_selector != "":
+            request_body["name_selector"] = {
+                "selector": last_released_chapter_name_selector,
+                "attribute": last_released_chapter_name_attribute,
+                "regex": last_released_chapter_name_regex,
+                "get_first": last_released_chapter_name_get_first,
+            }
+        if last_released_chapter_url_selector != "":
+            request_body["url_selector"] = {
+                "selector": last_released_chapter_url_selector,
+                "attribute": last_released_chapter_url_attribute,
+                "get_first": last_released_chapter_url_get_first,
+            }
+
+        res = requests.patch(url, json=request_body, timeout=SOURCE_REQUEST_TIMEOUT)
+
+        if res.status_code not in self.acceptable_status_codes:
+            request_body["cover_img"] = f"<{len(cover_img)} bytes>"
+            raise APIException(
+                "error while updating custom manga",
+                url,
+                "PATCH",
+                request_body,
                 res.status_code,
                 res.text,
             )

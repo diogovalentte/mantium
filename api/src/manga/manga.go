@@ -22,6 +22,7 @@ import (
 	"github.com/go-rod/rod/lib/launcher"
 	"github.com/go-rod/rod/lib/proto"
 	"github.com/gocolly/colly/v2"
+	"github.com/google/uuid"
 
 	"github.com/diogovalentte/mantium/api/src/config"
 	"github.com/diogovalentte/mantium/api/src/db"
@@ -1366,6 +1367,150 @@ func (m *Manga) UpdateLastReleasedChapterSelectorsInDB(nameSelector, URLSelector
 	m.LastReleasedChapterURLSelector = URLSelector
 
 	return nil
+}
+
+// CustomMangaUpdate holds the new values of a custom manga, see Manga.UpdateCustomMangaInDB.
+type CustomMangaUpdate struct {
+	Name string
+	// URL is the manga URL. If empty, the manga has no URL.
+	URL                       string
+	NameSelector, URLSelector *HTMLSelector
+	UseBrowser                bool
+	CoverImg                  []byte
+	CoverImgURL               string
+	CoverImgResized           bool
+	// UpdateCoverImg tells if CoverImg, CoverImgURL and CoverImgResized should be saved.
+	UpdateCoverImg bool
+}
+
+// UpdateCustomMangaInDB updates all the custom manga fields at once.
+// If the URL or selectors changed, the last released chapter is got from the page using
+// the new URL and selectors before saving anything, so an invalid combination saves nothing.
+func (m *Manga) UpdateCustomMangaInDB(update CustomMangaUpdate) error {
+	contextError := "error updating custom manga '%s' in DB"
+
+	if update.NameSelector != nil && update.NameSelector.Selector == "" {
+		update.NameSelector = nil
+	}
+	if update.URLSelector != nil && update.URLSelector.Selector == "" {
+		update.URLSelector = nil
+	}
+	if update.URLSelector != nil {
+		update.URLSelector.Regex = ""
+	}
+	hasSelectors := update.NameSelector != nil || update.URLSelector != nil
+
+	currentURL := m.URL
+	if strings.HasPrefix(currentURL, CustomMangaURLPrefix) {
+		currentURL = ""
+	}
+	newURL := update.URL
+	if newURL == "" {
+		if hasSelectors {
+			return util.AddErrorContext(fmt.Sprintf(contextError, m), &errordefs.UserError{Message: "Provide the manga URL to use the last released chapter selectors"})
+		}
+		newURL = m.URL
+		if currentURL != "" {
+			newURL = CustomMangaURLPrefix + "/" + uuid.New().String()
+		}
+	}
+
+	trackingChanged := update.URL != currentURL ||
+		!sameSelector(update.NameSelector, m.LastReleasedChapterNameSelector) ||
+		!sameSelector(update.URLSelector, m.LastReleasedChapterURLSelector) ||
+		update.UseBrowser != m.LastReleasedChapterSelectorUseBrowser
+
+	var chapter *Chapter
+	var err error
+	if trackingChanged && hasSelectors {
+		chapter, err = GetCustomMangaLastReleasedChapter(newURL, update.NameSelector, update.URLSelector, update.UseBrowser)
+		if err != nil {
+			return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+		}
+	}
+
+	db, err := db.OpenConn()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+	}
+
+	err = func() error {
+		if update.Name != m.Name {
+			if err := updateMangaNameDB(m, update.Name, tx); err != nil {
+				return err
+			}
+		}
+		if newURL != m.URL {
+			if err := updateMangaURLDB(m, newURL, tx); err != nil {
+				return err
+			}
+		}
+		if trackingChanged {
+			if err := updateMangaLastReleasedChapterSelectorDB(m, update.NameSelector, update.URLSelector, update.UseBrowser, tx); err != nil {
+				return err
+			}
+			if chapter != nil {
+				if err := upsertMangaChapter(m.ID, chapter, tx); err != nil {
+					return err
+				}
+			} else if !hasSelectors && m.LastReleasedChapter != nil {
+				if err := deleteMangaChapter(m.ID, m.LastReleasedChapter, tx); err != nil {
+					return err
+				}
+			}
+		}
+		if update.UpdateCoverImg {
+			if err := updateMangaCoverImg(m, update.CoverImg, update.CoverImgResized, update.CoverImgURL, true, tx); err != nil {
+				return err
+			}
+		}
+		return nil
+	}()
+	if err != nil {
+		tx.Rollback()
+		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
+	}
+
+	m.Name = update.Name
+	m.SearchNames = []string{update.Name}
+	m.URL = newURL
+	if trackingChanged {
+		m.LastReleasedChapterNameSelector = update.NameSelector
+		m.LastReleasedChapterURLSelector = update.URLSelector
+		m.LastReleasedChapterSelectorUseBrowser = update.UseBrowser
+		if chapter != nil || !hasSelectors {
+			m.LastReleasedChapter = chapter
+		}
+	}
+	if update.UpdateCoverImg {
+		m.CoverImg = update.CoverImg
+		m.CoverImgURL = update.CoverImgURL
+		m.CoverImgResized = update.CoverImgResized
+		m.CoverImgFixed = true
+	}
+
+	return nil
+}
+
+// sameSelector tells if two selectors are equal. An empty selector is the same as no selector.
+func sameSelector(a, b *HTMLSelector) bool {
+	if a == nil || a.Selector == "" {
+		return b == nil || b.Selector == ""
+	}
+	if b == nil {
+		return false
+	}
+	return *a == *b
 }
 
 func updateMangaLastReleasedChapterSelectorDB(m *Manga, nameSelector, URLSelector *HTMLSelector, useBrowser bool, tx *sql.Tx) error {

@@ -842,7 +842,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
             "Manga URL",
             value=manga["URL"],
             placeholder="https://randomsite.com/title/one-piece",
-            help="The URL of the manga in the source site. It's used by the Last Released Chapter selectors to check for new chapters if you provided the selectors. If you have to change both the URL and selectors to make them work, DON'T update them at the same time. Clear the selectors, update the URL, then update the selectors.",
+            help="The URL of the manga in the source site. It's used by the Last Released Chapter selectors to check for new chapters if you provided the selectors. You can change the URL and the selectors at the same time.",
             key="update_custom_manga_form_url",
         )
 
@@ -984,70 +984,34 @@ def show_update_custom_manga(manga: dict[str, Any]):
                 ):
                     st.warning(invalid_url_message)
                 else:
-                    if name != manga["Name"]:
-                        api_client.update_custom_manga_name(name, manga["ID"])
-
-                    if url != manga["URL"]:
-                        api_client.update_custom_manga_url(url, manga["ID"])
-
-                    if (
-                        last_released_chapter_name_selector
-                        != manga["LastReleasedChapterNameSelector"]["Selector"]
-                        or last_released_chapter_name_attribute
-                        != manga["LastReleasedChapterNameSelector"]["Attribute"]
-                        or last_released_chapter_name_regex
-                        != manga["LastReleasedChapterNameSelector"]["Regex"]
-                        or last_released_chapter_name_get_first
-                        != manga["LastReleasedChapterNameSelector"]["GetFirst"]
-                        or last_released_chapter_url_selector
-                        != manga["LastReleasedChapterURLSelector"]["Selector"]
-                        or last_released_chapter_url_attribute
-                        != manga["LastReleasedChapterURLSelector"]["Attribute"]
-                        or last_released_chapter_url_get_first
-                        != manga["LastReleasedChapterURLSelector"]["GetFirst"]
-                        or last_released_chapter_selector_use_browser
-                        != manga["LastReleasedChapterSelectorUseBrowser"]
-                    ):
-                        api_client.update_custom_manga_last_released_chapter_selectors(
-                            last_released_chapter_name_selector,
-                            last_released_chapter_name_attribute,
-                            last_released_chapter_name_regex,
-                            last_released_chapter_name_get_first,
-                            last_released_chapter_url_selector,
-                            last_released_chapter_url_attribute,
-                            last_released_chapter_url_get_first,
-                            last_released_chapter_selector_use_browser,
-                            manga["ID"],
-                        )
-
-                    values_count = sum(
+                    cover_img_values_count = sum(
                         [
                             bool(cover_img_url),
                             bool(cover_img),
                             use_mantium_default_cover_img,
                         ]
                     )
-                    match values_count:
-                        case 0:
-                            pass
-                        case 1:
-                            if cover_img_url != "" or cover_img is not None:
-                                api_client.update_custom_manga_cover_img(
-                                    manga["ID"],
-                                    cover_img_url,
-                                    cover_img if cover_img else b"",
-                                    False,
-                                )
-                            elif use_mantium_default_cover_img:
-                                api_client.update_custom_manga_cover_img(
-                                    manga["ID"],
-                                    "",
-                                    b"",
-                                    True,
-                                )
-                        case _:
-                            ss["update_manga_warning_message"] = (
-                                "To update the cover image, provide either an URL, upload a file, or check the box to use the Mantium default cover image. The other fields were updated successfully"
+                    if cover_img_values_count > 1:
+                        ss["update_manga_warning_message"] = (
+                            "To update the cover image, provide only one of: an image URL, an uploaded file, or the Mantium default cover image"
+                        )
+                    else:
+                        with st.spinner("Updating manga..."):
+                            api_client.update_custom_manga(
+                                manga["ID"],
+                                name,
+                                url,
+                                last_released_chapter_name_selector,
+                                last_released_chapter_name_attribute,
+                                last_released_chapter_name_regex,
+                                last_released_chapter_name_get_first,
+                                last_released_chapter_url_selector,
+                                last_released_chapter_url_attribute,
+                                last_released_chapter_url_get_first,
+                                last_released_chapter_selector_use_browser,
+                                cover_img_url,
+                                cover_img if cover_img else b"",
+                                use_mantium_default_cover_img,
                             )
 
                     if not (
