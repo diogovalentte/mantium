@@ -80,7 +80,7 @@ Measured on 2026-08-09, so re-check before trusting any of it.
 | --- | --- |
 | API | ~19,300 lines of Go, tests per source, a source registry that works |
 | Dashboard | ~4,300 lines of Python, of which **1028** are `01_📖_Dashboard.py` |
-| Streamlit | 1.54.0, with ~80 pinned packages in `requirements.txt` |
+| Streamlit | 1.54.0, with ~80 pinned packages in `requirements.txt` (1.65.0 since 2026-10-13) |
 | CI | one workflow, publishes images on a tag. Nothing runs the tests |
 
 The split matters: **the API is the mature half.** The work below is almost
@@ -116,6 +116,11 @@ The requirements pull in `faker`, `matplotlib`, `altair`, `pyarrow`,
 
 Every third party component is something that can break on a Streamlit upgrade.
 Removing this tree first is what turns the upgrade from a rewrite into a bump.
+
+**Update, 2026-10-13:** it didn't pin it after all. Streamlit 1.65.0 installed
+next to `streamlit-extras` 0.7.8, and the dashboard rendered the same, except
+that Streamlit itself made widget text smaller. Removing the tree is still worth
+it for item 3, but it's no longer what blocks an upgrade.
 
 ### 3. The CSS hacks have native equivalents now
 
@@ -192,35 +197,37 @@ rendering the form for one run.
 ### Streamlit pitfalls
 
 Every item here bit, or almost bit, the custom manga forms. Each one is checked
-by a test in `src/tests/src/util/` or against the Streamlit 1.54 source. When
+by a test in `src/tests/src/util/` or against the Streamlit 1.65 source. When
 changing a Streamlit form, run those tests, and have it reviewed for these
 before calling it done.
 
 - **`value=` plus `key=` breaks writing the widget through `session_state`.**
-  Streamlit renders a yellow warning ("created with a default value but also had
-  its value set via the Session State API"). Forms that code fills (presets)
-  must seed the initial values into `session_state` once and pass no `value=`.
-  See `reset_custom_manga_form_state`.
+  Streamlit warns "created with a default value but also had its value set via
+  the Session State API". Forms that code fills (presets) must seed the initial
+  values into `session_state` once and pass no `value=`. See
+  `reset_custom_manga_form_state`. Since 1.56 the warning is only logged, once per
+  process, so `conftest.py` in the form tests captures it and fails the test.
 - **A widget's state is deleted at the end of any run that doesn't render it.**
-  This covers a toggle that hides fields, a closed dialog, and an `if` around
-  widgets. Closed expanders and popovers don't count: their bodies still run.
-  Anything that must survive hiding goes in a non-widget key (the selectors draft
-  of `on_custom_manga_tracking_change`). This is also how the forms know their
-  dialog was just opened: the URL widget key is missing.
+  This covers a closed dialog and an `if` around widgets (a toggle that hides
+  fields lost what was typed in them). Closed expanders and popovers don't count:
+  their bodies still run, so hiding fields in an expander keeps their values.
+  This is also how the forms know their dialog was just opened: the URL widget
+  key is missing.
 - **Non-widget `session_state` keys are never cleaned up.** Messages and caches
   stored there survive a closed dialog and reappear on the next open, unless
   something deletes them (`custom_manga_preset_state`).
 - **A widget's `session_state` can only be written before it renders in that
   run.** Callbacks run before the script, so they can always write. Code in the
   script body must run above the widget, which is why the preset detection runs
-  right after the URL input and before the toggle, picker and selectors. Moving
+  right after the URL input and before the expander, picker and selectors. Moving
   it lower raises `StreamlitAPIException`.
 - **`st.dialog` reruns only the dialog function on interactions inside it.**
   Code outside the decorated function doesn't run again until a full rerun. Only
   a dialog with an `on_dismiss` callback reruns the app on close (needed for the
   "dialog just opened" check above); `on_dismiss="ignore"` doesn't.
-- **`st.rerun()` inside a callback is a no-op.** Submit logic that ends in
-  `st.rerun()` (like `add_manga()`) must stay in the `if st.button(...)` body.
+- **`st.rerun()` in a callback was a no-op until 1.63, and works since.** Submit
+  logic that ends in `st.rerun()` (like `add_manga()`) still lives in the
+  `if st.button(...)` body; moving it to a callback changes when it runs.
 - **`st.form` blocks reacting to a field.** Widgets inside a form don't trigger
   reruns or `on_change`, so a form can't pre-select anything from what was typed.
   The custom manga forms dropped `st.form`. Without it, Enter no longer submits,
@@ -228,9 +235,10 @@ before calling it done.
 - **Callback `args` are captured when the widget renders.** Pass only stable
   things (the key prefix) and read current values from `session_state` inside the
   callback.
-- **`st.expander` has no `key` in 1.54,** so it can't be opened from code. Use a
-  `st.toggle` (which has a key) when code needs to show a section, like
-  "Track new chapters automatically" after a preset is detected.
+- **`st.expander` only takes a `key` since 1.55.** With `key=` and
+  `on_change="rerun"`, its open state is `session_state[key]`, and code opens it
+  by writing `True` there before it renders (the Last Released Chapter expander
+  after a preset is detected). In 1.54 it couldn't be opened from code.
 - **`AppTest` selectbox `.select()`/`.set_value()` take the option value** (a
   preset ID), not the label `format_func` shows. Passing the label fails inside
   `format_func`.
