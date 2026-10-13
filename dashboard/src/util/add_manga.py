@@ -1004,9 +1004,8 @@ def show_add_custom_manga_form(multimanga_id: int = 0):
 
     with st.container(border=False):
         st.text_input(
-            "Manga Name",
+            "Manga Name (not optional)",
             placeholder="One Piece",
-            required=True,
             key=key_prefix + "name",
         )
 

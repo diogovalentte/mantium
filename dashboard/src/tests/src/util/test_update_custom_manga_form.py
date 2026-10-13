@@ -173,8 +173,3 @@ def test_url_inputs_are_validated_in_the_browser(api):
         widget = at.text_input(key=P + key)
         assert widget.proto.type == widget.proto.URL, key
         assert widget.proto.validate_regex, key
-
-
-def test_name_is_required(api):
-    at = run_app(manga())
-    assert at.text_input(key=P + "name").proto.required
