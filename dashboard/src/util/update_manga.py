@@ -875,7 +875,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
                 st.checkbox(
                     "Get First",
                     value=manga["LastReleasedChapterNameSelector"]["GetFirst"],
-                    help="Get the first match instead of the last match. Useful for sites that list chapters in ascending order.",
+                    help="Get the first match instead of the last match. Use it when the site lists the newest chapter first.",
                     key="update_custom_manga_form_last_released_chapter_name_get_first",
                 )
             with st.expander(
@@ -898,7 +898,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
                 st.checkbox(
                     "Get First",
                     value=manga["LastReleasedChapterURLSelector"]["GetFirst"],
-                    help="Get the first match instead of the last match. Useful for sites that list chapters in ascending order.",
+                    help="Get the first match instead of the last match. Use it when the site lists the newest chapter first.",
                     key="update_custom_manga_form_last_released_chapter_url_get_first",
                 )
 

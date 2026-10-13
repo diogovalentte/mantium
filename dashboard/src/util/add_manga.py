@@ -614,7 +614,7 @@ def show_add_custom_manga_form(multimanga_id: int = 0):
                 st.checkbox(
                     "Get First",
                     value=False,
-                    help="Get the first match instead of the last match. Useful for sites that list chapters in ascending order.",
+                    help="Get the first match instead of the last match. Use it when the site lists the newest chapter first.",
                     key=key_prefix + "last_released_chapter_name_get_first",
                 )
             with st.expander(
@@ -635,7 +635,7 @@ def show_add_custom_manga_form(multimanga_id: int = 0):
                 st.checkbox(
                     "Get First",
                     value=False,
-                    help="Get the first match instead of the last match. Useful for sites that list chapters in ascending order.",
+                    help="Get the first match instead of the last match. Use it when the site lists the newest chapter first.",
                     key=key_prefix + "last_released_chapter_url_get_first",
                 )
 

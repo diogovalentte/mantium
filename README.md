@@ -185,7 +185,7 @@ Custom manga can automatically detect new chapters by getting the web page defin
 - **Regex (optional)**:
   Extracts the chapter number from the selected value.
 - **Get First (optional)**:
-  If enabled, selects the first matching element; otherwise, selects the last.
+  If enabled, selects the first matching element; otherwise, selects the last. Enable it when the site lists the newest chapter first.
 - **Use Browser (optional)**:
   Uses a headless browser if the page requires JavaScript rendering.
   Otherwise, a simple HTTP GET request is used.
