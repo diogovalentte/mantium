@@ -36,18 +36,6 @@ const chapterNumberRegex = `(\d+(?:\.\d+)?)`
 // BuiltinPresets are the presets that come with Mantium.
 var BuiltinPresets = []*Preset{
 	{
-		Name:         "Madara",
-		Description:  "WordPress sites using the Madara theme, common among scanlation sites. The chapter list has the newest chapter first.",
-		NameSelector: &HTMLSelector{Selector: "css:li.wp-manga-chapter > a", Regex: chapterNumberRegex, GetFirst: true},
-		URLSelector:  &HTMLSelector{Selector: "css:li.wp-manga-chapter > a", Attribute: "href", GetFirst: true},
-	},
-	{
-		Name:         "MangaReader (Themesia)",
-		Description:  "WordPress sites using the MangaReader theme by Themesia. The chapter list has the newest chapter first.",
-		NameSelector: &HTMLSelector{Selector: "css:#chapterlist li", Attribute: "data-num", GetFirst: true},
-		URLSelector:  &HTMLSelector{Selector: "css:#chapterlist li .eph-num a", Attribute: "href", GetFirst: true},
-	},
-	{
 		Name:         "RSS feed",
 		Description:  "RSS feed of a single series, with one item per chapter and the newest first. The chapter is the first number in the item title.",
 		NameSelector: &HTMLSelector{Selector: "xpath://item/title", Regex: chapterNumberRegex, GetFirst: true},

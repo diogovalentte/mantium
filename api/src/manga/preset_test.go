@@ -39,6 +39,19 @@ func TestDetectPresets(t *testing.T) {
 	}))
 	defer server.Close()
 
+	presets := append([]*Preset{
+		{
+			Name:         "Madara",
+			NameSelector: &HTMLSelector{Selector: "css:li.wp-manga-chapter > a", Regex: chapterNumberRegex, GetFirst: true},
+			URLSelector:  &HTMLSelector{Selector: "css:li.wp-manga-chapter > a", Attribute: "href", GetFirst: true},
+		},
+		{
+			Name:         "MangaReader (Themesia)",
+			NameSelector: &HTMLSelector{Selector: "css:#chapterlist li", Attribute: "data-num", GetFirst: true},
+			URLSelector:  &HTMLSelector{Selector: "css:#chapterlist li .eph-num a", Attribute: "href", GetFirst: true},
+		},
+	}, BuiltinPresets...)
+
 	tests := []struct {
 		path        string
 		wantPreset  string
@@ -52,7 +65,7 @@ func TestDetectPresets(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.path, func(t *testing.T) {
-			detections, err := DetectPresets(server.URL+test.path, BuiltinPresets)
+			detections, err := DetectPresets(server.URL+test.path, presets)
 			if err != nil {
 				t.Fatalf("unexpected error: %s", err)
 			}
