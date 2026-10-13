@@ -173,3 +173,40 @@ func TestGetCustomMangaLastReleasedChapterBlocksPrivateAddresses(t *testing.T) {
 		}
 	}
 }
+
+func TestProcessSelectionRegexGroups(t *testing.T) {
+	tests := []struct {
+		regex       string
+		text        string
+		want        string
+		userMessage string
+	}{
+		{regex: `Chapter (\d+)`, text: "Chapter 12 - The end", want: "12"},
+		{regex: `Chapter (\d+)(\.\d+)?`, text: "Chapter 12.5", want: "12.5"},
+		{regex: `Chapter (\d+)(\.\d+)?`, text: "Chapter 12", want: "12"},
+		{regex: `Ch\.(\d+)|Chapter (\d+)`, text: "Chapter 12", want: "12"},
+		{regex: `Ch\.(\d+)|Chapter (\d+)`, text: "Ch.7", want: "7"},
+		{regex: `Vol\.(\d+) Ch\.(\d+)`, text: "Vol.3 Ch.25", want: "325"},
+		{regex: `(?:Chapter) (\d+)`, text: "Chapter 4", want: "4"},
+		{regex: `Chapter (\d*)`, text: "Chapter ?", userMessage: `Chapter name regex matched "Chapter", but its groups are empty`},
+	}
+
+	for _, test := range tests {
+		t.Run(test.regex+" on "+test.text, func(t *testing.T) {
+			got, err := processSelection(test.text, true, &HTMLSelector{Selector: "css:a", Regex: test.regex}, chapterNameField)
+			if test.userMessage == "" {
+				if err != nil {
+					t.Fatalf("unexpected error: %s", err)
+				}
+				if got != test.want {
+					t.Fatalf("got %q, want %q", got, test.want)
+				}
+				return
+			}
+			var userErr *errordefs.UserError
+			if !errors.As(err, &userErr) || userErr.Message != test.userMessage {
+				t.Fatalf("got error %v, want user message %q", err, test.userMessage)
+			}
+		})
+	}
+}

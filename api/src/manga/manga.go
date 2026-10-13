@@ -1988,6 +1988,15 @@ func selectorPrefixError(selector *HTMLSelector, field string) error {
 	return nil
 }
 
+// truncateText collapses the text whitespace and cuts it to size runes, for messages.
+func truncateText(text string, size int) string {
+	text = strings.Join(strings.Fields(text), " ")
+	if runes := []rune(text); len(runes) > size {
+		return string(runes[:size]) + "..."
+	}
+	return text
+}
+
 // processSelection validates what a selector extracted from the page and applies the selector's regex to it.
 // matched tells if the selector matched at least one element in the page.
 func processSelection(selection string, matched bool, selector *HTMLSelector, field string) (string, error) {
@@ -2011,13 +2020,15 @@ func processSelection(selection string, matched bool, selector *HTMLSelector, fi
 		}
 		matches := re.FindStringSubmatch(selection)
 		if len(matches) < 2 {
-			text := strings.Join(strings.Fields(selection), " ")
-			if runes := []rune(text); len(runes) > 80 {
-				text = string(runes[:80]) + "..."
-			}
-			return "", &errordefs.UserError{Message: fmt.Sprintf("%s regex didn't match the text \"%s\"", field, text)}
+			return "", &errordefs.UserError{Message: fmt.Sprintf("%s regex didn't match the text \"%s\"", field, truncateText(selection, 80))}
 		}
-		selection = matches[1]
+		// The capture groups that matched, concatenated in order. Only one matches in an
+		// alternation like "Ch\.(\d+)|Chapter (\d+)", and more than one is how to join parts,
+		// like "Chapter (\d+)(\.\d+)?" for "12.5".
+		selection = strings.Join(matches[1:], "")
+		if strings.TrimSpace(selection) == "" {
+			return "", &errordefs.UserError{Message: fmt.Sprintf("%s regex matched \"%s\", but its groups are empty", field, truncateText(matches[0], 80))}
+		}
 	}
 
 	return strings.TrimSpace(selection), nil

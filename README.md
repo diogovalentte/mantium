@@ -183,7 +183,7 @@ Custom manga can automatically detect new chapters by getting the web page defin
   Attribute containing the chapter name or URL (e.g., href).
   If empty, the element text is used.
 - **Regex (optional)**:
-  Extracts the chapter number from the selected value.
+  Extracts the chapter number from the selected value. The chapter is the text captured by the regex groups (the parts in parentheses), joined in order when there's more than one, and groups that didn't match are skipped. For example, `Chapter (\d+)` gets `100` from `Chapter 100`, `Chapter (\d+)(\.\d+)?` gets `12.5` from `Chapter 12.5`, and `Ch\.(\d+)|Chapter (\d+)` works with both `Ch.7` and `Chapter 7`. Non-capturing groups, `(?:...)`, aren't part of the chapter.
 - **Get First (optional)**:
   If enabled, selects the first matching element; otherwise, selects the last. Enable it when the site lists the newest chapter first.
 - **Use Browser (optional)**:
