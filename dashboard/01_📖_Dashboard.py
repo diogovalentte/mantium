@@ -13,7 +13,7 @@ from src.util.update_manga import (
     show_update_multimanga_form,
     show_update_multimanga_mangas_form,
 )
-from src.util.util import centered_container, escape_html, get_logger, get_relative_time, safe_href, set_is_dialog_open
+from src.util.util import centered_container, escape_html, get_logger, get_relative_time, safe_href, tagger, set_is_dialog_open
 from streamlit import session_state as ss
 from streamlit_extras.stylable_container import stylable_container
 from streamlit_javascript import st_javascript
@@ -528,8 +528,37 @@ class MainDashboard:
                 unsafe_allow_html=True,
             )
 
+        chapter_with_url_tag_content = f"""
+            <a href="{{}}" target="_blank" style="text-decoration: none; color: {defaults.chapter_link_tag_text_color}">
+                <span>{{}}</span>
+            </a>
+        """
+        chapter_without_url_tag_content = f"""
+            <span style="text-decoration: none; color: {defaults.chapter_link_tag_text_color}">
+                <span>{{}}</span>
+            </span>
+        """
+
         no_released_chapter_custom_manga = not (manga["LastReleasedChapter"]["Chapter"] == "" and manga["Source"] == defaults.CUSTOM_MANGA_SOURCE)
         if no_released_chapter_custom_manga:
+            if manga["LastReleasedChapter"]["URL"] != "":
+                chapter = chapter_with_url_tag_content.format(
+                    util.safe_href(manga["LastReleasedChapter"]["URL"]),
+                    (
+                        f'Ch. {util.escape_html(manga["LastReleasedChapter"]["Chapter"])}'
+                        if manga["LastReleasedChapter"]["Chapter"] != ""
+                        else "N/A"
+                    ),
+                )
+            else:
+                chapter = chapter_without_url_tag_content.format(
+                    (
+                        f'Ch. {util.escape_html(manga["LastReleasedChapter"]["Chapter"])}'
+                        if manga["LastReleasedChapter"]["Chapter"] != ""
+                        else "N/A"
+                    ),
+                )
+
             release_date = (
                 manga["LastReleasedChapter"]["UpdatedAt"]
                 if manga["LastReleasedChapter"]["UpdatedAt"]
@@ -541,7 +570,12 @@ class MainDashboard:
             else:
                 relative_release_date = release_date
 
-            util.show_labeled_tag("Last Released Chapter:", util.chapter_tag_markdown(manga["LastReleasedChapter"]))
+            tagger(
+                "<strong>Last Released Chapter:</strong>",
+                chapter,
+                defaults.chapter_link_tag_background_color,
+                "float: right;",
+            )
             st.caption(
                 f'**Release Date**: <span style="float: right;" title="{release_date}">{relative_release_date}</span>',
                 unsafe_allow_html=True,
@@ -549,6 +583,23 @@ class MainDashboard:
         else:
             st.markdown("""<div style="height: 80px"></div>""", unsafe_allow_html=True)
 
+        if manga["LastReadChapter"]["URL"] != "":
+            chapter = chapter_with_url_tag_content.format(
+                util.safe_href(manga["LastReadChapter"]["URL"]),
+                (
+                    f'Ch. {util.escape_html(manga["LastReadChapter"]["Chapter"])}'
+                    if manga["LastReadChapter"]["Chapter"] != ""
+                    else "N/A"
+                ),
+            )
+        else:
+            chapter = chapter_without_url_tag_content.format(
+                (
+                    f'Ch. {util.escape_html(manga["LastReadChapter"]["Chapter"])}'
+                    if manga["LastReadChapter"]["Chapter"] != ""
+                    else "N/A"
+                ),
+            )
         read_date = (
             manga["LastReadChapter"]["UpdatedAt"]
             if manga["LastReadChapter"]["UpdatedAt"]
@@ -560,7 +611,12 @@ class MainDashboard:
         else:
             relative_read_date = read_date
 
-        util.show_labeled_tag("Last Read Chapter:", util.chapter_tag_markdown(manga["LastReadChapter"]))
+        tagger(
+            "<strong>Last Read Chapter:</strong>",
+            chapter,
+            defaults.chapter_link_tag_background_color,
+            "float: right;",
+        )
         st.caption(
             f"""**Read Date**: <span style="float: right;" title="{read_date}">{relative_read_date}</span>""",
             unsafe_allow_html=True,
@@ -638,6 +694,34 @@ class MainDashboard:
                     unsafe_allow_html=True,
                 )
 
+        chapter_with_url_tag_content = f"""
+            <a href="{{}}" target="_blank" style="text-decoration: none; color: {defaults.chapter_link_tag_text_color}">
+                <span>{{}}</span>
+            </a>
+        """
+        chapter_without_url_tag_content = f"""
+            <span style="text-decoration: none; color: {defaults.chapter_link_tag_text_color}">
+                <span>{{}}</span>
+            </span>
+        """
+
+        if manga["LastReleasedChapter"]["URL"] != "":
+            chapter = chapter_with_url_tag_content.format(
+                util.safe_href(manga["LastReleasedChapter"]["URL"]),
+                (
+                    f'Ch. {util.escape_html(manga["LastReleasedChapter"]["Chapter"])}'
+                    if manga["LastReleasedChapter"]["Chapter"] != ""
+                    else "N/A"
+                ),
+            )
+        else:
+            chapter = chapter_without_url_tag_content.format(
+                (
+                    f'Ch. {util.escape_html(manga["LastReleasedChapter"]["Chapter"])}'
+                    if manga["LastReleasedChapter"]["Chapter"] != ""
+                    else "N/A"
+                ),
+            )
         release_date = (
             manga["LastReleasedChapter"]["UpdatedAt"]
             if manga["LastReleasedChapter"]["UpdatedAt"]
@@ -650,8 +734,14 @@ class MainDashboard:
             relative_release_date = release_date
 
         with last_released_chap_col:
-            st.markdown("**Last Released Chapter:**")
-            st.markdown(util.chapter_tag_markdown(manga["LastReleasedChapter"]))
+            st.write(
+                "<strong>Last Released Chapter:</strong>", unsafe_allow_html=True
+            )
+            tagger(
+                "",
+                chapter,
+                defaults.chapter_link_tag_background_color,
+            )
         with last_released_chap_date_col:
             st.caption("Release Date:")
             st.caption(
@@ -659,6 +749,23 @@ class MainDashboard:
                 unsafe_allow_html=True,
             )
 
+        if manga["LastReadChapter"]["URL"] != "":
+            chapter = chapter_with_url_tag_content.format(
+                util.safe_href(manga["LastReadChapter"]["URL"]),
+                (
+                    f'Ch. {util.escape_html(manga["LastReadChapter"]["Chapter"])}'
+                    if manga["LastReadChapter"]["Chapter"] != ""
+                    else "N/A"
+                ),
+            )
+        else:
+            chapter = chapter_without_url_tag_content.format(
+                (
+                    f'Ch. {util.escape_html(manga["LastReadChapter"]["Chapter"])}'
+                    if manga["LastReadChapter"]["Chapter"] != ""
+                    else "N/A"
+                ),
+            )
         read_date = (
             manga["LastReadChapter"]["UpdatedAt"]
             if manga["LastReadChapter"]["UpdatedAt"]
@@ -671,8 +778,12 @@ class MainDashboard:
             relative_read_date = read_date
 
         with last_read_chap_col:
-            st.markdown("**Last Read Chapter:**")
-            st.markdown(util.chapter_tag_markdown(manga["LastReadChapter"]))
+            st.write("<strong>Last Read Chapter:</strong>", unsafe_allow_html=True)
+            tagger(
+                "",
+                chapter,
+                defaults.chapter_link_tag_background_color,
+            )
         with last_read_chap_date_col:
             st.caption("Read Date:")
             st.caption(

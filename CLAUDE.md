@@ -253,13 +253,6 @@ before calling it done.
   runs.** It's an `UnknownElement` there. Tests set the page through
   `session_state` for one run (`go_to_page`), and check the reset by the key
   changing, not by the page going back to 1 (which happens either way).
-- **Text in `st.markdown` is Markdown and Streamlit directives.** Chapter and
-  manga names come from sites and users, so `:red[x]`, `[a](b)` or `$x$` in them
-  would render. Pass them through `escape_markdown`; tags are built by
-  `tag_markdown`, which also only links http(s) URLs.
-- **`:color[text]{foreground="..." background="..."}` only takes comma
-  separated `rgb(1, 2, 3)`.** The space separated `rgb(1 2 3)` the dashboard used
-  in CSS isn't parsed there (Streamlit 1.65 docs, colors go through color2k).
 - **`urlparse(...).hostname` raises `ValueError` on malformed URLs** such as
   `http://[`. In a callback, that takes the dialog down. Use `get_url_hostname`
   and `get_invalid_url_message`.

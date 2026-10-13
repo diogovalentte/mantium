@@ -27,10 +27,8 @@ from src.util.util import (
     get_source_name_and_colors,
     get_updated_at_datetime,
     safe_href,
-    chapter_tag_markdown,
-    show_labeled_tag,
     show_manga_cover,
-    tag_markdown,
+    tagger,
     set_is_dialog_open,
 )
 from streamlit import session_state as ss
@@ -717,6 +715,12 @@ def show_multimanga_manga(
 
     show_manga_cover(manga, (250, 355))
 
+    chapter_tag_content = f"""
+        <a href="{safe_href(manga["LastReleasedChapter"]["URL"])}" target="_blank" style="text-decoration: none; color: {defaults.chapter_link_tag_text_color}">
+            <span>{"Ch. " + escape_html(manga["LastReleasedChapter"]["Chapter"]) if manga["LastReleasedChapter"]["Chapter"] != "" else "N/A"}</span>
+        </a>
+    """
+
     release_date = (
         manga["LastReleasedChapter"]["UpdatedAt"]
         if manga["LastReleasedChapter"]["UpdatedAt"] != datetime.min.replace(tzinfo=timezone.utc)
@@ -727,7 +731,12 @@ def show_multimanga_manga(
     else:
         relative_release_date = release_date
 
-    show_labeled_tag("Last Released Chapter:", chapter_tag_markdown(manga["LastReleasedChapter"]))
+    tagger(
+        "<strong>Last Released Chapter:</strong>",
+        chapter_tag_content,
+        defaults.chapter_link_tag_background_color,
+        "float: right;",
+    )
     st.caption(
         f'**Release Date**: <span style="float: right;" title="{release_date}">{relative_release_date}</span>',
         unsafe_allow_html=True,
@@ -737,13 +746,27 @@ def show_multimanga_manga(
         get_source_name_and_colors(manga["Source"])
     )
 
-    with st.container(horizontal=True, horizontal_alignment="distribute"):
-        st.markdown(tag_markdown(source_name, source_background_color, source_text_color), width="content")
-        if current_manga:
-            st.markdown(
-                tag_markdown("Current Manga", defaults.chapter_link_tag_background_color, defaults.chapter_link_tag_text_color),
-                width="content",
-            )
+    tags = f"""
+        <span style="display:inline-block;
+        background-color: {source_background_color};
+        padding: 0.1rem 0.5rem;
+        font-size: 14px;
+        font-weight: 400;
+        color: {source_text_color};
+        border-radius: 1rem;">{source_name}</span>
+    """
+    if current_manga:
+        tags += f"""<span style="display:inline-block;
+            background-color: {defaults.chapter_link_tag_background_color};
+            padding: 0.1rem 0.5rem;
+            font-size: 14px;
+            font-weight: 400;
+            color: {defaults.chapter_link_tag_text_color};
+            border-radius: 1rem;
+            float: right;">Current Manga</span>
+        """
+
+    st.write(tags, unsafe_allow_html=True)
 
     if manga["Source"] == defaults.CUSTOM_MANGA_SOURCE:
         def on_click():
