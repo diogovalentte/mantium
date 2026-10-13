@@ -2003,7 +2003,9 @@ func UpdateMangasMetadata(c *gin.Context) {
 		errors["manga_metadata"] = append(errors["manga_metadata"], err.Error())
 	}
 
-	var newMetadata bool
+	// sourceNewMetadata tells if a manga from a source (not a custom manga) has new metadata.
+	// Only these can have chapters to download in Kaizoku.
+	var newMetadata, sourceNewMetadata bool
 	var trangaInt *tranga.Tranga
 	if config.GlobalConfigs.Tranga.Valid {
 		trangaInt = &tranga.Tranga{}
@@ -2017,11 +2019,6 @@ func UpdateMangasMetadata(c *gin.Context) {
 	retries := 3
 	retryInterval := 3 * time.Second
 
-	mangas, err := manga.GetCustomMangasDB()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
-	}
 	multimangas, err := manga.GetMultiMangasDB(true)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
@@ -2032,28 +2029,13 @@ func UpdateMangasMetadata(c *gin.Context) {
 		mangaWithNewChapters *manga.Manga
 		multimangaErrors     []string
 		newMetadata          bool
+		sourceNewMetadata    bool
 	}
 
-	results := make(chan result, len(mangas)+len(multimangas))
+	results := make(chan result, len(multimangas))
 	var wg sync.WaitGroup
 
 	parallelJobs := config.GlobalConfigs.PeriodicallyUpdateMangas.ParallelJobs
-
-	// Custom Mangas
-	for _, chunk := range util.ChunkSlice(mangas, parallelJobs) {
-		wg.Add(1)
-		go func(chunk []*manga.Manga) {
-			defer wg.Done()
-			for _, mangaToUpdate := range chunk {
-				mangaWithNewChapters, multimangaErrors := updateCustomMangaMetadata(mangaToUpdate, retries, retryInterval, logger)
-				results <- result{
-					mangaWithNewChapters: mangaWithNewChapters,
-					multimangaErrors:     multimangaErrors,
-					newMetadata:          mangaWithNewChapters != nil,
-				}
-			}
-		}(chunk)
-	}
 
 	// MultiMangas
 	for _, chunk := range util.ChunkSlice(multimangas, parallelJobs) {
@@ -2061,11 +2043,12 @@ func UpdateMangasMetadata(c *gin.Context) {
 		go func(chunk []*manga.MultiManga) {
 			defer wg.Done()
 			for _, multimangaToUpdate := range chunk {
-				mangaWithNewChapters, multimangaNewMetadata, multimangaErrors := updateMultiMangaMetadata(multimangaToUpdate, retries, retryInterval, logger)
+				mangaWithNewChapters, multimangaNewMetadata, sourceNewMetadata, multimangaErrors := updateMultiMangaMetadata(multimangaToUpdate, retries, retryInterval, logger)
 				results <- result{
 					mangaWithNewChapters: mangaWithNewChapters,
 					multimangaErrors:     multimangaErrors,
 					newMetadata:          multimangaNewMetadata,
+					sourceNewMetadata:    sourceNewMetadata,
 				}
 			}
 		}(chunk)
@@ -2079,6 +2062,9 @@ func UpdateMangasMetadata(c *gin.Context) {
 	for res := range results {
 		if res.newMetadata {
 			newMetadata = true
+		}
+		if res.sourceNewMetadata {
+			sourceNewMetadata = true
 		}
 		if res.mangaWithNewChapters != nil {
 			mangasWithNewChapter = append(mangasWithNewChapter, res.mangaWithNewChapters)
@@ -2144,7 +2130,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 		}
 	}
 
-	if config.GlobalConfigs.Kaizoku.Valid && newMetadata {
+	if config.GlobalConfigs.Kaizoku.Valid && sourceNewMetadata {
 		err = KaizokuTriggerChaptersDownload(logger)
 		if err != nil {
 			errors["kaizoku"] = append(errors["kaizoku"], err.Error())
@@ -2581,16 +2567,30 @@ func getCheckFixOutOfSyncChaptersActiveWaitingJobs(kaizoku *kaizoku.Kaizoku) (in
 }
 
 // updateMultiMangaMetadata gets the manga metadata from the sources for all the multimanga' mangas and updates it in the database.
+// Custom mangas get only their last released chapter, using their selectors.
 // Returns the updated current manga if the current manga has a new released chapter, else nil.
-// Also returns a bool indicating if any metadata was updated and a slice of errors.
-func updateMultiMangaMetadata(multimanga *manga.MultiManga, retries int, retryInterval time.Duration, logger *zerolog.Logger) (*manga.Manga, bool, []string) {
+// Also returns a bool indicating if any metadata was updated, another indicating if the metadata
+// of a manga that is not a custom manga was updated, and a slice of errors.
+func updateMultiMangaMetadata(multimanga *manga.MultiManga, retries int, retryInterval time.Duration, logger *zerolog.Logger) (*manga.Manga, bool, bool, []string) {
 	var err error
 	var errors []string
-	var newMetadata bool
+	var newMetadata, sourceNewMetadata bool
 	var mangasHaveNewChapter bool
+	// Saved before the loop because updating a custom manga chapter also updates the manga struct,
+	// which can be the multimanga current manga.
+	oldCurrentMangaChapter := multimanga.CurrentManga.LastReleasedChapter
 
 	for _, mangaToUpdate := range multimanga.Mangas {
 		if mangaToUpdate.Source == manga.CustomMangaSource {
+			hasNewChapter, err := updateCustomMangaLastReleasedChapter(mangaToUpdate, retries, retryInterval, logger)
+			if err != nil {
+				errors = append(errors, err.Error())
+				continue
+			}
+			if hasNewChapter {
+				mangasHaveNewChapter = true
+				newMetadata = true
+			}
 			continue
 		}
 
@@ -2648,6 +2648,7 @@ func updateMultiMangaMetadata(multimanga *manga.MultiManga, retries int, retryIn
 				continue
 			}
 			newMetadata = true
+			sourceNewMetadata = true
 		}
 	}
 	if mangasHaveNewChapter {
@@ -2655,85 +2656,69 @@ func updateMultiMangaMetadata(multimanga *manga.MultiManga, retries int, retryIn
 		if err != nil {
 			logger.Error().Err(err).Str("multimanga_id", multimanga.ID.String()).Msg("Error getting multimanga from DB")
 			errors = append(errors, err.Error())
-			return nil, newMetadata, errors
+			return nil, newMetadata, sourceNewMetadata, errors
 		}
 		err = updatedMultimanga.UpdateCurrentMangaInDB()
 		if err != nil {
 			logger.Error().Err(err).Str("multimanga_id", multimanga.ID.String()).Msg("Error updating multimanga current manga in DB")
 			errors = append(errors, err.Error())
-			return nil, newMetadata, errors
+			return nil, newMetadata, sourceNewMetadata, errors
 		}
 		if updatedMultimanga.CurrentManga.LastReleasedChapter != nil {
-			if multimanga.CurrentManga.LastReleasedChapter == nil {
-				return updatedMultimanga.CurrentManga, newMetadata, errors
-			} else if updatedMultimanga.CurrentManga.LastReleasedChapter.Chapter != multimanga.CurrentManga.LastReleasedChapter.Chapter {
-				return updatedMultimanga.CurrentManga, newMetadata, errors
+			if oldCurrentMangaChapter == nil {
+				return updatedMultimanga.CurrentManga, newMetadata, sourceNewMetadata, errors
+			} else if isNewChapterDifferentFromOld(oldCurrentMangaChapter, updatedMultimanga.CurrentManga.LastReleasedChapter, updatedMultimanga.CurrentManga.Source) {
+				return updatedMultimanga.CurrentManga, newMetadata, sourceNewMetadata, errors
 			}
 		}
 	}
 
-	return nil, newMetadata, errors
+	return nil, newMetadata, sourceNewMetadata, errors
 }
 
-// updateCustomMangaMetadata gets the custom manga last released chapter metadata and updates it in the database.
-func updateCustomMangaMetadata(m *manga.Manga, retries int, retryInterval time.Duration, logger *zerolog.Logger) (*manga.Manga, []string) {
-	var err error
-	var errors []string
-	var chapter *manga.Chapter
-
-	if strings.HasPrefix(m.URL, manga.CustomMangaURLPrefix) || (m.LastReleasedChapterNameSelector == nil && m.LastReleasedChapterURLSelector == nil) {
-		return nil, errors
+// updateCustomMangaLastReleasedChapter gets the custom manga last released chapter using its selectors and updates it in the database.
+// Returns true if the manga has a new released chapter.
+func updateCustomMangaLastReleasedChapter(m *manga.Manga, retries int, retryInterval time.Duration, logger *zerolog.Logger) (bool, error) {
+	if m.URL == "" || strings.HasPrefix(m.URL, manga.CustomMangaURLPrefix) || (m.LastReleasedChapterNameSelector == nil && m.LastReleasedChapterURLSelector == nil) {
+		return false, nil
 	}
 
+	nameSelector, URLSelector := &manga.HTMLSelector{}, &manga.HTMLSelector{}
+	if m.LastReleasedChapterNameSelector != nil {
+		nameSelector = m.LastReleasedChapterNameSelector
+	}
+	if m.LastReleasedChapterURLSelector != nil {
+		URLSelector = m.LastReleasedChapterURLSelector
+	}
+
+	var chapter *manga.Chapter
+	var err error
 	for i := 0; i < retries; i++ {
 		chapter, err = manga.GetCustomMangaLastReleasedChapter(m.URL, m.LastReleasedChapterNameSelector, m.LastReleasedChapterURLSelector, m.LastReleasedChapterSelectorUseBrowser)
-		if err != nil {
-			if i != retries-1 {
-				nameSelector, URLSelector := &manga.HTMLSelector{}, &manga.HTMLSelector{}
-				if m.LastReleasedChapterNameSelector != nil {
-					nameSelector = m.LastReleasedChapterNameSelector
-				}
-				if m.LastReleasedChapterURLSelector != nil {
-					URLSelector = m.LastReleasedChapterURLSelector
-				}
-				logger.Error().Err(err).Str("manga_url", m.URL).Str("name_selector", nameSelector.String()).Str("url_selector", URLSelector.String()).Msgf("Error getting custom manga last released chapter metadata, retrying in %.2f seconds...", retryInterval.Seconds())
-				time.Sleep(retryInterval)
-				continue
-			}
+		if err == nil {
 			break
 		}
-		break
+		if i != retries-1 {
+			logger.Error().Err(err).Str("manga_url", m.URL).Str("name_selector", nameSelector.String()).Str("url_selector", URLSelector.String()).Msgf("Error getting custom manga last released chapter metadata, retrying in %.2f seconds...", retryInterval.Seconds())
+			time.Sleep(retryInterval)
+		}
 	}
-	if chapter == nil {
-		if m.LastReleasedChapterNameSelector == nil {
-			m.LastReleasedChapterNameSelector = &manga.HTMLSelector{}
-		}
-		if m.LastReleasedChapterURLSelector == nil {
-			m.LastReleasedChapterURLSelector = &manga.HTMLSelector{}
-		}
-		logger.Error().Err(err).Str("manga_url", m.URL).Str("name_selector", m.LastReleasedChapterNameSelector.String()).Str("url_selector", m.LastReleasedChapterURLSelector.String()).Msg("Error getting custom manga last released chapter metadata")
-		errors = append(errors, err.Error())
-		return nil, errors
+	if err != nil {
+		logger.Error().Err(err).Str("manga_url", m.URL).Str("name_selector", nameSelector.String()).Str("url_selector", URLSelector.String()).Msg("Error getting custom manga last released chapter metadata")
+		return false, err
 	}
 
-	mangaHasNewReleasedChapter := isNewChapterDifferentFromOld(m.LastReleasedChapter, chapter, m.Source)
-	if mangaHasNewReleasedChapter {
-		err = m.UpsertChapterIntoDB(chapter)
-		if err != nil {
-			if m.LastReleasedChapterNameSelector == nil {
-				m.LastReleasedChapterNameSelector = &manga.HTMLSelector{}
-			}
-			if m.LastReleasedChapterURLSelector == nil {
-				m.LastReleasedChapterURLSelector = &manga.HTMLSelector{}
-			}
-			logger.Error().Err(err).Str("manga_url", m.URL).Str("name_selector", m.LastReleasedChapterNameSelector.String()).Str("url_selector", m.LastReleasedChapterURLSelector.String()).Msg("Error saving custom manga new last released chapter to DB")
-			errors = append(errors, err.Error())
-			return nil, errors
-		}
-		return m, errors
+	if !isNewChapterDifferentFromOld(m.LastReleasedChapter, chapter, m.Source) {
+		return false, nil
 	}
 
-	return nil, errors
+	err = m.UpsertChapterIntoDB(chapter)
+	if err != nil {
+		logger.Error().Err(err).Str("manga_url", m.URL).Str("name_selector", nameSelector.String()).Str("url_selector", URLSelector.String()).Msg("Error saving custom manga new last released chapter to DB")
+		return false, err
+	}
+
+	return true, nil
 }
 
 // errorResponse returns the response body for an error. If the error was caused by
