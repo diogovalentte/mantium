@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from typing import Any
-from urllib.parse import urljoin
+from urllib.parse import urlencode, urljoin
 
 import base64
 import requests
@@ -386,7 +386,12 @@ class MultiMangaAPIClient:
     ) -> dict[str, str]:
         path = "/cover_img"
         url = f"{self.base_multimanga_url}{path}"
-        url = f"{url}?id={id}{'&cover_img_url=%s' % cover_img_url if cover_img_url else ''}{f'&use_current_manga_cover_img={str(use_current_manga_cover_img).lower()}' if use_current_manga_cover_img else ''}"
+        params: dict[str, Any] = {"id": id}
+        if cover_img_url:
+            params["cover_img_url"] = cover_img_url
+        if use_current_manga_cover_img:
+            params["use_current_manga_cover_img"] = "true"
+        url = f"{url}?{urlencode(params)}"
 
         res = requests.patch(url, files={"cover_img": cover_img}, timeout=SOURCE_REQUEST_TIMEOUT)
 

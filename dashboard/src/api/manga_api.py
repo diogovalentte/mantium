@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from typing import Any
-from urllib.parse import urljoin
+from urllib.parse import urlencode, urljoin
 
 import requests
 from src.api.timeouts import SOURCE_REQUEST_TIMEOUT
@@ -79,9 +79,7 @@ class MangaAPIClient:
     ) -> list[dict]:
         path = "/chapters"
         url = f"{self.base_manga_url}{path}"
-        url = (
-            f"{url}?id={manga_id}&url={manga_url}&manga_internal_id={manga_internal_id}"
-        )
+        url = f"{url}?{urlencode({'id': manga_id, 'url': manga_url, 'manga_internal_id': manga_internal_id})}"
 
         res = requests.get(url, timeout=SOURCE_REQUEST_TIMEOUT)
 

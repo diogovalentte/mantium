@@ -1,5 +1,5 @@
 from typing import Any
-from urllib.parse import urljoin
+from urllib.parse import urlencode, urljoin
 
 import requests
 from src.api.timeouts import SOURCE_REQUEST_TIMEOUT
@@ -19,7 +19,7 @@ class CustomMangaAPIClient:
     ) -> dict[str, str]:
         path = "/name"
         url = f"{self.base_custom_manga_url}{path}"
-        url = f"{url}?id={manga_id}&url={manga_url}&name={name}"
+        url = f"{url}?{urlencode({'id': manga_id, 'url': manga_url, 'name': name})}"
 
         res = requests.patch(url, timeout=SOURCE_REQUEST_TIMEOUT)
 
@@ -43,7 +43,7 @@ class CustomMangaAPIClient:
     ) -> dict[str, str]:
         path = "/url"
         url = f"{self.base_custom_manga_url}{path}"
-        url = f"{url}?id={manga_id}&url={manga_url}&new_url={new_url}"
+        url = f"{url}?{urlencode({'id': manga_id, 'url': manga_url, 'new_url': new_url})}"
 
         res = requests.patch(url, timeout=SOURCE_REQUEST_TIMEOUT)
 
@@ -74,7 +74,7 @@ class CustomMangaAPIClient:
     ) -> dict[str, str]:
         path = "/last_released_chapter_selectors"
         url = f"{self.base_custom_manga_url}{path}"
-        url = f"{url}?id={manga_id}&url={manga_url}"
+        url = f"{url}?{urlencode({'id': manga_id, 'url': manga_url})}"
 
         request_body: dict[str, Any] = {
             "use_browser": last_released_chapter_selector_use_browser,
@@ -116,7 +116,12 @@ class CustomMangaAPIClient:
     ) -> dict[str, str]:
         path = "/cover_img"
         url = f"{self.base_custom_manga_url}{path}"
-        url = f"{url}?id={manga_id}&{'&cover_img_url=%s' % cover_img_url if cover_img_url else ''}{'&use_mantium_default_img=%s' % str(use_mantium_default_img).lower() if use_mantium_default_img else ''}"
+        params: dict[str, Any] = {"id": manga_id}
+        if cover_img_url:
+            params["cover_img_url"] = cover_img_url
+        if use_mantium_default_img:
+            params["use_mantium_default_img"] = "true"
+        url = f"{url}?{urlencode(params)}"
 
         res = requests.patch(url, files={"cover_img": cover_img}, timeout=SOURCE_REQUEST_TIMEOUT)
 
