@@ -850,6 +850,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
             "last_released_chapter_url_attribute": url_selector["Attribute"],
             "last_released_chapter_url_get_first": url_selector["GetFirst"],
             "last_released_chapter_use_browser": manga["LastReleasedChapterSelectorUseBrowser"],
+            "last_released_chapter_expander": bool(name_selector["Selector"] or url_selector["Selector"]),
         },
     )
 

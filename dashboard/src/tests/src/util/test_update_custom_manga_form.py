@@ -56,6 +56,8 @@ def test_prefilled_from_tracked_manga(api):
     assert_no_exception(at)
     labels = labels_in_order(at)
     assert labels.index("Cover Image") < labels.index("Last Released Chapter") < labels.index("Update")
+    # The selectors of a manga that already tracks new chapters start open
+    assert expanded(at, P)
     assert at.text_input(key=P + "name").value == "Tracked"
     assert at.text_input(key=P + "url").value == "https://example.com/manga/tracked"
     assert field(at, "name_selector", P) == "css:a.ch"
@@ -152,3 +154,14 @@ def test_closing_the_selectors_keeps_them(api):
     assert at.checkbox(key=P + "last_released_chapter_use_browser").value is True
     at.button(key=P + "update").click().run()
     assert update_args(api)[3:6] == ("css:a.ch", "", r"Ch (\d+)")
+
+
+def test_clear_works_when_the_presets_fail_to_load(api):
+    api.presets_error = fake_api.user_error("API down")
+    at = run_app(manga())
+    assert_no_exception(at)
+    assert any("Couldn't load the presets" in t for t in texts(at, "warning"))
+    at.button(key=P + "clear_selectors_button").click().run()
+    at.button(key=P + "update").click().run()
+    assert_no_exception(at)
+    assert update_args(api)[3:11] == ("", "", "", False, "", "", False, False)

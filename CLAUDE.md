@@ -207,8 +207,10 @@ before calling it done.
   values into `session_state` once and pass no `value=`. See
   `reset_custom_manga_form_state`. Since 1.56 the warning is only logged, once per
   process, so `conftest.py` in the form tests captures it and fails the test.
-- **A widget's state is deleted at the end of any run that doesn't render it.**
-  This covers a closed dialog and an `if` around widgets (a toggle that hides
+- **A widget's state is deleted at the end of a run that doesn't render it.**
+  A run scoped to a fragment (like a dialog's) keeps the widgets of other
+  fragments, and `persist_state`/query param binding are exceptions too. For
+  the forms, this covers a closed dialog and an `if` around widgets (a toggle that hides
   fields lost what was typed in them). Closed expanders and popovers don't count:
   their bodies still run, so hiding fields in an expander keeps their values.
   This is also how the forms know their dialog was just opened: the URL widget
@@ -222,9 +224,10 @@ before calling it done.
   right after the URL input and before the expander, picker and selectors. Moving
   it lower raises `StreamlitAPIException`.
 - **`st.dialog` reruns only the dialog function on interactions inside it.**
-  Code outside the decorated function doesn't run again until a full rerun. Only
-  a dialog with an `on_dismiss` callback reruns the app on close (needed for the
-  "dialog just opened" check above); `on_dismiss="ignore"` doesn't.
+  Code outside the decorated function doesn't run again until a full rerun. A
+  dialog reruns the app on close only with `on_dismiss="rerun"` or a callback
+  (the forms use a callback, which the "dialog just opened" check above needs);
+  the default `on_dismiss="ignore"` doesn't.
 - **`st.rerun()` in a callback was a no-op until 1.63, and works since.** Submit
   logic that ends in `st.rerun()` (like `add_manga()`) still lives in the
   `if st.button(...)` body; moving it to a callback changes when it runs.

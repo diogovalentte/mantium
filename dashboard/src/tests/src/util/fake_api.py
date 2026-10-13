@@ -46,6 +46,7 @@ class FakeAPI:
         # URL -> detect response, or an exception to raise
         self.detections: dict[str, Any] = {}
         self.add_preset_error: Exception | None = None
+        self.presets_error: Exception | None = None
         self.test_selectors_result: Any = {"Chapter": "10", "URL": "https://example.com/c/10"}
         self.updated_manga: dict[str, Any] | None = None
 
@@ -57,6 +58,8 @@ class FakeAPI:
 
     def get_custom_manga_presets(self):
         self._record("get_custom_manga_presets")
+        if self.presets_error is not None:
+            raise self.presets_error
         return copy.deepcopy(self.presets)
 
     def detect_custom_manga_presets(self, manga_url: str):

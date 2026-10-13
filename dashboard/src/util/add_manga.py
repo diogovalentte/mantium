@@ -722,7 +722,7 @@ def save_custom_manga_preset(key_prefix: str):
         ss[key_prefix + "preset_message"] = ("warning", user_message or f"Error while saving the preset: {get_api_error_detail(ex)}")
         return
 
-    ss[key_prefix + "presets"][saved["id"]] = saved
+    ss.setdefault(key_prefix + "presets", {})[saved["id"]] = saved
     ss[key_prefix + "preset"] = saved["id"]
     ss[key_prefix + "preset_message"] = ("success", f'Preset "{saved["name"]}" saved')
 
@@ -737,7 +737,7 @@ def delete_custom_manga_preset(key_prefix: str):
         ss[key_prefix + "preset_message"] = ("warning", user_message or f"Error while deleting the preset: {get_api_error_detail(ex)}")
         return
 
-    ss[key_prefix + "presets"].pop(preset_id, None)
+    ss.setdefault(key_prefix + "presets", {}).pop(preset_id, None)
     ss[key_prefix + "preset"] = None
     ss[key_prefix + "preset_message"] = ("success", "Preset deleted")
 
@@ -775,9 +775,10 @@ def show_custom_manga_presets(key_prefix: str):
     try:
         presets = get_custom_manga_presets(key_prefix)
     except Exception as ex:
+        # The selectors and the Clear button still work without the presets
         logger.exception(ex)
         st.warning(f"Couldn't load the presets: {get_api_error_detail(ex)}")
-        return
+        presets = {}
 
     if ss.get(key_prefix + "preset") not in presets:
         ss[key_prefix + "preset"] = None
