@@ -174,13 +174,21 @@ def test_grid_is_paged(api, widget_state_duplication_warnings):
     assert len(card_names(at)) == 3
 
 
-def test_filters_go_back_to_the_first_page(api, widget_state_duplication_warnings):
+def test_filters_and_sort_go_back_to_the_first_page(api):
+    # AppTest doesn't keep a pagination value between runs, so this checks the mechanism:
+    # going back to the first page gives the widget a new key, which starts at page 1
     api.dashboard_configs["display"]["columns"] = 2
     make_library(api, 15)
     at = run_page(status_filter=0)
-    go_to_page(at, 2, widget_state_duplication_warnings)
+    keys = [pagination(at).key]
     at.text_input(key="search_manga").input("Manga").run()
+    keys.append(pagination(at).key)
+    at.toggle(key="mangas_sort_reverse").set_value(True).run()
+    keys.append(pagination(at).key)
+    at.selectbox(key="mangas_sort").set_value("Name").run()
+    keys.append(pagination(at).key)
     assert_no_exception(at)
+    assert len(set(keys)) == 4, keys
     assert pagination(at).value == 1
 
 

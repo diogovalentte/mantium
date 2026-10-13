@@ -245,6 +245,14 @@ before calling it done.
 - **`AppTest` selectbox `.select()`/`.set_value()` take the option value** (a
   preset ID), not the label `format_func` shows. Passing the label fails inside
   `format_func`.
+- **Resetting a widget that has a default (like `st.pagination`) without writing
+  its state.** Writing `session_state[key]` triggers the default-value warning
+  above. The library pagination changes its key instead (`library_page_key`):
+  a new key starts at its `default`.
+- **`AppTest` can't click `st.pagination`, and doesn't keep its value between
+  runs.** It's an `UnknownElement` there. Tests set the page through
+  `session_state` for one run (`go_to_page`), and check the reset by the key
+  changing, not by the page going back to 1 (which happens either way).
 - **Text in `st.markdown` is Markdown and Streamlit directives.** Chapter and
   manga names come from sites and users, so `:red[x]`, `[a](b)` or `$x$` in them
   would render. Pass them through `escape_markdown`; tags are built by
