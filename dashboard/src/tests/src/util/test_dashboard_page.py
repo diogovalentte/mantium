@@ -71,3 +71,47 @@ def test_custom_manga_without_released_chapter_has_no_set_last_read(api):
     at = run_page(status_filter=0)
     manual = by_name(api, "Manual with text chapter")
     assert at.menu_button(key=f"manga_actions_{manual['ID']}").options == ["Highlight"]
+
+
+def test_chapter_tags_are_markdown(api):
+    at = run_page(status_filter=0)
+    assert_no_exception(at)
+    tags = [m.value for m in at.markdown if m.value.startswith(":color[")]
+    ao_ashi = by_name(api, "Ao Ashi (URL only, chapter ?)")
+    url = ao_ashi["LastReleasedChapter"]["URL"]
+    assert f":color[[Ch\\. ?]({url})]" + '{foreground="rgb(59, 130, 246)" background="rgb(219, 233, 254)"}' in tags
+    # A chapter without URL has no link
+    assert ':color[Ch\\. Prologue]{foreground="rgb(59, 130, 246)" background="rgb(219, 233, 254)"}' in tags
+    assert not [m for m in at.markdown if "display:inline-block" in m.value]
+
+
+def test_tag_markdown_escapes_text_and_checks_links():
+    from src.util.util import escape_markdown, tag_markdown
+
+    assert escape_markdown(":red[x] [a](b) *b* $x$") == "\\:red\\[x\\] \\[a\\]\\(b\\) \\*b\\* \\$x\\$"
+    assert tag_markdown("Ch. 3", "#000", "#fff", "https://a.com/x (1)") == (
+        ':color[[Ch\\. 3](https://a.com/x%20%281%29)]{foreground="#fff" background="#000"}'
+    )
+    assert tag_markdown("x", "#000", "#fff", "javascript:alert(1)") == ':color[x]{foreground="#fff" background="#000"}'
+
+
+def test_dialog_cards_use_markdown_tags(api):
+    at = AppTest.from_file(os.path.join(os.path.dirname(__file__), "cards_runner.py"), default_timeout=30)
+    at.session_state["search_result"] = {
+        "Name": "Search result",
+        "URL": "https://example.com/m",
+        "CoverURL": "",
+        "Status": "ongoing",
+        "Year": 2020,
+        "LastChapter": "12",
+        "LastChapterURL": "https://example.com/m/12",
+        "Description": "",
+    }
+    at.run()
+    assert_no_exception(at)
+    tags = [m.value for m in at.markdown if m.value.startswith(":color[")]
+    assert ':color[Custom Manga]{foreground="black" background="white"}' in tags
+    assert ':color[Current Manga]{foreground="rgb(59, 130, 246)" background="rgb(219, 233, 254)"}' in tags
+    assert ':color[Ongoing]{foreground="rgb(59, 130, 246)" background="rgb(219, 233, 254)"}' in tags
+    assert ':color[2020]{foreground="rgb(59, 130, 246)" background="rgb(219, 233, 254)"}' in tags
+    assert ':color[[12](https://example.com/m/12)]{foreground="rgb(59, 130, 246)" background="rgb(219, 233, 254)"}' in tags

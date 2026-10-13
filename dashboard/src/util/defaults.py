@@ -24,8 +24,8 @@ sort_options = [
     "Chapters Released",
     "Released Chapter Date",
 ]
-chapter_link_tag_background_color = "rgb(219 233 254)"
-chapter_link_tag_text_color = "rgb(59 130 246)"
+chapter_link_tag_background_color = "rgb(219, 233, 254)"
+chapter_link_tag_text_color = "rgb(59, 130, 246)"
 
 grid_view_number_of_rows_to_show_first = 3
 list_view_number_of_rows_to_show_first = 20

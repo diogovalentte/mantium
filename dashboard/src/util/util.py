@@ -1,5 +1,6 @@
 import html
 import json
+import re
 import logging
 from streamlit import session_state as ss
 import pathlib
@@ -109,33 +110,42 @@ def centered_container(key: str):
     return stylable_container(key, css_styles)
 
 
-def tagger(
-    content: str,
-    tag: str,
-    background_color: str | None = "red",
-    extra_css: str = "",
-    text_color: str | None = "white",
-):
-    """Creates a tag element.
+def escape_markdown(text) -> str:
+    """Escapes text so st.markdown shows it as is, instead of reading Markdown or
+    Streamlit directives (like :red[...]) from it. Chapter names come from sites."""
+    return re.sub(r"([\\`*_{}\[\]()#+\-.!|~<>:$])", r"\\\1", "" if text is None else str(text))
 
-    Args:
-        content (str): Content to be tagged.
-        tag (str): Tag content, can be a simple text or HTML & CSS.
-        background_color (str | None, optional): Tag background color. Can be any CSS valid color. Defaults to "red".
-        extra_css (str, optional): Extra CSS to be added to the tag. Defaults to "".
-        text_color (str | None, optional): Tag text color. Can be any CSS valid color. Defaults to "white".
-    """
-    html = f"""
-        {content} <span style="display:inline-block;
-        background-color: {background_color};
-        padding: 0.1rem 0.5rem;
-        font-size: 14px;
-        font-weight: 400;
-        color: {text_color};
-        border-radius: 1rem;{extra_css}">{tag}</span>
-    """
 
-    st.write(html, unsafe_allow_html=True)
+def markdown_link_url(url: str) -> str:
+    """Escapes the characters that end a Markdown link URL."""
+    return url.replace(" ", "%20").replace("(", "%28").replace(")", "%29")
+
+
+def tag_markdown(text: str, background_color: str, text_color: str, link: str | None = None) -> str:
+    """Returns Markdown for a colored tag, optionally linking to an http(s) URL."""
+    content = escape_markdown(text)
+    link = web_url_or_none(link) if link else None
+    if link:
+        content = f"[{content}]({markdown_link_url(link)})"
+    return f':color[{content}]{{foreground="{text_color}" background="{background_color}"}}'
+
+
+def chapter_tag_markdown(chapter: dict) -> str:
+    """Returns Markdown for a chapter tag, linking to the chapter when it has a URL."""
+    text = f"Ch. {chapter['Chapter']}" if chapter["Chapter"] != "" else "N/A"
+    return tag_markdown(
+        text,
+        defaults.chapter_link_tag_background_color,
+        defaults.chapter_link_tag_text_color,
+        chapter.get("URL", ""),
+    )
+
+
+def show_labeled_tag(label: str, tag: str):
+    """Shows a bold label on the left and a tag (Markdown) on the right of the same line."""
+    with st.container(horizontal=True, horizontal_alignment="distribute", vertical_alignment="center"):
+        st.markdown(f"**{escape_markdown(label)}**", width="content")
+        st.markdown(tag, width="content")
 
 
 def get_relative_time(past_date):

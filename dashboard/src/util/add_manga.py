@@ -17,7 +17,8 @@ from src.util.util import (
     get_relative_time,
     get_updated_at_datetime,
     safe_href,
-    tagger,
+    show_labeled_tag,
+    tag_markdown,
     set_is_dialog_open,
 )
 from src.util.defaults import reversed_default_sources
@@ -489,45 +490,17 @@ def show_search_result_manga(
     """
     st.markdown(hide_img_fs, unsafe_allow_html=True)
 
-    tag_content_format = f"""
-        <span style="color: {defaults.chapter_link_tag_text_color}">{{}}</span>
-    """
+    def info_tag(text: str, link: str = "") -> str:
+        return tag_markdown(text, defaults.chapter_link_tag_background_color, defaults.chapter_link_tag_text_color, link)
 
-    status = tag_content_format.format(
-        manga["Status"].capitalize() if manga["Status"] != "" else "N/A",
-    )
-    tagger(
-        "<strong>Status:</strong>",
-        status,
-        defaults.chapter_link_tag_background_color,
-        "float: right;",
-    )
-
-    year = tag_content_format.format(
-        manga["Year"] if manga["Year"] not in ("", "0", 0) else "N/A",
-    )
-    tagger(
-        "<strong>Year:</strong>",
-        year,
-        defaults.chapter_link_tag_background_color,
-        "float: right;",
-    )
-
-    if manga["LastChapterURL"] == "":
-        last_chapter = tag_content_format.format(
-            escape_html(manga["LastChapter"]) if manga["LastChapter"] not in ("", "0") else "N/A",
-        )
-    else:
-        last_chapter = f"""
-            <a href="{safe_href(manga["LastChapterURL"])}" target="_blank" style="text-decoration: none; color: {defaults.chapter_link_tag_text_color}">
-                <span>{escape_html(manga["LastChapter"]) if manga["LastChapter"] not in ("", "0") else "N/A"}</span>
-            </a>
-        """
-    tagger(
-        "<strong>Last Chapter:</strong>",
-        last_chapter,
-        defaults.chapter_link_tag_background_color,
-        "float: right;",
+    show_labeled_tag("Status:", info_tag(manga["Status"].capitalize() if manga["Status"] != "" else "N/A"))
+    show_labeled_tag("Year:", info_tag(str(manga["Year"]) if manga["Year"] not in ("", "0", 0) else "N/A"))
+    show_labeled_tag(
+        "Last Chapter:",
+        info_tag(
+            manga["LastChapter"] if manga["LastChapter"] not in ("", "0") else "N/A",
+            manga["LastChapterURL"],
+        ),
     )
 
     st.caption(manga["Description"])
