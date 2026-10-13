@@ -528,6 +528,11 @@ class MainDashboard:
                 unsafe_allow_html=True,
             )
 
+        def highlight_manga():
+            ss["highlighted_manga"] = manga
+            # The manga dialog is outside the library fragment
+            st.rerun()
+
         chapter_with_url_tag_content = f"""
             <a href="{{}}" target="_blank" style="text-decoration: none; color: {defaults.chapter_link_tag_text_color}">
                 <span>{{}}</span>
@@ -622,7 +627,39 @@ class MainDashboard:
             unsafe_allow_html=True,
         )
 
-        self.show_manga_actions(manga, can_set_last_read=no_released_chapter_custom_manga and unread)
+        if no_released_chapter_custom_manga:
+            c1, c2 = st.columns(2)
+            with c1:
+
+                def set_last_read():
+                    if util.is_unread_chapter(manga["LastReadChapter"], manga["LastReleasedChapter"]):
+                        self.api_client.update_multimanga_last_read_chapter(
+                            manga["MultiMangaID"], manga["ID"]
+                        )
+
+                st.button(
+                    "Set last read",
+                    width="stretch",
+                    on_click=set_last_read,
+                    key=f"set_last_read_{manga['ID']}",
+                    disabled=not unread,
+                )
+            with c2:
+                st.button(
+                    "Highlight",
+                    width="stretch",
+                    type="primary",
+                    key=f"highlight_{manga['ID']}",
+                    on_click=highlight_manga,
+                )
+        else:
+            st.button(
+                "Highlight",
+                width="stretch",
+                type="primary",
+                key=f"highlight_{manga['ID']}",
+                on_click=highlight_manga,
+            )
 
     def show_mangas_list_view(self, mangas: list[dict[str, Any]]):
         """Show mangas in the list view.
@@ -645,9 +682,10 @@ class MainDashboard:
                 last_released_chap_date_col,
                 last_read_chap_col,
                 last_read_chap_date_col,
-                actions_col,
+                set_last_read_col,
+                highlight_col,
             ) = st.columns(
-                [9, 40, 22, 12, 22, 12, 24],
+                [9, 40, 22, 12, 22, 12, 20, 20],
                 gap="small",
                 vertical_alignment="center",
             )
@@ -660,9 +698,10 @@ class MainDashboard:
                 last_released_chap_date_col,
                 last_read_chap_col,
                 last_read_chap_date_col,
-                actions_col,
+                set_last_read_col,
+                highlight_col,
             ) = st.columns(
-                [9, 28, 12, 22, 12, 22, 12, 24],
+                [9, 28, 12, 22, 12, 22, 12, 20, 20],
                 gap="small",
                 vertical_alignment="center",
             )
@@ -693,6 +732,11 @@ class MainDashboard:
                     f'<span style="color: #d6d6d9;">{defaults.manga_status_options[manga["Status"]]}</span>',
                     unsafe_allow_html=True,
                 )
+
+        def highlight_manga():
+            ss["highlighted_manga"] = manga
+            # The manga dialog is outside the library fragment
+            st.rerun()
 
         chapter_with_url_tag_content = f"""
             <a href="{{}}" target="_blank" style="text-decoration: none; color: {defaults.chapter_link_tag_text_color}">
@@ -791,32 +835,29 @@ class MainDashboard:
                 unsafe_allow_html=True,
             )
 
-        with actions_col:
-            self.show_manga_actions(manga, can_set_last_read=unread)
+        with set_last_read_col:
 
-    def show_manga_actions(self, manga: dict[str, Any], can_set_last_read: bool):
-        """Shows the menu with the actions of a manga card."""
-        key = f"manga_actions_{manga['ID']}"
-        options = (["Set last read"] if can_set_last_read else []) + ["Highlight"]
+            def set_last_read():
+                if util.is_unread_chapter(manga["LastReadChapter"], manga["LastReleasedChapter"]):
+                    self.api_client.update_multimanga_last_read_chapter(
+                        manga["MultiMangaID"], manga["ID"]
+                    )
 
-        def on_action():
-            action = ss[key]
-            if action == "Set last read":
-                self.api_client.update_multimanga_last_read_chapter(manga["MultiMangaID"], manga["ID"])
-            elif action == "Highlight":
-                ss["highlighted_manga"] = manga
-                # The manga dialog is outside the library fragment
-                st.rerun()
-
-        st.menu_button(
-            "Actions",
-            options,
-            key=key,
-            on_click=on_action,
-            type="primary",
-            icon=":material/more_horiz:",
-            width="stretch",
-        )
+            st.button(
+                "Set last read",
+                width="stretch",
+                on_click=set_last_read,
+                key=f"set_last_read_{manga['ID']}",
+                disabled=not unread,
+            )
+        with highlight_col:
+            st.button(
+                "Highlight",
+                width="stretch",
+                type="primary",
+                key=f"highlight_{manga['ID']}",
+                on_click=highlight_manga,
+            )
 
     @st.dialog("Settings", on_dismiss=set_is_dialog_open)
     def show_settings(self):
