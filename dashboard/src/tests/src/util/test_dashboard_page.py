@@ -1,3 +1,4 @@
+import copy
 import os
 
 import pytest
@@ -136,3 +137,77 @@ def test_dialog_card_covers_link_to_the_manga(api):
     assert covers["Search result"].imgs[0].url == "https://example.com/cover.jpg"
     first = api.get_mangas()[0]
     assert covers[first["Name"]].link == first["URL"]
+
+
+def pagination(at: AppTest):
+    widgets = [w for w in at.get("pagination")]
+    return widgets[0] if widgets else None
+
+
+def go_to_page(at: AppTest, page: int, warnings: list[str]):
+    """AppTest can't click st.pagination, so the page is written to its session state, which
+    Streamlit warns about because the widget has a default. That warning is expected here."""
+    key = pagination(at).key
+    at.session_state[key] = page
+    at.run()
+    warnings[:] = [w for w in warnings if key not in w]
+
+
+def make_library(api, size: int):
+    template = api.library[1]
+    api.library = []
+    for i in range(size):
+        manga = dict(copy.deepcopy(template), ID=1000 + i, MultiMangaID=2000 + i, Name=f"Manga {i:02d}", SearchNames=[f"Manga {i:02d}"])
+        api.library.append(manga)
+
+
+def test_grid_is_paged(api, widget_state_duplication_warnings):
+    api.dashboard_configs["display"]["columns"] = 2
+    make_library(api, 15)  # 2 columns x 3 rows = 6 per page -> 3 pages
+    at = run_page(status_filter=0, mangas_sort="Name")
+    assert_no_exception(at)
+    assert len(card_names(at)) == 6
+    page = pagination(at)
+    assert page is not None and page.proto.num_pages == 3
+    go_to_page(at, 3, widget_state_duplication_warnings)
+    assert_no_exception(at)
+    assert len(card_names(at)) == 3
+
+
+def test_filters_go_back_to_the_first_page(api, widget_state_duplication_warnings):
+    api.dashboard_configs["display"]["columns"] = 2
+    make_library(api, 15)
+    at = run_page(status_filter=0)
+    go_to_page(at, 2, widget_state_duplication_warnings)
+    at.text_input(key="search_manga").input("Manga").run()
+    assert_no_exception(at)
+    assert pagination(at).value == 1
+
+
+def test_page_past_the_end_after_the_library_shrinks(api, widget_state_duplication_warnings):
+    api.dashboard_configs["display"]["columns"] = 2
+    make_library(api, 15)
+    at = run_page(status_filter=0)
+    go_to_page(at, 3, widget_state_duplication_warnings)
+    api.library = api.library[:8]  # 2 pages now
+    at.run()
+    assert_no_exception(at)
+    # Streamlit moves a page past the end back to the first page; what matters is that the
+    # cards shown are the ones of the page the widget shows
+    page = pagination(at).value
+    assert page in (1, 2)
+    assert len(card_names(at)) == (6 if page == 1 else 2)
+
+
+def test_list_view_is_paged(api):
+    api.dashboard_configs["display"]["displayMode"] = "List View"
+    make_library(api, 25)
+    at = run_page(status_filter=0)
+    assert_no_exception(at)
+    assert len(card_names(at)) == 20
+    assert pagination(at).proto.num_pages == 2
+
+
+def test_single_page_has_no_pagination(api):
+    at = run_page(status_filter=0)
+    assert pagination(at) is None

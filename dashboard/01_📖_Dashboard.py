@@ -1,3 +1,4 @@
+import math
 from datetime import datetime, timezone
 from typing import Any
 
@@ -24,6 +25,22 @@ st.set_page_config(
 )
 
 logger = get_logger()
+
+
+def library_page_key() -> str:
+    """Key of the library pagination widget. Going back to the first page changes it instead of
+    writing the page to session_state, since the widget has a default value (see CLAUDE.md)."""
+    return f"library_page_{ss.get('library_page_generation', 0)}"
+
+
+def reset_library_page(default: int = 1):
+    """Goes back to the first page of the library. Used when the filters or the sort change."""
+    ss["library_page_generation"] = ss.get("library_page_generation", 0) + 1
+    ss["library_page_default"] = default
+
+
+def scroll_to_top():
+    st_javascript("""window.parent.document.querySelector(".main").scrollTop = 0;""")
 
 
 class MainDashboard:
@@ -70,63 +87,12 @@ class MainDashboard:
             ss.get("mangas_sort_reverse", False),
         )
 
-        def callback():
-            ss["show_more_manga"] = True
-
-        can_load_more = False
-
         # The status filter defaults to "Reading", so an empty result is common
         # and used to render nothing at all - no message, no way back.
         if len(mangas) == 0:
             self.show_empty_state(total_mangas)
-        elif ss["configs"]["display"]["displayMode"] == "List View":
-            max_mangas_to_show = defaults.list_view_number_of_rows_to_show_first
-            if len(mangas) > max_mangas_to_show:
-                self.show_mangas_list_view(mangas[:max_mangas_to_show])
-                can_load_more = True
-            else:
-                self.show_mangas_list_view(mangas)
-
-            if not ss.get("show_more_manga", False) and can_load_more:
-                st.button(
-                    "Show All",
-                    on_click=callback,
-                    width="stretch",
-                    type="primary",
-                )
-            if ss.get("show_more_manga", False) and can_load_more:
-                self.show_mangas_list_view(mangas[max_mangas_to_show:])
         else:
-            if not ss["is_mobile"]:
-                columns_number = ss["configs"]["display"]["columns"]
-                max_mangas_to_show = (
-                    columns_number * defaults.grid_view_number_of_rows_to_show_first
-                )
-            else:
-                columns_number = 1
-                max_mangas_to_show = (
-                    ss["configs"]["display"]["columns"]
-                    * defaults.grid_view_number_of_rows_to_show_first
-                )
-            if len(mangas) > max_mangas_to_show:
-                self.show_mangas_grid_view(
-                    st.columns(columns_number), mangas[:max_mangas_to_show]
-                )
-                can_load_more = True
-            else:
-                self.show_mangas_grid_view(st.columns(columns_number), mangas)
-
-            if not ss.get("show_more_manga", False) and can_load_more:
-                st.button(
-                    "Show All",
-                    on_click=callback,
-                    width="stretch",
-                    type="primary",
-                )
-            if ss.get("show_more_manga", False) and can_load_more:
-                self.show_mangas_grid_view(
-                    st.columns(columns_number), mangas[max_mangas_to_show:]
-                )
+            self.show_library(mangas)
 
         if "system_last_update_time" not in ss:
             ss["system_last_update_time"] = self.api_client.check_for_updates()
@@ -139,6 +105,37 @@ class MainDashboard:
         js = """(window.parent.document.querySelector('meta[name="referrer"]') || window.parent.document.head.appendChild(Object.assign(window.parent.document.createElement("meta"), { name: "referrer" }))).setAttribute("content", "no-referrer");"""
         st_javascript(js)
         util.set_custom_js_to_none()
+
+    def show_library(self, mangas: list[dict[str, Any]]):
+        """Shows one page of the (already filtered and sorted) mangas, and the page picker."""
+        list_view = ss["configs"]["display"]["displayMode"] == "List View"
+        if list_view:
+            page_size = defaults.list_view_rows_per_page
+        else:
+            columns_number = 1 if ss["is_mobile"] else ss["configs"]["display"]["columns"]
+            page_size = ss["configs"]["display"]["columns"] * defaults.grid_view_rows_per_page
+
+        num_pages = max(1, math.ceil(len(mangas) / page_size))
+        page = ss.get(library_page_key(), ss.get("library_page_default", 1))
+        if page > num_pages:
+            # The library got smaller, like after a manga was deleted
+            reset_library_page(num_pages)
+            page = num_pages
+        page_mangas = mangas[(page - 1) * page_size : page * page_size]
+
+        if list_view:
+            self.show_mangas_list_view(page_mangas)
+        else:
+            self.show_mangas_grid_view(st.columns(columns_number), page_mangas)
+
+        if num_pages > 1:
+            with st.container(horizontal=True, horizontal_alignment="center"):
+                st.pagination(
+                    num_pages,
+                    default=min(ss.get("library_page_default", 1), num_pages),
+                    key=library_page_key(),
+                    on_change=scroll_to_top,
+                )
 
     def show_empty_state(self, total_mangas: int):
         if total_mangas == 0:
@@ -155,7 +152,7 @@ class MainDashboard:
             # runs before the widgets are instantiated on the next rerun.
             ss["status_filter"] = 0
             ss["search_manga"] = ""
-            ss["show_more_manga"] = False
+            reset_library_page()
 
         st.button("Clear filters", on_click=clear_filters)
 
@@ -236,13 +233,12 @@ class MainDashboard:
         with st.sidebar:
             self.show_background_error()
 
-            st.text_input("Search", key="search_manga")
+            st.text_input("Search", key="search_manga", on_change=reset_library_page)
 
             def status_filter_callback():
                 self.status_filter_key = ss.status_filter
-                ss["show_more_manga"] = False
-                js = """window.parent.document.querySelector(".main").scrollTop = 0;"""
-                st_javascript(js)
+                reset_library_page()
+                scroll_to_top()
 
             # No index= here on purpose: Clear filters writes this key through
             # the Session State API, and Streamlit warns when a widget has both
@@ -258,6 +254,7 @@ class MainDashboard:
 
             def sort_callback():
                 self.sort_option_index = ss.mangas_sort
+                reset_library_page()
 
             st.selectbox(
                 "Sort By",
@@ -267,7 +264,7 @@ class MainDashboard:
                 key="mangas_sort",
             )
 
-            st.toggle("Reverse Sort", key="mangas_sort_reverse")
+            st.toggle("Reverse Sort", key="mangas_sort_reverse", on_change=reset_library_page)
             st.divider()
 
             with st.expander("More Options"):

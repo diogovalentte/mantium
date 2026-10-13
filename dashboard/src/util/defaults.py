@@ -27,8 +27,8 @@ sort_options = [
 chapter_link_tag_background_color = "rgb(219, 233, 254)"
 chapter_link_tag_text_color = "rgb(59, 130, 246)"
 
-grid_view_number_of_rows_to_show_first = 3
-list_view_number_of_rows_to_show_first = 20
+grid_view_rows_per_page = 3
+list_view_rows_per_page = 20
 display_modes = ("Grid View", "List View")
 columns_min_value = 1
 columns_max_value = 10
