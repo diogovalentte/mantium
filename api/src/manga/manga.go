@@ -40,6 +40,8 @@ type (
 const (
 	// CustomMangaSource is the source of custom mangas.
 	CustomMangaSource = "custom_manga"
+	// UnknownChapter is the chapter of custom mangas tracked only by the chapter URL.
+	UnknownChapter = "?"
 	// CustomMangaURLPrefix is the prefix of the URL of custom mangas and its chapters when the URL is not provided by the user.
 	CustomMangaURLPrefix = "http://custom_manga.com"
 )
@@ -1546,7 +1548,9 @@ func FilterUnreadChapterMangas(mangas []*Manga) []*Manga {
 
 	for _, manga := range mangas {
 		if manga.LastReleasedChapter != nil && manga.LastReadChapter != nil {
-			if manga.LastReleasedChapter.Chapter != manga.LastReadChapter.Chapter {
+			if manga.LastReleasedChapter.Chapter != manga.LastReadChapter.Chapter ||
+				// Every chapter of a custom manga tracked only by the chapter URL has the same name
+				(manga.LastReleasedChapter.Chapter == UnknownChapter && manga.LastReleasedChapter.URL != manga.LastReadChapter.URL) {
 				unreadChapterMangas = append(unreadChapterMangas, manga)
 			}
 		} else if manga.LastReleasedChapter != nil && manga.LastReadChapter == nil {
@@ -1665,8 +1669,8 @@ func GetCustomMangaLastReleasedChapter(mangaURL string, nameSelector, URLSelecto
 			chapter.URL = domain + "/" + strings.TrimLeft(chapter.URL, "/")
 		}
 		if chapter.Chapter == "" {
-			chapter.Chapter = "?"
-			chapter.Name = "Chapter ?"
+			chapter.Chapter = UnknownChapter
+			chapter.Name = "Chapter " + UnknownChapter
 		}
 	}
 

@@ -6,7 +6,7 @@ import requests
 from src.api.timeouts import SOURCE_REQUEST_TIMEOUT
 import src.util.defaults as defaults
 from src.exceptions import APIException
-from src.util.util import get_updated_at_datetime
+from src.util.util import get_updated_at_datetime, is_unread_chapter
 
 
 class MangaAPIClient:
@@ -135,23 +135,10 @@ class MangaAPIClient:
 
             Unread chapters are prioritized over read chapters."""
 
-            # If changing this logic, also change the is_unread_chapter function in util.py
-            last_read_chapter = manga["LastReadChapter"]["Chapter"]
-            last_released_chapter = manga["LastReleasedChapter"]["Chapter"]
-
-            if last_read_chapter == last_released_chapter:
+            if is_unread_chapter(manga["LastReadChapter"], manga["LastReleasedChapter"]):
+                return (0, -manga["LastReleasedChapter"]["UpdatedAt"].timestamp())
+            elif manga["LastReadChapter"]["Chapter"] == manga["LastReleasedChapter"]["Chapter"]:
                 return (1, -manga["LastReleasedChapter"]["UpdatedAt"].timestamp())
-            elif last_released_chapter == "":
-                return (1, -manga["LastReadChapter"]["UpdatedAt"].timestamp())
-
-            try:
-                last_read_chapter_number = float(last_read_chapter)
-                last_released_chapter_number = float(last_released_chapter)
-            except ValueError:
-                return (0, -manga["LastReleasedChapter"]["UpdatedAt"].timestamp())
-
-            if last_read_chapter_number < last_released_chapter_number:
-                return (0, -manga["LastReleasedChapter"]["UpdatedAt"].timestamp())
 
             return (1, -manga["LastReadChapter"]["UpdatedAt"].timestamp())
 

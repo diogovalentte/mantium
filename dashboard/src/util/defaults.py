@@ -36,4 +36,6 @@ search_results_limit_min_value = 1
 search_results_limit_max_value = 50
 
 CUSTOM_MANGA_SOURCE = "custom_manga"
+# Chapter of custom mangas tracked only by the chapter URL
+UNKNOWN_CHAPTER = "?"
 DEFAULT_MANGA_COVER = "https://i.imgur.com/jMy7evE.jpeg"

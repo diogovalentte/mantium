@@ -5,6 +5,7 @@ from streamlit import session_state as ss
 import pathlib
 from datetime import datetime, timezone
 import uuid
+from typing import Any
 from urllib.parse import urlparse
 
 import streamlit as st
@@ -12,6 +13,8 @@ from bs4 import BeautifulSoup
 from dateutil.parser import parse
 from streamlit_extras.stylable_container import stylable_container
 from streamlit_javascript import st_javascript
+
+import src.util.defaults as defaults
 
 
 def get_logger():
@@ -209,14 +212,22 @@ def set_is_dialog_open():
     ss["is_dialog_open"] = False
 
 
-def is_unread_chapter(last_read_chapter: str, last_released_chapter: str) -> bool:
+def is_unread_chapter(last_read_chapter: dict[str, Any], last_released_chapter: dict[str, Any]) -> bool:
     """Returns True if the multimanga has unread chapters, False otherwise."""
 
-    # if changing this logic, also change the sort_mangas function in manga_api.py
-    if last_read_chapter == last_released_chapter:
+    last_read_chapter_url = last_read_chapter.get("URL", "")
+    last_released_chapter_url = last_released_chapter.get("URL", "")
+    last_read_chapter = last_read_chapter["Chapter"]
+    last_released_chapter = last_released_chapter["Chapter"]
+
+    if last_released_chapter == "":
         return False
-    elif last_released_chapter == "":
-        return False
+    elif last_read_chapter == last_released_chapter:
+        # Every chapter of a custom manga tracked only by the chapter URL has the same name
+        return (
+            last_released_chapter == defaults.UNKNOWN_CHAPTER
+            and last_read_chapter_url != last_released_chapter_url
+        )
 
     try:
         last_read_chapter_number = float(last_read_chapter)

@@ -489,7 +489,7 @@ class MainDashboard:
             col_index += 1
 
     def show_manga_grid(self, manga: dict[str, Any]):
-        unread = util.is_unread_chapter(manga["LastReadChapter"]["Chapter"], manga["LastReleasedChapter"]["Chapter"])
+        unread = util.is_unread_chapter(manga["LastReadChapter"], manga["LastReleasedChapter"])
 
         st.markdown(
             f"""<h1 class="manga_header" style='padding-bottom: 24px; margin-top: 16px; margin-bottom: 8px; {"animation: pulse 2s infinite alternate;" if unread else ""}'>
@@ -629,10 +629,7 @@ class MainDashboard:
             with c1:
 
                 def set_last_read():
-                    if (
-                        manga.get("LastReadChapter", {}).get("Chapter")
-                        != manga["LastReleasedChapter"]["Chapter"]
-                    ):
+                    if util.is_unread_chapter(manga["LastReadChapter"], manga["LastReleasedChapter"]):
                         self.api_client.update_multimanga_last_read_chapter(
                             manga["MultiMangaID"], manga["ID"]
                         )
@@ -706,7 +703,7 @@ class MainDashboard:
                 vertical_alignment="center",
             )
 
-        unread = util.is_unread_chapter(manga["LastReadChapter"]["Chapter"], manga["LastReleasedChapter"]["Chapter"])
+        unread = util.is_unread_chapter(manga["LastReadChapter"], manga["LastReleasedChapter"])
 
         with name_col:
             st.markdown(
@@ -852,10 +849,7 @@ class MainDashboard:
         with set_last_read_col:
 
             def set_last_read():
-                if (
-                    manga.get("LastReadChapter", {}).get("Chapter")
-                    != manga["LastReleasedChapter"]["Chapter"]
-                ):
+                if util.is_unread_chapter(manga["LastReadChapter"], manga["LastReleasedChapter"]):
                     self.api_client.update_multimanga_last_read_chapter(
                         manga["MultiMangaID"], manga["ID"]
                     )
