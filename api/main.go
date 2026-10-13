@@ -209,8 +209,23 @@ type Migration struct {
 
 // Change it in every new version
 var (
-	version        = "6.5.3"
-	updatedMessage = ``
+	version        = "6.6.0"
+	updatedMessage = `# Custom manga presets and safer scraping
+
+**Custom mangas**
+
+- **Presets**: pasting a manga URL tests the presets against the page and fills the Last Released Chapter selectors with the one that works. Mantium comes with presets for RSS feeds, and you can save your own selectors as a preset for a site.
+- **Test selectors**: see the chapter the selectors find before adding or saving the manga.
+- **Clearer errors**: a failing selector or regex now says what went wrong, like "Chapter name regex didn't match the text ...".
+- **Regex groups**: when the chapter regex has more than one group, the groups that matched are joined with a space, for chapters in parts like "4 8".
+- Fixed: only one custom manga could track new chapters by the chapter name alone.
+
+**Heads up**
+
+- **Sites on your local network**: the API no longer reaches private addresses (like 192.168.x.x or other containers) when scraping custom manga pages or downloading covers. If a custom manga points to a site on your network, set the API environment variable **ALLOW_PRIVATE_URLS=true**.
+- **The API container runs as a non-root user now.**
+- **A custom manga may notify a new chapter once** after this update, because how some chapters are stored changed.
+- **Dashboard**: updated to Streamlit 1.65, which makes the text of inputs and buttons smaller.`
 )
 
 // If the current version in the database is lower than the Version field, the Up function will be executed.
