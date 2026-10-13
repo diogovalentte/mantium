@@ -1502,6 +1502,15 @@ func (m *Manga) UpdateCustomMangaInDB(update CustomMangaUpdate) error {
 	return nil
 }
 
+// SameLastReleasedChapterTracking tells if two custom mangas get the last released chapter
+// the same way: same URL, selectors and use of the browser.
+func (m *Manga) SameLastReleasedChapterTracking(other *Manga) bool {
+	return m.URL == other.URL &&
+		sameSelector(m.LastReleasedChapterNameSelector, other.LastReleasedChapterNameSelector) &&
+		sameSelector(m.LastReleasedChapterURLSelector, other.LastReleasedChapterURLSelector) &&
+		m.LastReleasedChapterSelectorUseBrowser == other.LastReleasedChapterSelectorUseBrowser
+}
+
 // sameSelector tells if two selectors are equal. An empty selector is the same as no selector.
 func sameSelector(a, b *HTMLSelector) bool {
 	if a == nil || a.Selector == "" {

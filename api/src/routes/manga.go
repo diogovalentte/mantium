@@ -2128,6 +2128,10 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
 	return buf.Bytes(), nil
 }
 
+// updateMangasMetadataMutex prevents two updates of the mangas metadata from running at the same time,
+// so the results of an older update can't overwrite the results of a newer one.
+var updateMangasMetadataMutex sync.Mutex
+
 type iframeTemplateData struct {
 	BackgroundErrorTime           time.Time
 	Theme                         string
@@ -2145,6 +2149,12 @@ type iframeTemplateData struct {
 // @Success 200 {object} responseMessage
 // @Router /mangas/metadata [patch]
 func UpdateMangasMetadata(c *gin.Context) {
+	if !updateMangasMetadataMutex.TryLock() {
+		c.JSON(http.StatusConflict, gin.H{"message": "an update of the mangas metadata is already running, try again after it finishes"})
+		return
+	}
+	defer updateMangasMetadataMutex.Unlock()
+
 	notifyStr := c.Query("notify")
 	var notify bool
 	if notifyStr == "true" {
@@ -2879,6 +2889,18 @@ func updateCustomMangaLastReleasedChapter(m *manga.Manga, retries int, retryInte
 	}
 
 	if !isNewChapterDifferentFromOld(m.LastReleasedChapter, chapter, m.Source) {
+		return false, nil
+	}
+
+	// The user can change the URL or selectors while the page is being scraped.
+	// In this case, the scraped chapter is from the old URL/selectors and must not be saved.
+	currentManga, err := manga.GetMangaDB(m.ID, "")
+	if err != nil {
+		logger.Error().Err(err).Str("manga_url", m.URL).Msg("Error getting custom manga from DB to check if it changed while getting its last released chapter")
+		return false, err
+	}
+	if !currentManga.SameLastReleasedChapterTracking(m) {
+		logger.Info().Str("manga_url", m.URL).Msg("Custom manga URL or selectors changed while getting its last released chapter, will not save it")
 		return false, nil
 	}
 

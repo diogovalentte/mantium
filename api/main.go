@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -160,6 +161,11 @@ func setUpdateMangasMetadataPeriodicallyJob(log *zerolog.Logger) {
 
 				log.Info().Msg("Updating mangas metadata...")
 				res, err := util.RequestUpdateMangasMetadata(configs.Notify)
+				if res != nil && res.StatusCode == http.StatusConflict {
+					log.Info().Msg("Another update of the mangas metadata is already running, skipping this one")
+					res.Body.Close()
+					continue
+				}
 				if err != nil {
 					errMessage := fmt.Sprintf("Error updating mangas metadata in background: %s", err)
 					log.Error().Msg(errMessage)
