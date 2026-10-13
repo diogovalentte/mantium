@@ -1,11 +1,8 @@
-import base64
 from datetime import datetime, timezone
-from io import BytesIO
 from typing import Any
 
 import src.util.defaults as defaults
 import streamlit as st
-from PIL import Image
 from src.api.api_client import get_api_client
 from src.exceptions import APIException
 from src.util.add_manga import (
@@ -32,6 +29,7 @@ from src.util.util import (
     safe_href,
     chapter_tag_markdown,
     show_labeled_tag,
+    show_manga_cover,
     tag_markdown,
     set_is_dialog_open,
 )
@@ -717,23 +715,7 @@ def show_multimanga_manga(
         unsafe_allow_html=True,
     )
 
-    if manga["CoverImg"] is not None:
-        img_bytes = base64.b64decode(manga["CoverImg"])
-        img = BytesIO(img_bytes)
-        if not manga["CoverImgResized"]:
-            img = Image.open(img)
-            img = img.resize((250, 355))
-        st.image(img)
-    elif manga["CoverImgURL"] != "":
-        st.markdown(
-            f"""<img src="{safe_href(manga["CoverImgURL"])}" width="250" height="355"/>""",
-            unsafe_allow_html=True,
-        )
-    else:
-        st.markdown(
-            f"""<img src="{defaults.DEFAULT_MANGA_COVER}" width="250" height="355"/>""",
-            unsafe_allow_html=True,
-        )
+    show_manga_cover(manga, (250, 355))
 
     release_date = (
         manga["LastReleasedChapter"]["UpdatedAt"]

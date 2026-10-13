@@ -1,11 +1,8 @@
-import base64
 from datetime import datetime, timezone
-from io import BytesIO
 from typing import Any
 
 import streamlit as st
 from browser_detection import browser_detection_engine
-from PIL import Image
 from src.api.api_client import get_api_client
 from src.util import defaults
 from src.util import util
@@ -27,18 +24,6 @@ st.set_page_config(
 )
 
 logger = get_logger()
-
-
-def show_manga_cover(manga: dict[str, Any], size: tuple[int, int], always_resize: bool = False):
-    """Shows the manga cover, linking to the manga page when it has one."""
-    link = util.web_url_or_none(manga["URL"])
-    if manga["CoverImg"] is not None and manga["CoverImg"] != b"":
-        img = BytesIO(base64.b64decode(manga["CoverImg"]))
-        if always_resize or not manga["CoverImgResized"]:
-            img = Image.open(img).resize(size)
-        st.image(img, link=link, alt=manga["Name"])
-    else:
-        st.image(manga["CoverImgURL"] or defaults.DEFAULT_MANGA_COVER, width=size[0], link=link, alt=manga["Name"])
 
 
 class MainDashboard:
@@ -515,7 +500,7 @@ class MainDashboard:
             unsafe_allow_html=True,
         )
 
-        show_manga_cover(manga, (250, 355))
+        util.show_manga_cover(manga, (250, 355))
 
         if ss.get("status_filter", 1) == 0:
             st.write(
@@ -623,7 +608,7 @@ class MainDashboard:
             )
 
         with cover_col:
-            show_manga_cover(manga, (52, 75), always_resize=True)
+            util.show_manga_cover(manga, (52, 75), always_resize=True)
 
         if show_status:
             with status_col:

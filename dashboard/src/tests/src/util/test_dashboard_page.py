@@ -115,3 +115,24 @@ def test_dialog_cards_use_markdown_tags(api):
     assert ':color[Ongoing]{foreground="rgb(59, 130, 246)" background="rgb(219, 233, 254)"}' in tags
     assert ':color[2020]{foreground="rgb(59, 130, 246)" background="rgb(219, 233, 254)"}' in tags
     assert ':color[[12](https://example.com/m/12)]{foreground="rgb(59, 130, 246)" background="rgb(219, 233, 254)"}' in tags
+
+
+def test_dialog_card_covers_link_to_the_manga(api):
+    at = AppTest.from_file(os.path.join(os.path.dirname(__file__), "cards_runner.py"), default_timeout=30)
+    at.session_state["search_result"] = {
+        "Name": "Search result",
+        "URL": "https://example.com/m",
+        "CoverURL": "https://example.com/cover.jpg",
+        "Status": "",
+        "Year": "",
+        "LastChapter": "",
+        "LastChapterURL": "",
+        "Description": "",
+    }
+    at.run()
+    assert_no_exception(at)
+    covers = {image.proto.imgs[0].alt: image.proto for image in at.image}
+    assert covers["Search result"].link == "https://example.com/m"
+    assert covers["Search result"].imgs[0].url == "https://example.com/cover.jpg"
+    first = api.get_mangas()[0]
+    assert covers[first["Name"]].link == first["URL"]

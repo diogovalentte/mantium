@@ -1,3 +1,4 @@
+import base64
 import html
 import json
 import re
@@ -5,6 +6,7 @@ import logging
 from streamlit import session_state as ss
 import pathlib
 from datetime import datetime, timezone
+from io import BytesIO
 import uuid
 from typing import Any
 from urllib.parse import urlparse
@@ -12,6 +14,7 @@ from urllib.parse import urlparse
 import streamlit as st
 from bs4 import BeautifulSoup
 from dateutil.parser import parse
+from PIL import Image
 from streamlit_extras.stylable_container import stylable_container
 from streamlit_javascript import st_javascript
 
@@ -297,3 +300,25 @@ def safe_href(url) -> str:
         return ""
 
     return html.escape(url, quote=True)
+
+
+def show_manga_cover(
+    manga: dict[str, Any],
+    size: tuple[int, int],
+    always_resize: bool = False,
+    cover_url_key: str = "CoverImgURL",
+):
+    """Shows the manga cover, linking to the manga page when it has one.
+
+    The cover is the image bytes in manga["CoverImg"] when there are any, else the image at
+    manga[cover_url_key], else Mantium's default cover.
+    """
+    link = web_url_or_none(manga["URL"])
+    cover_img = manga.get("CoverImg")
+    if cover_img is not None and cover_img != b"":
+        img = BytesIO(base64.b64decode(cover_img))
+        if always_resize or not manga.get("CoverImgResized", False):
+            img = Image.open(img).resize(size)
+        st.image(img, link=link, alt=manga["Name"])
+    else:
+        st.image(manga.get(cover_url_key) or defaults.DEFAULT_MANGA_COVER, width=size[0], link=link, alt=manga["Name"])
