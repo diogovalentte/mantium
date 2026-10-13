@@ -2230,13 +2230,21 @@ func UpdateMangasMetadata(c *gin.Context) {
 
 	parallelJobs := config.GlobalConfigs.PeriodicallyUpdateMangas.ParallelJobs
 
-	// MultiMangas
-	for _, chunk := range util.ChunkSlice(multimangas, parallelJobs) {
+	// Each worker takes the next multimanga when it finishes the previous one,
+	// so a slow multimanga doesn't leave the other workers idle.
+	queue := make(chan *manga.MultiManga, len(multimangas))
+	for _, multimanga := range multimangas {
+		queue <- multimanga
+	}
+	close(queue)
+
+	browserLimiter := newBrowserLimiter(parallelJobs)
+	for range max(1, min(parallelJobs, len(multimangas))) {
 		wg.Add(1)
-		go func(chunk []*manga.MultiManga) {
+		go func() {
 			defer wg.Done()
-			for _, multimangaToUpdate := range chunk {
-				mangaWithNewChapters, multimangaNewMetadata, sourceNewMetadata, multimangaErrors := updateMultiMangaMetadata(multimangaToUpdate, retries, retryInterval, logger)
+			for multimangaToUpdate := range queue {
+				mangaWithNewChapters, multimangaNewMetadata, sourceNewMetadata, multimangaErrors := updateMultiMangaMetadata(multimangaToUpdate, browserLimiter, retries, retryInterval, logger)
 				results <- result{
 					mangaWithNewChapters: mangaWithNewChapters,
 					multimangaErrors:     multimangaErrors,
@@ -2244,7 +2252,7 @@ func UpdateMangasMetadata(c *gin.Context) {
 					sourceNewMetadata:    sourceNewMetadata,
 				}
 			}
-		}(chunk)
+		}()
 	}
 
 	go func() {
@@ -2771,7 +2779,7 @@ func getCheckFixOutOfSyncChaptersActiveWaitingJobs(kaizoku *kaizoku.Kaizoku) (in
 // Returns the updated current manga if the current manga has a new released chapter, else nil.
 // Also returns a bool indicating if any metadata was updated, another indicating if the metadata
 // of a manga that is not a custom manga was updated, and a slice of errors.
-func updateMultiMangaMetadata(multimanga *manga.MultiManga, retries int, retryInterval time.Duration, logger *zerolog.Logger) (*manga.Manga, bool, bool, []string) {
+func updateMultiMangaMetadata(multimanga *manga.MultiManga, browserLimiter chan struct{}, retries int, retryInterval time.Duration, logger *zerolog.Logger) (*manga.Manga, bool, bool, []string) {
 	var err error
 	var errors []string
 	var newMetadata, sourceNewMetadata bool
@@ -2782,7 +2790,7 @@ func updateMultiMangaMetadata(multimanga *manga.MultiManga, retries int, retryIn
 
 	for _, mangaToUpdate := range multimanga.Mangas {
 		if mangaToUpdate.Source == manga.CustomMangaSource {
-			hasNewChapter, err := updateCustomMangaLastReleasedChapter(mangaToUpdate, retries, retryInterval, logger)
+			hasNewChapter, err := updateCustomMangaLastReleasedChapter(mangaToUpdate, browserLimiter, retries, retryInterval, logger)
 			if err != nil {
 				errors = append(errors, err.Error())
 				continue
@@ -2876,9 +2884,24 @@ func updateMultiMangaMetadata(multimanga *manga.MultiManga, retries int, retryIn
 	return nil, newMetadata, sourceNewMetadata, errors
 }
 
+// newBrowserLimiter returns a semaphore that limits how many custom manga scrapes use the
+// browser at the same time to half of the parallel jobs, as each one starts a Chromium.
+func newBrowserLimiter(parallelJobs int) chan struct{} {
+	return make(chan struct{}, max(1, parallelJobs/2))
+}
+
+// limitBrowserScrape runs scrape, waiting for a free slot in browserLimiter first if it uses the browser.
+func limitBrowserScrape(browserLimiter chan struct{}, useBrowser bool, scrape func() (*manga.Chapter, error)) (*manga.Chapter, error) {
+	if useBrowser {
+		browserLimiter <- struct{}{}
+		defer func() { <-browserLimiter }()
+	}
+	return scrape()
+}
+
 // updateCustomMangaLastReleasedChapter gets the custom manga last released chapter using its selectors and updates it in the database.
 // Returns true if the manga has a new released chapter.
-func updateCustomMangaLastReleasedChapter(m *manga.Manga, retries int, retryInterval time.Duration, logger *zerolog.Logger) (bool, error) {
+func updateCustomMangaLastReleasedChapter(m *manga.Manga, browserLimiter chan struct{}, retries int, retryInterval time.Duration, logger *zerolog.Logger) (bool, error) {
 	if m.URL == "" || strings.HasPrefix(m.URL, manga.CustomMangaURLPrefix) || (m.LastReleasedChapterNameSelector == nil && m.LastReleasedChapterURLSelector == nil) {
 		return false, nil
 	}
@@ -2894,7 +2917,9 @@ func updateCustomMangaLastReleasedChapter(m *manga.Manga, retries int, retryInte
 	var chapter *manga.Chapter
 	var err error
 	for i := 0; i < retries; i++ {
-		chapter, err = manga.GetCustomMangaLastReleasedChapter(m.URL, m.LastReleasedChapterNameSelector, m.LastReleasedChapterURLSelector, m.LastReleasedChapterSelectorUseBrowser)
+		chapter, err = limitBrowserScrape(browserLimiter, m.LastReleasedChapterSelectorUseBrowser, func() (*manga.Chapter, error) {
+			return manga.GetCustomMangaLastReleasedChapter(m.URL, m.LastReleasedChapterNameSelector, m.LastReleasedChapterURLSelector, m.LastReleasedChapterSelectorUseBrowser)
+		})
 		if err == nil {
 			break
 		}
