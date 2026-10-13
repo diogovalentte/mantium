@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	api "github.com/diogovalentte/mantium/api/src"
+	"github.com/diogovalentte/mantium/api/src/routes"
 )
 
 func TestTestCustomMangaSelectors(t *testing.T) {
@@ -80,5 +82,19 @@ func TestTestCustomMangaSelectors(t *testing.T) {
 				t.Errorf("got chapter %q %q, want %q %q", resp.Chapter.Chapter, resp.Chapter.URL, test.wantChapter, test.wantURL)
 			}
 		})
+	}
+}
+
+func TestRequestTooLarge(t *testing.T) {
+	body := `{"name":"x","cover_img":"` + strings.Repeat("A", routes.MaxRequestBodyBytes) + `"}`
+	req, _ := http.NewRequest(http.MethodPatch, "/v1/custom_manga?id=1", strings.NewReader(body))
+	w := httptest.NewRecorder()
+	api.SetupRouter().ServeHTTP(w, req)
+
+	if w.Code != http.StatusRequestEntityTooLarge {
+		t.Fatalf("got status %d, want 413: %s", w.Code, w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), "the cover image must be at most 10 MB") {
+		t.Fatalf("unexpected body: %s", w.Body.String())
 	}
 }

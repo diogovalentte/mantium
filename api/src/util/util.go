@@ -17,6 +17,8 @@ import (
 	"github.com/nfnt/resize"
 	"github.com/rs/zerolog"
 	"golang.org/x/image/webp"
+
+	"github.com/diogovalentte/mantium/api/src/errordefs"
 )
 
 // ExternalRequestTimeout bounds a single request to a manga source or to an
@@ -110,6 +112,10 @@ func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgB
 		return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), lastErr)
 	}
 
+	if err := ValidateImage(imageBytes); err != nil {
+		return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), err)
+	}
+
 	if strings.HasSuffix(url, ".webp") {
 		imageBytes, err = webpToJPEG(imageBytes)
 		if err != nil {
@@ -157,13 +163,17 @@ func downloadImage(httpClient *http.Client, url string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 1024))
 		return nil, fmt.Errorf("non-200 status code -> (%d). Body: %s", resp.StatusCode, string(body))
 	}
 
-	imageBytes, err := io.ReadAll(resp.Body)
+	// Reads one byte more than the limit to know if the image is larger than it
+	imageBytes, err := io.ReadAll(io.LimitReader(resp.Body, MaxImageBytes+1))
 	if err != nil {
 		return nil, AddErrorContext("could not read the image data from request body", err)
+	}
+	if len(imageBytes) > MaxImageBytes {
+		return nil, &errordefs.UserError{Message: fmt.Sprintf("The cover image is larger than %d MB", MaxImageBytes>>20)}
 	}
 
 	return imageBytes, nil
@@ -189,9 +199,12 @@ func webpToJPEG(webpImgBytes []byte) ([]byte, error) {
 func ResizeImage(imgBytes []byte, width, height uint) ([]byte, error) {
 	contextError := "error resizing image to width %d and height %d"
 
-	_, format, err := image.DecodeConfig(bytes.NewReader(imgBytes))
+	config, format, err := image.DecodeConfig(bytes.NewReader(imgBytes))
 	if err != nil {
 		return nil, AddErrorContext(fmt.Sprintf(contextError, width, height), err)
+	}
+	if config.Width*config.Height > MaxImagePixels {
+		return nil, AddErrorContext(fmt.Sprintf(contextError, width, height), fmt.Errorf("image has %dx%d pixels, more than the maximum of %d", config.Width, config.Height, MaxImagePixels))
 	}
 
 	img, _, err := image.Decode(bytes.NewReader(imgBytes))
@@ -236,14 +249,38 @@ func GetDefaultCoverImg() ([]byte, error) {
 	return img, nil
 }
 
-// IsImageValid checks if an image is valid by decoding it
-func IsImageValid(imgBytes []byte) bool {
-	_, _, err := image.DecodeConfig(bytes.NewReader(imgBytes))
-	if err != nil {
-		return ErrorContains(err, "luma/chroma subsampling ratio")
+// Limits of the images (covers) the API accepts, so a huge file or a small file that
+// decodes into a huge image can't exhaust the API memory.
+const (
+	MaxImageBytes  = 10 << 20
+	MaxImagePixels = 40_000_000
+)
+
+// ValidateImage checks if an image is valid and within the size limits, without fully decoding it.
+// The returned error is an *errordefs.UserError.
+func ValidateImage(imgBytes []byte) error {
+	if len(imgBytes) > MaxImageBytes {
+		return &errordefs.UserError{Message: fmt.Sprintf("The cover image is larger than %d MB", MaxImageBytes>>20)}
 	}
 
-	return true
+	config, _, err := image.DecodeConfig(bytes.NewReader(imgBytes))
+	if err != nil {
+		// JPEG with a subsampling ratio the standard library doesn't support, but it's a valid image
+		if ErrorContains(err, "luma/chroma subsampling ratio") {
+			return nil
+		}
+		return &errordefs.UserError{Message: "The cover image is not a valid PNG, JPEG or WebP image", Err: err}
+	}
+	if config.Width*config.Height > MaxImagePixels {
+		return &errordefs.UserError{Message: fmt.Sprintf("The cover image is too large (%dx%d pixels), the maximum is %d megapixels", config.Width, config.Height, MaxImagePixels/1_000_000)}
+	}
+
+	return nil
+}
+
+// IsImageValid checks if an image is valid and within the size limits
+func IsImageValid(imgBytes []byte) bool {
+	return ValidateImage(imgBytes) == nil
 }
 
 // GetRFC3339Datetime returns a time.Time from a RFC3339 formatted string.

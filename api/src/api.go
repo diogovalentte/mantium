@@ -13,6 +13,7 @@ import (
 // SetupRouter sets up the routes for the API
 func SetupRouter() *gin.Engine {
 	router := gin.Default()
+	router.Use(routes.LimitRequestBody)
 
 	docs.SwaggerInfo.Title = "Mantium API"
 	docs.SwaggerInfo.Description = "API for Mantium, a manga dashboard."

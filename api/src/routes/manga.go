@@ -318,6 +318,10 @@ type UpdateCustomMangaRequest struct {
 func UpdateCustomManga(c *gin.Context) {
 	var requestData UpdateCustomMangaRequest
 	if err := c.ShouldBindJSON(&requestData); err != nil {
+		if isRequestTooLarge(err) {
+			c.JSON(http.StatusRequestEntityTooLarge, errorResponse(errRequestTooLarge))
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid JSON fields, refer to the API documentation"})
 		return
 	}
@@ -362,8 +366,8 @@ func UpdateCustomManga(c *gin.Context) {
 	}
 	switch {
 	case len(requestData.CoverImg) > 0:
-		if !util.IsImageValid(requestData.CoverImg) {
-			c.JSON(http.StatusBadRequest, errorResponse(&errordefs.UserError{Message: "The uploaded cover image is not a valid image"}))
+		if err := util.ValidateImage(requestData.CoverImg); err != nil {
+			c.JSON(http.StatusBadRequest, errorResponse(err))
 			return
 		}
 		update.UpdateCoverImg = true
@@ -377,7 +381,7 @@ func UpdateCustomManga(c *gin.Context) {
 		update.CoverImgURL = requestData.CoverImgURL
 		update.CoverImg, update.CoverImgResized, err = util.GetImageFromURL(requestData.CoverImgURL, 3, 3*time.Second)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, errorResponse(util.AddErrorContext("error getting cover image", &errordefs.UserError{Message: "Couldn't get the cover image from the URL", Err: err})))
+			c.JSON(http.StatusBadRequest, coverImgURLErrorResponse(err))
 			return
 		}
 	case requestData.UseMantiumDefaultCoverImg:
@@ -488,6 +492,10 @@ func AddMultiManga(c *gin.Context) {
 	var requestData AddMultiMangaRequest
 	var err error
 	if err := c.ShouldBindJSON(&requestData); err != nil {
+		if isRequestTooLarge(err) {
+			c.JSON(http.StatusRequestEntityTooLarge, errorResponse(errRequestTooLarge))
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid JSON fields, refer to the API documentation"})
 		return
 	}
@@ -582,8 +590,8 @@ func AddMultiManga(c *gin.Context) {
 
 		var err error
 		if len(requestData.CoverImg) > 0 {
-			if !util.IsImageValid(requestData.CoverImg) {
-				c.JSON(http.StatusBadRequest, gin.H{"message": "invalid image"})
+			if err := util.ValidateImage(requestData.CoverImg); err != nil {
+				c.JSON(http.StatusBadRequest, errorResponse(err))
 				return
 			}
 			resizedCoverImg, err := util.ResizeImage(requestData.CoverImg, uint(util.DefaultImageWidth), uint(util.DefaultImageHeight))
@@ -597,7 +605,7 @@ func AddMultiManga(c *gin.Context) {
 		} else if requestData.CoverImgURL != "" {
 			currentManga.CoverImg, currentManga.CoverImgResized, err = util.GetImageFromURL(requestData.CoverImgURL, 3, 3*time.Second)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": "invalid image: " + err.Error()})
+				c.JSON(http.StatusInternalServerError, coverImgURLErrorResponse(err))
 				return
 			}
 
@@ -1080,6 +1088,10 @@ func UpdateCustomMangaCoverImg(c *gin.Context) {
 	var requestFile multipart.File
 	requestFile, _, err := c.Request.FormFile("cover_img")
 	if err != nil {
+		if isRequestTooLarge(err) {
+			c.JSON(http.StatusRequestEntityTooLarge, errorResponse(errRequestTooLarge))
+			return
+		}
 		if err != http.ErrMissingFile && err != http.ErrNotMultipart {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
@@ -1141,8 +1153,8 @@ func UpdateCustomMangaCoverImg(c *gin.Context) {
 	retries := 3
 	retryInterval := 3 * time.Second
 	if len(coverImg) != 0 {
-		if !util.IsImageValid(coverImg) {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "invalid image"})
+		if err := util.ValidateImage(coverImg); err != nil {
+			c.JSON(http.StatusBadRequest, errorResponse(err))
 			return
 		}
 
@@ -1161,7 +1173,7 @@ func UpdateCustomMangaCoverImg(c *gin.Context) {
 	} else if coverImgURL != "" {
 		coverImg, isImgRezied, err := util.GetImageFromURL(coverImgURL, retries, retryInterval)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "invalid image: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, coverImgURLErrorResponse(err))
 			return
 		}
 
@@ -1219,6 +1231,10 @@ func UpdateMultiMangaCoverImg(c *gin.Context) {
 	var requestFile multipart.File
 	requestFile, _, err = c.Request.FormFile("cover_img")
 	if err != nil {
+		if isRequestTooLarge(err) {
+			c.JSON(http.StatusRequestEntityTooLarge, errorResponse(errRequestTooLarge))
+			return
+		}
 		if err != http.ErrMissingFile && err != http.ErrNotMultipart {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
@@ -1273,8 +1289,8 @@ func UpdateMultiMangaCoverImg(c *gin.Context) {
 	retries := 3
 	retryInterval := 3 * time.Second
 	if len(coverImg) != 0 {
-		if !util.IsImageValid(coverImg) {
-			c.JSON(http.StatusBadRequest, gin.H{"message": "invalid image"})
+		if err := util.ValidateImage(coverImg); err != nil {
+			c.JSON(http.StatusBadRequest, errorResponse(err))
 			return
 		}
 
@@ -1293,7 +1309,7 @@ func UpdateMultiMangaCoverImg(c *gin.Context) {
 	} else if coverImgURL != "" {
 		coverImg, isImgRezied, err := util.GetImageFromURL(coverImgURL, retries, retryInterval)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": "invalid image: " + err.Error()})
+			c.JSON(http.StatusInternalServerError, coverImgURLErrorResponse(err))
 			return
 		}
 
@@ -1341,6 +1357,10 @@ func AddMangaToMultiManga(c *gin.Context) {
 
 	var requestData AddMangaToMultiMangaRequest
 	if err := c.ShouldBindJSON(&requestData); err != nil {
+		if isRequestTooLarge(err) {
+			c.JSON(http.StatusRequestEntityTooLarge, errorResponse(errRequestTooLarge))
+			return
+		}
 		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid JSON fields, refer to the API documentation"})
 		return
 	}
@@ -1416,8 +1436,8 @@ func AddMangaToMultiManga(c *gin.Context) {
 		}
 
 		if len(requestData.CoverImg) > 0 {
-			if !util.IsImageValid(requestData.CoverImg) {
-				c.JSON(http.StatusBadRequest, gin.H{"message": "invalid custom manga image"})
+			if err := util.ValidateImage(requestData.CoverImg); err != nil {
+				c.JSON(http.StatusBadRequest, errorResponse(err))
 				return
 			}
 			resizedCoverImg, err := util.ResizeImage(requestData.CoverImg, uint(util.DefaultImageWidth), uint(util.DefaultImageHeight))
@@ -1431,7 +1451,7 @@ func AddMangaToMultiManga(c *gin.Context) {
 		} else if requestData.CoverImgURL != "" {
 			mangaAdd.CoverImg, mangaAdd.CoverImgResized, err = util.GetImageFromURL(requestData.CoverImgURL, 3, 3*time.Second)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": "invalid image: " + err.Error()})
+				c.JSON(http.StatusInternalServerError, coverImgURLErrorResponse(err))
 				return
 			}
 
@@ -2922,4 +2942,30 @@ func errorResponse(err error) gin.H {
 		resp["user_message"] = userErr.Message
 	}
 	return resp
+}
+
+// coverImgURLErrorResponse returns the response body for an error getting a cover image from a URL provided by the user.
+func coverImgURLErrorResponse(err error) gin.H {
+	var userErr *errordefs.UserError
+	if !errors.As(err, &userErr) {
+		err = &errordefs.UserError{Message: "Couldn't get the cover image from the URL", Err: err}
+	}
+	return errorResponse(util.AddErrorContext("invalid image", err))
+}
+
+// MaxRequestBodyBytes is the maximum size of a request body. It's a bit larger than
+// a base64 encoded cover image of util.MaxImageBytes plus the other fields.
+const MaxRequestBodyBytes = util.MaxImageBytes*4/3 + 1<<20
+
+var errRequestTooLarge = &errordefs.UserError{Message: fmt.Sprintf("The request is too large, the cover image must be at most %d MB", util.MaxImageBytes>>20)}
+
+// LimitRequestBody limits the size of the requests body to MaxRequestBodyBytes.
+func LimitRequestBody(c *gin.Context) {
+	c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, MaxRequestBodyBytes)
+	c.Next()
+}
+
+func isRequestTooLarge(err error) bool {
+	var maxBytesErr *http.MaxBytesError
+	return errors.As(err, &maxBytesErr)
 }

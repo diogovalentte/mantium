@@ -169,7 +169,7 @@ You must manually provide:
 
 - Name
 - URL
-- Cover image (or use default)
+- Cover image (or use default). PNG, JPEG or WebP, up to 10 MB and 40 megapixels
 - Last released chapter selectors
 
 ## Last Released Chapter Selectors
