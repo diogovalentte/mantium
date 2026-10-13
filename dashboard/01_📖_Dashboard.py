@@ -48,7 +48,21 @@ def on_library_page_change():
 
 
 def scroll_to_top():
-    st_javascript("""window.parent.document.querySelector(".main").scrollTop = 0;""")
+    """Scrolls the page back to the top, like after changing the library page.
+
+    st.html isn't iframed, so its script reaches the page, and unlike a component it
+    doesn't send a value back that reruns the app. The counter changes the HTML, so the
+    script runs again on the next page change.
+    """
+    ss["scroll_to_top_count"] = ss.get("scroll_to_top_count", 0) + 1
+    st.html(
+        f"""<script>
+        // {ss["scroll_to_top_count"]}
+        document.querySelector('[data-testid="stMain"]')?.scrollTo(0, 0);
+        window.scrollTo(0, 0);
+        </script>""",
+        unsafe_allow_javascript=True,
+    )
 
 
 class MainDashboard:
