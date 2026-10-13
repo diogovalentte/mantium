@@ -183,6 +183,61 @@ in valentium, both written up in its `CLAUDE.md`:
 - `AppTest` often can't see `st.expander` (inside a fragment, or when it holds a
   form). Assert on the contents, not the container.
 
+The custom manga forms now have this: `dashboard/src/tests/src/util/` has a
+runner per form and a fake API client (`fake_api.py`) that the runner swaps in
+for `get_api_client`, so the tests run offline in under a second. A dialog
+closing is simulated by a session state flag that stops the runner from
+rendering the form for one run.
+
+### Streamlit pitfalls
+
+Every item here bit, or almost bit, the custom manga forms. Each one is checked
+by a test in `src/tests/src/util/` or against the Streamlit 1.54 source. When
+changing a Streamlit form, run those tests, and have it reviewed for these
+before calling it done.
+
+- **`value=` plus `key=` breaks writing the widget through `session_state`.**
+  Streamlit renders a yellow warning ("created with a default value but also had
+  its value set via the Session State API"). Forms that code fills (presets)
+  must seed the initial values into `session_state` once and pass no `value=`.
+  See `reset_custom_manga_form_state`.
+- **A widget's state is deleted at the end of any run that doesn't render it.**
+  This covers a toggle that hides fields, a closed dialog, and an `if` around
+  widgets. Closed expanders and popovers don't count: their bodies still run.
+  Anything that must survive hiding goes in a non-widget key (the selectors draft
+  of `on_custom_manga_tracking_change`). This is also how the forms know their
+  dialog was just opened: the URL widget key is missing.
+- **Non-widget `session_state` keys are never cleaned up.** Messages and caches
+  stored there survive a closed dialog and reappear on the next open, unless
+  something deletes them (`custom_manga_preset_state`).
+- **A widget's `session_state` can only be written before it renders in that
+  run.** Callbacks run before the script, so they can always write. Code in the
+  script body must run above the widget, which is why the preset detection runs
+  right after the URL input and before the toggle, picker and selectors. Moving
+  it lower raises `StreamlitAPIException`.
+- **`st.dialog` reruns only the dialog function on interactions inside it.**
+  Code outside the decorated function doesn't run again until a full rerun. Only
+  a dialog with an `on_dismiss` callback reruns the app on close (needed for the
+  "dialog just opened" check above); `on_dismiss="ignore"` doesn't.
+- **`st.rerun()` inside a callback is a no-op.** Submit logic that ends in
+  `st.rerun()` (like `add_manga()`) must stay in the `if st.button(...)` body.
+- **`st.form` blocks reacting to a field.** Widgets inside a form don't trigger
+  reruns or `on_change`, so a form can't pre-select anything from what was typed.
+  The custom manga forms dropped `st.form`. Without it, Enter no longer submits,
+  and a text input only commits on blur or Enter.
+- **Callback `args` are captured when the widget renders.** Pass only stable
+  things (the key prefix) and read current values from `session_state` inside the
+  callback.
+- **`st.expander` has no `key` in 1.54,** so it can't be opened from code. Use a
+  `st.toggle` (which has a key) when code needs to show a section, like
+  "Track new chapters automatically" after a preset is detected.
+- **`AppTest` selectbox `.select()`/`.set_value()` take the option value** (a
+  preset ID), not the label `format_func` shows. Passing the label fails inside
+  `format_func`.
+- **`urlparse(...).hostname` raises `ValueError` on malformed URLs** such as
+  `http://[`. In a callback, that takes the dialog down. Use `get_url_hostname`
+  and `get_invalid_url_message`.
+
 ## API
 
 ### 8. Source tests hit the real internet with hardcoded expectations
