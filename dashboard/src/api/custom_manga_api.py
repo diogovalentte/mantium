@@ -3,7 +3,7 @@ from typing import Any
 from urllib.parse import urlencode, urljoin
 
 import requests
-from src.api.timeouts import SOURCE_REQUEST_TIMEOUT
+from src.api.timeouts import REQUEST_TIMEOUT, SOURCE_REQUEST_TIMEOUT
 from src.exceptions import APIException
 
 
@@ -236,6 +236,75 @@ class CustomMangaAPIClient:
                 url,
                 "PATCH",
                 {},
+                res.status_code,
+                res.text,
+            )
+
+        return res.json()
+
+    def get_custom_manga_presets(self) -> list[dict[str, Any]]:
+        url = f"{self.base_custom_manga_url}/presets"
+
+        res = requests.get(url, timeout=REQUEST_TIMEOUT)
+
+        if res.status_code not in self.acceptable_status_codes:
+            raise APIException(
+                "error while getting custom manga presets",
+                url,
+                "GET",
+                {},
+                res.status_code,
+                res.text,
+            )
+
+        return res.json()["presets"]
+
+    def add_custom_manga_preset(self, preset: dict[str, Any]) -> dict[str, Any]:
+        url = f"{self.base_custom_manga_url}/presets"
+
+        res = requests.post(url, json=preset, timeout=REQUEST_TIMEOUT)
+
+        if res.status_code not in self.acceptable_status_codes:
+            raise APIException(
+                "error while adding custom manga preset",
+                url,
+                "POST",
+                preset,
+                res.status_code,
+                res.text,
+            )
+
+        return res.json()["preset"]
+
+    def delete_custom_manga_preset(self, preset_id: int) -> dict[str, str]:
+        url = f"{self.base_custom_manga_url}/presets?{urlencode({'id': preset_id})}"
+
+        res = requests.delete(url, timeout=REQUEST_TIMEOUT)
+
+        if res.status_code not in self.acceptable_status_codes:
+            raise APIException(
+                "error while deleting custom manga preset",
+                url,
+                "DELETE",
+                {},
+                res.status_code,
+                res.text,
+            )
+
+        return res.json()
+
+    def detect_custom_manga_presets(self, manga_url: str) -> dict[str, Any]:
+        url = f"{self.base_custom_manga_url}/presets/detect"
+        request_body = {"url": manga_url}
+
+        res = requests.post(url, json=request_body, timeout=SOURCE_REQUEST_TIMEOUT)
+
+        if res.status_code not in self.acceptable_status_codes:
+            raise APIException(
+                "error while detecting custom manga presets",
+                url,
+                "POST",
+                request_body,
                 res.status_code,
                 res.text,
             )

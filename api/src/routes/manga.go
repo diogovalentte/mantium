@@ -51,6 +51,10 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.PATCH("/custom_manga/cover_img", UpdateCustomMangaCoverImg)
 		group.POST("/custom_manga/test_selectors", TestCustomMangaSelectors)
 		group.PATCH("/custom_manga", UpdateCustomManga)
+		group.GET("/custom_manga/presets", GetCustomMangaPresets)
+		group.POST("/custom_manga/presets", AddCustomMangaPreset)
+		group.DELETE("/custom_manga/presets", DeleteCustomMangaPreset)
+		group.POST("/custom_manga/presets/detect", DetectCustomMangaPresets)
 
 		// Methods for multimanga only
 		group.POST("/multimanga", AddMultiManga)

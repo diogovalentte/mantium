@@ -1777,6 +1777,16 @@ func GetCustomMangaLastReleasedChapter(mangaURL string, nameSelector, URLSelecto
 		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), err)
 	}
 
+	chapter, err := chapterFromPage(page, nameSelector, URLSelector)
+	if err != nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), err)
+	}
+
+	return chapter, nil
+}
+
+// chapterFromPage applies the selectors to the page to get the last released chapter.
+func chapterFromPage(page *scrapedPage, nameSelector, URLSelector *HTMLSelector) (*Chapter, error) {
 	chapter := &Chapter{
 		UpdatedAt: time.Now().Local().Truncate(time.Second),
 		Type:      1,
@@ -1784,7 +1794,7 @@ func GetCustomMangaLastReleasedChapter(mangaURL string, nameSelector, URLSelecto
 	if nameSelector != nil {
 		chapterName, err := page.selectValue(nameSelector, chapterNameField)
 		if err != nil {
-			return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), err)
+			return nil, err
 		}
 		chapter.Chapter = chapterName
 		chapter.Name = "Chapter " + chapterName
@@ -1792,11 +1802,11 @@ func GetCustomMangaLastReleasedChapter(mangaURL string, nameSelector, URLSelecto
 	if URLSelector != nil {
 		chapterURL, err := page.selectValue(URLSelector, chapterURLField)
 		if err != nil {
-			return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), err)
+			return nil, err
 		}
 		chapter.URL, err = page.resolveURL(chapterURL)
 		if err != nil {
-			return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), err)
+			return nil, err
 		}
 		if chapter.Chapter == "" {
 			chapter.Chapter = UnknownChapter

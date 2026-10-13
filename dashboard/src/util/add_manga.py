@@ -1,5 +1,6 @@
 from typing import Any
 import hashlib
+from urllib.parse import urlparse
 
 import src.util.defaults as defaults
 import streamlit as st
@@ -592,10 +593,235 @@ def test_custom_manga_selectors(
     st.text("\n".join(lines))
 
 
+# Session state keys (after the form key prefix) of the custom manga form fields that a preset fills.
+custom_manga_preset_fields = {
+    "last_released_chapter_name_selector": ("name_selector", "Selector", ""),
+    "last_released_chapter_name_attribute": ("name_selector", "Attribute", ""),
+    "last_released_chapter_name_regex": ("name_selector", "Regex", ""),
+    "last_released_chapter_name_get_first": ("name_selector", "GetFirst", False),
+    "last_released_chapter_url_selector": ("url_selector", "Selector", ""),
+    "last_released_chapter_url_attribute": ("url_selector", "Attribute", ""),
+    "last_released_chapter_url_get_first": ("url_selector", "GetFirst", False),
+}
+
+
+def get_custom_manga_presets(key_prefix: str, reload: bool = False) -> dict[int, dict[str, Any]]:
+    """Returns the custom manga presets by ID, loaded once per form."""
+    if reload or key_prefix + "presets" not in ss:
+        presets = get_api_client().get_custom_manga_presets()
+        ss[key_prefix + "presets"] = {preset["id"]: preset for preset in presets}
+    return ss[key_prefix + "presets"]
+
+
+def custom_manga_selector_fields_are_empty(key_prefix: str) -> bool:
+    return all(
+        not ss.get(key_prefix + field, "")
+        for field in ("last_released_chapter_name_selector", "last_released_chapter_url_selector")
+    )
+
+
+def apply_custom_manga_preset(key_prefix: str, preset_id: int | None = None):
+    """Fills the selector fields with the preset. Used as a widget callback."""
+    if preset_id is None:
+        preset_id = ss[key_prefix + "preset"]
+    else:
+        ss[key_prefix + "preset"] = preset_id
+    if preset_id is None:
+        return
+
+    preset = get_custom_manga_presets(key_prefix)[preset_id]
+    for field, (selector_key, attribute, default) in custom_manga_preset_fields.items():
+        selector = preset[selector_key] or {}
+        ss[key_prefix + field] = selector.get(attribute, default)
+    ss[key_prefix + "last_released_chapter_use_browser"] = preset["use_browser"]
+
+
+def on_custom_manga_url_change(key_prefix: str):
+    ss[key_prefix + "detect_presets"] = True
+    ss[key_prefix + "preset_detections"] = None
+    ss[key_prefix + "new_preset_domains"] = urlparse(ss.get(key_prefix + "url", "")).hostname or ""
+
+
+def detect_custom_manga_presets(key_prefix: str):
+    """Tests the presets against the manga URL, and selects one if the selector fields are empty."""
+    manga_url = ss.get(key_prefix + "url", "")
+    if manga_url == "" or get_invalid_url_message("manga URL", manga_url):
+        return
+
+    try:
+        with st.spinner("Looking for a preset that works for this site..."):
+            result = get_api_client().detect_custom_manga_presets(manga_url)
+    except Exception as ex:
+        ss[key_prefix + "preset_detections"] = {
+            "error": get_api_user_message(ex) or get_api_error_detail(ex),
+        }
+        if get_api_user_message(ex) is None:
+            logger.exception(ex)
+        return
+
+    working = [d for d in result["detections"] if d["chapter"] is not None]
+    domain_presets = result["domain_presets"]
+    ss[key_prefix + "preset_detections"] = {"working": working, "domain_presets": domain_presets}
+
+    # A preset saved for this site wins over the ones that only happen to work
+    chosen = None
+    if domain_presets:
+        chosen = domain_presets[0]["id"]
+    elif working:
+        chosen = working[0]["preset"]["id"]
+    if chosen is not None and custom_manga_selector_fields_are_empty(key_prefix):
+        get_custom_manga_presets(key_prefix, reload=True)
+        apply_custom_manga_preset(key_prefix, chosen)
+        ss[key_prefix + "preset_auto_selected"] = True
+
+
+def save_custom_manga_preset(key_prefix: str):
+    name_selector = ss.get(key_prefix + "last_released_chapter_name_selector", "")
+    url_selector = ss.get(key_prefix + "last_released_chapter_url_selector", "")
+    preset: dict[str, Any] = {
+        "name": ss.get(key_prefix + "new_preset_name", ""),
+        "domains": [d for d in ss.get(key_prefix + "new_preset_domains", "").split(",") if d.strip()],
+        "use_browser": ss.get(key_prefix + "last_released_chapter_use_browser", False),
+    }
+    if name_selector:
+        preset["name_selector"] = {
+            "selector": name_selector,
+            "attribute": ss.get(key_prefix + "last_released_chapter_name_attribute", ""),
+            "regex": ss.get(key_prefix + "last_released_chapter_name_regex", ""),
+            "get_first": ss.get(key_prefix + "last_released_chapter_name_get_first", False),
+        }
+    if url_selector:
+        preset["url_selector"] = {
+            "selector": url_selector,
+            "attribute": ss.get(key_prefix + "last_released_chapter_url_attribute", ""),
+            "get_first": ss.get(key_prefix + "last_released_chapter_url_get_first", False),
+        }
+
+    try:
+        saved = get_api_client().add_custom_manga_preset(preset)
+    except Exception as ex:
+        if (user_message := get_api_user_message(ex)) is None:
+            logger.exception(ex)
+        ss[key_prefix + "preset_message"] = ("warning", user_message or f"Error while saving the preset: {get_api_error_detail(ex)}")
+        return
+
+    get_custom_manga_presets(key_prefix, reload=True)
+    ss[key_prefix + "preset"] = saved["id"]
+    ss[key_prefix + "preset_message"] = ("success", f'Preset "{saved["name"]}" saved')
+
+
+def delete_custom_manga_preset(key_prefix: str):
+    preset_id = ss.get(key_prefix + "preset")
+    try:
+        get_api_client().delete_custom_manga_preset(preset_id)
+    except Exception as ex:
+        if (user_message := get_api_user_message(ex)) is None:
+            logger.exception(ex)
+        ss[key_prefix + "preset_message"] = ("warning", user_message or f"Error while deleting the preset: {get_api_error_detail(ex)}")
+        return
+
+    get_custom_manga_presets(key_prefix, reload=True)
+    ss[key_prefix + "preset"] = None
+    ss[key_prefix + "preset_message"] = ("success", "Preset deleted")
+
+
+def show_custom_manga_presets(key_prefix: str):
+    """Shows the preset picker of the custom manga form.
+
+    Picking a preset fills the last released chapter selectors. When the manga URL
+    changes, the presets are tested against the page, and the one that works is
+    picked if the selector fields are still empty.
+    """
+    try:
+        presets = get_custom_manga_presets(key_prefix)
+    except Exception as ex:
+        logger.exception(ex)
+        st.warning(f"Couldn't load the presets: {get_api_error_detail(ex)}")
+        return
+
+    if ss.pop(key_prefix + "detect_presets", False):
+        detect_custom_manga_presets(key_prefix)
+        presets = get_custom_manga_presets(key_prefix)
+
+    if ss.get(key_prefix + "preset") not in presets:
+        ss[key_prefix + "preset"] = None
+
+    preset_col, detect_col = st.columns([3, 1], vertical_alignment="bottom")
+    with preset_col:
+        st.selectbox(
+            "Preset",
+            options=[None] + list(presets.keys()),
+            format_func=lambda preset_id: "None" if preset_id is None else presets[preset_id]["name"],
+            help="Fills the last released chapter selectors with ones that work for many sites. You can still edit them.",
+            key=key_prefix + "preset",
+            on_change=apply_custom_manga_preset,
+            args=(key_prefix,),
+        )
+    with detect_col:
+        st.button(
+            "Detect",
+            key=key_prefix + "detect_presets_button",
+            use_container_width=True,
+            help="Test every preset against the manga URL.",
+            on_click=on_custom_manga_url_change,
+            args=(key_prefix,),
+        )
+
+    selected = presets.get(ss[key_prefix + "preset"])
+    if selected is not None and selected["description"]:
+        st.caption(selected["description"])
+
+    detections = ss.get(key_prefix + "preset_detections")
+    if detections is not None:
+        if "error" in detections:
+            st.warning(f"Couldn't test the presets: {detections['error']}")
+        else:
+            if ss.pop(key_prefix + "preset_auto_selected", False) and selected is not None:
+                st.success(f'Preset "{selected["name"]}" selected for this site. Check the selectors in Last Released Chapter.')
+            if detections["working"]:
+                lines = []
+                for detection in detections["working"]:
+                    chapter = detection["chapter"]
+                    found = f"chapter {chapter['Chapter']}"
+                    if chapter["URL"]:
+                        found += f" ({chapter['URL']})"
+                    lines.append(f"- **{detection['preset']['name']}**: {found}")
+                st.markdown("Presets that work for this page:\n" + "\n".join(lines))
+            elif not detections["domain_presets"]:
+                st.info("No preset works for this page. Fill the selectors in Last Released Chapter.")
+
+    with st.popover("Save selectors as preset", use_container_width=True):
+        st.text_input("Preset name", key=key_prefix + "new_preset_name")
+        st.text_input(
+            "Domains",
+            help="Comma-separated sites where this preset is selected automatically, like 'example.com'. Leave empty to only select it by hand.",
+            key=key_prefix + "new_preset_domains",
+        )
+        st.button(
+            "Save preset",
+            key=key_prefix + "save_preset",
+            type="primary",
+            use_container_width=True,
+            on_click=save_custom_manga_preset,
+            args=(key_prefix,),
+        )
+        if selected is not None and not selected["builtin"]:
+            st.button(
+                f'Delete preset "{selected["name"]}"',
+                key=key_prefix + "delete_preset",
+                use_container_width=True,
+                on_click=delete_custom_manga_preset,
+                args=(key_prefix,),
+            )
+
+    if (message := ss.pop(key_prefix + "preset_message", None)) is not None:
+        getattr(st, message[0])(message[1])
+
+
 def show_add_custom_manga_form(multimanga_id: int = 0):
     key_prefix = "add_custom_manga_form_" if multimanga_id == 0 else "add_custom_manga_to_multimanga_form_"
 
-    with st.form(key="add_custom_manga_form", border=False):
+    with st.container(border=False):
         st.text_input(
             "Manga Name (not optional)",
             placeholder="One Piece",
@@ -606,7 +832,11 @@ def show_add_custom_manga_form(multimanga_id: int = 0):
             "Manga URL",
             placeholder="https://randomsite.com/title/one-piece",
             key=key_prefix + "url",
+            on_change=on_custom_manga_url_change,
+            args=(key_prefix,),
         )
+
+        show_custom_manga_presets(key_prefix)
 
         if multimanga_id == 0:
             st.selectbox(
@@ -698,8 +928,9 @@ def show_add_custom_manga_form(multimanga_id: int = 0):
                 key=key_prefix + "last_released_chapter_use_browser",
             )
 
-            if st.form_submit_button(
+            if st.button(
                 "Test selectors",
+                key=key_prefix + "test_selectors",
                 use_container_width=True,
                 help="Get the last released chapter from the manga URL using the selectors above, without adding the manga.",
             ):
@@ -732,8 +963,9 @@ def show_add_custom_manga_form(multimanga_id: int = 0):
                 key=key_prefix + "cover_img_file",
             )
 
-        if st.form_submit_button(
+        if st.button(
             "Add",
+            key=key_prefix + "add",
             use_container_width=True,
             type="primary",
         ):

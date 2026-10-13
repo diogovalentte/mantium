@@ -47,6 +47,11 @@ func init() {
 		panic(err)
 	}
 
+	log.Info().Msg("Creating the custom manga presets that come with Mantium...")
+	if err = manga.UpsertBuiltinPresetsDB(); err != nil {
+		panic(err)
+	}
+
 	log.Info().Msg("Loading configs from DB...")
 	err = config.LoadConfigsFromDB(config.GlobalConfigs.DashboardConfigs)
 	if err != nil {

@@ -180,6 +180,22 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
 			"enqueue_all_suwayomi_chapters_to_download" boolean NOT NULL DEFAULT TRUE
 		);
 
+		CREATE TABLE IF NOT EXISTS "custom_manga_presets" (
+			"id" serial PRIMARY KEY,
+			"name" varchar(100) NOT NULL UNIQUE,
+			"description" text NOT NULL DEFAULT '',
+			"domains" text[] NOT NULL DEFAULT '{}',
+			"builtin" boolean NOT NULL DEFAULT FALSE,
+			"use_browser" boolean NOT NULL DEFAULT FALSE,
+			"name_selector" text NOT NULL DEFAULT '',
+			"name_attribute" varchar(30) NOT NULL DEFAULT '',
+			"name_regex" varchar(255) NOT NULL DEFAULT '',
+			"name_get_first" boolean NOT NULL DEFAULT FALSE,
+			"url_selector" text NOT NULL DEFAULT '',
+			"url_attribute" varchar(30) NOT NULL DEFAULT '',
+			"url_get_first" boolean NOT NULL DEFAULT FALSE
+		);
+
 		CREATE TABLE IF NOT EXISTS "version" (
 			"version" VARCHAR(15) NOT NULL DEFAULT '4.0.4'
 		);
