@@ -237,3 +237,25 @@ def test_skeleton_while_the_library_loads(api, monkeypatch):
     assert shown == [500]
     # The skeleton is gone once the library is loaded
     assert len(card_names(at)) == len(api.library)
+
+
+def test_edit_dialogs_open_on_the_right(api, monkeypatch):
+    import streamlit as st
+
+    positions = {}
+    original = st.dialog
+
+    def dialog(title, *args, **kwargs):
+        positions[title] = kwargs.get("position", "center")
+        return original(title, *args, **kwargs)
+
+    monkeypatch.setattr(st, "dialog", dialog)
+    manga = by_name(api, "Dandadan")
+    custom = by_name(api, "Manual with text chapter")
+    at = run_page(status_filter=0)
+    at.menu_button(key=f"manga_actions_{manga['ID']}").click("Highlight").run()
+    assert_no_exception(at)
+    assert positions[manga["Name"]] == "right"
+    at = run_page(status_filter=0, highlighted_custom_manga=api.get_mangas()[[m["ID"] for m in api.library].index(custom["ID"])])
+    assert_no_exception(at)
+    assert positions["Update Custom Manga"] == "right"

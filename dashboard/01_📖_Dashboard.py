@@ -366,7 +366,7 @@ class MainDashboard:
                 set_is_dialog_open()
                 ss["highlighted_custom_manga"] = None
 
-            @st.dialog("Update Custom Manga", on_dismiss=on_dismiss)
+            @st.dialog("Update Custom Manga", position=defaults.EDIT_DIALOG_POSITION, on_dismiss=on_dismiss)
             def show():
                 ss["is_dialog_open"] = True
                 show_update_custom_manga(ss["highlighted_custom_manga"])
