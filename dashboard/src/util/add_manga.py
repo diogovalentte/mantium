@@ -647,21 +647,40 @@ def clear_custom_manga_selectors(key_prefix: str):
     ss[key_prefix + "preset"] = None
 
 
+# The custom manga URL input commits after this typing pause. Each commit can test the
+# presets against the page, which is a request to the site, so the pause is long.
+CUSTOM_MANGA_URL_LIVE = "1s"
+
+
 def on_custom_manga_url_change(key_prefix: str):
-    ss[key_prefix + "detect_presets"] = True
-    ss[key_prefix + "preset_detections"] = None
     ss[key_prefix + "new_preset_domains"] = get_url_hostname(ss.get(key_prefix + "url", ""))
+    ss[key_prefix + "detect_presets"] = "cached"
+    ss[key_prefix + "preset_detections"] = None
 
 
-def detect_custom_manga_presets(key_prefix: str):
-    """Tests the presets against the manga URL, and selects one if the selector fields are empty."""
+def on_custom_manga_detect_click(key_prefix: str):
+    ss[key_prefix + "detect_presets"] = "fresh"
+    ss[key_prefix + "preset_detections"] = None
+
+
+def detect_custom_manga_presets(key_prefix: str, use_cache: bool = True):
+    """Tests the presets against the manga URL, and selects one if the selector fields are empty.
+
+    Results are kept per URL, so committing a URL already tested (the URL input commits on
+    typing pauses) doesn't request the site again, unless use_cache is False.
+    """
     manga_url = ss.get(key_prefix + "url", "")
     if manga_url == "" or get_invalid_url_message("manga URL", manga_url):
         return
 
+    cache = ss.setdefault(key_prefix + "detections_by_url", {})
     try:
-        with st.spinner("Looking for a preset that works for this site..."):
-            result = get_api_client().detect_custom_manga_presets(manga_url)
+        if use_cache and manga_url in cache:
+            result = cache[manga_url]
+        else:
+            with st.spinner("Looking for a preset that works for this site..."):
+                result = get_api_client().detect_custom_manga_presets(manga_url)
+            cache[manga_url] = result
     except Exception as ex:
         ss[key_prefix + "preset_detections"] = {
             "error": get_api_user_message(ex) or get_api_error_detail(ex),
@@ -753,19 +772,21 @@ custom_manga_preset_state = (
     "preset_detections",
     "preset_auto_selected",
     "preset_message",
+    "detections_by_url",
 )
 
 
 def run_pending_custom_manga_preset_detection(key_prefix: str):
     """Tests the presets against the manga URL after it changes. Must run before the
     widgets it fills are rendered."""
-    if ss.pop(key_prefix + "detect_presets", False):
+    mode = ss.pop(key_prefix + "detect_presets", None)
+    if mode:
         try:
             get_custom_manga_presets(key_prefix)
         except Exception as ex:
             logger.exception(ex)
             return
-        detect_custom_manga_presets(key_prefix)
+        detect_custom_manga_presets(key_prefix, use_cache=mode != "fresh")
 
 
 def show_custom_manga_presets(key_prefix: str):
@@ -803,7 +824,7 @@ def show_custom_manga_presets(key_prefix: str):
             key=key_prefix + "detect_presets_button",
             width="stretch",
             help="Test every preset against the manga URL.",
-            on_click=on_custom_manga_url_change,
+            on_click=on_custom_manga_detect_click,
             args=(key_prefix,),
         )
     with clear_col:
@@ -1003,6 +1024,7 @@ def show_add_custom_manga_form(multimanga_id: int = 0):
             type="url",
             validate=URL_INPUT_VALIDATION,
             key=key_prefix + "url",
+            live=CUSTOM_MANGA_URL_LIVE,
             on_change=on_custom_manga_url_change,
             args=(key_prefix,),
         )

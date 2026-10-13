@@ -9,6 +9,7 @@ from PIL import Image
 from src.api.api_client import get_api_client
 from src.exceptions import APIException
 from src.util.add_manga import (
+    CUSTOM_MANGA_URL_LIVE,
     get_custom_manga_selector_values,
     on_custom_manga_url_change,
     reset_custom_manga_form_state,
@@ -876,6 +877,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
             type="url",
             validate=URL_INPUT_VALIDATION,
             key=key_prefix + "url",
+            live=CUSTOM_MANGA_URL_LIVE,
             on_change=on_custom_manga_url_change,
             args=(key_prefix,),
         )

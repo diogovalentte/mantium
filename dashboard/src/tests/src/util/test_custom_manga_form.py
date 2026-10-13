@@ -354,3 +354,38 @@ def test_url_inputs_are_validated_in_the_browser(api):
 def test_name_is_required(api):
     at = run_app()
     assert at.text_input(key=P + "name").proto.required
+
+
+def test_url_input_commits_on_typing_pauses(api):
+    from src.util.add_manga import CUSTOM_MANGA_URL_LIVE
+
+    at = run_app()
+    assert CUSTOM_MANGA_URL_LIVE == "1s"
+    assert at.text_input(key=P + "url").proto.live_debounce_ms == 1000
+
+
+def test_a_url_already_tested_is_not_requested_again(api):
+    feed_detected(api)
+    at = run_app()
+    at.text_input(key=P + "url").input(FEED_URL).run()
+    at.text_input(key=P + "url").input("https://feeds.example.org/series/1/rs").run()
+    at.text_input(key=P + "url").input(FEED_URL).run()
+    assert_no_exception(at)
+    requested = [args[0] for args, _ in api.called("detect_custom_manga_presets")]
+    assert requested == [FEED_URL, "https://feeds.example.org/series/1/rs"]
+    assert any("Presets that work" in m.value for m in at.markdown)
+    # Detect always asks the API again
+    at.button(key=P + "detect_presets_button").click().run()
+    assert len(api.called("detect_custom_manga_presets")) == 3
+
+
+def test_failed_detection_is_tried_again(api):
+    api.detections[FEED_URL] = fake_api.user_error("timeout")
+    at = run_app()
+    at.text_input(key=P + "url").input(FEED_URL).run()
+    feed_detected(api)
+    at.text_input(key=P + "url").input("https://other.example.org/").run()
+    at.text_input(key=P + "url").input(FEED_URL).run()
+    assert_no_exception(at)
+    assert expanded(at)
+    assert field(at, "name_selector") == "xpath://item/title"
