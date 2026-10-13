@@ -270,7 +270,13 @@ func UpdateCustomMangaLastReleasedChapterSelectors(c *gin.Context) {
 		return
 	}
 
-	err = mangaToUpdate.UpdateLastReleasedChapterSelectorsInDB((*manga.HTMLSelector)(requestData.LastReleasedChapterNameSelector), (*manga.HTMLSelector)(requestData.LastReleasedChapterURLSelector), requestData.LastReleasedChapterSelectorUseBrowser)
+	URLSelector := (*manga.HTMLSelector)(requestData.LastReleasedChapterURLSelector)
+	if URLSelector != nil {
+		// The URL selector has no regex, like when adding a custom manga
+		URLSelector.Regex = ""
+	}
+
+	err = mangaToUpdate.UpdateLastReleasedChapterSelectorsInDB((*manga.HTMLSelector)(requestData.LastReleasedChapterNameSelector), URLSelector, requestData.LastReleasedChapterSelectorUseBrowser)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
