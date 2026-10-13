@@ -47,26 +47,54 @@ def test_covers_link_to_the_manga_page(api, display_mode):
 
 
 
-def test_dialog_card_covers_link_to_the_manga(api):
+def run_cards(search_result: dict) -> AppTest:
     at = AppTest.from_file(os.path.join(os.path.dirname(__file__), "cards_runner.py"), default_timeout=30)
-    at.session_state["search_result"] = {
-        "Name": "Search result",
-        "URL": "https://example.com/m",
-        "CoverURL": "https://example.com/cover.jpg",
-        "Status": "",
-        "Year": "",
-        "LastChapter": "",
-        "LastChapterURL": "",
-        "Description": "",
-    }
-    at.run()
-    assert_no_exception(at)
-    covers = {image.proto.imgs[0].alt: image.proto for image in at.image}
-    assert covers["Search result"].link == "https://example.com/m"
-    assert covers["Search result"].imgs[0].url == "https://example.com/cover.jpg"
-    first = api.get_mangas()[0]
-    assert covers[first["Name"]].link == first["URL"]
+    at.session_state["search_result"] = search_result
+    return at.run()
 
+
+SEARCH_RESULT = {
+    "Name": "Search result",
+    "URL": "https://example.com/m",
+    "CoverURL": "https://example.com/cover.jpg",
+    "Status": "",
+    "Year": "",
+    "LastChapter": "",
+    "LastChapterURL": "",
+    "Description": "",
+}
+
+
+def test_dialog_card_covers_link_to_the_manga(api):
+    at = run_cards(SEARCH_RESULT)
+    assert_no_exception(at)
+    covers = [m.value for m in at.markdown if "<img" in m.value]
+    assert any(
+        '<a href="https://example.com/m" target="_blank"><img src="https://example.com/cover.jpg"' in c
+        and 'width="250" height="355"' in c
+        for c in covers
+    ), covers
+    # Covers stored as bytes are images linking to the manga
+    first = api.get_mangas()[0]
+    images = {image.proto.imgs[0].alt: image.proto for image in at.image}
+    assert images[first["Name"]].link == first["URL"]
+
+
+@pytest.mark.parametrize("cover_url", ["//cdn.example.com/a.jpg", "/wp-content/a.jpg", "/etc/hostname", "javascript:alert(1)"])
+def test_cover_url_that_isnt_absolute_shows_the_default_cover(api, cover_url):
+    at = run_cards(dict(SEARCH_RESULT, CoverURL=cover_url))
+    assert_no_exception(at)
+    covers = [m.value for m in at.markdown if "<img" in m.value]
+    assert any("i.imgur.com/jMy7evE.jpeg" in c for c in covers), covers
+
+
+def test_empty_cover_bytes_use_the_cover_url(api):
+    manga = api.library[0]
+    manga["CoverImg"] = ""
+    manga["CoverImgURL"] = "https://example.com/c.jpg"
+    at = run_cards(dict(SEARCH_RESULT))
+    assert_no_exception(at)
+    assert any('src="https://example.com/c.jpg"' in m.value for m in at.markdown)
 
 def pagination(at: AppTest):
     widgets = [w for w in at.get("pagination")]

@@ -306,10 +306,18 @@ def show_manga_cover(
     """
     link = web_url_or_none(manga["URL"])
     cover_img = manga.get("CoverImg")
-    if cover_img is not None and cover_img != b"":
+    if cover_img:
         img = BytesIO(base64.b64decode(cover_img))
         if always_resize or not manga.get("CoverImgResized", False):
             img = Image.open(img).resize(size)
         st.image(img, link=link, alt=manga["Name"])
-    else:
-        st.image(manga.get(cover_url_key) or defaults.DEFAULT_MANGA_COVER, width=size[0], link=link, alt=manga["Name"])
+        return
+
+    # st.image opens any string that isn't an http(s) or data URL as a local file, so a
+    # relative cover URL from a source site would take the page down. It also can't give a
+    # remote image a fixed size, which keeps the cards aligned, so these use an <img>.
+    cover_url = safe_href(manga.get(cover_url_key) or "") or html.escape(defaults.DEFAULT_MANGA_COVER, quote=True)
+    img_tag = f'<img src="{cover_url}" alt="{html.escape(str(manga["Name"]), quote=True)}" width="{size[0]}" height="{size[1]}" style="object-fit: cover;"/>'
+    if link:
+        img_tag = f'<a href="{html.escape(link, quote=True)}" target="_blank">{img_tag}</a>'
+    st.markdown(img_tag, unsafe_allow_html=True)
