@@ -693,7 +693,7 @@ def show_multimanga_manga(
                 color: inherit;
             }
             a.manga_header:hover {
-                color: #04c9b7;
+                color: #089a8d;
             }
         </style>
     """

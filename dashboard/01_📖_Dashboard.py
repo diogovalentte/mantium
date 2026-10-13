@@ -201,10 +201,10 @@ class MainDashboard:
                     color: inherit;
                 }
                 a.manga_header:hover {
-                    color: #04c9b7;
+                    color: #089a8d;
                 }
                 span.manga_header:hover {
-                    color: #04c9b7;
+                    color: #089a8d;
                 }
 
                 @keyframes pulse {
@@ -212,7 +212,7 @@ class MainDashboard:
                         color: white; /* Start color */
                     }
                     100% {
-                        color: #04c9b7; /* End color */
+                        color: #089a8d; /* End color */
                     }
                 }
 

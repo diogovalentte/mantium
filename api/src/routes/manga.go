@@ -1896,10 +1896,10 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
 
         .set-last-read-button {
             color: white;
-            background-color: #04c9b7;
+            background-color: #089a8d;
             padding: 0.25rem 0.75rem;
             border-radius: 0.5rem;
-            border: 1px solid rgb(4, 201, 183);
+            border: 1px solid rgb(8, 154, 141);
             margin-top: 10px;
             font-weight: bold;
         }
@@ -1923,7 +1923,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
             background-color: white;
             padding: 0.25rem 0.75rem;
             border-radius: 0.5rem;
-            border: 1px solid rgb(4, 201, 183);
+            border: 1px solid rgb(8, 154, 141);
             font-weight: bold;
         }
 
