@@ -4,7 +4,9 @@ package manga
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -1781,8 +1783,19 @@ func GetCustomMangaLastReleasedChapter(mangaURL string, nameSelector, URLSelecto
 	if err != nil {
 		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), err)
 	}
+	if chapter.URL == "" {
+		chapter.URL = customMangaChapterPlaceholderURL(mangaURL, chapter.Chapter)
+	}
 
 	return chapter, nil
+}
+
+// customMangaChapterPlaceholderURL returns the URL of a chapter found only by its name.
+// Chapters are identified by their URL in the DB, so it can't be empty. It's the same for
+// the same manga page and chapter, so scraping the page again doesn't look like a new chapter.
+func customMangaChapterPlaceholderURL(mangaURL, chapter string) string {
+	hash := sha256.Sum256([]byte(mangaURL))
+	return fmt.Sprintf("%s/%s/%s", CustomMangaURLPrefix, hex.EncodeToString(hash[:8]), url.PathEscape(chapter))
 }
 
 // chapterFromPage applies the selectors to the page to get the last released chapter.

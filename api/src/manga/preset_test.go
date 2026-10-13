@@ -3,6 +3,7 @@ package manga
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -111,5 +112,35 @@ func TestPresetsForURL(t *testing.T) {
 		if got := PresetsForURL(url, presets); len(got) != want {
 			t.Errorf("%s: got %d presets, want %d", url, len(got), want)
 		}
+	}
+}
+
+func TestNameOnlyChapterURL(t *testing.T) {
+	allowPrivateURLs(t)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/rss+xml")
+		w.Write([]byte(titlesOnlyFeed))
+	}))
+	defer server.Close()
+
+	nameSelector := &HTMLSelector{Selector: "xpath://item/title", Regex: chapterNumberRegex, GetFirst: true}
+	get := func(path string) *Chapter {
+		t.Helper()
+		chapter, err := GetCustomMangaLastReleasedChapter(server.URL+path, nameSelector, nil, false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return chapter
+	}
+
+	first, again, other := get("/a"), get("/a"), get("/b")
+	if !strings.HasPrefix(first.URL, CustomMangaURLPrefix+"/") || !strings.HasSuffix(first.URL, "/88") {
+		t.Fatalf("unexpected chapter URL %q", first.URL)
+	}
+	if first.URL != again.URL {
+		t.Fatalf("scraping the same page twice gave different chapter URLs: %q and %q", first.URL, again.URL)
+	}
+	if first.URL == other.URL {
+		t.Fatalf("two manga pages with the same chapter got the same chapter URL %q", first.URL)
 	}
 }
