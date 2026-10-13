@@ -276,14 +276,39 @@ def test_tracking_turned_off_after_preset_sends_no_selectors(api):
     assert add_args(api)[9:16] == ("", "", "", False, "", "", False)
 
 
-def test_tracking_off_then_on_starts_empty(api):
+def test_tracking_off_then_on_restores_selectors(api):
     feed_detected(api)
     at = run_app()
     at.text_input(key=P + "url").input(FEED_URL).run()
+    at.text_input(key=P + "last_released_chapter_name_regex").input(r"c\.(\d+)").run()
     at.toggle(key=P + "track_new_chapters").set_value(False).run()
     at.toggle(key=P + "track_new_chapters").set_value(True).run()
     assert_no_exception(at)
-    assert field(at, "name_selector") == ""
+    assert field(at, "name_selector") == "xpath://item/title"
+    assert field(at, "name_regex") == r"c\.(\d+)"
+    assert at.selectbox(key=P + "preset").value == RSS_PRESET["id"]
+
+
+def test_detection_respects_tracking_turned_off_by_hand(api):
+    feed_detected(api)
+    at = run_app()
+    at.toggle(key=P + "track_new_chapters").set_value(True).run()
+    at.toggle(key=P + "track_new_chapters").set_value(False).run()
+    at.text_input(key=P + "url").input(FEED_URL).run()
+    assert_no_exception(at)
+    assert not tracking(at)
+    at.text_input(key=P + "name").input("Manga").run()
+    at.button(key=P + "add").click().run()
+    assert add_args(api)[9:16] == ("", "", "", False, "", "", False)
+
+
+def test_detected_preset_that_no_longer_exists_is_ignored(api):
+    ghost = dict(RSS_PRESET, id=99, name="Deleted meanwhile")
+    api.detections[FEED_URL] = {"domain_presets": [], "detections": [detection(ghost, "1")]}
+    at = run_app()
+    at.text_input(key=P + "url").input(FEED_URL).run()
+    assert_no_exception(at)
+    assert not tracking(at)
 
 
 def test_add_requires_name(api):

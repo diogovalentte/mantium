@@ -139,3 +139,16 @@ def test_update_requires_name(api):
     at.button(key=P + "update").click().run()
     assert "Provide a manga name" in texts(at, "warning")
     assert api.called("update_custom_manga") == []
+
+
+def test_tracking_off_then_on_keeps_the_manga_selectors(api):
+    at = run_app(manga())
+    at.text_input(key=P + "last_released_chapter_name_regex").input(r"Ch (\d+)").run()
+    at.toggle(key=P + "track_new_chapters").set_value(False).run()
+    at.toggle(key=P + "track_new_chapters").set_value(True).run()
+    assert_no_exception(at)
+    assert field(at, "name_selector", P) == "css:a.ch"
+    assert field(at, "name_regex", P) == r"Ch (\d+)"
+    assert at.checkbox(key=P + "last_released_chapter_use_browser").value is True
+    at.button(key=P + "update").click().run()
+    assert update_args(api)[3:6] == ("css:a.ch", "", r"Ch (\d+)")

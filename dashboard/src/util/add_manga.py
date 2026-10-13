@@ -669,8 +669,20 @@ def detect_custom_manga_presets(key_prefix: str):
         chosen = domain_presets[0]["id"]
     elif working:
         chosen = working[0]["preset"]["id"]
-    if chosen is not None and custom_manga_selector_fields_are_empty(key_prefix):
-        get_custom_manga_presets(key_prefix, reload=True)
+    if (
+        chosen is not None
+        and not ss.get(key_prefix + "tracking_opted_out", False)
+        and custom_manga_selector_fields_are_empty(key_prefix)
+    ):
+        # The detection can return a preset created after the presets were loaded
+        if chosen not in get_custom_manga_presets(key_prefix):
+            try:
+                presets = get_custom_manga_presets(key_prefix, reload=True)
+            except Exception as ex:
+                logger.exception(ex)
+                return
+            if chosen not in presets:
+                return
         apply_custom_manga_preset(key_prefix, chosen)
         ss[key_prefix + "track_new_chapters"] = True
         ss[key_prefix + "preset_auto_selected"] = True
@@ -706,7 +718,7 @@ def save_custom_manga_preset(key_prefix: str):
         ss[key_prefix + "preset_message"] = ("warning", user_message or f"Error while saving the preset: {get_api_error_detail(ex)}")
         return
 
-    get_custom_manga_presets(key_prefix, reload=True)
+    ss[key_prefix + "presets"][saved["id"]] = saved
     ss[key_prefix + "preset"] = saved["id"]
     ss[key_prefix + "preset_message"] = ("success", f'Preset "{saved["name"]}" saved')
 
@@ -721,14 +733,22 @@ def delete_custom_manga_preset(key_prefix: str):
         ss[key_prefix + "preset_message"] = ("warning", user_message or f"Error while deleting the preset: {get_api_error_detail(ex)}")
         return
 
-    get_custom_manga_presets(key_prefix, reload=True)
+    ss[key_prefix + "presets"].pop(preset_id, None)
     ss[key_prefix + "preset"] = None
     ss[key_prefix + "preset_message"] = ("success", "Preset deleted")
 
 
 # Session state keys (after the form key prefix) that aren't widgets, so Streamlit
 # doesn't clear them when the dialog closes.
-custom_manga_preset_state = ("presets", "detect_presets", "preset_detections", "preset_auto_selected", "preset_message")
+custom_manga_preset_state = (
+    "presets",
+    "detect_presets",
+    "preset_detections",
+    "preset_auto_selected",
+    "preset_message",
+    "selectors_draft",
+    "tracking_opted_out",
+)
 
 
 def run_pending_custom_manga_preset_detection(key_prefix: str):
@@ -830,6 +850,21 @@ def show_custom_manga_presets(key_prefix: str):
         getattr(st, message[0])(message[1])
 
 
+def on_custom_manga_tracking_change(key_prefix: str):
+    """Keeps the selectors when tracking is turned off, since Streamlit deletes the state of
+    widgets that aren't rendered, and restores them when it's turned on again."""
+    fields = list(custom_manga_preset_fields) + ["last_released_chapter_use_browser", "preset"]
+    if ss[key_prefix + "track_new_chapters"]:
+        ss[key_prefix + "tracking_opted_out"] = False
+        for field, value in ss.pop(key_prefix + "selectors_draft", {}).items():
+            ss[key_prefix + field] = value
+    else:
+        ss[key_prefix + "tracking_opted_out"] = True
+        ss[key_prefix + "selectors_draft"] = {
+            field: ss[key_prefix + field] for field in fields if key_prefix + field in ss
+        }
+
+
 def get_custom_manga_selector_values(key_prefix: str) -> dict[str, Any]:
     """Returns the last released chapter selector fields, empty when not tracking new chapters."""
     tracking = ss.get(key_prefix + "track_new_chapters", False)
@@ -866,6 +901,8 @@ def show_custom_manga_tracking_fields(key_prefix: str, test_selectors_help: str)
         "Track new chapters automatically",
         help="Mantium gets the manga page periodically and uses selectors to find the last released chapter.",
         key=key_prefix + "track_new_chapters",
+        on_change=on_custom_manga_tracking_change,
+        args=(key_prefix,),
     )
     if ss[key_prefix + "track_new_chapters"]:
         with st.container(border=True):
