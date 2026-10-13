@@ -863,8 +863,9 @@ def show_update_custom_manga(manga: dict[str, Any]):
 
     with st.container(border=False):
         st.text_input(
-            "Manga Name (not optional)",
+            "Manga Name",
             placeholder="One Piece",
+            required=True,
             key=key_prefix + "name",
         )
 

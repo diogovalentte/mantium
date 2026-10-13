@@ -65,7 +65,7 @@ def test_layout_order(api):
     at = run_app()
     assert_no_exception(at)
     labels = labels_in_order(at)
-    order = ["Manga Name (not optional)", "Manga URL", "Status", "Cover Image", "Last Read Chapter", "Last Released Chapter", "Add"]
+    order = ["Manga Name", "Manga URL", "Status", "Cover Image", "Last Read Chapter", "Last Released Chapter", "Add"]
     seen = [l for l in labels if l in order]
     # "Last Read Chapter" is both the expander and the field inside it
     assert [l for i, l in enumerate(seen) if i == 0 or l != seen[i - 1]] == order
@@ -349,3 +349,8 @@ def test_url_inputs_are_validated_in_the_browser(api):
         assert pattern.match(valid), valid
     for invalid in ("example.com", "ftp://example.com", "https://", "https:// space.com", "javascript:alert(1)"):
         assert not pattern.match(invalid), invalid
+
+
+def test_name_is_required(api):
+    at = run_app()
+    assert at.text_input(key=P + "name").proto.required
