@@ -15,6 +15,45 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/custom_manga": {
+            "patch": {
+                "description": "Updates all the custom manga fields at once: name, URL, last released chapter selectors and, optionally, cover image. If the URL or selectors changed, the last released chapter is got using the new URL and selectors before saving anything, so an invalid combination saves nothing. An empty URL removes the manga URL. Provide at most one of cover_img, cover_img_url and use_mantium_default_cover_img; if none, the cover image is kept. If the error is caused by the request data, the response has a \"user_message\" field explaining it.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Update custom manga",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Manga ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "description": "Custom manga data",
+                        "name": "manga",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.UpdateCustomMangaRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
         "/custom_manga/last_released_chapter_selectors": {
             "patch": {
                 "description": "Update custom manga last released chapter selectors.",
@@ -96,6 +135,37 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/custom_manga/test_selectors": {
+            "post": {
+                "description": "Gets the last released chapter from the page using the selectors, without saving anything. If the error is caused by the URL or selectors, the response has a \"user_message\" field explaining it.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Test custom manga last released chapter selectors",
+                "parameters": [
+                    {
+                        "description": "Page URL and selectors",
+                        "name": "selectors",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.TestCustomMangaSelectorsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"chapter\": chapterObj}",
+                        "schema": {
+                            "$ref": "#/definitions/manga.Chapter"
                         }
                     }
                 }
@@ -1124,7 +1194,8 @@ const docTemplate = `{
                     "description": "CoverImg is the cover image of the manga",
                     "type": "array",
                     "items": {
-                        "type": "integer"
+                        "type": "integer",
+                        "format": "int32"
                     }
                 },
                 "coverImgFixed": {
@@ -1221,7 +1292,8 @@ const docTemplate = `{
                     "description": "CoverImg is the cover image of the multimanga",
                     "type": "array",
                     "items": {
-                        "type": "integer"
+                        "type": "integer",
+                        "format": "int32"
                     }
                 },
                 "coverImgFixed": {
@@ -1413,6 +1485,61 @@ const docTemplate = `{
                 },
                 "source": {
                     "type": "string"
+                }
+            }
+        },
+        "routes.TestCustomMangaSelectorsRequest": {
+            "type": "object",
+            "required": [
+                "url"
+            ],
+            "properties": {
+                "name_selector": {
+                    "$ref": "#/definitions/routes.HTMLSelectorRequest"
+                },
+                "url": {
+                    "type": "string"
+                },
+                "url_selector": {
+                    "$ref": "#/definitions/routes.HTMLSelectorRequest"
+                },
+                "use_browser": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "routes.UpdateCustomMangaRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "cover_img": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "cover_img_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "name_selector": {
+                    "$ref": "#/definitions/routes.HTMLSelectorRequest"
+                },
+                "url": {
+                    "type": "string"
+                },
+                "url_selector": {
+                    "$ref": "#/definitions/routes.HTMLSelectorRequest"
+                },
+                "use_browser": {
+                    "type": "boolean"
+                },
+                "use_mantium_default_cover_img": {
+                    "type": "boolean"
                 }
             }
         },

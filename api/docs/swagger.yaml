@@ -97,6 +97,7 @@ definitions:
       coverImg:
         description: CoverImg is the cover image of the manga
         items:
+          format: int32
           type: integer
         type: array
       coverImgFixed:
@@ -180,6 +181,7 @@ definitions:
       coverImg:
         description: CoverImg is the cover image of the multimanga
         items:
+          format: int32
           type: integer
         type: array
       coverImgFixed:
@@ -313,6 +315,42 @@ definitions:
     - q
     - source
     type: object
+  routes.TestCustomMangaSelectorsRequest:
+    properties:
+      name_selector:
+        $ref: '#/definitions/routes.HTMLSelectorRequest'
+      url:
+        type: string
+      url_selector:
+        $ref: '#/definitions/routes.HTMLSelectorRequest'
+      use_browser:
+        type: boolean
+    required:
+    - url
+    type: object
+  routes.UpdateCustomMangaRequest:
+    properties:
+      cover_img:
+        items:
+          type: integer
+        type: array
+      cover_img_url:
+        type: string
+      name:
+        type: string
+      name_selector:
+        $ref: '#/definitions/routes.HTMLSelectorRequest'
+      url:
+        type: string
+      url_selector:
+        $ref: '#/definitions/routes.HTMLSelectorRequest'
+      use_browser:
+        type: boolean
+      use_mantium_default_cover_img:
+        type: boolean
+    required:
+    - name
+    type: object
   routes.UpdateLastReadChapterRequest:
     properties:
       chapter:
@@ -352,6 +390,38 @@ definitions:
 info:
   contact: {}
 paths:
+  /custom_manga:
+    patch:
+      consumes:
+      - application/json
+      description: 'Updates all the custom manga fields at once: name, URL, last released
+        chapter selectors and, optionally, cover image. If the URL or selectors changed,
+        the last released chapter is got using the new URL and selectors before saving
+        anything, so an invalid combination saves nothing. An empty URL removes the
+        manga URL. Provide at most one of cover_img, cover_img_url and use_mantium_default_cover_img;
+        if none, the cover image is kept. If the error is caused by the request data,
+        the response has a "user_message" field explaining it.'
+      parameters:
+      - description: Manga ID
+        example: 1
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: Custom manga data
+        in: body
+        name: manga
+        required: true
+        schema:
+          $ref: '#/definitions/routes.UpdateCustomMangaRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Update custom manga
   /custom_manga/last_released_chapter_selectors:
     patch:
       consumes:
@@ -411,6 +481,28 @@ paths:
           schema:
             $ref: '#/definitions/routes.responseMessage'
       summary: Update custom manga name
+  /custom_manga/test_selectors:
+    post:
+      consumes:
+      - application/json
+      description: Gets the last released chapter from the page using the selectors,
+        without saving anything. If the error is caused by the URL or selectors, the
+        response has a "user_message" field explaining it.
+      parameters:
+      - description: Page URL and selectors
+        in: body
+        name: selectors
+        required: true
+        schema:
+          $ref: '#/definitions/routes.TestCustomMangaSelectorsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"chapter": chapterObj}'
+          schema:
+            $ref: '#/definitions/manga.Chapter'
+      summary: Test custom manga last released chapter selectors
   /dashboard/configs:
     get:
       description: Returns the dashboard configs
