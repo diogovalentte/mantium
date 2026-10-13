@@ -511,12 +511,12 @@ def show_search_result_manga(
 
     if manga["LastChapterURL"] == "":
         last_chapter = tag_content_format.format(
-            manga["LastChapter"] if manga["LastChapter"] not in ("", "0") else "N/A",
+            escape_html(manga["LastChapter"]) if manga["LastChapter"] not in ("", "0") else "N/A",
         )
     else:
         last_chapter = f"""
-            <a href="{manga["LastChapterURL"]}" target="_blank" style="text-decoration: none; color: {defaults.chapter_link_tag_text_color}">
-                <span>{manga["LastChapter"] if manga["LastChapter"] not in ("", "0") else "N/A"}</span>
+            <a href="{safe_href(manga["LastChapterURL"])}" target="_blank" style="text-decoration: none; color: {defaults.chapter_link_tag_text_color}">
+                <span>{escape_html(manga["LastChapter"]) if manga["LastChapter"] not in ("", "0") else "N/A"}</span>
             </a>
         """
     tagger(

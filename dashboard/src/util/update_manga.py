@@ -712,7 +712,7 @@ def show_multimanga_manga(
         st.image(img)
     elif manga["CoverImgURL"] != "":
         st.markdown(
-            f"""<img src="{manga["CoverImgURL"]}" width="250" height="355"/>""",
+            f"""<img src="{safe_href(manga["CoverImgURL"])}" width="250" height="355"/>""",
             unsafe_allow_html=True,
         )
     else:
@@ -722,8 +722,8 @@ def show_multimanga_manga(
         )
 
     chapter_tag_content = f"""
-        <a href="{manga["LastReleasedChapter"]["URL"]}" target="_blank" style="text-decoration: none; color: {defaults.chapter_link_tag_text_color}">
-            <span>{f'Ch. {manga["LastReleasedChapter"]["Chapter"]}' if manga["LastReleasedChapter"]["Chapter"] != "" else "N/A"}</span>
+        <a href="{safe_href(manga["LastReleasedChapter"]["URL"])}" target="_blank" style="text-decoration: none; color: {defaults.chapter_link_tag_text_color}">
+            <span>{"Ch. " + escape_html(manga["LastReleasedChapter"]["Chapter"]) if manga["LastReleasedChapter"]["Chapter"] != "" else "N/A"}</span>
         </a>
     """
 

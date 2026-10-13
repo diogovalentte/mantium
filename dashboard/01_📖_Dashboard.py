@@ -545,9 +545,9 @@ class MainDashboard:
         if no_released_chapter_custom_manga:
             if manga["LastReleasedChapter"]["URL"] != "":
                 chapter = chapter_with_url_tag_content.format(
-                    manga["LastReleasedChapter"]["URL"],
+                    util.safe_href(manga["LastReleasedChapter"]["URL"]),
                     (
-                        f'Ch. {manga["LastReleasedChapter"]["Chapter"]}'
+                        f'Ch. {util.escape_html(manga["LastReleasedChapter"]["Chapter"])}'
                         if manga["LastReleasedChapter"]["Chapter"] != ""
                         else "N/A"
                     ),
@@ -555,7 +555,7 @@ class MainDashboard:
             else:
                 chapter = chapter_without_url_tag_content.format(
                     (
-                        f'Ch. {manga["LastReleasedChapter"]["Chapter"]}'
+                        f'Ch. {util.escape_html(manga["LastReleasedChapter"]["Chapter"])}'
                         if manga["LastReleasedChapter"]["Chapter"] != ""
                         else "N/A"
                     ),
@@ -587,9 +587,9 @@ class MainDashboard:
 
         if manga["LastReadChapter"]["URL"] != "":
             chapter = chapter_with_url_tag_content.format(
-                manga["LastReadChapter"]["URL"],
+                util.safe_href(manga["LastReadChapter"]["URL"]),
                 (
-                    f'Ch. {manga["LastReadChapter"]["Chapter"]}'
+                    f'Ch. {util.escape_html(manga["LastReadChapter"]["Chapter"])}'
                     if manga["LastReadChapter"]["Chapter"] != ""
                     else "N/A"
                 ),
@@ -597,7 +597,7 @@ class MainDashboard:
         else:
             chapter = chapter_without_url_tag_content.format(
                 (
-                    f'Ch. {manga["LastReadChapter"]["Chapter"]}'
+                    f'Ch. {util.escape_html(manga["LastReadChapter"]["Chapter"])}'
                     if manga["LastReadChapter"]["Chapter"] != ""
                     else "N/A"
                 ),
@@ -762,9 +762,9 @@ class MainDashboard:
 
         if manga["LastReleasedChapter"]["URL"] != "":
             chapter = chapter_with_url_tag_content.format(
-                manga["LastReleasedChapter"]["URL"],
+                util.safe_href(manga["LastReleasedChapter"]["URL"]),
                 (
-                    f'Ch. {manga["LastReleasedChapter"]["Chapter"]}'
+                    f'Ch. {util.escape_html(manga["LastReleasedChapter"]["Chapter"])}'
                     if manga["LastReleasedChapter"]["Chapter"] != ""
                     else "N/A"
                 ),
@@ -772,7 +772,7 @@ class MainDashboard:
         else:
             chapter = chapter_without_url_tag_content.format(
                 (
-                    f'Ch. {manga["LastReleasedChapter"]["Chapter"]}'
+                    f'Ch. {util.escape_html(manga["LastReleasedChapter"]["Chapter"])}'
                     if manga["LastReleasedChapter"]["Chapter"] != ""
                     else "N/A"
                 ),
@@ -806,9 +806,9 @@ class MainDashboard:
 
         if manga["LastReadChapter"]["URL"] != "":
             chapter = chapter_with_url_tag_content.format(
-                manga["LastReadChapter"]["URL"],
+                util.safe_href(manga["LastReadChapter"]["URL"]),
                 (
-                    f'Ch. {manga["LastReadChapter"]["Chapter"]}'
+                    f'Ch. {util.escape_html(manga["LastReadChapter"]["Chapter"])}'
                     if manga["LastReadChapter"]["Chapter"] != ""
                     else "N/A"
                 ),
@@ -816,7 +816,7 @@ class MainDashboard:
         else:
             chapter = chapter_without_url_tag_content.format(
                 (
-                    f'Ch. {manga["LastReadChapter"]["Chapter"]}'
+                    f'Ch. {util.escape_html(manga["LastReadChapter"]["Chapter"])}'
                     if manga["LastReadChapter"]["Chapter"] != ""
                     else "N/A"
                 ),
