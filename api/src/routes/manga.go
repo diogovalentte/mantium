@@ -759,6 +759,10 @@ func GetMultiManga(c *gin.Context) {
 	if multimangaGet.LastReadChapter != nil && strings.HasPrefix(multimangaGet.LastReadChapter.URL, manga.CustomMangaURLPrefix) {
 		multimangaGet.LastReadChapter.URL = ""
 	}
+	for _, m := range multimangaGet.Mangas {
+		hideCustomMangaPlaceholderURLs(m)
+	}
+	hideCustomMangaPlaceholderURLs(multimangaGet.CurrentManga)
 
 	resMap := map[string]manga.MultiManga{"multimanga": *multimangaGet}
 	c.JSON(http.StatusOK, resMap)
@@ -1659,9 +1663,7 @@ func GetMangas(c *gin.Context) {
 
 		multimanga.CurrentManga.Status = multimanga.Status
 		multimanga.CurrentManga.LastReadChapter = multimanga.LastReadChapter
-		if multimanga.CurrentManga.LastReadChapter != nil && strings.HasPrefix(multimanga.CurrentManga.LastReadChapter.URL, manga.CustomMangaURLPrefix) {
-			multimanga.CurrentManga.LastReadChapter.URL = ""
-		}
+		hideCustomMangaPlaceholderURLs(multimanga.CurrentManga)
 		if multimanga.CoverImgFixed {
 			multimanga.CurrentManga.CoverImg = multimanga.CoverImg
 			multimanga.CurrentManga.CoverImgURL = multimanga.CoverImgURL
@@ -1767,6 +1769,9 @@ func GetMangasiFrame(c *gin.Context) {
 
 	if limit >= 0 && limit < len(mangas) {
 		mangas = mangas[:limit]
+	}
+	for _, m := range mangas {
+		hideCustomMangaPlaceholderURLs(m)
 	}
 
 	html, err := getMangasiFrame(mangas, theme, apiURL, showBackgroundErrorWarning)
@@ -2997,4 +3002,20 @@ func LimitRequestBody(c *gin.Context) {
 func isRequestTooLarge(err error) bool {
 	var maxBytesErr *http.MaxBytesError
 	return errors.As(err, &maxBytesErr)
+}
+
+// hideCustomMangaPlaceholderURLs empties the URLs Mantium makes up for custom mangas and their
+// chapters when there's no real URL, so clients don't show them as links.
+func hideCustomMangaPlaceholderURLs(m *manga.Manga) {
+	if m == nil {
+		return
+	}
+	if strings.HasPrefix(m.URL, manga.CustomMangaURLPrefix) {
+		m.URL = ""
+	}
+	for _, chapter := range []*manga.Chapter{m.LastReleasedChapter, m.LastReadChapter} {
+		if chapter != nil && strings.HasPrefix(chapter.URL, manga.CustomMangaURLPrefix) {
+			chapter.URL = ""
+		}
+	}
 }
