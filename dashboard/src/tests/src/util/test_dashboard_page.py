@@ -43,3 +43,31 @@ def test_covers_link_to_the_manga_page(api, display_mode):
     for manga in api.library:
         expected = manga["URL"] if manga["URL"].startswith("http") else ""
         assert links[manga["Name"]] == expected, manga["Name"]
+
+
+def by_name(api, name):
+    return next(m for m in api.library if m["Name"] == name)
+
+
+@pytest.mark.parametrize("display_mode", ["Grid View", "List View"])
+def test_card_actions(api, display_mode):
+    api.dashboard_configs["display"]["displayMode"] = display_mode
+    at = run_page(status_filter=0)
+    assert_no_exception(at)
+    unread, read = by_name(api, "Dandadan"), by_name(api, "Chainsaw Man")
+    assert at.menu_button(key=f"manga_actions_{unread['ID']}").options == ["Set last read", "Highlight"]
+    assert at.menu_button(key=f"manga_actions_{read['ID']}").options == ["Highlight"]
+
+    at.menu_button(key=f"manga_actions_{unread['ID']}").click("Set last read").run()
+    assert_no_exception(at)
+    assert api.called("update_multimanga_last_read_chapter") == [((unread["MultiMangaID"], unread["ID"]), {})]
+
+    at.menu_button(key=f"manga_actions_{read['ID']}").click("Highlight").run()
+    assert_no_exception(at)
+    assert at.session_state["highlighted_manga"]["ID"] == read["ID"]
+
+
+def test_custom_manga_without_released_chapter_has_no_set_last_read(api):
+    at = run_page(status_filter=0)
+    manual = by_name(api, "Manual with text chapter")
+    assert at.menu_button(key=f"manga_actions_{manual['ID']}").options == ["Highlight"]
