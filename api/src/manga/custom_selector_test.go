@@ -182,11 +182,13 @@ func TestProcessSelectionRegexGroups(t *testing.T) {
 		userMessage string
 	}{
 		{regex: `Chapter (\d+)`, text: "Chapter 12 - The end", want: "12"},
-		{regex: `Chapter (\d+)(\.\d+)?`, text: "Chapter 12.5", want: "12.5"},
+		{regex: `Chapter (\d+(?:\.\d+)?)`, text: "Chapter 12.5", want: "12.5"},
 		{regex: `Chapter (\d+)(\.\d+)?`, text: "Chapter 12", want: "12"},
+		{regex: `CHAPTER(\p{Nd}+).*?(\p{Nd}+)`, text: "CHAPTER４［ BLIND JUSTICE ］８（後編）", want: "４ ８"},
+		{regex: `CHAPTER(\d+)`, text: "CHAPTER４［ BLIND JUSTICE ］８（後編）", userMessage: `Chapter name regex didn't match the text "CHAPTER４［ BLIND JUSTICE ］８（後編）"`},
 		{regex: `Ch\.(\d+)|Chapter (\d+)`, text: "Chapter 12", want: "12"},
 		{regex: `Ch\.(\d+)|Chapter (\d+)`, text: "Ch.7", want: "7"},
-		{regex: `Vol\.(\d+) Ch\.(\d+)`, text: "Vol.3 Ch.25", want: "325"},
+		{regex: `Vol\.(\d+) Ch\.(\d+)`, text: "Vol.3 Ch.25", want: "3 25"},
 		{regex: `(?:Chapter) (\d+)`, text: "Chapter 4", want: "4"},
 		{regex: `Chapter (\d*)`, text: "Chapter ?", userMessage: `Chapter name regex matched "Chapter", but its groups are empty`},
 	}

@@ -941,7 +941,7 @@ def show_custom_manga_tracking_fields(key_prefix: str, test_selectors_help: str)
             st.text_input(
                 "Regex",
                 placeholder="Chapter (\\d+)",
-                help="Regex to extract the chapter name. The text captured by its groups, in ( ), is the chapter, joined if there's more than one. E.g. 'Chapter (\\d+)' gets '100' from 'Chapter 100', and 'Chapter (\\d+)(\\.\\d+)?' gets '12.5' from 'Chapter 12.5'. Leave empty to skip.",
+                help="Regex to extract the chapter name. The text captured by its groups, in ( ), is the chapter, separated by a space if more than one matched. E.g. 'Chapter (\\d+)' gets '100' from 'Chapter 100', and 'CHAPTER(\\p{Nd}+).*?(\\p{Nd}+)' gets '4 8' from 'CHAPTER4 [BLIND JUSTICE] 8'. \\d only matches 0-9; use \\p{Nd} for digits like ４. Leave empty to skip.",
                 key=key_prefix + "last_released_chapter_name_regex",
             )
             st.checkbox(

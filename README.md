@@ -183,7 +183,13 @@ Custom manga can automatically detect new chapters by getting the web page defin
   Attribute containing the chapter name or URL (e.g., href).
   If empty, the element text is used.
 - **Regex (optional)**:
-  Extracts the chapter number from the selected value. The chapter is the text captured by the regex groups (the parts in parentheses), joined in order when there's more than one, and groups that didn't match are skipped. For example, `Chapter (\d+)` gets `100` from `Chapter 100`, `Chapter (\d+)(\.\d+)?` gets `12.5` from `Chapter 12.5`, and `Ch\.(\d+)|Chapter (\d+)` works with both `Ch.7` and `Chapter 7`. Non-capturing groups, `(?:...)`, aren't part of the chapter.
+  Extracts the chapter number from the selected value. The chapter is the text captured by the regex groups (the parts in parentheses). Groups that didn't match are skipped, and when more than one matched, they're joined with a space. For example:
+  - `Chapter (\d+)` gets `100` from `Chapter 100`.
+  - `Chapter (\d+(?:\.\d+)?)` gets `12.5` from `Chapter 12.5`. Non-capturing groups, `(?:...)`, are part of the group around them, not separate parts.
+  - `Ch\.(\d+)|Chapter (\d+)` works with both `Ch.7` and `Chapter 7`.
+  - `CHAPTER(\p{Nd}+).*?(\p{Nd}+)` gets `４ ８` from `CHAPTER４［ BLIND JUSTICE ］８（後編）`, a chapter in parts.
+
+  Regexes use [Go's syntax](https://github.com/google/re2/wiki/Syntax), where `\d` only matches `0-9`. Use `\p{Nd}` to also match digits like the full-width `４`. A chapter with more than one part, like `4 8`, isn't a number: Mantium shows it as unread when it's different from the last read chapter, and in a multimanga, compares it with the other sources by the date it was found.
 - **Get First (optional)**:
   If enabled, selects the first matching element; otherwise, selects the last. Enable it when the site lists the newest chapter first.
 - **Use Browser (optional)**:

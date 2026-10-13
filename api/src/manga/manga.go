@@ -2022,11 +2022,17 @@ func processSelection(selection string, matched bool, selector *HTMLSelector, fi
 		if len(matches) < 2 {
 			return "", &errordefs.UserError{Message: fmt.Sprintf("%s regex didn't match the text \"%s\"", field, truncateText(selection, 80))}
 		}
-		// The capture groups that matched, concatenated in order. Only one matches in an
-		// alternation like "Ch\.(\d+)|Chapter (\d+)", and more than one is how to join parts,
-		// like "Chapter (\d+)(\.\d+)?" for "12.5".
-		selection = strings.Join(matches[1:], "")
-		if strings.TrimSpace(selection) == "" {
+		// The capture groups that matched, in order and separated by a space. Only one matches
+		// in an alternation like "Ch\.(\d+)|Chapter (\d+)", and more than one gets the parts of a
+		// chapter, like "4 8" from "CHAPTER4 [BLIND JUSTICE] 8".
+		parts := []string{}
+		for _, group := range matches[1:] {
+			if group = strings.TrimSpace(group); group != "" {
+				parts = append(parts, group)
+			}
+		}
+		selection = strings.Join(parts, " ")
+		if selection == "" {
 			return "", &errordefs.UserError{Message: fmt.Sprintf("%s regex matched \"%s\", but its groups are empty", field, truncateText(matches[0], 80))}
 		}
 	}
