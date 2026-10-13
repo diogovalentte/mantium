@@ -194,3 +194,18 @@ def test_skeleton_while_the_library_loads(api, monkeypatch):
     assert shown == [500]
     # The skeleton is gone once the library is loaded
     assert len(card_names(at)) == len(api.library)
+
+
+@pytest.mark.parametrize("display_mode", ["Grid View", "List View"])
+def test_set_last_read_doesnt_make_the_whole_app_rerun(api, display_mode):
+    api.dashboard_configs["display"]["displayMode"] = display_mode
+    at = run_page(status_filter=0)
+    unread = next(m for m in api.library if m["Name"] == "Dandadan")
+    api.last_update = "after set last read"
+    fetches = len(api.called("get_mangas"))
+    at.button(key=f"set_last_read_{unread['ID']}").click().run()
+    assert_no_exception(at)
+    assert api.called("update_multimanga_last_read_chapter") == [((unread["MultiMangaID"], unread["ID"]), {})]
+    # The dashboard update the API made is already known, so update_dashboard_job doesn't
+    # rerun the app, which would fetch the library a second time
+    assert len(api.called("get_mangas")) - fetches == 1

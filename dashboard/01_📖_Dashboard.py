@@ -159,7 +159,10 @@ class MainDashboard:
         else:
             self.show_mangas_grid_view(st.columns(columns_number), page_mangas)
 
-        if num_pages > 1:
+        if num_pages == 1:
+            # Without the page picker, a later one starts at the first page
+            ss["library_page_default"] = 1
+        else:
             with st.container(horizontal=True, horizontal_alignment="center"):
                 st.pagination(
                     num_pages,
@@ -650,6 +653,9 @@ class MainDashboard:
                         self.api_client.update_multimanga_last_read_chapter(
                             manga["MultiMangaID"], manga["ID"]
                         )
+                        # The API marks the dashboard as updated, which would rerun the whole app; the
+                        # library fragment already reruns with the new chapter
+                        ss["system_last_update_time"] = self.api_client.check_for_updates()
 
                 st.button(
                     "Set last read",
@@ -856,6 +862,9 @@ class MainDashboard:
                     self.api_client.update_multimanga_last_read_chapter(
                         manga["MultiMangaID"], manga["ID"]
                     )
+                    # The API marks the dashboard as updated, which would rerun the whole app; the
+                    # library fragment already reruns with the new chapter
+                    ss["system_last_update_time"] = self.api_client.check_for_updates()
 
             st.button(
                 "Set last read",
