@@ -213,7 +213,9 @@ def set_is_dialog_open():
 
 
 def is_unread_chapter(last_read_chapter: dict[str, Any], last_released_chapter: dict[str, Any]) -> bool:
-    """Returns True if the multimanga has unread chapters, False otherwise."""
+    """Returns True if the multimanga has unread chapters, False otherwise.
+
+    The API uses the same rule for the library stats (manga.IsUnreadChapter), keep them in sync."""
 
     last_read_chapter_url = last_read_chapter.get("URL", "")
     last_released_chapter_url = last_released_chapter.get("URL", "")

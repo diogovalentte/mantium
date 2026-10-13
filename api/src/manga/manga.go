@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -1195,117 +1196,48 @@ func getLibraryStatsFromDB(db *sql.DB) (map[string]int, error) {
 		return nil, err
 	}
 
+	// Every manga, custom or not, belongs to a multimanga, so only multimangas are counted.
 	query = `
         SELECT
-            COUNT(*) AS total_mangas, 
-            status
+            last_read_chapter.chapter,
+            last_read_chapter.url,
+            last_released_chapter.chapter,
+            last_released_chapter.url
         FROM
-            mangas
-        WHERE
-            source = $1
-        GROUP BY
-            status
+            multimangas
+        JOIN
+            mangas ON mangas.id = multimangas.current_manga
+        LEFT JOIN
+            chapters AS last_read_chapter ON last_read_chapter.id = multimangas.last_read_chapter
+        LEFT JOIN
+            chapters AS last_released_chapter ON last_released_chapter.id = mangas.last_released_chapter
         ;
     `
-	rows, err = db.Query(query, CustomMangaSource)
+	rows, err = db.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
+	var unread, total int
 	for rows.Next() {
-		var totalMangas, statusInt int
-
-		err := rows.Scan(&totalMangas, &statusInt)
+		var lastRead, lastReadURL, lastReleased, lastReleasedURL sql.NullString
+		err := rows.Scan(&lastRead, &lastReadURL, &lastReleased, &lastReleasedURL)
 		if err != nil {
 			return nil, err
 		}
-
-		status, err := getStatusStr(statusInt)
-		if err != nil {
-			return nil, err
-		}
-
-		val, ok := stats[status]
-		if ok {
-			stats[status] = val + totalMangas
-		} else {
-			stats[status] = totalMangas
+		total++
+		if IsUnreadChapter(lastRead.String, lastReadURL.String, lastReleased.String, lastReleasedURL.String) {
+			unread++
 		}
 	}
-
 	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	var unread, total, read int
-
-	query = `
-        WITH unread_mm AS (
-            SELECT
-                COUNT(mm.*) AS total_mangas
-            FROM
-                multimangas AS mm
-            LEFT JOIN 
-                chapters AS c ON c.id = mm.last_read_chapter
-            JOIN
-                mangas AS m ON m.id = mm.current_manga
-            LEFT JOIN
-                chapters AS cc ON cc.id = m.last_released_chapter 
-            WHERE
-                cc.chapter <> c.chapter
-        ),
-        no_last_read_chapter_mm AS (
-            SELECT
-                COUNT(*) AS total_mangas
-            FROM
-                multimangas
-            WHERE
-                last_read_chapter IS NULL
-        ),
-        total_mm AS (
-            SELECT
-                COUNT(*)
-            FROM
-                multimangas
-        ),
-        unread_custom_mangas AS (
-            SELECT
-                COUNT(*) AS total_mangas
-            FROM
-                mangas
-            WHERE
-                last_released_chapter IS NULL
-                AND last_read_chapter IS NOT NULL
-                AND source = $1
-        ),
-        total_custom_mangas AS (
-            SELECT
-                COUNT(*)
-            FROM
-                mangas
-            WHERE
-                source = $1
-        )
-
-        SELECT
-            (unread_mm.total_mangas + no_last_read_chapter_mm.total_mangas + unread_custom_mangas.total_mangas) AS unread_mangas,
-            (total_mm.count + total_custom_mangas.count) AS total_mangas,
-            ((total_mm.count - unread_mm.total_mangas - no_last_read_chapter_mm.total_mangas) + (total_custom_mangas.count - unread_custom_mangas.total_mangas)) AS read_mangas
-        FROM
-            unread_mm, no_last_read_chapter_mm, unread_custom_mangas, total_mm, total_custom_mangas
-        ;
-    `
-	err = db.QueryRow(query, CustomMangaSource).Scan(
-		&unread, &total, &read,
-	)
-	if err != nil {
 		return nil, err
 	}
 
 	stats["Unread"] = unread
 	stats["Total"] = total
-	stats["Read"] = read
+	stats["Read"] = total - unread
 
 	return stats, nil
 }
@@ -1541,6 +1473,28 @@ func ValidateStatus(status Status) error {
 	}
 
 	return nil
+}
+
+// IsUnreadChapter tells if the last released chapter wasn't read yet.
+// It's the same rule used by the dashboard (is_unread_chapter), keep them in sync.
+func IsUnreadChapter(lastRead, lastReadURL, lastReleased, lastReleasedURL string) bool {
+	if lastReleased == "" {
+		return false
+	}
+	if lastRead == lastReleased {
+		// Every chapter of a custom manga tracked only by the chapter URL has the same name
+		return lastReleased == UnknownChapter && lastReadURL != lastReleasedURL
+	}
+	lastReadNumber, err := strconv.ParseFloat(lastRead, 64)
+	if err != nil {
+		return true
+	}
+	lastReleasedNumber, err := strconv.ParseFloat(lastReleased, 64)
+	if err != nil {
+		return true
+	}
+
+	return lastReadNumber < lastReleasedNumber
 }
 
 // FilterUnreadChapterMangas filters a list of mangas to return
