@@ -28,6 +28,7 @@ logger = get_logger()
 
 
 LIBRARY_FRAGMENT = "library"
+LIBRARY_SKELETON_HEIGHT = 500
 
 
 def library_page_key() -> str:
@@ -84,7 +85,9 @@ class MainDashboard:
         """Fetches, filters, sorts and shows the mangas. It's a fragment, so changing the page or
         setting a chapter as read only reruns it. Actions that change something outside it,
         like opening a dialog or changing a filter, rerun the whole app."""
-        mangas = self.api_client.get_mangas()
+        # The library comes with the covers, so it's the slow part of the page
+        with st.skeleton(height=LIBRARY_SKELETON_HEIGHT):
+            mangas = self.api_client.get_mangas()
         total_mangas = len(mangas)
         filter_by_status = ss.get(
             "status_filter",

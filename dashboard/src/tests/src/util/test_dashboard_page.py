@@ -219,3 +219,21 @@ def test_list_view_is_paged(api):
 def test_single_page_has_no_pagination(api):
     at = run_page(status_filter=0)
     assert pagination(at) is None
+
+
+def test_skeleton_while_the_library_loads(api, monkeypatch):
+    import streamlit as st
+
+    shown = []
+    original = st.skeleton
+
+    def skeleton(*args, **kwargs):
+        shown.append(kwargs.get("height"))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(st, "skeleton", skeleton)
+    at = run_page(status_filter=0)
+    assert_no_exception(at)
+    assert shown == [500]
+    # The skeleton is gone once the library is loaded
+    assert len(card_names(at)) == len(api.library)
