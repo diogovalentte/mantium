@@ -182,3 +182,12 @@ def test_invalid_url_is_reported_on_update(api):
     assert_no_exception(at)
     assert any("Invalid manga URL" in t for t in texts(at, "warning"))
     assert api.called("update_custom_manga") == []
+
+
+def test_preset_domains_start_with_the_manga_site(api):
+    at = run_app(manga())
+    assert at.text_input(key=P + "new_preset_domains").value == "example.com"
+    at.text_input(key=P + "new_preset_domains").input("").run()
+    at.button(key=P + "detect_presets_button").click().run()
+    assert_no_exception(at)
+    assert at.text_input(key=P + "new_preset_domains").value == "example.com"

@@ -22,6 +22,7 @@ from src.util.util import (
     get_api_error_detail,
     get_api_user_message,
     get_invalid_url_message,
+    get_url_hostname,
     get_logger,
     get_relative_time,
     get_source_name_and_colors,
@@ -841,6 +842,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
             "last_released_chapter_url_get_first": url_selector["GetFirst"],
             "last_released_chapter_use_browser": manga["LastReleasedChapterSelectorUseBrowser"],
             "last_released_chapter_expander": bool(name_selector["Selector"] or url_selector["Selector"]),
+            "new_preset_domains": get_url_hostname(manga["URL"]),
         },
     )
 

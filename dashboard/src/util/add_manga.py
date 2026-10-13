@@ -651,6 +651,7 @@ def on_custom_manga_url_change(key_prefix: str):
 
 
 def on_custom_manga_detect_click(key_prefix: str):
+    ss[key_prefix + "new_preset_domains"] = get_url_hostname(ss.get(key_prefix + "url", ""))
     ss[key_prefix + "detect_presets"] = "fresh"
     ss[key_prefix + "preset_detections"] = None
 
