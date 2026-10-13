@@ -167,9 +167,18 @@ def test_clear_works_when_the_presets_fail_to_load(api):
     assert update_args(api)[3:11] == ("", "", "", False, "", "", False, False)
 
 
-def test_url_inputs_are_validated_in_the_browser(api):
+def test_url_inputs_are_url_inputs_without_browser_validation(api):
     at = run_app(manga())
     for key in ("url", "cover_img_url"):
         widget = at.text_input(key=P + key)
         assert widget.proto.type == widget.proto.URL, key
-        assert widget.proto.validate_regex, key
+        assert widget.proto.validate_regex == "", key
+
+
+def test_invalid_url_is_reported_on_update(api):
+    at = run_app(manga())
+    at.text_input(key=P + "url").input("example.com/manga").run()
+    at.button(key=P + "update").click().run()
+    assert_no_exception(at)
+    assert any("Invalid manga URL" in t for t in texts(at, "warning"))
+    assert api.called("update_custom_manga") == []

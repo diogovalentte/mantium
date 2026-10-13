@@ -332,24 +332,23 @@ def test_both_forms_in_one_session_dont_share_state(api):
     assert at.text_input(key=MM + "url").value == ""
 
 
-def test_url_inputs_are_validated_in_the_browser(api):
-    import re
-
-    from src.util.util import URL_INPUT_VALIDATION
-
+def test_url_inputs_are_url_inputs_without_browser_validation(api):
     at = run_app()
     for key in ("url", "cover_img_url", "last_read_chapter_url"):
         widget = at.text_input(key=P + key)
         assert widget.proto.type == widget.proto.URL, key
-        assert widget.proto.validate_regex == URL_INPUT_VALIDATION[0], key
-        assert widget.proto.validate_message == URL_INPUT_VALIDATION[1], key
+        # Browser validation would keep sending the previous valid value
+        assert widget.proto.validate_regex == "", key
 
-    pattern = re.compile(URL_INPUT_VALIDATION[0])
-    for valid in ("https://example.com", "http://a.b/c?d=1#e", "https://x.org/feed.xml"):
-        assert pattern.match(valid), valid
-    for invalid in ("example.com", "ftp://example.com", "https://", "https:// space.com", "javascript:alert(1)"):
-        assert not pattern.match(invalid), invalid
 
+def test_invalid_url_is_reported_on_add(api):
+    at = run_app()
+    at.text_input(key=P + "name").input("Manga").run()
+    at.text_input(key=P + "url").input("example.com/manga").run()
+    at.button(key=P + "add").click().run()
+    assert_no_exception(at)
+    assert any("Invalid manga URL" in t for t in texts(at, "warning"))
+    assert api.called("add_multimanga") == []
 
 def test_url_input_commits_on_typing_pauses(api):
     from src.util.add_manga import CUSTOM_MANGA_URL_LIVE

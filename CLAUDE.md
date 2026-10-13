@@ -253,6 +253,13 @@ before calling it done.
   runs.** It's an `UnknownElement` there. Tests set the page through
   `session_state` for one run (`go_to_page`), and check the reset by the key
   changing, not by the page going back to 1 (which happens either way).
+- **`st.text_input` `validate=` and `required=` keep the last valid value.** An
+  invalid or empty value isn't sent to the app, so `session_state` keeps the
+  previous one while the input shows what was typed. Without `st.form` nothing
+  blocks the submit button, so the form submits the old value: a typo in a URL
+  added the previous URL ("Manga already in Mantium"), and clearing a required
+  name kept the old name. The forms use `type="url"` with `validate=""` and check
+  on submit instead.
 - **`urlparse(...).hostname` raises `ValueError` on malformed URLs** such as
   `http://[`. In a callback, that takes the dialog down. Use `get_url_hostname`
   and `get_invalid_url_message`.
