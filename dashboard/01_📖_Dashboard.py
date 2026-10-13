@@ -27,6 +27,9 @@ st.set_page_config(
 logger = get_logger()
 
 
+LIBRARY_FRAGMENT = "library"
+
+
 def library_page_key() -> str:
     """Key of the library pagination widget. Going back to the first page changes it instead of
     writing the page to session_state, since the widget has a default value (see CLAUDE.md)."""
@@ -37,6 +40,10 @@ def reset_library_page(default: int = 1):
     """Goes back to the first page of the library. Used when the filters or the sort change."""
     ss["library_page_generation"] = ss.get("library_page_generation", 0) + 1
     ss["library_page_default"] = default
+
+
+def on_library_page_change():
+    ss["library_page_changed"] = True
 
 
 def scroll_to_top():
@@ -58,6 +65,25 @@ class MainDashboard:
 
         self.sidebar()
 
+        self.library()
+
+        if "system_last_update_time" not in ss:
+            ss["system_last_update_time"] = self.api_client.check_for_updates()
+
+        self.update_dashboard_job()
+
+        self.show_forms()
+
+        # Disable referrer. If not disabled, some manga sources (like MangaDex) will block the request to fetch the cover image
+        js = """(window.parent.document.querySelector('meta[name="referrer"]') || window.parent.document.head.appendChild(Object.assign(window.parent.document.createElement("meta"), { name: "referrer" }))).setAttribute("content", "no-referrer");"""
+        st_javascript(js)
+        util.set_custom_js_to_none()
+
+    @st.fragment(key=LIBRARY_FRAGMENT)
+    def library(self):
+        """Fetches, filters, sorts and shows the mangas. It's a fragment, so changing the page or
+        setting a chapter as read only reruns it. Actions that change something outside it,
+        like opening a dialog or changing a filter, rerun the whole app."""
         mangas = self.api_client.get_mangas()
         total_mangas = len(mangas)
         filter_by_status = ss.get(
@@ -94,18 +120,6 @@ class MainDashboard:
         else:
             self.show_library(mangas)
 
-        if "system_last_update_time" not in ss:
-            ss["system_last_update_time"] = self.api_client.check_for_updates()
-
-        self.update_dashboard_job()
-
-        self.show_forms()
-
-        # Disable referrer. If not disabled, some manga sources (like MangaDex) will block the request to fetch the cover image
-        js = """(window.parent.document.querySelector('meta[name="referrer"]') || window.parent.document.head.appendChild(Object.assign(window.parent.document.createElement("meta"), { name: "referrer" }))).setAttribute("content", "no-referrer");"""
-        st_javascript(js)
-        util.set_custom_js_to_none()
-
     def show_library(self, mangas: list[dict[str, Any]]):
         """Shows one page of the (already filtered and sorted) mangas, and the page picker."""
         list_view = ss["configs"]["display"]["displayMode"] == "List View"
@@ -134,8 +148,12 @@ class MainDashboard:
                     num_pages,
                     default=min(ss.get("library_page_default", 1), num_pages),
                     key=library_page_key(),
-                    on_change=scroll_to_top,
+                    on_change=on_library_page_change,
                 )
+        # Scrolling from the page change callback would add an element from a callback
+        # during a fragment rerun, so it's done here, in the fragment body
+        if ss.pop("library_page_changed", False):
+            scroll_to_top()
 
     def show_empty_state(self, total_mangas: int):
         if total_mangas == 0:
@@ -153,6 +171,8 @@ class MainDashboard:
             ss["status_filter"] = 0
             ss["search_manga"] = ""
             reset_library_page()
+            # The filters are in the sidebar, outside the library fragment
+            st.rerun()
 
         st.button("Clear filters", on_click=clear_filters)
 
@@ -671,6 +691,8 @@ class MainDashboard:
                 self.api_client.update_multimanga_last_read_chapter(manga["MultiMangaID"], manga["ID"])
             elif action == "Highlight":
                 ss["highlighted_manga"] = manga
+                # The manga dialog is outside the library fragment
+                st.rerun()
 
         st.menu_button(
             "Actions",
