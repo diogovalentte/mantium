@@ -228,7 +228,7 @@ def show_bottom_add_manga_form(manga_url: str, manga_internal_id: str):
         st.form_submit_button(
             "Add",
             on_click=add_manga_callback,
-            use_container_width=True,
+            width="stretch",
             type="primary",
         )
 
@@ -301,7 +301,7 @@ def show_add_manga_form_search():
             ss["add_manga_search_go_back_to_tab"] = reversed_default_sources[ss["add_manga_search_selected_manga"]["Source"]]
             ss["add_manga_search_selected_manga"] = None
 
-        st.button("Back", use_container_width=True, on_click=on_click)
+        st.button("Back", width="stretch", on_click=on_click)
     else:
         # if change key_to_save_manga, also change it in func show_dialogs in the 01_?.py main file
         button_name, key_to_save_manga = "Select", "add_manga_search_selected_manga"
@@ -535,7 +535,7 @@ def show_search_result_manga(
     st.button(
         button_name,
         type="primary",
-        use_container_width=True,
+        width="stretch",
         on_click=on_click,
         key=key_to_save_manga + "_search_result_" + manga["URL"] + manga["CoverURL"],
     )
@@ -798,7 +798,7 @@ def show_custom_manga_presets(key_prefix: str):
         st.button(
             "Detect",
             key=key_prefix + "detect_presets_button",
-            use_container_width=True,
+            width="stretch",
             help="Test every preset against the manga URL.",
             on_click=on_custom_manga_url_change,
             args=(key_prefix,),
@@ -807,7 +807,7 @@ def show_custom_manga_presets(key_prefix: str):
         st.button(
             "Clear",
             key=key_prefix + "clear_selectors_button",
-            use_container_width=True,
+            width="stretch",
             help="Empty the selectors, so Mantium doesn't track new chapters.",
             on_click=clear_custom_manga_selectors,
             args=(key_prefix,),
@@ -834,7 +834,7 @@ def show_custom_manga_presets(key_prefix: str):
             elif not detections["domain_presets"]:
                 st.info("No preset works for this page")
 
-    with st.popover("Save selectors as preset", use_container_width=True):
+    with st.popover("Save selectors as preset", width="stretch"):
         st.text_input("Preset name", key=key_prefix + "new_preset_name")
         st.text_input(
             "Domains",
@@ -845,7 +845,7 @@ def show_custom_manga_presets(key_prefix: str):
             "Save preset",
             key=key_prefix + "save_preset",
             type="primary",
-            use_container_width=True,
+            width="stretch",
             on_click=save_custom_manga_preset,
             args=(key_prefix,),
         )
@@ -853,7 +853,7 @@ def show_custom_manga_presets(key_prefix: str):
             st.button(
                 f'Delete preset "{selected["name"]}"',
                 key=key_prefix + "delete_preset",
-                use_container_width=True,
+                width="stretch",
                 on_click=delete_custom_manga_preset,
                 args=(key_prefix,),
             )
@@ -965,7 +965,7 @@ def show_custom_manga_tracking_fields(key_prefix: str, test_selectors_help: str)
         if st.button(
             "Test selectors",
             key=key_prefix + "test_selectors",
-            use_container_width=True,
+            width="stretch",
             help=test_selectors_help,
         ):
             test_custom_manga_selectors(
@@ -1057,7 +1057,7 @@ def show_add_custom_manga_form(multimanga_id: int = 0):
         if st.button(
             "Add",
             key=key_prefix + "add",
-            use_container_width=True,
+            width="stretch",
             type="primary",
         ):
             if ss[key_prefix + "name"] == "":

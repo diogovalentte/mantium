@@ -260,7 +260,7 @@ def show_update_multimanga(multimanga_id):
 
         if st.form_submit_button(
             "Update",
-            use_container_width=True,
+            width="stretch",
             type="primary",
         ):
             try:
@@ -349,7 +349,7 @@ def show_update_multimanga(multimanga_id):
 
         st.button(
             "Delete",
-            use_container_width=True,
+            width="stretch",
             on_click=on_click,
         )
 
@@ -366,7 +366,7 @@ def show_update_multimanga(multimanga_id):
 
         if st.button(
             "Add Manga by Searching",
-            use_container_width=True,
+            width="stretch",
             type="primary",
             key="update_multimanga_mangas_show_add_manga_search_button",
         ):
@@ -376,7 +376,7 @@ def show_update_multimanga(multimanga_id):
 
         if st.button(
             "Add Manga Using URL",
-            use_container_width=True,
+            width="stretch",
             type="primary",
             key="update_multimanga_mangas_show_add_manga_url_button",
         ):
@@ -386,7 +386,7 @@ def show_update_multimanga(multimanga_id):
 
         if st.button(
             "Add Custom Manga",
-            use_container_width=True,
+            width="stretch",
             type="primary",
             key="update_multimanga_mangas_show_add_custom_manga_button",
         ):
@@ -396,7 +396,7 @@ def show_update_multimanga(multimanga_id):
 
         if st.button(
             "Manage Mangas",
-            use_container_width=True,
+            width="stretch",
             type="primary",
             key="update_multimanga_mangas_show_manage_mangas_button",
         ):
@@ -618,7 +618,7 @@ def show_update_multimanga_manage_mangas(multimanga):
     if st.button(
         "Back",
         key="update_multimanga_mangas_manage_mangas_back_button",
-        use_container_width=True,
+        width="stretch",
     ):
         ss["highlighted_manga"] = multimanga["CurrentManga"]
         st.rerun()
@@ -785,7 +785,7 @@ def show_multimanga_manga(
         if st.button(
             "Edit",
             key="update_multimanga_mangas_edit_custom_manga_button_" + str(manga["ID"]),
-            use_container_width=True,
+            width="stretch",
             type="primary",
             on_click=on_click,
         ):
@@ -807,7 +807,7 @@ def show_multimanga_manga(
         if st.button(
             "Remove",
             key="update_multimanga_mangas_mangage_mangas_" + str(manga["ID"]),
-            use_container_width=True,
+            width="stretch",
         ):
             try:
                 api_client.remove_manga_from_multimanga(multimanga_id, manga["ID"])
@@ -898,7 +898,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
         if st.button(
             "Update",
             key=key_prefix + "update",
-            use_container_width=True,
+            width="stretch",
             type="primary",
         ):
             try:

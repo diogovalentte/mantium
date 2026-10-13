@@ -94,7 +94,7 @@ class MainDashboard:
                 st.button(
                     "Show All",
                     on_click=callback,
-                    use_container_width=True,
+                    width="stretch",
                     type="primary",
                 )
             if ss.get("show_more_manga", False) and can_load_more:
@@ -123,7 +123,7 @@ class MainDashboard:
                 st.button(
                     "Show All",
                     on_click=callback,
-                    use_container_width=True,
+                    width="stretch",
                     type="primary",
                 )
             if ss.get("show_more_manga", False) and can_load_more:
@@ -282,7 +282,7 @@ class MainDashboard:
                     st.button(
                         "Add Manga by Searching",
                         type="primary",
-                        use_container_width=True,
+                        width="stretch",
                         on_click=on_add_manga_click,
                         args=("search",),
                     )
@@ -291,7 +291,7 @@ class MainDashboard:
                     st.button(
                         "Add Manga Using URL",
                         type="primary",
-                        use_container_width=True,
+                        width="stretch",
                         on_click=on_add_manga_click,
                         args=("url",),
                     )
@@ -299,7 +299,7 @@ class MainDashboard:
                 st.button(
                     "Add Custom Manga",
                     type="primary",
-                    use_container_width=True,
+                    width="stretch",
                     on_click=on_add_manga_click,
                     args=("custom",),
                 )
@@ -310,7 +310,7 @@ class MainDashboard:
                 st.button(
                     "Settings",
                     type="primary",
-                    use_container_width=True,
+                    width="stretch",
                     on_click=on_settings_click,
                 )
 
@@ -328,7 +328,7 @@ class MainDashboard:
                 if st.button(
                     "Close",
                     type="primary",
-                    use_container_width=True,
+                    width="stretch",
                 ):
                     st.session_state["is_dialog_open"] = False
                     st.rerun()
@@ -435,7 +435,7 @@ class MainDashboard:
                         ):
                             if st.button(
                                 "Delete Error",
-                                use_container_width=True,
+                                width="stretch",
                                 help="Delete the last background error",
                                 on_click=self.api_client.delete_last_background_error,
                                 key="delete_background_error_button_from_dialog",
@@ -446,7 +446,7 @@ class MainDashboard:
                         "See error",
                         type="primary",
                         help="See error message",
-                        use_container_width=True,
+                        width="stretch",
                     ):
                         show_error_message_dialog()
                     with stylable_container(
@@ -464,7 +464,7 @@ class MainDashboard:
                     ):
                         st.button(
                             "Delete Error",
-                            use_container_width=True,
+                            width="stretch",
                             help="Delete the last background error",
                             on_click=self.api_client.delete_last_background_error,
                             key="delete_background_error_button_from_expander",
@@ -636,7 +636,7 @@ class MainDashboard:
 
                 st.button(
                     "Set last read",
-                    use_container_width=True,
+                    width="stretch",
                     on_click=set_last_read,
                     key=f"set_last_read_{manga['ID']}",
                     disabled=not unread,
@@ -644,7 +644,7 @@ class MainDashboard:
             with c2:
                 st.button(
                     "Highlight",
-                    use_container_width=True,
+                    width="stretch",
                     type="primary",
                     key=f"highlight_{manga['ID']}",
                     on_click=highlight_manga,
@@ -652,7 +652,7 @@ class MainDashboard:
         else:
             st.button(
                 "Highlight",
-                use_container_width=True,
+                width="stretch",
                 type="primary",
                 key=f"highlight_{manga['ID']}",
                 on_click=highlight_manga,
@@ -856,7 +856,7 @@ class MainDashboard:
 
             st.button(
                 "Set last read",
-                use_container_width=True,
+                width="stretch",
                 on_click=set_last_read,
                 key=f"set_last_read_{manga['ID']}",
                 disabled=not unread,
@@ -864,7 +864,7 @@ class MainDashboard:
         with highlight_col:
             st.button(
                 "Highlight",
-                use_container_width=True,
+                width="stretch",
                 type="primary",
                 key=f"highlight_{manga['ID']}",
                 on_click=highlight_manga,
@@ -960,7 +960,7 @@ class MainDashboard:
             if st.form_submit_button(
                 "Save",
                 type="primary",
-                use_container_width=True,
+                width="stretch",
             ):
                 try:
                     new_configs = {
