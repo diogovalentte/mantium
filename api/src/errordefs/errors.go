@@ -17,6 +17,8 @@ var (
 	ErrChapterNotFoundDB                    = &CustomError{Message: "chapter not found in DB"}
 	ErrAttemptedToRemoveLastMultiMangaManga = &CustomError{Message: "attempted to remove the last manga from a multimanga"}
 	ErrMultiMangaMangaListIsEmpty           = &CustomError{Message: "multimanga manga list is empty"}
+
+	ErrNoLastReleasedChapter = &UserError{Message: "The manga has no last released chapter to mark as read"}
 )
 
 // CustomError is a custom error

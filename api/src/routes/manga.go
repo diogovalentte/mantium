@@ -813,6 +813,10 @@ func UpdateMultiMangaLastReadChapter(c *gin.Context) {
 		return
 	} else if requestData.Chapter == "" && requestData.URL == "" {
 		chapter = multimanga.CurrentManga.LastReleasedChapter
+		if chapter == nil {
+			c.JSON(http.StatusBadRequest, errorResponse(errordefs.ErrNoLastReleasedChapter))
+			return
+		}
 		if multimanga.CurrentManga.Source == manga.CustomMangaSource {
 			chapter.FromSourceSite = false
 		} else {
@@ -843,6 +847,10 @@ func UpdateMultiMangaLastReadChapter(c *gin.Context) {
 		}
 		if requestData.Chapter == "" && requestData.URL == "" {
 			chapter = mangaToGetChapterFrom.LastReleasedChapter
+			if chapter == nil {
+				c.JSON(http.StatusBadRequest, errorResponse(errordefs.ErrNoLastReleasedChapter))
+				return
+			}
 		} else {
 			chapter, err = sources.GetChapterMetadata(mangaToGetChapterFrom.URL, mangaToGetChapterFrom.InternalID, requestData.Chapter, requestData.URL, requestData.InternalID)
 			if err != nil {
