@@ -29,6 +29,18 @@ st.set_page_config(
 logger = get_logger()
 
 
+def show_manga_cover(manga: dict[str, Any], size: tuple[int, int], always_resize: bool = False):
+    """Shows the manga cover, linking to the manga page when it has one."""
+    link = util.web_url_or_none(manga["URL"])
+    if manga["CoverImg"] is not None and manga["CoverImg"] != b"":
+        img = BytesIO(base64.b64decode(manga["CoverImg"]))
+        if always_resize or not manga["CoverImgResized"]:
+            img = Image.open(img).resize(size)
+        st.image(img, link=link, alt=manga["Name"])
+    else:
+        st.image(manga["CoverImgURL"] or defaults.DEFAULT_MANGA_COVER, width=size[0], link=link, alt=manga["Name"])
+
+
 class MainDashboard:
     def __init__(self, api_client):
         self.api_client = api_client
@@ -503,23 +515,7 @@ class MainDashboard:
             unsafe_allow_html=True,
         )
 
-        if manga["CoverImg"] is not None and manga["CoverImg"] != b"":
-            img_bytes = base64.b64decode(manga["CoverImg"])
-            img = BytesIO(img_bytes)
-            if not manga["CoverImgResized"]:
-                img = Image.open(img)
-                img = img.resize((250, 355))
-            st.image(img)
-        elif manga["CoverImgURL"] != "":
-            st.markdown(
-                f"""<img src="{manga["CoverImgURL"]}" width="250" height="355" style="margin-bottom: 16px;"/>""",
-                unsafe_allow_html=True,
-            )
-        else:
-            st.markdown(
-                f"""<img src="{defaults.DEFAULT_MANGA_COVER}" width="250" height="355" style="margin-bottom: 16px;"/>""",
-                unsafe_allow_html=True,
-            )
+        show_manga_cover(manga, (250, 355))
 
         if ss.get("status_filter", 1) == 0:
             st.write(
@@ -720,23 +716,7 @@ class MainDashboard:
             )
 
         with cover_col:
-            if manga["CoverImg"] is not None:
-                img_bytes = base64.b64decode(manga["CoverImg"])
-                img = BytesIO(img_bytes)
-                if True:
-                    img = Image.open(img)
-                    img = img.resize((52, 75))
-                st.image(img)
-            elif manga["CoverImgURL"] != "":
-                st.markdown(
-                    f"""<img src="{manga["CoverImgURL"]}" width="52" height="75"/>""",
-                    unsafe_allow_html=True,
-                )
-            else:
-                st.markdown(
-                    f"""<img src="{defaults.DEFAULT_MANGA_COVER}" width="52" height="75"/>""",
-                    unsafe_allow_html=True,
-                )
+            show_manga_cover(manga, (52, 75), always_resize=True)
 
         if show_status:
             with status_col:

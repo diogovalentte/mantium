@@ -1,0 +1,701 @@
+{
+ "configs": {
+  "display": {
+   "columns": 8,
+   "showBackgroundErrorWarning": true,
+   "searchResultsLimit": 20,
+   "displayMode": "Grid View"
+  },
+  "integrations": {
+   "addAllMultiMangaMangasToDownloadIntegrations": false,
+   "enqueueAllSuwayomiChaptersToDownload": true
+  },
+  "manga": {
+   "allowedSources": [
+    "jmanga",
+    "klmanga",
+    "mangadex",
+    "mangahub",
+    "mangaplus",
+    "mangaupdates",
+    "rawkuma"
+   ],
+   "allowedAddingMethods": [
+    "Search",
+    "URL"
+   ]
+  },
+  "Mantium": {
+   "version": "6.5.3"
+  }
+ },
+ "mangas": [
+  {
+   "Source": "custom_manga",
+   "URL": "https://www.mangaread.org/manga/one-piece/",
+   "Name": "One Piece (second source)",
+   "SearchNames": [
+    "One Piece",
+    "One Piece (second source)"
+   ],
+   "InternalID": "",
+   "PreferredGroup": "",
+   "CoverImgURL": "",
+   "LastReleasedChapter": {
+    "UpdatedAt": "2026-10-13T03:09:01Z",
+    "URL": "https://www.mangaread.org/manga/one-piece/chapter-1195/",
+    "Chapter": "1195",
+    "Name": "Chapter 1195",
+    "InternalID": "",
+    "Type": 1,
+    "FromSourceSite": false
+   },
+   "LastReleasedChapterNameSelector": null,
+   "LastReleasedChapterURLSelector": null,
+   "LastReadChapter": {
+    "UpdatedAt": "2026-10-13T03:06:34Z",
+    "URL": "",
+    "Chapter": "1192",
+    "Name": "Chapter 1192",
+    "InternalID": "",
+    "Type": 2,
+    "FromSourceSite": false
+   },
+   "CoverImg": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+   "ID": 43,
+   "Status": 1,
+   "MultiMangaID": 23,
+   "CoverImgResized": false,
+   "CoverImgFixed": false,
+   "LastReleasedChapterSelectorUseBrowser": false
+  },
+  {
+   "Source": "custom_manga",
+   "URL": "https://api.mangaupdates.com/v1/series/75336092483/rss",
+   "Name": "Chainsaw Man",
+   "SearchNames": [
+    "Chainsaw Man"
+   ],
+   "InternalID": "",
+   "PreferredGroup": "",
+   "CoverImgURL": "https://cdn.mangaupdates.com/image/i534295.png",
+   "LastReleasedChapter": {
+    "UpdatedAt": "2026-10-13T03:06:36Z",
+    "URL": "",
+    "Chapter": "232",
+    "Name": "Chapter 232",
+    "InternalID": "",
+    "Type": 1,
+    "FromSourceSite": false
+   },
+   "LastReleasedChapterNameSelector": null,
+   "LastReleasedChapterURLSelector": null,
+   "LastReadChapter": {
+    "UpdatedAt": "2026-10-13T03:06:37Z",
+    "URL": "",
+    "Chapter": "232",
+    "Name": "Chapter 232",
+    "InternalID": "",
+    "Type": 2,
+    "FromSourceSite": false
+   },
+   "CoverImg": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+   "ID": 25,
+   "Status": 1,
+   "MultiMangaID": 24,
+   "CoverImgResized": false,
+   "CoverImgFixed": false,
+   "LastReleasedChapterSelectorUseBrowser": false
+  },
+  {
+   "Source": "custom_manga",
+   "URL": "https://api.mangaupdates.com/v1/series/64884662872/rss",
+   "Name": "Dandadan",
+   "SearchNames": [
+    "Dandadan"
+   ],
+   "InternalID": "",
+   "PreferredGroup": "",
+   "CoverImgURL": "https://cdn.mangaupdates.com/image/i536675.jpg",
+   "LastReleasedChapter": {
+    "UpdatedAt": "2026-10-13T03:06:38Z",
+    "URL": "",
+    "Chapter": "248",
+    "Name": "Chapter 248",
+    "InternalID": "",
+    "Type": 1,
+    "FromSourceSite": false
+   },
+   "LastReleasedChapterNameSelector": null,
+   "LastReleasedChapterURLSelector": null,
+   "LastReadChapter": {
+    "UpdatedAt": "2026-10-13T03:06:38Z",
+    "URL": "",
+    "Chapter": "236",
+    "Name": "Chapter 236",
+    "InternalID": "",
+    "Type": 2,
+    "FromSourceSite": false
+   },
+   "CoverImg": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+   "ID": 26,
+   "Status": 1,
+   "MultiMangaID": 25,
+   "CoverImgResized": false,
+   "CoverImgFixed": false,
+   "LastReleasedChapterSelectorUseBrowser": false
+  },
+  {
+   "Source": "custom_manga",
+   "URL": "https://api.mangaupdates.com/v1/series/66296374554/rss",
+   "Name": "Sousou no Frieren",
+   "SearchNames": [
+    "Sousou no Frieren"
+   ],
+   "InternalID": "",
+   "PreferredGroup": "",
+   "CoverImgURL": "https://cdn.mangaupdates.com/image/i525134.jpg",
+   "LastReleasedChapter": {
+    "UpdatedAt": "2026-10-13T03:06:39Z",
+    "URL": "",
+    "Chapter": "147",
+    "Name": "Chapter 147",
+    "InternalID": "",
+    "Type": 1,
+    "FromSourceSite": false
+   },
+   "LastReleasedChapterNameSelector": null,
+   "LastReleasedChapterURLSelector": null,
+   "LastReadChapter": {
+    "UpdatedAt": "2026-10-13T03:06:39Z",
+    "URL": "",
+    "Chapter": "147",
+    "Name": "Chapter 147",
+    "InternalID": "",
+    "Type": 2,
+    "FromSourceSite": false
+   },
+   "CoverImg": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+   "ID": 27,
+   "Status": 2,
+   "MultiMangaID": 26,
+   "CoverImgResized": false,
+   "CoverImgFixed": false,
+   "LastReleasedChapterSelectorUseBrowser": false
+  },
+  {
+   "Source": "custom_manga",
+   "URL": "https://api.mangaupdates.com/v1/series/60441951323/rss",
+   "Name": "Kagurabachi",
+   "SearchNames": [
+    "Kagurabachi"
+   ],
+   "InternalID": "",
+   "PreferredGroup": "",
+   "CoverImgURL": "https://cdn.mangaupdates.com/image/i536550.jpg",
+   "LastReleasedChapter": {
+    "UpdatedAt": "2026-10-13T03:06:38Z",
+    "URL": "",
+    "Chapter": "134",
+    "Name": "Chapter 134",
+    "InternalID": "",
+    "Type": 1,
+    "FromSourceSite": false
+   },
+   "LastReleasedChapterNameSelector": null,
+   "LastReleasedChapterURLSelector": null,
+   "LastReadChapter": {
+    "UpdatedAt": "2026-10-13T03:06:38Z",
+    "URL": "",
+    "Chapter": "129",
+    "Name": "Chapter 129",
+    "InternalID": "",
+    "Type": 2,
+    "FromSourceSite": false
+   },
+   "CoverImg": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+   "ID": 28,
+   "Status": 3,
+   "MultiMangaID": 27,
+   "CoverImgResized": false,
+   "CoverImgFixed": false,
+   "LastReleasedChapterSelectorUseBrowser": false
+  },
+  {
+   "Source": "custom_manga",
+   "URL": "https://api.mangaupdates.com/v1/series/42866050067/rss",
+   "Name": "Blue Lock",
+   "SearchNames": [
+    "Blue Lock"
+   ],
+   "InternalID": "",
+   "PreferredGroup": "",
+   "CoverImgURL": "https://cdn.mangaupdates.com/image/i538087.jpg",
+   "LastReleasedChapter": {
+    "UpdatedAt": "2026-10-13T03:06:39Z",
+    "URL": "",
+    "Chapter": "272",
+    "Name": "Chapter 272",
+    "InternalID": "",
+    "Type": 1,
+    "FromSourceSite": false
+   },
+   "LastReleasedChapterNameSelector": null,
+   "LastReleasedChapterURLSelector": null,
+   "LastReadChapter": null,
+   "CoverImg": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+   "ID": 29,
+   "Status": 4,
+   "MultiMangaID": 28,
+   "CoverImgResized": false,
+   "CoverImgFixed": false,
+   "LastReleasedChapterSelectorUseBrowser": false
+  },
+  {
+   "Source": "custom_manga",
+   "URL": "https://api.mangaupdates.com/v1/series/55469435605/rss",
+   "Name": "Sakamoto Days",
+   "SearchNames": [
+    "Sakamoto Days"
+   ],
+   "InternalID": "",
+   "PreferredGroup": "",
+   "CoverImgURL": "https://cdn.mangaupdates.com/image/i532619.jpg",
+   "LastReleasedChapter": {
+    "UpdatedAt": "2026-10-13T03:06:40Z",
+    "URL": "",
+    "Chapter": "278",
+    "Name": "Chapter 278",
+    "InternalID": "",
+    "Type": 1,
+    "FromSourceSite": false
+   },
+   "LastReleasedChapterNameSelector": null,
+   "LastReleasedChapterURLSelector": null,
+   "LastReadChapter": null,
+   "CoverImg": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+   "ID": 30,
+   "Status": 5,
+   "MultiMangaID": 29,
+   "CoverImgResized": false,
+   "CoverImgFixed": false,
+   "LastReleasedChapterSelectorUseBrowser": false
+  },
+  {
+   "Source": "custom_manga",
+   "URL": "https://api.mangaupdates.com/v1/series/19101650311/rss",
+   "Name": "Kaijuu 8-gou",
+   "SearchNames": [
+    "Kaijuu 8-gou"
+   ],
+   "InternalID": "",
+   "PreferredGroup": "",
+   "CoverImgURL": "https://cdn.mangaupdates.com/image/i497577.jpg",
+   "LastReleasedChapter": {
+    "UpdatedAt": "2026-10-13T03:06:42Z",
+    "URL": "",
+    "Chapter": "129",
+    "Name": "Chapter 129",
+    "InternalID": "",
+    "Type": 1,
+    "FromSourceSite": false
+   },
+   "LastReleasedChapterNameSelector": null,
+   "LastReleasedChapterURLSelector": null,
+   "LastReadChapter": {
+    "UpdatedAt": "2026-10-13T03:06:42Z",
+    "URL": "",
+    "Chapter": "128",
+    "Name": "Chapter 128",
+    "InternalID": "",
+    "Type": 2,
+    "FromSourceSite": false
+   },
+   "CoverImg": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+   "ID": 31,
+   "Status": 1,
+   "MultiMangaID": 30,
+   "CoverImgResized": false,
+   "CoverImgFixed": false,
+   "LastReleasedChapterSelectorUseBrowser": false
+  },
+  {
+   "Source": "custom_manga",
+   "URL": "https://api.mangaupdates.com/v1/series/17997087747/rss",
+   "Name": "Oshi no Ko",
+   "SearchNames": [
+    "Oshi no Ko"
+   ],
+   "InternalID": "",
+   "PreferredGroup": "",
+   "CoverImgURL": "https://cdn.mangaupdates.com/image/i496269.jpg",
+   "LastReleasedChapter": {
+    "UpdatedAt": "2026-10-13T03:06:43Z",
+    "URL": "",
+    "Chapter": "166.5",
+    "Name": "Chapter 166.5",
+    "InternalID": "",
+    "Type": 1,
+    "FromSourceSite": false
+   },
+   "LastReleasedChapterNameSelector": null,
+   "LastReleasedChapterURLSelector": null,
+   "LastReadChapter": {
+    "UpdatedAt": "2026-10-13T03:06:43Z",
+    "URL": "",
+    "Chapter": "166.5",
+    "Name": "Chapter 166.5",
+    "InternalID": "",
+    "Type": 2,
+    "FromSourceSite": false
+   },
+   "CoverImg": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+   "ID": 32,
+   "Status": 2,
+   "MultiMangaID": 31,
+   "CoverImgResized": false,
+   "CoverImgFixed": false,
+   "LastReleasedChapterSelectorUseBrowser": false
+  },
+  {
+   "Source": "custom_manga",
+   "URL": "https://api.mangaupdates.com/v1/series/62774509478/rss",
+   "Name": "Vagabond",
+   "SearchNames": [
+    "Vagabond"
+   ],
+   "InternalID": "",
+   "PreferredGroup": "",
+   "CoverImgURL": "",
+   "LastReleasedChapter": {
+    "UpdatedAt": "2026-10-13T03:08:56Z",
+    "URL": "",
+    "Chapter": "2",
+    "Name": "Chapter 2",
+    "InternalID": "",
+    "Type": 1,
+    "FromSourceSite": false
+   },
+   "LastReleasedChapterNameSelector": null,
+   "LastReleasedChapterURLSelector": null,
+   "LastReadChapter": {
+    "UpdatedAt": "2026-10-13T03:08:56Z",
+    "URL": "",
+    "Chapter": "2",
+    "Name": "Chapter 2",
+    "InternalID": "",
+    "Type": 2,
+    "FromSourceSite": false
+   },
+   "CoverImg": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+   "ID": 33,
+   "Status": 3,
+   "MultiMangaID": 32,
+   "CoverImgResized": false,
+   "CoverImgFixed": false,
+   "LastReleasedChapterSelectorUseBrowser": false
+  },
+  {
+   "Source": "custom_manga",
+   "URL": "https://api.mangaupdates.com/v1/series/23606352927/rss",
+   "Name": "よつばと！ Yotsuba&! (日本語の名前)",
+   "SearchNames": [
+    "よつばと！ Yotsuba&! (日本語の名前)"
+   ],
+   "InternalID": "",
+   "PreferredGroup": "",
+   "CoverImgURL": "https://cdn.mangaupdates.com/image/i475257.png",
+   "LastReleasedChapter": {
+    "UpdatedAt": "2026-10-13T03:08:57Z",
+    "URL": "",
+    "Chapter": "3",
+    "Name": "Chapter 3",
+    "InternalID": "",
+    "Type": 1,
+    "FromSourceSite": false
+   },
+   "LastReleasedChapterNameSelector": null,
+   "LastReleasedChapterURLSelector": null,
+   "LastReadChapter": {
+    "UpdatedAt": "2026-10-13T03:08:56Z",
+    "URL": "",
+    "Chapter": "1",
+    "Name": "Chapter 1",
+    "InternalID": "",
+    "Type": 2,
+    "FromSourceSite": false
+   },
+   "CoverImg": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+   "ID": 34,
+   "Status": 1,
+   "MultiMangaID": 33,
+   "CoverImgResized": false,
+   "CoverImgFixed": false,
+   "LastReleasedChapterSelectorUseBrowser": false
+  },
+  {
+   "Source": "custom_manga",
+   "URL": "https://api.mangaupdates.com/v1/series/15124812002/rss",
+   "Name": "The Apothecary Diaries: Maomao's Incredibly Long Subtitle That Keeps Going To Check How The Card Header Ellipsis Handles A Name This Long",
+   "SearchNames": [
+    "The Apothecary Diaries: Maomao's Incredibly Long Subtitle That Keeps Going To Check How The Card Header Ellipsis Handles A Name This Long"
+   ],
+   "InternalID": "",
+   "PreferredGroup": "",
+   "CoverImgURL": "https://cdn.mangaupdates.com/image/i535944.png",
+   "LastReleasedChapter": {
+    "UpdatedAt": "2026-10-13T03:08:57Z",
+    "URL": "",
+    "Chapter": "83",
+    "Name": "Chapter 83",
+    "InternalID": "",
+    "Type": 1,
+    "FromSourceSite": false
+   },
+   "LastReleasedChapterNameSelector": null,
+   "LastReleasedChapterURLSelector": null,
+   "LastReadChapter": {
+    "UpdatedAt": "2026-10-13T03:08:58Z",
+    "URL": "",
+    "Chapter": "79",
+    "Name": "Chapter 79",
+    "InternalID": "",
+    "Type": 2,
+    "FromSourceSite": false
+   },
+   "CoverImg": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+   "ID": 35,
+   "Status": 1,
+   "MultiMangaID": 34,
+   "CoverImgResized": false,
+   "CoverImgFixed": false,
+   "LastReleasedChapterSelectorUseBrowser": false
+  },
+  {
+   "Source": "custom_manga",
+   "URL": "https://api.mangaupdates.com/v1/series/51239621230/rss",
+   "Name": "<b>Bold?</b> & \"quotes\" <script>alert(1)</script>",
+   "SearchNames": [
+    "<b>Bold?</b> & \"quotes\" <script>alert(1)</script>"
+   ],
+   "InternalID": "",
+   "PreferredGroup": "",
+   "CoverImgURL": "https://cdn.mangaupdates.com/image/i501230.png",
+   "LastReleasedChapter": {
+    "UpdatedAt": "2026-10-13T03:08:59Z",
+    "URL": "",
+    "Chapter": "386",
+    "Name": "Chapter 386",
+    "InternalID": "",
+    "Type": 1,
+    "FromSourceSite": false
+   },
+   "LastReleasedChapterNameSelector": null,
+   "LastReleasedChapterURLSelector": null,
+   "LastReadChapter": {
+    "UpdatedAt": "2026-10-13T03:08:59Z",
+    "URL": "",
+    "Chapter": "386",
+    "Name": "Chapter 386",
+    "InternalID": "",
+    "Type": 2,
+    "FromSourceSite": false
+   },
+   "CoverImg": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+   "ID": 36,
+   "Status": 1,
+   "MultiMangaID": 35,
+   "CoverImgResized": false,
+   "CoverImgFixed": false,
+   "LastReleasedChapterSelectorUseBrowser": false
+  },
+  {
+   "Source": "custom_manga",
+   "URL": "https://www.mangaread.org/manga/naruto/",
+   "Name": "Naruto (Madara site, completed series)",
+   "SearchNames": [
+    "Naruto (Madara site, completed series)"
+   ],
+   "InternalID": "",
+   "PreferredGroup": "",
+   "CoverImgURL": "",
+   "LastReleasedChapter": {
+    "UpdatedAt": "2026-10-13T03:08:59Z",
+    "URL": "https://www.mangaread.org/manga/naruto/chapter-700-naruto-uzumaki/",
+    "Chapter": "700",
+    "Name": "Chapter 700",
+    "InternalID": "",
+    "Type": 1,
+    "FromSourceSite": false
+   },
+   "LastReleasedChapterNameSelector": null,
+   "LastReleasedChapterURLSelector": null,
+   "LastReadChapter": {
+    "UpdatedAt": "2026-10-13T03:08:59Z",
+    "URL": "",
+    "Chapter": "690",
+    "Name": "Chapter 690",
+    "InternalID": "",
+    "Type": 2,
+    "FromSourceSite": false
+   },
+   "CoverImg": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+   "ID": 37,
+   "Status": 2,
+   "MultiMangaID": 36,
+   "CoverImgResized": false,
+   "CoverImgFixed": false,
+   "LastReleasedChapterSelectorUseBrowser": false
+  },
+  {
+   "Source": "custom_manga",
+   "URL": "https://komikstation.org/manga/ao-ashi/",
+   "Name": "Ao Ashi (URL only, chapter ?)",
+   "SearchNames": [
+    "Ao Ashi (URL only, chapter ?)"
+   ],
+   "InternalID": "",
+   "PreferredGroup": "",
+   "CoverImgURL": "",
+   "LastReleasedChapter": {
+    "UpdatedAt": "2026-10-13T03:08:59Z",
+    "URL": "https://komikstation.org/ao-ashi-chapter-410/",
+    "Chapter": "?",
+    "Name": "Chapter ?",
+    "InternalID": "",
+    "Type": 1,
+    "FromSourceSite": false
+   },
+   "LastReleasedChapterNameSelector": null,
+   "LastReleasedChapterURLSelector": null,
+   "LastReadChapter": null,
+   "CoverImg": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+   "ID": 38,
+   "Status": 1,
+   "MultiMangaID": 37,
+   "CoverImgResized": false,
+   "CoverImgFixed": false,
+   "LastReleasedChapterSelectorUseBrowser": false
+  },
+  {
+   "Source": "custom_manga",
+   "URL": "https://komikstation.org/manga/apparently-im-the-villainess/",
+   "Name": "Villainess (Themesia, decimal read)",
+   "SearchNames": [
+    "Villainess (Themesia, decimal read)"
+   ],
+   "InternalID": "",
+   "PreferredGroup": "",
+   "CoverImgURL": "",
+   "LastReleasedChapter": {
+    "UpdatedAt": "2026-10-13T03:09:01Z",
+    "URL": "",
+    "Chapter": "4",
+    "Name": "Chapter 4",
+    "InternalID": "",
+    "Type": 1,
+    "FromSourceSite": false
+   },
+   "LastReleasedChapterNameSelector": null,
+   "LastReleasedChapterURLSelector": null,
+   "LastReadChapter": {
+    "UpdatedAt": "2026-10-13T03:08:59Z",
+    "URL": "",
+    "Chapter": "1.5",
+    "Name": "Chapter 1.5",
+    "InternalID": "",
+    "Type": 2,
+    "FromSourceSite": false
+   },
+   "CoverImg": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+   "ID": 39,
+   "Status": 2,
+   "MultiMangaID": 38,
+   "CoverImgResized": false,
+   "CoverImgFixed": false,
+   "LastReleasedChapterSelectorUseBrowser": false
+  },
+  {
+   "Source": "custom_manga",
+   "URL": "",
+   "Name": "Manual only, no URL, no chapters",
+   "SearchNames": [
+    "Manual only, no URL, no chapters"
+   ],
+   "InternalID": "",
+   "PreferredGroup": "",
+   "CoverImgURL": "",
+   "LastReleasedChapter": null,
+   "LastReleasedChapterNameSelector": null,
+   "LastReleasedChapterURLSelector": null,
+   "LastReadChapter": null,
+   "CoverImg": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+   "ID": 40,
+   "Status": 1,
+   "MultiMangaID": 39,
+   "CoverImgResized": false,
+   "CoverImgFixed": false,
+   "LastReleasedChapterSelectorUseBrowser": false
+  },
+  {
+   "Source": "custom_manga",
+   "URL": "",
+   "Name": "Manual with text chapter",
+   "SearchNames": [
+    "Manual with text chapter"
+   ],
+   "InternalID": "",
+   "PreferredGroup": "",
+   "CoverImgURL": "",
+   "LastReleasedChapter": null,
+   "LastReleasedChapterNameSelector": null,
+   "LastReleasedChapterURLSelector": null,
+   "LastReadChapter": {
+    "UpdatedAt": "2026-10-13T03:09:01Z",
+    "URL": "",
+    "Chapter": "Prologue",
+    "Name": "Chapter Prologue",
+    "InternalID": "",
+    "Type": 2,
+    "FromSourceSite": false
+   },
+   "CoverImg": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+   "ID": 41,
+   "Status": 1,
+   "MultiMangaID": 40,
+   "CoverImgResized": false,
+   "CoverImgFixed": false,
+   "LastReleasedChapterSelectorUseBrowser": false
+  },
+  {
+   "Source": "custom_manga",
+   "URL": "https://example.com/manga/manual",
+   "Name": "Manual, read chapter with URL",
+   "SearchNames": [
+    "Manual, read chapter with URL"
+   ],
+   "InternalID": "",
+   "PreferredGroup": "",
+   "CoverImgURL": "",
+   "LastReleasedChapter": null,
+   "LastReleasedChapterNameSelector": null,
+   "LastReleasedChapterURLSelector": null,
+   "LastReadChapter": {
+    "UpdatedAt": "2026-10-13T03:09:01Z",
+    "URL": "https://example.com/manga/manual/42",
+    "Chapter": "42",
+    "Name": "Chapter 42",
+    "InternalID": "",
+    "Type": 2,
+    "FromSourceSite": false
+   },
+   "CoverImg": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC",
+   "ID": 42,
+   "Status": 5,
+   "MultiMangaID": 41,
+   "CoverImgResized": false,
+   "CoverImgFixed": false,
+   "LastReleasedChapterSelectorUseBrowser": false
+  }
+ ]
+}

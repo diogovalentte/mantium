@@ -268,6 +268,14 @@ def escape_html(value) -> str:
     return html.escape(str(value), quote=True)
 
 
+def web_url_or_none(url) -> str | None:
+    """Returns the URL if it's an http(s) URL, for Streamlit link parameters, which escape it."""
+    url = str(url).strip()
+    if not url.lower().startswith(("http://", "https://")):
+        return None
+    return url
+
+
 def safe_href(url) -> str:
     """Return url escaped for an href attribute, or "" if it is not a web URL.
 

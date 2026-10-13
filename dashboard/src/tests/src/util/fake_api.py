@@ -2,7 +2,10 @@
 module-level FAKE before running the app, and inspect FAKE.calls afterwards."""
 
 import copy
+import json
+import os
 from typing import Any
+from unittest import mock
 
 from src.exceptions import APIException
 
@@ -49,6 +52,13 @@ class FakeAPI:
         self.presets_error: Exception | None = None
         self.test_selectors_result: Any = {"Chapter": "10", "URL": "https://example.com/c/10"}
         self.updated_manga: dict[str, Any] | None = None
+        with open(os.path.join(os.path.dirname(__file__), "library_fixture.json")) as f:
+            fixture = json.load(f)
+        # Library and configs read from a running API with the demo mangas, covers replaced by a 1x1 PNG
+        self.library: list[dict[str, Any]] = fixture["mangas"]
+        self.dashboard_configs: dict[str, Any] = fixture["configs"]
+        self.background_error = {"message": "", "time": "0001-01-01 00:00:00"}
+        self.last_update = "1"
 
     def _record(self, name: str, *args, **kwargs):
         self.calls.append((name, args, kwargs))
@@ -107,6 +117,46 @@ class FakeAPI:
 
     def update_custom_manga(self, *args, **kwargs):
         self._record("update_custom_manga", *args, **kwargs)
+        return {"message": "ok"}
+
+
+    # Main page
+
+    def check_health(self):
+        return None
+
+    def get_updated_message(self):
+        return "", ""
+
+    def check_for_updates(self):
+        return self.last_update
+
+    def get_dashboard_configs(self):
+        return copy.deepcopy(self.dashboard_configs)
+
+    def get_last_background_error(self):
+        return copy.deepcopy(self.background_error)
+
+    def delete_last_background_error(self):
+        self._record("delete_last_background_error")
+
+    def get_mangas(self):
+        """Runs the real client's parsing on the fixture, so the page gets the same types."""
+        from src.api.manga_api import MangaAPIClient
+
+        self._record("get_mangas")
+        response = mock.Mock(status_code=200)
+        response.json.return_value = {"mangas": copy.deepcopy(self.library)}
+        with mock.patch("src.api.manga_api.requests.get", return_value=response):
+            return MangaAPIClient("http://fake").get_mangas()
+
+    def sort_mangas(self, mangas, sort_option, reverse=False):
+        from src.api.manga_api import MangaAPIClient
+
+        return MangaAPIClient("http://fake").sort_mangas(mangas, sort_option, reverse)
+
+    def update_multimanga_last_read_chapter(self, *args):
+        self._record("update_multimanga_last_read_chapter", *args)
         return {"message": "ok"}
 
 
