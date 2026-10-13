@@ -8,11 +8,13 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/http"
 	"net/url"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -1995,6 +1997,7 @@ func getPageUsingHTTPRequest(pageURL string) (*scrapedPage, error) {
 	contextError := "error getting page '%s'"
 
 	c := colly.NewCollector(colly.UserAgent(userAgent))
+	c.WithTransport(util.SafeTransport)
 	c.SetRequestTimeout(timeout)
 
 	var page *scrapedPage
@@ -2008,6 +2011,10 @@ func getPageUsingHTTPRequest(pageURL string) (*scrapedPage, error) {
 
 	err := c.Visit(pageURL)
 	if err != nil {
+		var userErr *errordefs.UserError
+		if errors.As(err, &userErr) {
+			return nil, util.AddErrorContext(fmt.Sprintf(contextError, pageURL), err)
+		}
 		reason := err.Error()
 		var netErr net.Error
 		if errors.As(err, &netErr) && netErr.Timeout() {
@@ -2033,6 +2040,10 @@ func getPageUsingBrowser(pageURL string, nameSelector, URLSelector *HTMLSelector
 
 	ctx, cancel := context.WithTimeout(context.Background(), browserTimeout)
 	defer cancel()
+
+	if err := util.CheckPublicURL(ctx, pageURL); err != nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, pageURL), err)
+	}
 
 	startBrowserError := &errordefs.UserError{Message: `Couldn't start the browser used by "Use Browser"`}
 	var u string
@@ -2064,7 +2075,48 @@ func getPageUsingBrowser(pageURL string, nameSelector, URLSelector *HTMLSelector
 	if err != nil {
 		return nil, util.AddErrorContext(fmt.Sprintf(contextError, pageURL), util.AddErrorContext("error setting user agent", err))
 	}
+
+	// Every request the browser makes goes through the API's safe HTTP client, so the
+	// page (or a redirect, or a script in it) can't make the browser reach a private address.
+	var blockedMutex sync.Mutex
+	var blockedDocumentErr error
+	blockedError := func() error {
+		blockedMutex.Lock()
+		defer blockedMutex.Unlock()
+		return blockedDocumentErr
+	}
+	if !util.AllowPrivateURLs() {
+		client := &http.Client{
+			Transport: util.SafeTransport,
+			Timeout:   timeout,
+			// Redirects go back to the browser, so it knows the page final URL and the new request is also checked
+			CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+		}
+		router := page.HijackRequests()
+		err = router.Add("*", "", func(h *rod.Hijack) {
+			if err := h.LoadResponse(client, true); err != nil {
+				var userErr *errordefs.UserError
+				if errors.As(err, &userErr) && h.Request.Type() == proto.NetworkResourceTypeDocument {
+					blockedMutex.Lock()
+					if blockedDocumentErr == nil {
+						blockedDocumentErr = userErr
+					}
+					blockedMutex.Unlock()
+				}
+				h.Response.Fail(proto.NetworkErrorReasonBlockedByClient)
+			}
+		})
+		if err != nil {
+			return nil, util.AddErrorContext(fmt.Sprintf(contextError, pageURL), util.AddErrorContext("error hijacking browser requests", err))
+		}
+		go router.Run()
+		defer router.Stop()
+	}
+
 	err = page.Navigate(pageURL)
+	if blockedErr := blockedError(); blockedErr != nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, pageURL), blockedErr)
+	}
 	if err != nil {
 		if ctx.Err() != nil {
 			timeoutError.Err = err
@@ -2073,6 +2125,9 @@ func getPageUsingBrowser(pageURL string, nameSelector, URLSelector *HTMLSelector
 		return nil, util.AddErrorContext(fmt.Sprintf(contextError, pageURL), &errordefs.UserError{Message: fmt.Sprintf("Couldn't open the manga URL: %s", err)})
 	}
 	err = page.WaitLoad()
+	if blockedErr := blockedError(); blockedErr != nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, pageURL), blockedErr)
+	}
 	if err != nil {
 		timeoutError.Err = util.AddErrorContext("error waiting for page to load", err)
 		return nil, util.AddErrorContext(fmt.Sprintf(contextError, pageURL), timeoutError)
@@ -2090,6 +2145,9 @@ func getPageUsingBrowser(pageURL string, nameSelector, URLSelector *HTMLSelector
 			_, err = page.Timeout(timeout).Element(after)
 		} else {
 			_, err = page.Timeout(timeout).ElementX(strings.TrimPrefix(selector.Selector, "xpath:"))
+		}
+		if blockedErr := blockedError(); blockedErr != nil {
+			return nil, util.AddErrorContext(fmt.Sprintf(contextError, pageURL), blockedErr)
 		}
 		if err != nil {
 			notFoundError := &errordefs.UserError{Message: fmt.Sprintf("%s selector: element not found within %s (browser)", field, timeout), Err: err}

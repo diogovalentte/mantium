@@ -10,9 +10,14 @@ import (
 
 	api "github.com/diogovalentte/mantium/api/src"
 	"github.com/diogovalentte/mantium/api/src/routes"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 func TestTestCustomMangaSelectors(t *testing.T) {
+	// The test page is served on 127.0.0.1
+	util.SetAllowPrivateURLs(true)
+	defer util.SetAllowPrivateURLs(false)
+
 	page := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		w.Write([]byte(`<html><body><a class="chapter" href="/chapter-7">Chapter 7</a></body></html>`))

@@ -44,6 +44,8 @@ type APIConfigs struct {
 	Port           string
 	LogLevelInt    int
 	RodBrowserPath string
+	// AllowPrivateURLs allows URLs chosen by the user (custom manga pages, cover images) to point to non-public addresses.
+	AllowPrivateURLs bool
 }
 
 // NtfyConfigs is a struct that holds the ntfy configurations.
@@ -146,6 +148,14 @@ func SetConfigs(filePath string) error {
 	GlobalConfigs.API.LogLevelInt = int(logLevel)
 	GlobalConfigs.API.Port = os.Getenv("API_PORT")
 	GlobalConfigs.API.RodBrowserPath = os.Getenv("ROD_BROWSER_PATH")
+	GlobalConfigs.API.AllowPrivateURLs = false
+	if envAllowPrivateURLs := os.Getenv("ALLOW_PRIVATE_URLS"); envAllowPrivateURLs != "" {
+		GlobalConfigs.API.AllowPrivateURLs, err = strconv.ParseBool(envAllowPrivateURLs)
+		if err != nil {
+			return fmt.Errorf("error parsing ALLOW_PRIVATE_URLS '%s': must be true or false", envAllowPrivateURLs)
+		}
+	}
+	util.SetAllowPrivateURLs(GlobalConfigs.API.AllowPrivateURLs)
 
 	GlobalConfigs.Ntfy.Address = os.Getenv("NTFY_ADDRESS")
 	GlobalConfigs.Ntfy.Topic = os.Getenv("NTFY_TOPIC")

@@ -7,7 +7,15 @@ import (
 	"testing"
 
 	"github.com/diogovalentte/mantium/api/src/errordefs"
+	"github.com/diogovalentte/mantium/api/src/util"
 )
+
+// allowPrivateURLs allows the test to reach httptest servers, which listen on 127.0.0.1.
+func allowPrivateURLs(t *testing.T) {
+	t.Helper()
+	util.SetAllowPrivateURLs(true)
+	t.Cleanup(func() { util.SetAllowPrivateURLs(false) })
+}
 
 const customMangaPage = `<html><body>
 <div class="chapters">
@@ -49,6 +57,7 @@ func newCustomMangaTestServer() *httptest.Server {
 }
 
 func TestGetCustomMangaLastReleasedChapter(t *testing.T) {
+	allowPrivateURLs(t)
 	server := newCustomMangaTestServer()
 	defer server.Close()
 
@@ -109,6 +118,7 @@ func TestGetCustomMangaLastReleasedChapter(t *testing.T) {
 }
 
 func TestGetCustomMangaLastReleasedChapterUserErrors(t *testing.T) {
+	allowPrivateURLs(t)
 	server := newCustomMangaTestServer()
 	defer server.Close()
 
@@ -143,5 +153,23 @@ func TestGetCustomMangaLastReleasedChapterUserErrors(t *testing.T) {
 				t.Fatalf("got message %q, want %q", userErr.Message, test.userMessage)
 			}
 		})
+	}
+}
+
+func TestGetCustomMangaLastReleasedChapterBlocksPrivateAddresses(t *testing.T) {
+	server := newCustomMangaTestServer()
+	defer server.Close()
+	util.SetAllowPrivateURLs(false)
+
+	for _, useBrowser := range []bool{false, true} {
+		_, err := GetCustomMangaLastReleasedChapter(server.URL, &HTMLSelector{Selector: "css:a.chapter"}, nil, useBrowser)
+		var userErr *errordefs.UserError
+		if !errors.As(err, &userErr) {
+			t.Fatalf("browser %v: expected a UserError, got: %v", useBrowser, err)
+		}
+		want := "Blocked access to a private address (127.0.0.1). Set ALLOW_PRIVATE_URLS=true in the API to allow it"
+		if userErr.Message != want {
+			t.Fatalf("browser %v: got message %q, want %q", useBrowser, userErr.Message, want)
+		}
 	}
 }

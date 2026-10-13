@@ -58,9 +58,10 @@ Perl-style. Checked against a real database, including `www.` hosts and ports.
 
 ### Known and not fixed
 
-- **SSRF.** `cover_img_url` on the cover routes, and the custom manga URL fed to
-  colly and to rod, are fetched by the server with no check on the target. This
-  is item 4 below, and the hole exists today, not only in the future proxy route.
+- **SSRF.** Fixed on `fix/custom-manga-error-messages`: custom manga pages (colly
+  and every request rod's browser makes) and cover image URLs go through
+  `util.SafeTransport`, which refuses non-public addresses unless
+  `ALLOW_PRIVATE_URLS=true`. Item 4's future proxy route must use it too.
 - **Dependencies.** Per OSV: `pillow==10.4.0` has 17 advisories, `urllib3==2.5.0`
   has 4, `requests==2.32.4` has 1. `streamlit`, `certifi` and `Jinja2` are clean.
 - **`urlToSource` matches with `strings.Contains`**, so `mangadex.attacker.com`

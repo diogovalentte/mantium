@@ -199,6 +199,15 @@ Use the **Test selectors** button in the add and edit forms to see which chapter
 
 <img width="855" height="1335" alt="image" src="https://github.com/user-attachments/assets/4e844149-964e-463f-821f-f59a45c9a644" />
 
+## Private Addresses
+
+By default, the API refuses to get custom manga pages and cover images from private addresses, like `localhost`, `192.168.x.x`, `10.x.x.x` or `169.254.169.254`. This includes redirects and every request made by the browser when **Use Browser** is enabled. It prevents a URL from making the API reach services in your network that aren't meant to be reachable from outside.
+
+If you track a site hosted in your own network, set the API environment variable `ALLOW_PRIVATE_URLS=true`.
+
+> [!WARNING]
+> This is new in this version: custom mangas whose URL points to your network stop updating until you set `ALLOW_PRIVATE_URLS=true`.
+
 ---
 
 # Background Updates and Notifications

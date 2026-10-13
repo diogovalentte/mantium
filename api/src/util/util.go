@@ -88,9 +88,7 @@ var (
 func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgBytes []byte, resized bool, err error) {
 	contextError := "error downloading image '%s'"
 
-	httpClient := &http.Client{
-		Timeout: 10 * time.Second,
-	}
+	httpClient := SafeHTTPClient(10 * time.Second)
 
 	if retries < 1 {
 		retries = 1

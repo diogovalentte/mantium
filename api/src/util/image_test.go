@@ -52,6 +52,9 @@ func TestValidateImage(t *testing.T) {
 }
 
 func TestGetImageFromURLTooLarge(t *testing.T) {
+	SetAllowPrivateURLs(true)
+	defer SetAllowPrivateURLs(false)
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write(bytes.Repeat([]byte("a"), MaxImageBytes+10))
 	}))
