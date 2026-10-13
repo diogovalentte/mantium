@@ -636,6 +636,14 @@ def apply_custom_manga_preset(key_prefix: str, preset_id: int | None = None):
     ss[key_prefix + "last_released_chapter_use_browser"] = preset["use_browser"]
 
 
+def clear_custom_manga_selectors(key_prefix: str):
+    """Empties the selector fields, so the manga doesn't track new chapters. Used as a widget callback."""
+    for field, (_, _, default) in custom_manga_preset_fields.items():
+        ss[key_prefix + field] = default
+    ss[key_prefix + "last_released_chapter_use_browser"] = False
+    ss[key_prefix + "preset"] = None
+
+
 def on_custom_manga_url_change(key_prefix: str):
     ss[key_prefix + "detect_presets"] = True
     ss[key_prefix + "preset_detections"] = None
@@ -669,11 +677,7 @@ def detect_custom_manga_presets(key_prefix: str):
         chosen = domain_presets[0]["id"]
     elif working:
         chosen = working[0]["preset"]["id"]
-    if (
-        chosen is not None
-        and not ss.get(key_prefix + "tracking_opted_out", False)
-        and custom_manga_selector_fields_are_empty(key_prefix)
-    ):
+    if chosen is not None and custom_manga_selector_fields_are_empty(key_prefix):
         # The detection can return a preset created after the presets were loaded
         if chosen not in get_custom_manga_presets(key_prefix):
             try:
@@ -684,7 +688,7 @@ def detect_custom_manga_presets(key_prefix: str):
             if chosen not in presets:
                 return
         apply_custom_manga_preset(key_prefix, chosen)
-        ss[key_prefix + "track_new_chapters"] = True
+        ss[key_prefix + "last_released_chapter_expander"] = True
         ss[key_prefix + "preset_auto_selected"] = True
 
 
@@ -746,8 +750,6 @@ custom_manga_preset_state = (
     "preset_detections",
     "preset_auto_selected",
     "preset_message",
-    "selectors_draft",
-    "tracking_opted_out",
 )
 
 
@@ -780,7 +782,7 @@ def show_custom_manga_presets(key_prefix: str):
     if ss.get(key_prefix + "preset") not in presets:
         ss[key_prefix + "preset"] = None
 
-    preset_col, detect_col = st.columns([3, 1], vertical_alignment="bottom")
+    preset_col, detect_col, clear_col = st.columns([3, 1, 1], vertical_alignment="bottom")
     with preset_col:
         st.selectbox(
             "Preset",
@@ -798,6 +800,15 @@ def show_custom_manga_presets(key_prefix: str):
             use_container_width=True,
             help="Test every preset against the manga URL.",
             on_click=on_custom_manga_url_change,
+            args=(key_prefix,),
+        )
+    with clear_col:
+        st.button(
+            "Clear",
+            key=key_prefix + "clear_selectors_button",
+            use_container_width=True,
+            help="Empty the selectors, so Mantium doesn't track new chapters.",
+            on_click=clear_custom_manga_selectors,
             args=(key_prefix,),
         )
 
@@ -850,29 +861,13 @@ def show_custom_manga_presets(key_prefix: str):
         getattr(st, message[0])(message[1])
 
 
-def on_custom_manga_tracking_change(key_prefix: str):
-    """Keeps the selectors when tracking is turned off, since Streamlit deletes the state of
-    widgets that aren't rendered, and restores them when it's turned on again."""
-    fields = list(custom_manga_preset_fields) + ["last_released_chapter_use_browser", "preset"]
-    if ss[key_prefix + "track_new_chapters"]:
-        ss[key_prefix + "tracking_opted_out"] = False
-        for field, value in ss.pop(key_prefix + "selectors_draft", {}).items():
-            ss[key_prefix + field] = value
-    else:
-        ss[key_prefix + "tracking_opted_out"] = True
-        ss[key_prefix + "selectors_draft"] = {
-            field: ss[key_prefix + field] for field in fields if key_prefix + field in ss
-        }
-
-
 def get_custom_manga_selector_values(key_prefix: str) -> dict[str, Any]:
-    """Returns the last released chapter selector fields, empty when not tracking new chapters."""
-    tracking = ss.get(key_prefix + "track_new_chapters", False)
+    """Returns the last released chapter selector fields."""
     values = {
-        field: ss.get(key_prefix + field, default) if tracking else default
+        field: ss.get(key_prefix + field, default)
         for field, (_, _, default) in custom_manga_preset_fields.items()
     }
-    values["last_released_chapter_use_browser"] = tracking and ss.get(key_prefix + "last_released_chapter_use_browser", False)
+    values["last_released_chapter_use_browser"] = ss.get(key_prefix + "last_released_chapter_use_browser", False)
     return values
 
 
@@ -895,92 +890,94 @@ def reset_custom_manga_form_state(key_prefix: str, initial_values: dict[str, Any
 
 
 def show_custom_manga_tracking_fields(key_prefix: str, test_selectors_help: str):
-    """Shows the "Track new chapters automatically" toggle and, when it's on, the presets
-    and the last released chapter selectors."""
-    st.toggle(
-        "Track new chapters automatically",
-        help="Mantium gets the manga page periodically and uses selectors to find the last released chapter.",
-        key=key_prefix + "track_new_chapters",
-        on_change=on_custom_manga_tracking_change,
-        args=(key_prefix,),
-    )
-    if ss[key_prefix + "track_new_chapters"]:
-        with st.container(border=True):
-            show_custom_manga_presets(key_prefix)
+    """Shows the presets and the last released chapter selectors.
 
-            with st.expander(
-                "Chapter Name"
-            ):
-                st.text_input(
-                    "Selector",
-                    placeholder="css:div.chapter-list > a:nth-child(1) > div.chapter-title",
-                    help="CSS or XPath selector to get the chapter name. E.g. 'css:div.chapter-list > a:nth-child(1) > div.chapter-title' or 'xpath://div[@class=\"chapter-list\"]//a[1]//div[@class=\"chapter-title\"]'. Leave empty to skip.",
-                    key=key_prefix + "last_released_chapter_name_selector",
-                )
-                st.text_input(
-                    "Attribute",
-                    placeholder="href",
-                    help="Element attribute to get the chapter name. E.g. 'href' for link. Leave empty to get the inner text.",
-                    key=key_prefix + "last_released_chapter_name_attribute",
-                )
-                st.text_input(
-                    "Regex",
-                    placeholder="Chapter (\\d+)",
-                    help="Regex to extract the chapter name. E.g. 'Chapter (\\d+)' to extract '100' from 'Chapter 100'. Leave empty to skip.",
-                    key=key_prefix + "last_released_chapter_name_regex",
-                )
-                st.checkbox(
-                    "Get First",
-                    value=False,
-                    help="Get the first match instead of the last match. Use it when the site lists the newest chapter first.",
-                    key=key_prefix + "last_released_chapter_name_get_first",
-                )
-            with st.expander(
-                "Chapter URL"
-            ):
-                st.text_input(
-                    "Selector",
-                    placeholder="css:div.chapter-list > a:nth-child(1)",
-                    help="CSS or XPath selector to get the chapter URL. E.g. 'css:div.chapter-list > a:nth-child(1)' or 'xpath://div[@class=\"chapter-list\"]//a[1]'. Leave empty to skip.",
-                    key=key_prefix + "last_released_chapter_url_selector",
-                )
-                st.text_input(
-                    "Attribute",
-                    placeholder="href",
-                    help="Element attribute to get the chapter URL. E.g. 'href' for link. Leave empty to get the inner text.",
-                    key=key_prefix + "last_released_chapter_url_attribute",
-                )
-                st.checkbox(
-                    "Get First",
-                    value=False,
-                    help="Get the first match instead of the last match. Use it when the site lists the newest chapter first.",
-                    key=key_prefix + "last_released_chapter_url_get_first",
-                )
+    The expander has a key so the preset detection can open it. Its content runs even
+    when it's closed, so the selectors keep their state.
+    """
+    with st.expander(
+        "Last Released Chapter",
+        key=key_prefix + "last_released_chapter_expander",
+        on_change="rerun",
+    ):
+        st.info(
+            "Optional. Only fill if you want Mantium to automatically track new chapters."
+        )
+        show_custom_manga_presets(key_prefix)
 
+        with st.expander(
+            "Chapter Name"
+        ):
+            st.text_input(
+                "Selector",
+                placeholder="css:div.chapter-list > a:nth-child(1) > div.chapter-title",
+                help="CSS or XPath selector to get the chapter name. E.g. 'css:div.chapter-list > a:nth-child(1) > div.chapter-title' or 'xpath://div[@class=\"chapter-list\"]//a[1]//div[@class=\"chapter-title\"]'. Leave empty to skip.",
+                key=key_prefix + "last_released_chapter_name_selector",
+            )
+            st.text_input(
+                "Attribute",
+                placeholder="href",
+                help="Element attribute to get the chapter name. E.g. 'href' for link. Leave empty to get the inner text.",
+                key=key_prefix + "last_released_chapter_name_attribute",
+            )
+            st.text_input(
+                "Regex",
+                placeholder="Chapter (\\d+)",
+                help="Regex to extract the chapter name. E.g. 'Chapter (\\d+)' to extract '100' from 'Chapter 100'. Leave empty to skip.",
+                key=key_prefix + "last_released_chapter_name_regex",
+            )
             st.checkbox(
-                "Use Browser",
+                "Get First",
                 value=False,
-                help="Use a browser to fetch the manga page. Use this if the chapter info is loaded dynamically with JavaScript. Requires more resources and can take longer.",
-                key=key_prefix + "last_released_chapter_use_browser",
+                help="Get the first match instead of the last match. Use it when the site lists the newest chapter first.",
+                key=key_prefix + "last_released_chapter_name_get_first",
+            )
+        with st.expander(
+            "Chapter URL"
+        ):
+            st.text_input(
+                "Selector",
+                placeholder="css:div.chapter-list > a:nth-child(1)",
+                help="CSS or XPath selector to get the chapter URL. E.g. 'css:div.chapter-list > a:nth-child(1)' or 'xpath://div[@class=\"chapter-list\"]//a[1]'. Leave empty to skip.",
+                key=key_prefix + "last_released_chapter_url_selector",
+            )
+            st.text_input(
+                "Attribute",
+                placeholder="href",
+                help="Element attribute to get the chapter URL. E.g. 'href' for link. Leave empty to get the inner text.",
+                key=key_prefix + "last_released_chapter_url_attribute",
+            )
+            st.checkbox(
+                "Get First",
+                value=False,
+                help="Get the first match instead of the last match. Use it when the site lists the newest chapter first.",
+                key=key_prefix + "last_released_chapter_url_get_first",
             )
 
-            if st.button(
-                "Test selectors",
-                key=key_prefix + "test_selectors",
-                use_container_width=True,
-                help=test_selectors_help,
-            ):
-                test_custom_manga_selectors(
-                    ss[key_prefix + "url"],
-                    ss[key_prefix + "last_released_chapter_name_selector"],
-                    ss[key_prefix + "last_released_chapter_name_attribute"],
-                    ss[key_prefix + "last_released_chapter_name_regex"],
-                    ss[key_prefix + "last_released_chapter_name_get_first"],
-                    ss[key_prefix + "last_released_chapter_url_selector"],
-                    ss[key_prefix + "last_released_chapter_url_attribute"],
-                    ss[key_prefix + "last_released_chapter_url_get_first"],
-                    ss[key_prefix + "last_released_chapter_use_browser"],
-                )
+        st.checkbox(
+            "Use Browser",
+            value=False,
+            help="Use a browser to fetch the manga page. Use this if the chapter info is loaded dynamically with JavaScript. Requires more resources and can take longer.",
+            key=key_prefix + "last_released_chapter_use_browser",
+        )
+
+        if st.button(
+            "Test selectors",
+            key=key_prefix + "test_selectors",
+            use_container_width=True,
+            help=test_selectors_help,
+        ):
+            test_custom_manga_selectors(
+                ss[key_prefix + "url"],
+                ss[key_prefix + "last_released_chapter_name_selector"],
+                ss[key_prefix + "last_released_chapter_name_attribute"],
+                ss[key_prefix + "last_released_chapter_name_regex"],
+                ss[key_prefix + "last_released_chapter_name_get_first"],
+                ss[key_prefix + "last_released_chapter_url_selector"],
+                ss[key_prefix + "last_released_chapter_url_attribute"],
+                ss[key_prefix + "last_released_chapter_url_get_first"],
+                ss[key_prefix + "last_released_chapter_use_browser"],
+            )
 
 
 def show_add_custom_manga_form(multimanga_id: int = 0):

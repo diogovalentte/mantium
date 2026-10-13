@@ -44,8 +44,9 @@ def texts(at: AppTest, kind: str) -> list[str]:
     return [str(e.value) for e in getattr(at, kind)]
 
 
-def tracking(at: AppTest, prefix: str = P) -> bool:
-    return at.toggle(key=prefix + "track_new_chapters").value
+def expanded(at: AppTest, prefix: str = P) -> bool:
+    """Whether the Last Released Chapter expander is open."""
+    return bool(at.session_state[prefix + "last_released_chapter_expander"])
 
 
 def field(at: AppTest, name: str, prefix: str = P):
@@ -64,21 +65,19 @@ def test_layout_order(api):
     at = run_app()
     assert_no_exception(at)
     labels = labels_in_order(at)
-    order = ["Manga Name (not optional)", "Manga URL", "Status", "Cover Image", "Last Read Chapter", "Track new chapters automatically", "Add"]
+    order = ["Manga Name (not optional)", "Manga URL", "Status", "Cover Image", "Last Read Chapter", "Last Released Chapter", "Add"]
     seen = [l for l in labels if l in order]
     # "Last Read Chapter" is both the expander and the field inside it
     assert [l for i, l in enumerate(seen) if i == 0 or l != seen[i - 1]] == order
-    assert not tracking(at)
-    # The selectors and presets only exist when tracking
-    assert not [s for s in at.selectbox if s.key == P + "preset"]
+    assert not expanded(at)
 
 
-def test_url_with_working_preset_turns_tracking_on_and_fills_selectors(api):
+def test_url_with_working_preset_opens_the_selectors_and_fills_them(api):
     feed_detected(api)
     at = run_app()
     at.text_input(key=P + "url").input(FEED_URL).run()
     assert_no_exception(at)
-    assert tracking(at)
+    assert expanded(at)
     assert at.selectbox(key=P + "preset").value == RSS_PRESET["id"]
     assert field(at, "name_selector") == "xpath://item/title"
     assert field(at, "name_regex") == r"(\d+)"
@@ -105,7 +104,6 @@ def test_domain_preset_wins_over_working_preset(api):
 def test_url_change_does_not_overwrite_filled_selectors(api):
     feed_detected(api)
     at = run_app()
-    at.toggle(key=P + "track_new_chapters").set_value(True).run()
     at.text_input(key=P + "last_released_chapter_name_selector").input("css:h1").run()
     at.text_input(key=P + "url").input(FEED_URL).run()
     assert_no_exception(at)
@@ -114,23 +112,21 @@ def test_url_change_does_not_overwrite_filled_selectors(api):
     assert any("Presets that work" in m.value for m in at.markdown)
 
 
-def test_no_preset_works_keeps_tracking_off(api):
+def test_no_preset_works_keeps_the_selectors_closed(api):
     feed_detected(api, chapter=None)
     at = run_app()
     at.text_input(key=P + "url").input(FEED_URL).run()
     assert_no_exception(at)
-    assert not tracking(at)
-    at.toggle(key=P + "track_new_chapters").set_value(True).run()
+    assert not expanded(at)
     assert "No preset works for this page" in texts(at, "info")
 
 
-def test_detection_error_is_shown_when_tracking(api):
+def test_detection_error_is_shown(api):
     api.detections[FEED_URL] = user_error("Couldn't open the manga URL: Not Found")
     at = run_app()
     at.text_input(key=P + "url").input(FEED_URL).run()
     assert_no_exception(at)
-    assert not tracking(at)
-    at.toggle(key=P + "track_new_chapters").set_value(True).run()
+    assert not expanded(at)
     assert any("Not Found" in t for t in texts(at, "warning"))
 
 
@@ -144,7 +140,6 @@ def test_invalid_or_empty_url_does_not_call_detection(api):
 
 def test_picking_presets_by_hand(api):
     at = run_app()
-    at.toggle(key=P + "track_new_chapters").set_value(True).run()
     at.selectbox(key=P + "preset").set_value(SITE_PRESET["id"]).run()
     assert_no_exception(at)
     assert field(at, "name_selector") == "css:a.chapter"
@@ -155,6 +150,11 @@ def test_picking_presets_by_hand(api):
     at.selectbox(key=P + "preset").set_value(None).run()
     assert_no_exception(at)
     assert field(at, "name_selector") == "xpath://item/title"
+    at.button(key=P + "clear_selectors_button").click().run()
+    assert_no_exception(at)
+    assert field(at, "name_selector") == ""
+    assert field(at, "url_selector") == ""
+    assert at.checkbox(key=P + "last_released_chapter_name_get_first").value is False
 
 
 def test_detect_button_runs_detection_again(api):
@@ -169,7 +169,6 @@ def test_detect_button_runs_detection_again(api):
 def test_save_preset(api):
     at = run_app()
     at.text_input(key=P + "url").input(SITE_URL).run()
-    at.toggle(key=P + "track_new_chapters").set_value(True).run()
     at.text_input(key=P + "last_released_chapter_name_selector").input("css:li a").run()
     at.text_input(key=P + "last_released_chapter_name_regex").input(r"(\d+)").run()
     assert at.text_input(key=P + "new_preset_domains").value == "example.com"
@@ -188,7 +187,6 @@ def test_save_preset(api):
 def test_save_preset_error(api):
     api.add_preset_error = user_error('A preset named "RSS feed" already exists')
     at = run_app()
-    at.toggle(key=P + "track_new_chapters").set_value(True).run()
     at.text_input(key=P + "new_preset_name").input("RSS feed").run()
     at.button(key=P + "save_preset").click().run()
     assert_no_exception(at)
@@ -197,7 +195,6 @@ def test_save_preset_error(api):
 
 def test_delete_user_preset(api):
     at = run_app()
-    at.toggle(key=P + "track_new_chapters").set_value(True).run()
     at.selectbox(key=P + "preset").set_value(SITE_PRESET["id"]).run()
     at.button(key=P + "delete_preset").click().run()
     assert_no_exception(at)
@@ -209,19 +206,18 @@ def test_delete_user_preset(api):
     assert not [b for b in at.button if b.key == P + "delete_preset"]
 
 
-def test_reopening_the_form_clears_messages_and_tracking(api):
+def test_reopening_the_form_clears_messages_and_selectors(api):
     feed_detected(api)
     at = run_app()
     at.text_input(key=P + "url").input(FEED_URL).run()
-    assert tracking(at)
+    assert expanded(at)
     at.session_state["show_form"] = False
     at.run()
     at.session_state["show_form"] = True
     at.run()
     assert_no_exception(at)
     assert at.text_input(key=P + "url").value == ""
-    assert not tracking(at)
-    at.toggle(key=P + "track_new_chapters").set_value(True).run()
+    assert not expanded(at)
     assert not any("Presets that work" in m.value for m in at.markdown)
     assert not texts(at, "success")
     assert field(at, "name_selector") == ""
@@ -266,40 +262,31 @@ def test_add_with_tracking_sends_selectors(api):
     assert args[13:16] == ("xpath://item/link", "", True)
 
 
-def test_tracking_turned_off_after_preset_sends_no_selectors(api):
+def test_clearing_selectors_after_detection_sends_no_selectors(api):
     feed_detected(api)
     at = run_app()
     at.text_input(key=P + "name").input("Manga").run()
     at.text_input(key=P + "url").input(FEED_URL).run()
-    at.toggle(key=P + "track_new_chapters").set_value(False).run()
+    at.button(key=P + "clear_selectors_button").click().run()
+    assert at.selectbox(key=P + "preset").value is None
     at.button(key=P + "add").click().run()
     assert add_args(api)[9:16] == ("", "", "", False, "", "", False)
 
 
-def test_tracking_off_then_on_restores_selectors(api):
+def test_closing_the_selectors_keeps_them(api):
     feed_detected(api)
     at = run_app()
     at.text_input(key=P + "url").input(FEED_URL).run()
     at.text_input(key=P + "last_released_chapter_name_regex").input(r"c\.(\d+)").run()
-    at.toggle(key=P + "track_new_chapters").set_value(False).run()
-    at.toggle(key=P + "track_new_chapters").set_value(True).run()
+    at.session_state[P + "last_released_chapter_expander"] = False
+    at.run()
     assert_no_exception(at)
+    assert not expanded(at)
     assert field(at, "name_selector") == "xpath://item/title"
     assert field(at, "name_regex") == r"c\.(\d+)"
-    assert at.selectbox(key=P + "preset").value == RSS_PRESET["id"]
-
-
-def test_detection_respects_tracking_turned_off_by_hand(api):
-    feed_detected(api)
-    at = run_app()
-    at.toggle(key=P + "track_new_chapters").set_value(True).run()
-    at.toggle(key=P + "track_new_chapters").set_value(False).run()
-    at.text_input(key=P + "url").input(FEED_URL).run()
-    assert_no_exception(at)
-    assert not tracking(at)
     at.text_input(key=P + "name").input("Manga").run()
     at.button(key=P + "add").click().run()
-    assert add_args(api)[9:16] == ("", "", "", False, "", "", False)
+    assert add_args(api)[9:12] == ("xpath://item/title", "", r"c\.(\d+)")
 
 
 def test_detected_preset_that_no_longer_exists_is_ignored(api):
@@ -308,7 +295,8 @@ def test_detected_preset_that_no_longer_exists_is_ignored(api):
     at = run_app()
     at.text_input(key=P + "url").input(FEED_URL).run()
     assert_no_exception(at)
-    assert not tracking(at)
+    assert not expanded(at)
+    assert field(at, "name_selector") == ""
 
 
 def test_add_requires_name(api):
@@ -325,7 +313,7 @@ def test_add_to_multimanga_form(api):
     assert "Status" not in labels and "Last Read Chapter" not in labels
     at.text_input(key=MM + "name").input("Other source").run()
     at.text_input(key=MM + "url").input(FEED_URL).run()
-    assert tracking(at, MM)
+    assert expanded(at, MM)
     at.button(key=MM + "add").click().run()
     assert_no_exception(at)
     (args, _), = api.called("add_manga_to_multimanga")
@@ -339,6 +327,6 @@ def test_both_forms_in_one_session_dont_share_state(api):
     assert_no_exception(at)
     at.text_input(key=P + "url").input(FEED_URL).run()
     assert_no_exception(at)
-    assert tracking(at, P)
-    assert not tracking(at, MM)
+    assert expanded(at, P)
+    assert not expanded(at, MM)
     assert at.text_input(key=MM + "url").value == ""

@@ -842,7 +842,6 @@ def show_update_custom_manga(manga: dict[str, Any]):
         {
             "name": manga["Name"],
             "url": manga["URL"],
-            "track_new_chapters": bool(name_selector["Selector"] or url_selector["Selector"]),
             "last_released_chapter_name_selector": name_selector["Selector"],
             "last_released_chapter_name_attribute": name_selector["Attribute"],
             "last_released_chapter_name_regex": name_selector["Regex"],

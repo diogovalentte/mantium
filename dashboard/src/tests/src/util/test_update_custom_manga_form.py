@@ -5,7 +5,7 @@ from streamlit.testing.v1 import AppTest
 
 import src.tests.src.util.fake_api as fake_api
 from src.tests.src.util.fake_api import RSS_PRESET, SITE_PRESET, detection
-from src.tests.src.util.test_custom_manga_form import assert_no_exception, field, labels_in_order, texts, tracking
+from src.tests.src.util.test_custom_manga_form import assert_no_exception, expanded, field, labels_in_order, texts
 
 RUNNER = os.path.join(os.path.dirname(__file__), "update_custom_manga_form_runner.py")
 P = "update_custom_manga_form_"
@@ -55,10 +55,9 @@ def test_prefilled_from_tracked_manga(api):
     at = run_app(manga())
     assert_no_exception(at)
     labels = labels_in_order(at)
-    assert labels.index("Cover Image") < labels.index("Track new chapters automatically") < labels.index("Update")
+    assert labels.index("Cover Image") < labels.index("Last Released Chapter") < labels.index("Update")
     assert at.text_input(key=P + "name").value == "Tracked"
     assert at.text_input(key=P + "url").value == "https://example.com/manga/tracked"
-    assert tracking(at, P)
     assert field(at, "name_selector", P) == "css:a.ch"
     assert field(at, "url_attribute", P) == "href"
     assert at.checkbox(key=P + "last_released_chapter_use_browser").value is True
@@ -66,10 +65,10 @@ def test_prefilled_from_tracked_manga(api):
     assert not texts(at, "warning")
 
 
-def test_untracked_manga_starts_with_tracking_off(api):
+def test_untracked_manga_starts_with_the_selectors_closed(api):
     at = run_app(manga(**UNTRACKED))
     assert_no_exception(at)
-    assert not tracking(at, P)
+    assert not expanded(at, P)
 
 
 def test_update_without_changes_sends_current_values(api):
@@ -81,9 +80,9 @@ def test_update_without_changes_sends_current_values(api):
     assert args[3:11] == ("css:a.ch", "", r"(\d+)", True, "css:a.ch", "href", True, True)
 
 
-def test_turning_tracking_off_sends_no_selectors(api):
+def test_clear_removes_the_selectors(api):
     at = run_app(manga())
-    at.toggle(key=P + "track_new_chapters").set_value(False).run()
+    at.button(key=P + "clear_selectors_button").click().run()
     at.button(key=P + "update").click().run()
     assert_no_exception(at)
     assert update_args(api)[3:11] == ("", "", "", False, "", "", False, False)
@@ -105,7 +104,7 @@ def test_url_change_on_untracked_manga_applies_preset(api):
     at = run_app(manga(**UNTRACKED))
     at.text_input(key=P + "url").input(FEED_URL).run()
     assert_no_exception(at)
-    assert tracking(at, P)
+    assert expanded(at, P)
     assert field(at, "name_selector", P) == "xpath://item/title"
     assert not texts(at, "warning")
 
@@ -128,7 +127,7 @@ def test_reopening_for_another_manga_loads_its_values(api):
     at.run()
     assert_no_exception(at)
     assert at.text_input(key=P + "name").value == "Untracked"
-    assert not tracking(at, P)
+    assert not expanded(at, P)
     at.button(key=P + "update").click().run()
     assert update_args(api)[0] == 7
 
@@ -141,14 +140,15 @@ def test_update_requires_name(api):
     assert api.called("update_custom_manga") == []
 
 
-def test_tracking_off_then_on_keeps_the_manga_selectors(api):
+def test_closing_the_selectors_keeps_them(api):
     at = run_app(manga())
     at.text_input(key=P + "last_released_chapter_name_regex").input(r"Ch (\d+)").run()
-    at.toggle(key=P + "track_new_chapters").set_value(False).run()
-    at.toggle(key=P + "track_new_chapters").set_value(True).run()
+    at.session_state[P + "last_released_chapter_expander"] = True
+    at.run()
+    at.session_state[P + "last_released_chapter_expander"] = False
+    at.run()
     assert_no_exception(at)
     assert field(at, "name_selector", P) == "css:a.ch"
-    assert field(at, "name_regex", P) == r"Ch (\d+)"
     assert at.checkbox(key=P + "last_released_chapter_use_browser").value is True
     at.button(key=P + "update").click().run()
     assert update_args(api)[3:6] == ("css:a.ch", "", r"Ch (\d+)")
