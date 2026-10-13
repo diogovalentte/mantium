@@ -187,11 +187,13 @@ Custom manga can automatically detect new chapters by getting the web page defin
 - **Get First (optional)**:
   If enabled, selects the first matching element; otherwise, selects the last. Enable it when the site lists the newest chapter first.
 - **Use Browser (optional)**:
-  Uses a headless browser if the page requires JavaScript rendering.
+  Uses a headless browser if the page requires JavaScript rendering. Mantium waits up to 15 seconds for each selector's element to appear in the page.
   Otherwise, a simple HTTP GET request is used.
 
+The page is fetched once, and both selectors are applied to it.
+
 > [!NOTE]
-> If the URL selector doesn't return a string that starts with `http`, Mantium will consider it a relative URL and will prepend the manga URL to it. For example, if the manga URL is `https://example.com/one-piece` and the URL selector returns `/chapter1000`, Mantium will consider the chapter URL to be `https://example.com/chapter1000`.
+> If the URL selector returns a relative URL, Mantium resolves it the same way a browser does: against the page's `<base>` element if it has one, else against the manga URL (after redirects). For example, if the manga URL is `https://example.com/title/one-piece/`, the URL selector returning `/chapter1000` becomes `https://example.com/chapter1000`, and returning `chapter1000` becomes `https://example.com/title/one-piece/chapter1000`.
 
 <img width="855" height="1335" alt="image" src="https://github.com/user-attachments/assets/4e844149-964e-463f-821f-f59a45c9a644" />
 

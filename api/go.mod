@@ -8,6 +8,7 @@ require (
 	github.com/AnthonyHewins/gotfy v0.0.10
 	github.com/PuerkitoBio/goquery v1.10.3
 	github.com/antchfx/htmlquery v1.3.4
+	github.com/antchfx/xmlquery v1.5.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-rod/rod v0.116.2
 	github.com/gocolly/colly/v2 v2.2.0
@@ -20,7 +21,6 @@ require (
 	github.com/swaggo/gin-swagger v1.6.0
 	github.com/swaggo/swag v1.16.6
 	golang.org/x/image v0.23.0
-	golang.org/x/net v0.46.0
 	golang.org/x/text v0.30.0
 	google.golang.org/protobuf v1.36.10
 )
@@ -28,7 +28,6 @@ require (
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/andybalholm/cascadia v1.3.3 // indirect
-	github.com/antchfx/xmlquery v1.5.0 // indirect
 	github.com/antchfx/xpath v1.3.5 // indirect
 	github.com/bits-and-blooms/bitset v1.24.0 // indirect
 	github.com/bytedance/sonic v1.12.5 // indirect
@@ -72,6 +71,7 @@ require (
 	golang.org/x/arch v0.12.0 // indirect
 	golang.org/x/crypto v0.43.0 // indirect
 	golang.org/x/mod v0.28.0 // indirect
+	golang.org/x/net v0.46.0 // indirect
 	golang.org/x/sync v0.17.0 // indirect
 	golang.org/x/sys v0.37.0 // indirect
 	golang.org/x/tools v0.37.0 // indirect
