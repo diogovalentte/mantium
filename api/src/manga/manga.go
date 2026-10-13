@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -15,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -1813,6 +1815,12 @@ var (
 	browserTimeout = time.Second * 60
 )
 
+// Limits of the responses loaded by the browser, see getPageUsingBrowser.
+const (
+	maxBrowserResponseBytes = 20 << 20
+	maxBrowserPageBytes     = 100 << 20
+)
+
 // Names of the custom manga fields scraped by a selector, used in the messages shown to the user.
 const (
 	chapterNameField = "Chapter name"
@@ -2092,9 +2100,39 @@ func getPageUsingBrowser(pageURL string, nameSelector, URLSelector *HTMLSelector
 			// Redirects go back to the browser, so it knows the page final URL and the new request is also checked
 			CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
 		}
+		// The responses are loaded in the API process instead of in Chromium, so their size is limited
+		var loadedBytes atomic.Int64
+		loadResponse := func(h *rod.Hijack) error {
+			res, err := client.Do(h.Request.Req())
+			if err != nil {
+				return err
+			}
+			defer res.Body.Close()
+
+			body, err := io.ReadAll(io.LimitReader(res.Body, maxBrowserResponseBytes+1))
+			if err != nil {
+				return err
+			}
+			if len(body) > maxBrowserResponseBytes {
+				return fmt.Errorf("response of '%s' is larger than %d bytes", h.Request.URL(), maxBrowserResponseBytes)
+			}
+			if loadedBytes.Add(int64(len(body))) > maxBrowserPageBytes {
+				return fmt.Errorf("the page responses are larger than %d bytes", maxBrowserPageBytes)
+			}
+
+			h.Response.Payload().ResponseCode = res.StatusCode
+			for key, values := range res.Header {
+				for _, value := range values {
+					h.Response.SetHeader(key, value)
+				}
+			}
+			h.Response.Payload().Body = body
+			return nil
+		}
+
 		router := page.HijackRequests()
 		err = router.Add("*", "", func(h *rod.Hijack) {
-			if err := h.LoadResponse(client, true); err != nil {
+			if err := loadResponse(h); err != nil {
 				var userErr *errordefs.UserError
 				if errors.As(err, &userErr) && h.Request.Type() == proto.NetworkResourceTypeDocument {
 					blockedMutex.Lock()
