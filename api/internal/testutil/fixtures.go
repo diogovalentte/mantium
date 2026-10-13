@@ -10,12 +10,18 @@ import (
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/diogovalentte/mantium/api/src/util"
 )
 
 // Fixtures serves saved responses, substituting only the local server URL.
 // Unexpected requests fail the test rather than escaping to a real site.
+// The server listens on a private address, which covers are only downloaded
+// from when private URLs are allowed, so it allows them for the test.
 func Fixtures(t *testing.T, routes map[string]string) *httptest.Server {
 	t.Helper()
+	util.SetAllowPrivateURLs(true)
+	t.Cleanup(func() { util.SetAllowPrivateURLs(false) })
 	var server *httptest.Server
 	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasSuffix(r.URL.Path, "/cover.png") {
