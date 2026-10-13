@@ -63,10 +63,22 @@ def get_invalid_url_message(field: str, url: str) -> str | None:
     """Returns a message if the URL is provided but isn't a valid http(s) URL."""
     if url == "":
         return None
-    parsed = urlparse(url)
-    if parsed.scheme not in ("http", "https") or parsed.netloc == "":
+    try:
+        parsed = urlparse(url)
+        hostname = parsed.hostname
+    except ValueError:
+        return f"Invalid {field}"
+    if parsed.scheme not in ("http", "https") or not hostname:
         return f"Invalid {field}: must start with http:// or https://"
     return None
+
+
+def get_url_hostname(url: str) -> str:
+    """Returns the URL hostname, or an empty string if the URL is invalid."""
+    try:
+        return urlparse(url).hostname or ""
+    except ValueError:
+        return ""
 
 
 def remove_nano_from_datetime(datetime_string: str):
