@@ -1,0 +1,13 @@
+{
+  "results": [
+    {
+      "record": {
+        "id": 456,
+        "title": "The Return",
+        "chapter": "12.5",
+        "release_date": "2024-01-02"
+      }
+    }
+  ],
+  "total_hits": 1
+}

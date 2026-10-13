@@ -1,0 +1,10 @@
+{
+  "series_id": 123,
+  "title": "Fixture Story",
+  "url": "https://www.mangaupdates.com/series/abc/story",
+  "image": {
+    "url": {
+      "original": "{{BASE}}/cover.png"
+    }
+  }
+}

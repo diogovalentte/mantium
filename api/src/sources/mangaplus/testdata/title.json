@@ -1,0 +1,34 @@
+{
+  "success": {
+    "titleDetailView": {
+      "title": {
+        "titleId": 123,
+        "titleName": "FIXTURE STORY"
+      },
+      "chapters": [
+        {
+          "firstChapterList": [
+            {
+              "chapterId": 456,
+              "titleName": "#012.5",
+              "chapterSubTitle": "The Return",
+              "startTimeStamp": 1704164645
+            }
+          ]
+        }
+      ]
+    },
+    "allTitlesViewV2": {
+      "allTitlesGroup": [
+        {
+          "titles": [
+            {
+              "titleId": 123,
+              "titleName": "Fixture Story"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

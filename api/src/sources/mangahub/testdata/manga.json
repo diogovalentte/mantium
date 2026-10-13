@@ -1,0 +1,26 @@
+{
+  "data": {
+    "manga": {
+      "title": "Fixture Story",
+      "latestChapter": 12.5,
+      "chapters": [
+        {
+          "number": 12.5,
+          "title": "The Return",
+          "slug": "chapter-12.5",
+          "date": "2024-01-02T03:04:05Z"
+        }
+      ],
+      "image": "cover.png"
+    },
+    "search": {
+      "rows": [
+        {
+          "title": "Fixture Story",
+          "slug": "fixture-story",
+          "latestChapter": 12.5
+        }
+      ]
+    }
+  }
+}
