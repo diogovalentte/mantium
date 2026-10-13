@@ -192,6 +192,8 @@ Custom manga can automatically detect new chapters by getting the web page defin
 
 The page is fetched once, and both selectors are applied to it.
 
+Use the **Test selectors** button in the add and edit forms to see which chapter the selectors get, without saving anything. If a selector, attribute or regex doesn't work, the message tells which one and why.
+
 > [!NOTE]
 > If the URL selector returns a relative URL, Mantium resolves it the same way a browser does: against the page's `<base>` element if it has one, else against the manga URL (after redirects). For example, if the manga URL is `https://example.com/title/one-piece/`, the URL selector returning `/chapter1000` becomes `https://example.com/chapter1000`, and returning `chapter1000` becomes `https://example.com/title/one-piece/chapter1000`.
 

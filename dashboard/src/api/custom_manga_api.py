@@ -59,6 +59,53 @@ class CustomMangaAPIClient:
 
         return res.json()
 
+    def test_custom_manga_selectors(
+        self,
+        manga_url: str,
+        last_released_chapter_name_selector: str,
+        last_released_chapter_name_attribute: str,
+        last_released_chapter_name_regex: str,
+        last_released_chapter_name_get_first: bool,
+        last_released_chapter_url_selector: str,
+        last_released_chapter_url_attribute: str,
+        last_released_chapter_url_get_first: bool,
+        last_released_chapter_selector_use_browser: bool,
+    ) -> dict[str, Any]:
+        """Gets the last released chapter using the selectors, without saving anything."""
+        url = f"{self.base_custom_manga_url}/test_selectors"
+
+        request_body: dict[str, Any] = {
+            "url": manga_url,
+            "use_browser": last_released_chapter_selector_use_browser,
+        }
+        if last_released_chapter_name_selector != "":
+            request_body["name_selector"] = {
+                "selector": last_released_chapter_name_selector,
+                "attribute": last_released_chapter_name_attribute,
+                "regex": last_released_chapter_name_regex,
+                "get_first": last_released_chapter_name_get_first,
+            }
+        if last_released_chapter_url_selector != "":
+            request_body["url_selector"] = {
+                "selector": last_released_chapter_url_selector,
+                "attribute": last_released_chapter_url_attribute,
+                "get_first": last_released_chapter_url_get_first,
+            }
+
+        res = requests.post(url, json=request_body, timeout=SOURCE_REQUEST_TIMEOUT)
+
+        if res.status_code not in self.acceptable_status_codes:
+            raise APIException(
+                "error while testing custom manga selectors",
+                url,
+                "POST",
+                request_body,
+                res.status_code,
+                res.text,
+            )
+
+        return res.json()["chapter"]
+
     def update_custom_manga_last_released_chapter_selectors(
         self,
         last_released_chapter_name_selector: str,

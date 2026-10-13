@@ -540,6 +540,58 @@ def show_search_result_manga(
     )
 
 
+def test_custom_manga_selectors(
+    manga_url: str,
+    name_selector: str,
+    name_attribute: str,
+    name_regex: str,
+    name_get_first: bool,
+    url_selector: str,
+    url_attribute: str,
+    url_get_first: bool,
+    use_browser: bool,
+):
+    """Shows the last released chapter the selectors get from the manga page, without saving anything."""
+    if manga_url == "":
+        st.warning("Provide the manga URL to test the selectors")
+        return
+    if invalid_url_message := get_invalid_url_message("manga URL", manga_url):
+        st.warning(invalid_url_message)
+        return
+    if name_selector == "" and url_selector == "":
+        st.warning("Provide at least one selector to test")
+        return
+
+    try:
+        with st.spinner("Testing selectors..."):
+            chapter = get_api_client().test_custom_manga_selectors(
+                manga_url,
+                name_selector,
+                name_attribute,
+                name_regex,
+                name_get_first,
+                url_selector,
+                url_attribute,
+                url_get_first,
+                use_browser,
+            )
+    except Exception as ex:
+        if user_message := get_api_user_message(ex):
+            st.warning(user_message)
+        else:
+            logger.exception(ex)
+            st.error(f"Error while testing the selectors: {get_api_error_detail(ex)}")
+        return
+
+    st.success("The selectors work. Last released chapter found:")
+    lines = []
+    if name_selector != "":
+        lines.append(f"Chapter: {chapter['Chapter']}")
+    if url_selector != "":
+        lines.append(f"URL: {chapter['URL']}")
+    st.text("\n".join(lines))
+
+
 def show_add_custom_manga_form(multimanga_id: int = 0):
     key_prefix = "add_custom_manga_form_" if multimanga_id == 0 else "add_custom_manga_to_multimanga_form_"
 
@@ -645,6 +697,23 @@ def show_add_custom_manga_form(multimanga_id: int = 0):
                 help="Use a browser to fetch the manga page. Use this if the chapter info is loaded dynamically with JavaScript. Requires more resources and can take longer.",
                 key=key_prefix + "last_released_chapter_use_browser",
             )
+
+            if st.form_submit_button(
+                "Test selectors",
+                use_container_width=True,
+                help="Get the last released chapter from the manga URL using the selectors above, without adding the manga.",
+            ):
+                test_custom_manga_selectors(
+                    ss[key_prefix + "url"],
+                    ss[key_prefix + "last_released_chapter_name_selector"],
+                    ss[key_prefix + "last_released_chapter_name_attribute"],
+                    ss[key_prefix + "last_released_chapter_name_regex"],
+                    ss[key_prefix + "last_released_chapter_name_get_first"],
+                    ss[key_prefix + "last_released_chapter_url_selector"],
+                    ss[key_prefix + "last_released_chapter_url_attribute"],
+                    ss[key_prefix + "last_released_chapter_url_get_first"],
+                    ss[key_prefix + "last_released_chapter_use_browser"],
+                )
 
         with st.expander(
             "Cover Image",

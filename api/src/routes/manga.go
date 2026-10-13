@@ -49,6 +49,7 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.PATCH("/custom_manga/name", UpdateCustomMangaName)
 		group.PATCH("/custom_manga/url", UpdateCustomMangaURL)
 		group.PATCH("/custom_manga/cover_img", UpdateCustomMangaCoverImg)
+		group.POST("/custom_manga/test_selectors", TestCustomMangaSelectors)
 
 		// Methods for multimanga only
 		group.POST("/multimanga", AddMultiManga)
@@ -291,6 +292,50 @@ type UpdateLastReleasedChapterSelectorsRequest struct {
 	LastReleasedChapterNameSelector       *HTMLSelectorRequest `json:"name_selector"`
 	LastReleasedChapterURLSelector        *HTMLSelectorRequest `json:"url_selector"`
 	LastReleasedChapterSelectorUseBrowser bool                 `json:"use_browser"`
+}
+
+// TestCustomMangaSelectorsRequest is the request body for the TestCustomMangaSelectors route
+type TestCustomMangaSelectorsRequest struct {
+	URL                                   string               `json:"url" binding:"required,http_url"`
+	LastReleasedChapterNameSelector       *HTMLSelectorRequest `json:"name_selector"`
+	LastReleasedChapterURLSelector        *HTMLSelectorRequest `json:"url_selector"`
+	LastReleasedChapterSelectorUseBrowser bool                 `json:"use_browser"`
+}
+
+// @Summary Test custom manga last released chapter selectors
+// @Description Gets the last released chapter from the page using the selectors, without saving anything. If the error is caused by the URL or selectors, the response has a "user_message" field explaining it.
+// @Accept json
+// @Produce json
+// @Param selectors body TestCustomMangaSelectorsRequest true "Page URL and selectors"
+// @Success 200 {object} manga.Chapter "{"chapter": chapterObj}"
+// @Router /custom_manga/test_selectors [post]
+func TestCustomMangaSelectors(c *gin.Context) {
+	var requestData TestCustomMangaSelectorsRequest
+	if err := c.ShouldBindJSON(&requestData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid JSON fields, refer to the API documentation"})
+		return
+	}
+	if requestData.LastReleasedChapterNameSelector == nil && requestData.LastReleasedChapterURLSelector == nil {
+		c.JSON(http.StatusBadRequest, errorResponse(&errordefs.UserError{Message: "Provide at least one selector to test"}))
+		return
+	}
+
+	URLSelector := (*manga.HTMLSelector)(requestData.LastReleasedChapterURLSelector)
+	if URLSelector != nil {
+		URLSelector.Regex = ""
+	}
+	chapter, err := manga.GetCustomMangaLastReleasedChapter(requestData.URL, (*manga.HTMLSelector)(requestData.LastReleasedChapterNameSelector), URLSelector, requestData.LastReleasedChapterSelectorUseBrowser)
+	if err != nil {
+		status := http.StatusInternalServerError
+		var userErr *errordefs.UserError
+		if errors.As(err, &userErr) {
+			status = http.StatusBadRequest
+		}
+		c.JSON(status, errorResponse(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"chapter": chapter})
 }
 
 type HTMLSelectorRequest struct {

@@ -8,7 +8,11 @@ import streamlit as st
 from PIL import Image
 from src.api.api_client import get_api_client
 from src.exceptions import APIException
-from src.util.add_manga import show_add_custom_manga_form, show_search_manga_term_form
+from src.util.add_manga import (
+    show_add_custom_manga_form,
+    show_search_manga_term_form,
+    test_custom_manga_selectors,
+)
 from src.util.util import (
     centered_container,
     escape_html,
@@ -908,6 +912,23 @@ def show_update_custom_manga(manga: dict[str, Any]):
                 help="Use a browser to fetch the manga page. Use this if the chapter info is loaded dynamically with JavaScript. Requires more resources and can take longer.",
                 key="update_custom_manga_form_last_released_chapter_use_browser",
             )
+
+            if st.form_submit_button(
+                "Test selectors",
+                use_container_width=True,
+                help="Get the last released chapter from the manga URL using the selectors above, without saving anything.",
+            ):
+                test_custom_manga_selectors(
+                    ss.update_custom_manga_form_url,
+                    ss.update_custom_manga_form_last_chapter_name_selector,
+                    ss.update_custom_manga_form_last_chapter_name_attribute,
+                    ss.update_custom_manga_form_last_chapter_name_regex,
+                    ss.update_custom_manga_form_last_released_chapter_name_get_first,
+                    ss.update_custom_manga_form_last_chapter_url_selector,
+                    ss.update_custom_manga_form_last_chapter_url_attribute,
+                    ss.update_custom_manga_form_last_released_chapter_url_get_first,
+                    ss.update_custom_manga_form_last_released_chapter_use_browser,
+                )
 
         with st.expander(
             "Cover Image",
