@@ -12,6 +12,9 @@ from src.util.add_manga import show_add_custom_manga_form, show_search_manga_ter
 from src.util.util import (
     centered_container,
     escape_html,
+    get_api_error_detail,
+    get_api_user_message,
+    get_invalid_url_message,
     get_logger,
     get_relative_time,
     get_source_name_and_colors,
@@ -954,6 +957,11 @@ def show_update_custom_manga(manga: dict[str, Any]):
 
                 if name == "":
                     st.warning("Provide a manga name")
+                elif invalid_url_message := (
+                    get_invalid_url_message("manga URL", url)
+                    or get_invalid_url_message("cover image URL", cover_img_url)
+                ):
+                    st.warning(invalid_url_message)
                 else:
                     if name != manga["Name"]:
                         api_client.update_custom_manga_name(name, manga["ID"])
@@ -1031,22 +1039,11 @@ def show_update_custom_manga(manga: dict[str, Any]):
                         ss["highlighted_custom_manga"] = None
                         st.rerun()
             except Exception as ex:
-                resp_text = str(ex).lower()
                 logger.exception(ex)
-                if "error while visiting manga url" in resp_text:
-                    ss["update_manga_warning_message"] = (
-                        "Error while visiting the provided manga URL. Check that it's valid."
-                    )
-                elif "selector not found in the page or is empty" in resp_text or "selector should start with 'css:' or 'xpath:', instead it's" in resp_text:
-                    ss["update_manga_warning_message"] = (
-                        "Invalid selector or one of the provided selectors/attributes was not found in the page or is empty"
-                    )
-                elif "regex did not match" in resp_text or "error compiling regex" in resp_text:
-                    ss["update_manga_warning_message"] = (
-                        "Invalid regex or the chapter name selector is empty after applying the provided regex"
-                    )
+                if user_message := get_api_user_message(ex):
+                    ss["update_manga_warning_message"] = user_message
                 else:
-                    ss["update_manga_error_message"] = "Error while updating manga"
+                    ss["update_manga_error_message"] = f"Error while updating manga: {get_api_error_detail(ex)}"
 
     if ss.get("update_manga_error_message", "") != "":
         st.error(ss["update_manga_error_message"])

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -271,7 +272,7 @@ func UpdateCustomMangaLastReleasedChapterSelectors(c *gin.Context) {
 
 	err = mangaToUpdate.UpdateLastReleasedChapterSelectorsInDB((*manga.HTMLSelector)(requestData.LastReleasedChapterNameSelector), (*manga.HTMLSelector)(requestData.LastReleasedChapterURLSelector), requestData.LastReleasedChapterSelectorUseBrowser)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		c.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
@@ -406,7 +407,7 @@ func AddMultiManga(c *gin.Context) {
 		if currentManga.URL != "" && (currentManga.LastReleasedChapterNameSelector != nil || currentManga.LastReleasedChapterURLSelector != nil) {
 			chapter, err := manga.GetCustomMangaLastReleasedChapter(currentManga.URL, currentManga.LastReleasedChapterNameSelector, currentManga.LastReleasedChapterURLSelector, requestData.LastReleasedChapterSelectorUseBrowser)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": "error getting custom manga last released chapter: " + err.Error()})
+				c.JSON(http.StatusInternalServerError, errorResponse(util.AddErrorContext("error getting custom manga last released chapter", err)))
 				return
 			}
 			currentManga.LastReleasedChapter = chapter
@@ -1233,7 +1234,7 @@ func AddMangaToMultiManga(c *gin.Context) {
 		if mangaAdd.URL != "" && (mangaAdd.LastReleasedChapterNameSelector != nil || mangaAdd.LastReleasedChapterURLSelector != nil) {
 			chapter, err := manga.GetCustomMangaLastReleasedChapter(mangaAdd.URL, mangaAdd.LastReleasedChapterNameSelector, mangaAdd.LastReleasedChapterURLSelector, requestData.LastReleasedChapterSelectorUseBrowser)
 			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"message": "error getting custom manga last released chapter: " + err.Error()})
+				c.JSON(http.StatusInternalServerError, errorResponse(util.AddErrorContext("error getting custom manga last released chapter", err)))
 				return
 			}
 			mangaAdd.LastReleasedChapter = chapter
@@ -2725,4 +2726,15 @@ func updateCustomMangaMetadata(m *manga.Manga, retries int, retryInterval time.D
 	}
 
 	return nil, errors
+}
+
+// errorResponse returns the response body for an error. If the error was caused by
+// the user's input, the body also has a "user_message" that can be shown to the user as is.
+func errorResponse(err error) gin.H {
+	resp := gin.H{"message": err.Error()}
+	var userErr *errordefs.UserError
+	if errors.As(err, &userErr) {
+		resp["user_message"] = userErr.Message
+	}
+	return resp
 }

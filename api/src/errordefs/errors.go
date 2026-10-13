@@ -27,3 +27,20 @@ type CustomError struct {
 func (e *CustomError) Error() string {
 	return e.Message
 }
+
+// UserError is an error caused by the user's input. Its Message is meant to be shown to the user as is.
+type UserError struct {
+	Message string
+	Err     error
+}
+
+func (e *UserError) Error() string {
+	if e.Err != nil {
+		return e.Message + ": " + e.Err.Error()
+	}
+	return e.Message
+}
+
+func (e *UserError) Unwrap() error {
+	return e.Err
+}

@@ -8,6 +8,9 @@ from src.exceptions import APIException
 from src.util.util import (
     centered_container,
     escape_html,
+    get_api_error_detail,
+    get_api_user_message,
+    get_invalid_url_message,
     get_logger,
     get_relative_time,
     get_updated_at_datetime,
@@ -151,20 +154,10 @@ def add_manga():
             and "chapters_pkey" in resp_text
         ):
             st.warning("Last read chapter URL already in Mantium")
-        elif "error while visiting manga url" in resp_text:
-            st.warning(
-                "Error while visiting the provided manga URL. Check that it's valid."
-            )
-        elif "selector not found in the page or is empty" in resp_text or "selector should start with 'css:' or 'xpath:', instead it's" in resp_text:
-            st.warning(
-                "Invalid selector or one of the provided selectors/attributes was not found in the page or is empty"
-            )
-        elif "regex did not match" in resp_text or "error compiling regex" in resp_text:
-            st.warning(
-                "Invalid regex or the chapter name selector is empty after applying the provided regex"
-            )
+        elif user_message := get_api_user_message(ex):
+            st.warning(user_message)
         else:
-            st.error("Error while adding manga")
+            st.error(f"Error while adding manga: {get_api_error_detail(ex)}")
     else:
         ss["add_manga_success_message"] = "Manga added successfully"
         st.rerun()
@@ -682,6 +675,12 @@ def show_add_custom_manga_form(multimanga_id: int = 0):
                 and ss.get(key_prefix + "last_read_chapter_url", "") != ""
             ):
                 st.warning("If providing a last read chapter URL, also provide the chapter number")
+            elif invalid_url_message := (
+                get_invalid_url_message("manga URL", ss[key_prefix + "url"])
+                or get_invalid_url_message("last read chapter URL", ss.get(key_prefix + "last_read_chapter_url", ""))
+                or get_invalid_url_message("cover image URL", ss[key_prefix + "cover_img_url"])
+            ):
+                st.warning(invalid_url_message)
             else:
                 if ss[key_prefix + "cover_img_file"] is not None:
                     cover_img = ss[key_prefix + "cover_img_file"].getvalue()
@@ -739,7 +738,9 @@ def show_add_custom_manga_form(multimanga_id: int = 0):
                             )
                     except APIException as e:
                         resp_text = str(e.response_text).lower()
-                        if "manga already exists in db" in resp_text:
+                        if user_message := get_api_user_message(e):
+                            st.warning(user_message)
+                        elif "manga already exists in db" in resp_text:
                             st.warning("Manga already exists")
                         elif "source not found" in resp_text:
                             st.warning("No source site for this manga")
@@ -753,7 +754,7 @@ def show_add_custom_manga_form(multimanga_id: int = 0):
                             st.warning("Not allowed to add mangas from this source")
                         else:
                             logger.exception(e)
-                            st.error("Error while adding manga to multimanga")
+                            st.error(f"Error while adding manga to multimanga: {get_api_error_detail(e)}")
                     else:
                         ss["update_manga_success_message"] = "Manga added successfully"
                         st.rerun()

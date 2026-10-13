@@ -3,7 +3,9 @@ package manga
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
+	"net"
 	"regexp"
 	"sort"
 	"strings"
@@ -1642,31 +1644,17 @@ func GetCustomMangaLastReleasedChapter(mangaURL string, nameSelector, URLSelecto
 	var chapterURL string
 	var err error
 	if nameSelector != nil {
-		if useBrowser {
-			chapterName, err = getSelectorFromPageUsingBrowser(mangaURL, nameSelector)
-			if err != nil {
-				return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), err)
-			}
-		} else {
-			chapterName, err = getSelectorFromPageUsingHTTPRequest(mangaURL, nameSelector)
-			if err != nil {
-				return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), err)
-			}
+		chapterName, err = getSelectorFromPage(mangaURL, nameSelector, chapterNameField, useBrowser)
+		if err != nil {
+			return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), err)
 		}
 		chapter.Chapter = chapterName
 		chapter.Name = "Chapter " + chapterName
 	}
 	if URLSelector != nil {
-		if useBrowser {
-			chapterURL, err = getSelectorFromPageUsingBrowser(mangaURL, URLSelector)
-			if err != nil {
-				return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), err)
-			}
-		} else {
-			chapterURL, err = getSelectorFromPageUsingHTTPRequest(mangaURL, URLSelector)
-			if err != nil {
-				return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), err)
-			}
+		chapterURL, err = getSelectorFromPage(mangaURL, URLSelector, chapterURLField, useBrowser)
+		if err != nil {
+			return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), err)
 		}
 		chapter.URL = chapterURL
 		if !strings.HasPrefix(chapter.URL, "http") {
@@ -1690,37 +1678,125 @@ var (
 	timeout   = time.Second * 15
 )
 
-func getSelectorFromPageUsingBrowser(url string, selector *HTMLSelector) (string, error) {
+// Names of the custom manga fields scraped by a selector, used in the messages shown to the user.
+const (
+	chapterNameField = "Chapter name"
+	chapterURLField  = "Chapter URL"
+)
+
+func getSelectorFromPage(url string, selector *HTMLSelector, field string, useBrowser bool) (string, error) {
+	if useBrowser {
+		return getSelectorFromPageUsingBrowser(url, selector, field)
+	}
+	return getSelectorFromPageUsingHTTPRequest(url, selector, field)
+}
+
+// selectorPrefixError returns the error for a selector that doesn't start with 'css:' or 'xpath:', or is empty after it.
+func selectorPrefixError(selector *HTMLSelector, field string) error {
+	if selector.Selector == "" {
+		return &errordefs.UserError{Message: fmt.Sprintf("%s selector is empty", field)}
+	}
+	for _, prefix := range []string{"css:", "xpath:"} {
+		if after, ok := strings.CutPrefix(selector.Selector, prefix); ok && strings.TrimSpace(after) == "" {
+			return &errordefs.UserError{Message: fmt.Sprintf("%s selector is empty after '%s'", field, prefix)}
+		}
+	}
+	if !strings.HasPrefix(selector.Selector, "css:") && !strings.HasPrefix(selector.Selector, "xpath:") {
+		return &errordefs.UserError{Message: fmt.Sprintf("%s selector must start with 'css:' or 'xpath:'", field)}
+	}
+
+	return nil
+}
+
+// processSelection validates what a selector extracted from the page and applies the selector's regex to it.
+// matched tells if the selector matched at least one element in the page.
+func processSelection(selection string, matched bool, selector *HTMLSelector, field string) (string, error) {
+	if !matched {
+		return "", &errordefs.UserError{Message: fmt.Sprintf("%s selector didn't match any element on the page", field)}
+	}
+	if selection == "" {
+		if selector.Attribute != "" {
+			return "", &errordefs.UserError{Message: fmt.Sprintf("%s selector matched, but the element has no '%s' attribute", field, selector.Attribute)}
+		}
+		return "", &errordefs.UserError{Message: fmt.Sprintf("%s selector matched, but the element's text is empty", field)}
+	}
+
+	if selector.Regex != "" {
+		re, err := regexp.Compile(selector.Regex)
+		if err != nil {
+			return "", &errordefs.UserError{Message: fmt.Sprintf("%s regex is invalid: %s", field, err)}
+		}
+		if re.NumSubexp() == 0 {
+			return "", &errordefs.UserError{Message: fmt.Sprintf(`%s regex has no capture group: wrap the chapter in ( ), e.g. Chapter (\d+)`, field)}
+		}
+		matches := re.FindStringSubmatch(selection)
+		if len(matches) < 2 {
+			text := strings.Join(strings.Fields(selection), " ")
+			if runes := []rune(text); len(runes) > 80 {
+				text = string(runes[:80]) + "..."
+			}
+			return "", &errordefs.UserError{Message: fmt.Sprintf("%s regex didn't match the text \"%s\"", field, text)}
+		}
+		selection = matches[1]
+	}
+
+	return strings.TrimSpace(selection), nil
+}
+
+func getSelectorFromPageUsingBrowser(url string, selector *HTMLSelector, field string) (string, error) {
 	contextError := "error getting selector '%s' from page '%s'"
 
+	if selector == nil {
+		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), fmt.Errorf("manga.HTMLSelector is nil"))
+	}
+	if err := selectorPrefixError(selector, field); err != nil {
+		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), err)
+	}
+
+	startBrowserError := &errordefs.UserError{Message: `Couldn't start the browser used by "Use Browser"`}
 	var u string
 	var err error
 	if config.GlobalConfigs.API.RodBrowserPath != "" {
 		u, err = launcher.New().Bin(config.GlobalConfigs.API.RodBrowserPath).Headless(true).NoSandbox(true).Set("disable-dev-shm-usage").Set("disable-gpu").Set("no-zygote").Set("single-process").Launch()
 		if err != nil {
-			return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), util.AddErrorContext("error launching browser", err))
+			startBrowserError.Err = util.AddErrorContext("error launching browser", err)
+			return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), startBrowserError)
 		}
 	}
 
 	browser := rod.New().ControlURL(u)
 	err = browser.Connect()
 	if err != nil {
-		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), util.AddErrorContext("error connecting to browser", err))
+		startBrowserError.Err = util.AddErrorContext("error connecting to browser", err)
+		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), startBrowserError)
 	}
 	defer browser.MustClose()
 
-	page := browser.MustPage(url).MustSetUserAgent(&proto.NetworkSetUserAgentOverride{UserAgent: userAgent})
+	page, err := browser.Page(proto.TargetCreateTarget{URL: url})
+	if err != nil {
+		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), &errordefs.UserError{Message: fmt.Sprintf("Couldn't open the manga URL: %s", err)})
+	}
 	defer page.MustClose()
+	err = page.SetUserAgent(&proto.NetworkSetUserAgentOverride{UserAgent: userAgent})
+	if err != nil {
+		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), util.AddErrorContext("error setting user agent", err))
+	}
+
+	notFoundError := &errordefs.UserError{Message: fmt.Sprintf("%s selector: element not found within %s (browser)", field, timeout)}
+	notVisibleError := &errordefs.UserError{Message: fmt.Sprintf("%s selector: element found but never became visible within %s", field, timeout)}
 
 	var selection string
+	var matched bool
 	if after, ok := strings.CutPrefix(selector.Selector, "css:"); ok {
 		el, err := page.Timeout(timeout).Element(after)
 		if err != nil {
-			return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), util.AddErrorContext("error finding element with selector", err))
+			notFoundError.Err = util.AddErrorContext("error finding element with selector", err)
+			return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), notFoundError)
 		}
 		err = el.Timeout(timeout).WaitVisible()
 		if err != nil {
-			return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), util.AddErrorContext("error waiting for element to be visible", err))
+			notVisibleError.Err = util.AddErrorContext("error waiting for element to be visible", err)
+			return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), notVisibleError)
 		}
 		html, err := page.HTML()
 		if err != nil {
@@ -1737,19 +1813,23 @@ func getSelectorFromPageUsingBrowser(url string, selector *HTMLSelector) (string
 		} else {
 			s = doc.Find(after).Last()
 		}
+		matched = s.Length() > 0
 		if selector.Attribute != "" {
 			selection = s.AttrOr(selector.Attribute, "")
 		} else {
 			selection = s.Text()
 		}
-	} else if after, ok := strings.CutPrefix(selector.Selector, "xpath:"); ok {
+	} else {
+		after := strings.TrimPrefix(selector.Selector, "xpath:")
 		el, err := page.Timeout(timeout).ElementX(after)
 		if err != nil {
-			return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), util.AddErrorContext("error finding element with selector", err))
+			notFoundError.Err = util.AddErrorContext("error finding element with selector", err)
+			return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), notFoundError)
 		}
 		err = el.Timeout(timeout).WaitVisible()
 		if err != nil {
-			return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), util.AddErrorContext("error waiting for element to be visible", err))
+			notVisibleError.Err = util.AddErrorContext("error waiting for element to be visible", err)
+			return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), notVisibleError)
 		}
 		html, err := page.HTML()
 		if err != nil {
@@ -1762,9 +1842,8 @@ func getSelectorFromPageUsingBrowser(url string, selector *HTMLSelector) (string
 		}
 
 		nodes := htmlquery.Find(doc, after)
-		if len(nodes) == 0 {
-			selection = ""
-		} else {
+		matched = len(nodes) > 0
+		if matched {
 			var node *netHTML.Node
 			if selector.GetFirst {
 				node = nodes[0]
@@ -1777,70 +1856,34 @@ func getSelectorFromPageUsingBrowser(url string, selector *HTMLSelector) (string
 				selection = htmlquery.InnerText(node)
 			}
 		}
-	} else {
-		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), fmt.Errorf("selector should start with 'css:' or 'xpath:', instead it's '%s'", url))
 	}
 
-	if selection == "" {
-		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), fmt.Errorf("selector not found in the page or is empty"))
+	selection, err = processSelection(selection, matched, selector, field)
+	if err != nil {
+		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), err)
 	}
-
-	if selector.Regex != "" {
-		re, err := regexp.Compile(selector.Regex)
-		if err != nil {
-			return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), util.AddErrorContext("error compiling regex", err))
-		}
-		matches := re.FindStringSubmatch(selection)
-		if len(matches) < 2 {
-			return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), fmt.Errorf("regex did not match"))
-		}
-		selection = matches[1]
-	}
-	selection = strings.TrimSpace(selection)
 
 	return selection, nil
 }
 
-func getSelectorFromPageUsingHTTPRequest(url string, selector *HTMLSelector) (string, error) {
+func getSelectorFromPageUsingHTTPRequest(url string, selector *HTMLSelector, field string) (string, error) {
 	contextError := "error getting selector '%s' from page '%s'"
 
 	if selector == nil {
 		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), fmt.Errorf("manga.HTMLSelector is nil"))
 	}
-	if selector.Selector == "" {
-		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), fmt.Errorf("manga.HTMLSelector.Selector is empty"))
+	if err := selectorPrefixError(selector, field); err != nil {
+		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), err)
 	}
 
 	c := colly.NewCollector(colly.UserAgent(userAgent))
+	c.SetRequestTimeout(timeout)
 
 	var selection string
+	var matched bool
 	if after, ok := strings.CutPrefix(selector.Selector, "css:"); ok {
-		if strings.TrimSpace(after) == "" {
-			return "", util.AddErrorContext(
-				fmt.Sprintf(contextError, selector, url),
-				fmt.Errorf("css selector is empty after prefix"),
-			)
-		}
 		c.OnHTML(after, func(e *colly.HTMLElement) {
-			if selector.GetFirst && selection != "" {
-				return
-			}
-
-			if selector.Attribute != "" {
-				selection = e.Attr(selector.Attribute)
-			} else {
-				selection = e.Text
-			}
-		})
-	} else if after, ok := strings.CutPrefix(selector.Selector, "xpath:"); ok {
-		if strings.TrimSpace(after) == "" {
-			return "", util.AddErrorContext(
-				fmt.Sprintf(contextError, selector, url),
-				fmt.Errorf("xpath selector is empty after prefix"),
-			)
-		}
-
-		c.OnXML(after, func(e *colly.XMLElement) {
+			matched = true
 			if selector.GetFirst && selection != "" {
 				return
 			}
@@ -1852,30 +1895,39 @@ func getSelectorFromPageUsingHTTPRequest(url string, selector *HTMLSelector) (st
 			}
 		})
 	} else {
-		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), fmt.Errorf("selector should start with 'css:' or 'xpath:', instead it's '%s'", url))
+		after := strings.TrimPrefix(selector.Selector, "xpath:")
+		c.OnXML(after, func(e *colly.XMLElement) {
+			matched = true
+			if selector.GetFirst && selection != "" {
+				return
+			}
+
+			if selector.Attribute != "" {
+				selection = e.Attr(selector.Attribute)
+			} else {
+				selection = e.Text
+			}
+		})
 	}
 
 	err := c.Visit(url)
 	if err != nil {
-		return "", util.AddErrorContext(contextError, util.AddErrorContext("error while visiting manga URL", err))
+		reason := err.Error()
+		var netErr net.Error
+		if errors.As(err, &netErr) && netErr.Timeout() {
+			reason = fmt.Sprintf("timeout after %s", timeout)
+		}
+		visitError := &errordefs.UserError{Message: fmt.Sprintf("Couldn't open the manga URL: %s", reason)}
+		if reason != err.Error() {
+			visitError.Err = err
+		}
+		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), util.AddErrorContext("error while visiting manga URL", visitError))
 	}
 
-	if selection == "" {
-		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), fmt.Errorf("selector not found in the page or is empty"))
+	selection, err = processSelection(selection, matched, selector, field)
+	if err != nil {
+		return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), err)
 	}
-
-	if selector.Regex != "" {
-		re, err := regexp.Compile(selector.Regex)
-		if err != nil {
-			return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), util.AddErrorContext("error compiling regex", err))
-		}
-		matches := re.FindStringSubmatch(selection)
-		if len(matches) < 2 {
-			return "", util.AddErrorContext(fmt.Sprintf(contextError, selector, url), fmt.Errorf("regex did not match"))
-		}
-		selection = matches[1]
-	}
-	selection = strings.TrimSpace(selection)
 
 	return selection, nil
 }

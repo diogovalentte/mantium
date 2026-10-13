@@ -1,9 +1,11 @@
 import html
+import json
 import logging
 from streamlit import session_state as ss
 import pathlib
 from datetime import datetime, timezone
 import uuid
+from urllib.parse import urlparse
 
 import streamlit as st
 from bs4 import BeautifulSoup
@@ -26,6 +28,42 @@ def get_updated_at_datetime(updated_at: str) -> datetime:
     if updated_at == "0001-01-01T00:00:00Z":
         return datetime.min.replace(tzinfo=timezone.utc)
     return parse(updated_at)
+
+
+def get_api_user_message(ex: Exception) -> str | None:
+    """Returns the error message the API marked as meant to be shown to the user, if any."""
+    response_text = getattr(ex, "response_text", None)
+    if not response_text:
+        return None
+    try:
+        return json.loads(response_text).get("user_message") or None
+    except (ValueError, AttributeError):
+        return None
+
+
+def get_api_error_detail(ex: Exception) -> str:
+    """Returns the first line of the API error message, or of the exception if the API didn't answer."""
+    response_text = getattr(ex, "response_text", None)
+    message = None
+    if response_text:
+        try:
+            message = json.loads(response_text).get("message")
+        except (ValueError, AttributeError):
+            message = response_text
+    if not message:
+        message = getattr(ex, "msg", None) or str(ex)
+
+    return str(message).strip().splitlines()[0]
+
+
+def get_invalid_url_message(field: str, url: str) -> str | None:
+    """Returns a message if the URL is provided but isn't a valid http(s) URL."""
+    if url == "":
+        return None
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https") or parsed.netloc == "":
+        return f"Invalid {field}: must start with http:// or https://"
+    return None
 
 
 def remove_nano_from_datetime(datetime_string: str):
