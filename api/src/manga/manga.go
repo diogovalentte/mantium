@@ -2018,22 +2018,30 @@ func processSelection(selection string, matched bool, selector *HTMLSelector, fi
 		if re.NumSubexp() == 0 {
 			return "", &errordefs.UserError{Message: fmt.Sprintf(`%s regex has no capture group: wrap the chapter in ( ), e.g. Chapter (\d+)`, field)}
 		}
-		matches := re.FindStringSubmatch(selection)
-		if len(matches) < 2 {
+		matches := re.FindStringSubmatchIndex(selection)
+		if matches == nil {
 			return "", &errordefs.UserError{Message: fmt.Sprintf("%s regex didn't match the text \"%s\"", field, truncateText(selection, 80))}
 		}
-		// The capture groups that matched, in order and separated by a space. Only one matches
-		// in an alternation like "Ch\.(\d+)|Chapter (\d+)", and more than one gets the parts of a
-		// chapter, like "4 8" from "CHAPTER4 [BLIND JUSTICE] 8".
+		// The text of the capture groups that matched, in order and separated by a space. Only
+		// one matches in an alternation like "Ch\.(\d+)|Chapter (\d+)", and more than one gets
+		// the parts of a chapter, like "4 8" from "CHAPTER4 [BLIND JUSTICE] 8". A group inside
+		// another one, like in "(\d+(\.\d+)?)", is already part of it, so it's skipped.
 		parts := []string{}
-		for _, group := range matches[1:] {
-			if group = strings.TrimSpace(group); group != "" {
-				parts = append(parts, group)
+		outerEnd := -1
+		for group := 1; group <= re.NumSubexp(); group++ {
+			groupStart, groupEnd := matches[2*group], matches[2*group+1]
+			if groupStart < 0 || groupStart < outerEnd {
+				continue
+			}
+			outerEnd = groupEnd
+			if part := strings.TrimSpace(selection[groupStart:groupEnd]); part != "" {
+				parts = append(parts, part)
 			}
 		}
+		matched := selection[matches[0]:matches[1]]
 		selection = strings.Join(parts, " ")
 		if selection == "" {
-			return "", &errordefs.UserError{Message: fmt.Sprintf("%s regex matched \"%s\", but its groups are empty", field, truncateText(matches[0], 80))}
+			return "", &errordefs.UserError{Message: fmt.Sprintf("%s regex matched \"%s\", but its groups are empty", field, truncateText(matched, 80))}
 		}
 	}
 

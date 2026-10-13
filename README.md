@@ -185,7 +185,7 @@ Custom manga can automatically detect new chapters by getting the web page defin
 - **Regex (optional)**:
   Extracts the chapter number from the selected value. The chapter is the text captured by the regex groups (the parts in parentheses). Groups that didn't match are skipped, and when more than one matched, they're joined with a space. For example:
   - `Chapter (\d+)` gets `100` from `Chapter 100`.
-  - `Chapter (\d+(?:\.\d+)?)` gets `12.5` from `Chapter 12.5`. Non-capturing groups, `(?:...)`, are part of the group around them, not separate parts.
+  - `Chapter (\d+(?:\.\d+)?)` gets `12.5` from `Chapter 12.5`. Groups inside another group, like `(\d+(\.\d+)?)`, and non-capturing groups, `(?:...)`, are part of the group around them, not separate parts.
   - `Ch\.(\d+)|Chapter (\d+)` works with both `Ch.7` and `Chapter 7`.
   - `CHAPTER(\p{Nd}+).*?(\p{Nd}+)` gets `４ ８` from `CHAPTER４［ BLIND JUSTICE ］８（後編）`, a chapter in parts.
 

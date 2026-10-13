@@ -183,6 +183,9 @@ func TestProcessSelectionRegexGroups(t *testing.T) {
 	}{
 		{regex: `Chapter (\d+)`, text: "Chapter 12 - The end", want: "12"},
 		{regex: `Chapter (\d+(?:\.\d+)?)`, text: "Chapter 12.5", want: "12.5"},
+		{regex: `第(\d+(\.\d+)?)話`, text: "Fixture 【第12.5話】", want: "12.5"},
+		{regex: `((\d+)-(\d+))`, text: "Chapter 1-2", want: "1-2"},
+		{regex: `(\d+)(?:-(\d+))?`, text: "Chapter 4-8", want: "4 8"},
 		{regex: `Chapter (\d+)(\.\d+)?`, text: "Chapter 12", want: "12"},
 		{regex: `CHAPTER(\p{Nd}+).*?(\p{Nd}+)`, text: "CHAPTER４［ BLIND JUSTICE ］８（後編）", want: "４ ８"},
 		{regex: `CHAPTER(\d+)`, text: "CHAPTER４［ BLIND JUSTICE ］８（後編）", userMessage: `Chapter name regex didn't match the text "CHAPTER４［ BLIND JUSTICE ］８（後編）"`},
