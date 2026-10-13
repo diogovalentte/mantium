@@ -2426,23 +2426,30 @@ func NotifyMangaLastReleasedChapterUpdate(m *manga.Manga) error {
 
 	message := fmt.Sprintf("New chapter: %s", m.LastReleasedChapter.Chapter)
 
-	chapterLink, err := url.Parse(m.LastReleasedChapter.URL)
-	if err != nil {
-		return err
-	}
-
 	msg := &gotfy.Message{
 		Topic:   publisher.Topic,
 		Title:   title,
 		Message: message,
-		Actions: []gotfy.ActionButton{
+	}
+
+	// Custom mangas tracked only by the chapter name have no chapter URL, so link the manga instead.
+	label, link := "Open Chapter", m.LastReleasedChapter.URL
+	if link == "" || strings.HasPrefix(link, manga.CustomMangaURLPrefix) {
+		label, link = "Open Manga", m.URL
+	}
+	if link != "" && !strings.HasPrefix(link, manga.CustomMangaURLPrefix) {
+		parsedLink, err := url.Parse(link)
+		if err != nil {
+			return err
+		}
+		msg.Actions = []gotfy.ActionButton{
 			&gotfy.ViewAction{
-				Label: "Open Chapter",
-				Link:  chapterLink,
+				Label: label,
+				Link:  parsedLink,
 				Clear: false,
 			},
-		},
-		ClickURL: chapterLink,
+		}
+		msg.ClickURL = parsedLink
 	}
 
 	ctx := context.Background()
