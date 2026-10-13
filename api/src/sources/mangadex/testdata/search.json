@@ -1,0 +1,17 @@
+{
+  "data": [
+    {
+      "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+      "attributes": {
+        "title": {
+          "en": "Fixture Story"
+        },
+        "description": {
+          "en": "A story"
+        },
+        "year": 2024,
+        "status": "ongoing"
+      }
+    }
+  ]
+}

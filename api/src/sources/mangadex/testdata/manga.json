@@ -1,0 +1,17 @@
+{
+  "data": {
+    "attributes": {
+      "title": {
+        "en": "Fixture Story"
+      }
+    },
+    "relationships": [
+      {
+        "type": "cover_art",
+        "attributes": {
+          "fileName": "cover.png"
+        }
+      }
+    ]
+  }
+}
