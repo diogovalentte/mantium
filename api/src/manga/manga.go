@@ -2038,7 +2038,7 @@ func getPageUsingBrowser(pageURL string, nameSelector, URLSelector *HTMLSelector
 	var u string
 	var err error
 	if config.GlobalConfigs.API.RodBrowserPath != "" {
-		u, err = launcher.New().Context(ctx).Bin(config.GlobalConfigs.API.RodBrowserPath).Headless(true).NoSandbox(true).Set("disable-dev-shm-usage").Set("disable-gpu").Set("no-zygote").Set("single-process").Launch()
+		u, err = launcher.New().Bin(config.GlobalConfigs.API.RodBrowserPath).Headless(true).NoSandbox(true).Set("disable-dev-shm-usage").Set("disable-gpu").Launch()
 		if err != nil {
 			startBrowserError.Err = util.AddErrorContext("error launching browser", err)
 			return nil, util.AddErrorContext(fmt.Sprintf(contextError, pageURL), startBrowserError)

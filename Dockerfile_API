@@ -11,6 +11,7 @@ RUN CGO_ENABLED=0 go build -o main .
 FROM debian:bookworm-slim AS runtime
 
 RUN apt update && apt install -y --no-install-recommends \
+  tini \
   chromium \
   libatk1.0-0 \
   libatk-bridge2.0-0 \
@@ -35,6 +36,9 @@ RUN apt update && apt install -y --no-install-recommends \
   ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
+# The API opens arbitrary sites with Chromium for custom mangas, so it doesn't run as root
+RUN useradd --system --create-home --uid 10001 mantium
+
 WORKDIR /app/api
 
 COPY --from=builder /app/api/main .
@@ -47,4 +51,9 @@ ENV GIN_MODE=release
 ENV API_PORT=8080
 ENV TZ=UTC
 
+USER mantium
+
+# tini reaps the Chromium processes that exit after the API's parent process is gone,
+# otherwise they stay as zombies
+ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD ["./main"]
