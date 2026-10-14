@@ -191,3 +191,23 @@ def test_preset_domains_start_with_the_manga_site(api):
     at.button(key=P + "detect_presets_button").click().run()
     assert_no_exception(at)
     assert at.text_input(key=P + "new_preset_domains").value == "example.com"
+
+
+def test_back_returns_to_manage_mangas_with_the_multimanga_fetched_again(api):
+    at = AppTest.from_file(RUNNER, default_timeout=30)
+    at.session_state["manga"] = manga()
+    at.session_state["highlighted_custom_manga"] = manga()
+    at.session_state["update_custom_manga_back_to_multimanga_id"] = 7
+    at.run()
+    at.button(key=P + "back").click().run()
+    assert_no_exception(at)
+    assert api.called("get_multimanga") == [((7,), {})]
+    assert at.session_state["highlighted_multimanga"]["ID"] == 7
+    assert at.session_state["highlighted_custom_manga"] is None
+    assert "update_custom_manga_back_to_multimanga_id" not in at.session_state
+
+
+def test_no_back_when_not_opened_from_manage_mangas(api):
+    at = run_app(manga())
+    assert_no_exception(at)
+    assert not [b for b in at.button if b.key == P + "back"]

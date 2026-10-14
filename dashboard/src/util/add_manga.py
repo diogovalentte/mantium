@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Callable
 import hashlib
 
 import src.util.defaults as defaults
@@ -52,28 +52,16 @@ def show_add_manga_form(form_type: str):
         @st.dialog("Add Manga", on_dismiss=set_is_dialog_open)
         def show():
             ss["is_dialog_open"] = True
-            e = st.empty()
-            if ss.get("add_manga_manga_to_add", None) is not None:
-                with e:
-                    add_manga()
-                    del ss["add_manga_manga_to_add"]
-            else:
-                with e.container():
-                    show_add_manga_form_url()
+            show_add_manga_form_url()
+            show_add_manga_result()
 
     elif form_type == "search":
 
         @st.dialog("Add Manga", width="medium", on_dismiss=set_is_dialog_open)
         def show():
             ss["is_dialog_open"] = True
-            e = st.empty()
-            if ss.get("add_manga_manga_to_add", None) is not None:
-                with e:
-                    add_manga()
-                    del ss["add_manga_manga_to_add"]
-            else:
-                with e.container():
-                    show_add_manga_form_search()
+            show_add_manga_form_search()
+            show_add_manga_result()
 
     elif form_type == "custom":
 
@@ -88,6 +76,16 @@ def show_add_manga_form(form_type: str):
         st.stop()
 
     show()
+
+
+def show_add_manga_result():
+    """Adds the manga picked in the form, below all its buttons, so the spinner and
+    the message don't move them. On error, the form stays filled."""
+    slot = st.empty()
+    if ss.get("add_manga_manga_to_add", None) is not None:
+        with slot.container():
+            add_manga()
+        del ss["add_manga_manga_to_add"]
 
 
 def add_manga():
@@ -134,8 +132,8 @@ def add_manga():
         except Exception as e:
             ex = e
 
-    ss["add_manga_search_selected_manga"] = None
-    ss["add_manga_form_url"] = ""
+    # The URL and the selected manga are kept on error, so the form stays filled.
+    # On success the dialog closes, and they're reset when it opens again.
     if ex is not None:
         resp_text = str(ex).lower()
         logger.exception(ex)
@@ -167,7 +165,7 @@ def add_manga():
 
 
 def show_bottom_add_manga_form(manga_url: str, manga_internal_id: str):
-    with st.form(key="add_manga_form", border=False, clear_on_submit=True):
+    with st.form(key="add_manga_form", border=False):
         st.selectbox(
             "Status",
             index=0,
@@ -265,9 +263,9 @@ def show_add_manga_form_url():
             elif "one of the manga attributes were not found in source" in resp_text:
                 st.warning("Manga not found")
             else:
+                # No st.stop(): an add already submitted still runs below
                 logger.exception(e)
                 st.error("Error while getting manga chapters.")
-                st.stop()
         else:
             show_bottom_add_manga_form(ss.add_manga_form_url, "")
 
@@ -292,14 +290,14 @@ def show_add_manga_form_search():
                         ss["add_manga_search_selected_manga"]["InternalID"],
                     )
             except APIException as e:
+                # No st.stop(), so the Back button below is still shown
                 logger.exception(e)
                 st.error("Error while getting manga chapters.")
-                st.stop()
-
-            show_bottom_add_manga_form(
-                ss["add_manga_search_selected_manga"]["URL"],
-                ss["add_manga_search_selected_manga"]["InternalID"],
-            )
+            else:
+                show_bottom_add_manga_form(
+                    ss["add_manga_search_selected_manga"]["URL"],
+                    ss["add_manga_search_selected_manga"]["InternalID"],
+                )
 
         def on_click():
             ss["add_manga_search_go_back_to_tab"] = reversed_default_sources[ss["add_manga_search_selected_manga"]["Source"]]
@@ -339,6 +337,12 @@ def show_search_manga_term_form(source: str, button_name: str, key_to_save_manga
         ),
         key=search_term_key,
     )
+    # Fixed slot below the search term, for the result of picking a manga of this source
+    message_slot = st.empty()
+    message = ss.get(key_to_save_manga + "_message")
+    if message is not None and message[0] == source:
+        del ss[key_to_save_manga + "_message"]
+        getattr(message_slot, message[1])(message[2])
 
     if term == "" or term is None:
         ss[search_results_key]["term"] = term
@@ -833,12 +837,15 @@ def show_custom_manga_presets(key_prefix: str):
     selected = presets.get(ss[key_prefix + "preset"])
 
     detections = ss.get(key_prefix + "preset_detections")
+    # One container whatever the detection shows, so the popover below keeps its
+    # position and stays open across the rerun of its buttons
+    detections_container = st.container()
     if detections is not None:
         if "error" in detections:
-            st.warning(f"Couldn't test the presets: {detections['error']}")
+            detections_container.warning(f"Couldn't test the presets: {detections['error']}")
         else:
             if ss.pop(key_prefix + "preset_auto_selected", False) and selected is not None:
-                st.success(f'Preset "{selected["name"]}" selected for this site')
+                detections_container.success(f'Preset "{selected["name"]}" selected for this site')
             if detections["working"]:
                 lines = []
                 for detection in detections["working"]:
@@ -847,9 +854,9 @@ def show_custom_manga_presets(key_prefix: str):
                     if chapter["URL"]:
                         found += f" ({chapter['URL']})"
                     lines.append(f"- **{detection['preset']['name']}**: {found}")
-                st.markdown("Presets that work for this page:\n" + "\n".join(lines))
+                detections_container.markdown("Presets that work for this page:\n" + "\n".join(lines))
             elif not detections["domain_presets"]:
-                st.info("No preset works for this page")
+                detections_container.info("No preset works for this page")
 
     with st.popover("Save selectors as preset", width="stretch"):
         st.text_input("Preset name", key=key_prefix + "new_preset_name")
@@ -866,17 +873,19 @@ def show_custom_manga_presets(key_prefix: str):
             on_click=save_custom_manga_preset,
             args=(key_prefix,),
         )
+        # Fixed slots: the dialog rerun doesn't clear elements left over at the end
+        # when the delete button disappears, so the previous message would stay
+        delete_slot, message_slot = st.empty(), st.empty()
         if selected is not None and not selected["builtin"]:
-            st.button(
+            delete_slot.button(
                 f'Delete preset "{selected["name"]}"',
                 key=key_prefix + "delete_preset",
                 width="stretch",
                 on_click=delete_custom_manga_preset,
                 args=(key_prefix,),
             )
-
-    if (message := ss.pop(key_prefix + "preset_message", None)) is not None:
-        getattr(st, message[0])(message[1])
+        if (message := ss.pop(key_prefix + "preset_message", None)) is not None:
+            getattr(message_slot, message[0])(message[1])
 
 
 def get_custom_manga_selector_values(key_prefix: str) -> dict[str, Any]:
@@ -979,26 +988,30 @@ def show_custom_manga_tracking_fields(key_prefix: str, test_selectors_help: str)
             key=key_prefix + "last_released_chapter_use_browser",
         )
 
-        if st.button(
+        test_clicked = st.button(
             "Test selectors",
             key=key_prefix + "test_selectors",
             width="stretch",
             help=test_selectors_help,
-        ):
-            test_custom_manga_selectors(
-                ss[key_prefix + "url"],
-                ss[key_prefix + "last_released_chapter_name_selector"],
-                ss[key_prefix + "last_released_chapter_name_attribute"],
-                ss[key_prefix + "last_released_chapter_name_regex"],
-                ss[key_prefix + "last_released_chapter_name_get_first"],
-                ss[key_prefix + "last_released_chapter_url_selector"],
-                ss[key_prefix + "last_released_chapter_url_attribute"],
-                ss[key_prefix + "last_released_chapter_url_get_first"],
-                ss[key_prefix + "last_released_chapter_use_browser"],
-            )
+        )
+        # Fixed slot, so the result doesn't stay after the next rerun
+        result_slot = st.empty()
+        if test_clicked:
+            with result_slot.container():
+                test_custom_manga_selectors(
+                    ss[key_prefix + "url"],
+                    ss[key_prefix + "last_released_chapter_name_selector"],
+                    ss[key_prefix + "last_released_chapter_name_attribute"],
+                    ss[key_prefix + "last_released_chapter_name_regex"],
+                    ss[key_prefix + "last_released_chapter_name_get_first"],
+                    ss[key_prefix + "last_released_chapter_url_selector"],
+                    ss[key_prefix + "last_released_chapter_url_attribute"],
+                    ss[key_prefix + "last_released_chapter_url_get_first"],
+                    ss[key_prefix + "last_released_chapter_use_browser"],
+                )
 
 
-def show_add_custom_manga_form(multimanga_id: int = 0):
+def show_add_custom_manga_form(multimanga_id: int = 0, show_back_button: Callable[[], None] | None = None):
     key_prefix = "add_custom_manga_form_" if multimanga_id == 0 else "add_custom_manga_to_multimanga_form_"
 
     reset_custom_manga_form_state(key_prefix)
@@ -1078,100 +1091,107 @@ def show_add_custom_manga_form(multimanga_id: int = 0):
             "Get the last released chapter from the manga URL using the selectors above, without adding the manga.",
         )
 
-        if st.button(
+        add_clicked = st.button(
             "Add",
             key=key_prefix + "add",
             width="stretch",
             type="primary",
-        ):
-            if ss[key_prefix + "name"] == "":
-                st.warning("Provide a manga name")
-            elif (
-                ss.get(key_prefix + "last_read_chapter", "") == ""
-                and ss.get(key_prefix + "last_read_chapter_url", "") != ""
-            ):
-                st.warning("If providing a last read chapter URL, also provide the chapter number")
-            elif invalid_url_message := (
-                get_invalid_url_message("manga URL", ss[key_prefix + "url"])
-                or get_invalid_url_message("last read chapter URL", ss.get(key_prefix + "last_read_chapter_url", ""))
-                or get_invalid_url_message("cover image URL", ss[key_prefix + "cover_img_url"])
-            ):
-                st.warning(invalid_url_message)
-            else:
-                selectors = get_custom_manga_selector_values(key_prefix)
-                if ss[key_prefix + "cover_img_file"] is not None:
-                    cover_img = ss[key_prefix + "cover_img_file"].getvalue()
+        )
+        if show_back_button is not None:
+            show_back_button()
+        # Fixed slot below the buttons, so the message doesn't move them and doesn't
+        # stay after the next rerun
+        message_slot = st.empty()
+        if add_clicked:
+            with message_slot.container():
+                if ss[key_prefix + "name"] == "":
+                    st.warning("Provide a manga name")
+                elif (
+                    ss.get(key_prefix + "last_read_chapter", "") == ""
+                    and ss.get(key_prefix + "last_read_chapter_url", "") != ""
+                ):
+                    st.warning("If providing a last read chapter URL, also provide the chapter number")
+                elif invalid_url_message := (
+                    get_invalid_url_message("manga URL", ss[key_prefix + "url"])
+                    or get_invalid_url_message("last read chapter URL", ss.get(key_prefix + "last_read_chapter_url", ""))
+                    or get_invalid_url_message("cover image URL", ss[key_prefix + "cover_img_url"])
+                ):
+                    st.warning(invalid_url_message)
                 else:
-                    cover_img = None
+                    selectors = get_custom_manga_selector_values(key_prefix)
+                    if ss[key_prefix + "cover_img_file"] is not None:
+                        cover_img = ss[key_prefix + "cover_img_file"].getvalue()
+                    else:
+                        cover_img = None
 
-                ss["add_manga_manga_to_add" if multimanga_id == 0 else "update_multimanga_mangas_add_manga_selected_manga"] = {
-                    "name": ss[key_prefix + "name"],
-                    "url": ss[key_prefix + "url"],
-                    "status": ss.get(key_prefix + "status", ""),
-                    "manga_internal_id": "",
-                    "cover_img_url": ss[key_prefix + "cover_img_url"],
-                    "cover_img": cover_img,
-                    "last_released_chapter_name_selector": {
-                        "selector": selectors["last_released_chapter_name_selector"],
-                        "attribute": selectors["last_released_chapter_name_attribute"],
-                        "regex": selectors["last_released_chapter_name_regex"],
-                        "get_first": selectors["last_released_chapter_name_get_first"],
-                    },
-                    "last_released_chapter_url_selector": {
-                        "selector": selectors["last_released_chapter_url_selector"],
-                        "attribute": selectors["last_released_chapter_url_attribute"],
-                        "get_first": selectors["last_released_chapter_url_get_first"],
-                    },
-                    "last_released_chapter_use_browser": selectors["last_released_chapter_use_browser"],
-                }
-
-                if multimanga_id == 0:
-                    ss["add_manga_manga_to_add"]["last_read_chapter"] = {
-                        "chapter": ss[key_prefix + "last_read_chapter"],
-                        "url": ss[key_prefix + "last_read_chapter_url"],
-                        "internal_id": "",
+                    ss["add_manga_manga_to_add" if multimanga_id == 0 else "update_multimanga_mangas_add_manga_selected_manga"] = {
+                        "name": ss[key_prefix + "name"],
+                        "url": ss[key_prefix + "url"],
+                        "status": ss.get(key_prefix + "status", ""),
+                        "manga_internal_id": "",
+                        "cover_img_url": ss[key_prefix + "cover_img_url"],
+                        "cover_img": cover_img,
+                        "last_released_chapter_name_selector": {
+                            "selector": selectors["last_released_chapter_name_selector"],
+                            "attribute": selectors["last_released_chapter_name_attribute"],
+                            "regex": selectors["last_released_chapter_name_regex"],
+                            "get_first": selectors["last_released_chapter_name_get_first"],
+                        },
+                        "last_released_chapter_url_selector": {
+                            "selector": selectors["last_released_chapter_url_selector"],
+                            "attribute": selectors["last_released_chapter_url_attribute"],
+                            "get_first": selectors["last_released_chapter_url_get_first"],
+                        },
+                        "last_released_chapter_use_browser": selectors["last_released_chapter_use_browser"],
                     }
 
-                    add_manga()
-                else:
-                    try:
-                        with st.spinner("Adding manga to multimanga..."):
-                            api_client = get_api_client()
-                            api_client.add_manga_to_multimanga(
-                                multimanga_id,
-                                ss["update_multimanga_mangas_add_manga_selected_manga"]["name"],
-                                ss["update_multimanga_mangas_add_manga_selected_manga"]["url"],
-                                "",
-                                ss["update_multimanga_mangas_add_manga_selected_manga"]["cover_img_url"],
-                                ss["update_multimanga_mangas_add_manga_selected_manga"]["cover_img"],
-                                ss["update_multimanga_mangas_add_manga_selected_manga"]["last_released_chapter_name_selector"]["selector"],
-                                ss["update_multimanga_mangas_add_manga_selected_manga"]["last_released_chapter_name_selector"]["attribute"],
-                                ss["update_multimanga_mangas_add_manga_selected_manga"]["last_released_chapter_name_selector"]["regex"],
-                                ss["update_multimanga_mangas_add_manga_selected_manga"]["last_released_chapter_name_selector"]["get_first"],
-                                ss["update_multimanga_mangas_add_manga_selected_manga"]["last_released_chapter_url_selector"]["selector"],
-                                ss["update_multimanga_mangas_add_manga_selected_manga"]["last_released_chapter_url_selector"]["attribute"],
-                                ss["update_multimanga_mangas_add_manga_selected_manga"]["last_released_chapter_url_selector"]["get_first"],
-                                ss["update_multimanga_mangas_add_manga_selected_manga"]["last_released_chapter_use_browser"],
-                            )
-                    except APIException as e:
-                        resp_text = str(e.response_text).lower()
-                        if user_message := get_api_user_message(e):
-                            st.warning(user_message)
-                        elif "manga already exists in db" in resp_text:
-                            st.warning("Manga already exists")
-                        elif "source not found" in resp_text:
-                            st.warning("No source site for this manga")
-                        elif "invalid manga url" in resp_text:
-                            st.warning("Invalid URL")
-                        elif "manga not found in source" in resp_text:
-                            st.warning("Manga not found")
-                        elif "one of the manga attributes were not found in source" in resp_text:
-                            st.warning("Manga not found")
-                        elif "source" in str(e).lower() and "is not allowed" in str(e).lower():
-                            st.warning("Not allowed to add mangas from this source")
-                        else:
-                            logger.exception(e)
-                            st.error(f"Error while adding manga to multimanga: {get_api_error_detail(e)}")
+                    if multimanga_id == 0:
+                        ss["add_manga_manga_to_add"]["last_read_chapter"] = {
+                            "chapter": ss[key_prefix + "last_read_chapter"],
+                            "url": ss[key_prefix + "last_read_chapter_url"],
+                            "internal_id": "",
+                        }
+
+                        add_manga()
                     else:
-                        ss["update_manga_success_message"] = "Manga added successfully"
-                        st.rerun()
+                        try:
+                            with st.spinner("Adding manga to multimanga..."):
+                                api_client = get_api_client()
+                                api_client.add_manga_to_multimanga(
+                                    multimanga_id,
+                                    ss["update_multimanga_mangas_add_manga_selected_manga"]["name"],
+                                    ss["update_multimanga_mangas_add_manga_selected_manga"]["url"],
+                                    "",
+                                    ss["update_multimanga_mangas_add_manga_selected_manga"]["cover_img_url"],
+                                    ss["update_multimanga_mangas_add_manga_selected_manga"]["cover_img"],
+                                    ss["update_multimanga_mangas_add_manga_selected_manga"]["last_released_chapter_name_selector"]["selector"],
+                                    ss["update_multimanga_mangas_add_manga_selected_manga"]["last_released_chapter_name_selector"]["attribute"],
+                                    ss["update_multimanga_mangas_add_manga_selected_manga"]["last_released_chapter_name_selector"]["regex"],
+                                    ss["update_multimanga_mangas_add_manga_selected_manga"]["last_released_chapter_name_selector"]["get_first"],
+                                    ss["update_multimanga_mangas_add_manga_selected_manga"]["last_released_chapter_url_selector"]["selector"],
+                                    ss["update_multimanga_mangas_add_manga_selected_manga"]["last_released_chapter_url_selector"]["attribute"],
+                                    ss["update_multimanga_mangas_add_manga_selected_manga"]["last_released_chapter_url_selector"]["get_first"],
+                                    ss["update_multimanga_mangas_add_manga_selected_manga"]["last_released_chapter_use_browser"],
+                                )
+                        except APIException as e:
+                            resp_text = str(e.response_text).lower()
+                            if user_message := get_api_user_message(e):
+                                st.warning(user_message)
+                            elif "manga already exists in db" in resp_text:
+                                st.warning("Manga already exists")
+                            elif "source not found" in resp_text:
+                                st.warning("No source site for this manga")
+                            elif "invalid manga url" in resp_text:
+                                st.warning("Invalid URL")
+                            elif "manga not found in source" in resp_text:
+                                st.warning("Manga not found")
+                            elif "one of the manga attributes were not found in source" in resp_text:
+                                st.warning("Manga not found")
+                            elif "source" in str(e).lower() and "is not allowed" in str(e).lower():
+                                st.warning("Not allowed to add mangas from this source")
+                            else:
+                                logger.exception(e)
+                                st.error(f"Error while adding manga to multimanga: {get_api_error_detail(e)}")
+                        else:
+                            ss["update_manga_success_message"] = "Manga added successfully"
+                            st.rerun()

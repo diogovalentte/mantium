@@ -42,6 +42,29 @@ SITE_PRESET = {
 }
 
 
+CHAPTERS = [
+    {"Chapter": "11", "URL": "https://mangadex.org/chapter/11", "InternalID": "c11", "UpdatedAt": "0001-01-01T00:00:00Z"},
+    {"Chapter": "10", "URL": "https://mangadex.org/chapter/10", "InternalID": "c10", "UpdatedAt": "0001-01-01T00:00:00Z"},
+]
+
+_MANGA = {
+    "ID": 5,
+    "Name": "One Piece",
+    "Source": "mangadex.org",
+    "URL": "https://mangadex.org/title/one-piece",
+    "InternalID": "op",
+}
+
+MULTIMANGA = {
+    "ID": 1,
+    "Status": 1,
+    "CoverImgFixed": False,
+    "CurrentManga": _MANGA,
+    "Mangas": [_MANGA],
+    "LastReadChapter": {"Chapter": "", "URL": "", "FromSourceSite": False},
+}
+
+
 class FakeAPI:
     def __init__(self) -> None:
         self.calls: list[tuple[str, tuple, dict]] = []
@@ -59,9 +82,14 @@ class FakeAPI:
         self.dashboard_configs: dict[str, Any] = fixture["configs"]
         self.background_error = {"message": "", "time": "0001-01-01 00:00:00"}
         self.last_update = "1"
+        # Method name -> exception the method raises after being recorded
+        self.errors: dict[str, Exception] = {}
+        self.multimanga: dict[str, Any] = copy.deepcopy(MULTIMANGA)
 
     def _record(self, name: str, *args, **kwargs):
         self.calls.append((name, args, kwargs))
+        if name in self.errors:
+            raise self.errors[name]
 
     def called(self, name: str) -> list[tuple[tuple, dict]]:
         return [(a, k) for n, a, k in self.calls if n == name]
@@ -117,6 +145,30 @@ class FakeAPI:
 
     def update_custom_manga(self, *args, **kwargs):
         self._record("update_custom_manga", *args, **kwargs)
+        return {"message": "ok"}
+
+    def get_multimanga(self, multimanga_id: int):
+        self._record("get_multimanga", multimanga_id)
+        return copy.deepcopy({**self.multimanga, "ID": multimanga_id})
+
+    def choose_current_manga(self, multimanga_id: int, exclude_manga_ids=None):
+        self._record("choose_current_manga", multimanga_id, exclude_manga_ids)
+        return copy.deepcopy(self.multimanga["CurrentManga"])
+
+    def get_cached_manga_chapters(self, *args):
+        self._record("get_cached_manga_chapters", *args)
+        return copy.deepcopy(CHAPTERS)
+
+    def update_multimanga_status(self, *args):
+        self._record("update_multimanga_status", *args)
+        return {"message": "ok"}
+
+    def update_multimanga_cover_img(self, *args, **kwargs):
+        self._record("update_multimanga_cover_img", *args, **kwargs)
+        return {"message": "ok"}
+
+    def delete_multimanga(self, *args):
+        self._record("delete_multimanga", *args)
         return {"message": "ok"}
 
 

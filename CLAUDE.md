@@ -187,6 +187,21 @@ in valentium, both written up in its `CLAUDE.md`:
   `AppTest.from_file`.
 - `AppTest` often can't see `st.expander` (inside a fragment, or when it holds a
   form). Assert on the contents, not the container.
+- `AppTest` has no `Popover` class: a popover is a plain `Block` with
+  `type == "popover"` and its label in `proto.popover.label`. Matching on
+  `type(node).__name__ == "Popover"` silently finds nothing.
+- **AppTest can't see two popover bugs, only a real browser can.** An
+  `st.popover` closes on the rerun of a button inside it whenever an element
+  above it appears or disappears, so a message written inside it is never seen.
+  Keep what's above it in a fixed container. (`key` + `on_change="rerun"` also
+  keeps it open, but then opening it reruns the page and one-shot messages
+  vanish.) And inside an `st.dialog`, elements left over at the end of a
+  container after a rerun aren't cleared: when a conditional button disappears,
+  the previous message stays below the new one. Fixed slots (`st.empty()`) for
+  conditional elements avoid it.
+- **An `st.toast` called after an `st.dialog` opens in the same run comes back**
+  on the next rerun triggered from inside that dialog (seen with Remove in
+  Manage Mangas, then Back). Emit toasts before opening any dialog.
 
 The custom manga forms now have this: `dashboard/src/tests/src/util/` has a
 runner per form and a fake API client (`fake_api.py`) that the runner swaps in
