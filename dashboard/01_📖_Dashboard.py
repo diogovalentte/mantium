@@ -13,7 +13,7 @@ from src.util.update_manga import (
     show_update_multimanga_form,
     show_update_multimanga_mangas_form,
 )
-from src.util.util import centered_container, escape_html, get_logger, get_relative_time, safe_href, tagger, set_is_dialog_open
+from src.util.util import centered_container, escape_html, get_api_error_detail, get_logger, get_relative_time, safe_href, tagger, set_is_dialog_open
 from streamlit import session_state as ss
 from streamlit_extras.stylable_container import stylable_container
 from streamlit_javascript import st_javascript
@@ -349,6 +349,19 @@ class MainDashboard:
                 )
 
     def show_forms(self):
+        # Results of actions that closed their dialog. Toasts, so they don't need a
+        # dialog of their own to be closed. Shown before any dialog opens in this run:
+        # a toast shown after a dialog opens comes back on the next rerun.
+        for key, icon in (
+            ("update_manga_success_message", ":material/check_circle:"),
+            ("add_manga_success_message", ":material/check_circle:"),
+            ("add_manga_warning_message", ":material/warning:"),
+            ("configs_update_success_message", ":material/check_circle:"),
+        ):
+            if ss.get(key, "") != "":
+                st.toast(ss[key], icon=icon)
+                ss[key] = ""
+
         if ss.get("updated_message", "") != "":
             message = ss["updated_message"]
             new_version = ss["updated_version"]
@@ -390,52 +403,10 @@ class MainDashboard:
                 show_update_custom_manga(ss["highlighted_custom_manga"])
 
             show()
-        elif ss.get("update_manga_success_message", "") != "":
-
-            @st.dialog("Update Manga", on_dismiss=set_is_dialog_open)
-            def show():
-                ss["is_dialog_open"] = True
-                st.success(ss["update_manga_success_message"])
-                ss["update_manga_success_message"] = ""
-
-            show()
-        elif ss.get("add_manga_success_message", "") != "":
-
-            @st.dialog("Add Manga", on_dismiss=set_is_dialog_open)
-            def show():
-                ss["is_dialog_open"] = True
-                st.success(ss["add_manga_success_message"])
-                ss["add_manga_success_message"] = ""
-
-            show()
-        elif ss.get("add_manga_warning_message", "") != "":
-
-            @st.dialog("Add Manga", on_dismiss=set_is_dialog_open)
-            def show():
-                ss["is_dialog_open"] = True
-                st.warning(ss["add_manga_warning_message"])
-                ss["add_manga_warning_message"] = ""
-
-            show()
         elif ss.get("show_settings_form", False):
             self.show_settings()
             ss["show_settings_form"] = False
-        elif (
-            ss.get("configs_update_error_message", "") != ""
-            or ss.get("configs_update_success_message", "") != ""
-        ):
 
-            @st.dialog("Settings", on_dismiss=set_is_dialog_open)
-            def show_configs_update_message():
-                ss["is_dialog_open"] = True
-                if ss.get("configs_update_error_message", "") != "":
-                    st.error(ss["configs_update_error_message"])
-                else:
-                    st.success(ss["configs_update_success_message"])
-                ss["configs_update_error_message"] = ""
-                ss["configs_update_success_message"] = ""
-
-            show_configs_update_message()
 
     def show_background_error(self):
         if ss["configs"]["display"]["showBackgroundErrorWarning"]:
@@ -651,9 +622,14 @@ class MainDashboard:
 
                 def set_last_read():
                     if util.is_unread_chapter(manga["LastReadChapter"], manga["LastReleasedChapter"]):
-                        self.api_client.update_multimanga_last_read_chapter(
-                            manga["MultiMangaID"], manga["ID"]
-                        )
+                        try:
+                            self.api_client.update_multimanga_last_read_chapter(
+                                manga["MultiMangaID"], manga["ID"]
+                            )
+                        except Exception as ex:
+                            logger.exception(ex)
+                            st.toast(f"Error while setting the last read chapter: {get_api_error_detail(ex)}", icon=":material/error:")
+                            return
                         # The API marks the dashboard as updated, which would rerun the whole app; the
                         # library fragment already reruns with the new chapter
                         ss["system_last_update_time"] = self.api_client.check_for_updates()
@@ -860,9 +836,14 @@ class MainDashboard:
 
             def set_last_read():
                 if util.is_unread_chapter(manga["LastReadChapter"], manga["LastReleasedChapter"]):
-                    self.api_client.update_multimanga_last_read_chapter(
-                        manga["MultiMangaID"], manga["ID"]
-                    )
+                    try:
+                        self.api_client.update_multimanga_last_read_chapter(
+                            manga["MultiMangaID"], manga["ID"]
+                        )
+                    except Exception as ex:
+                        logger.exception(ex)
+                        st.toast(f"Error while setting the last read chapter: {get_api_error_detail(ex)}", icon=":material/error:")
+                        return
                     # The API marks the dashboard as updated, which would rerun the whole app; the
                     # library fragment already reruns with the new chapter
                     ss["system_last_update_time"] = self.api_client.check_for_updates()
@@ -886,135 +867,135 @@ class MainDashboard:
     @st.dialog("Settings", on_dismiss=set_is_dialog_open)
     def show_settings(self):
         ss["is_dialog_open"] = True
-        with st.form(key="configs_update_configs", border=False):
-            with st.expander("Display"):
-                st.selectbox(
-                    (
-                        "Display Mode"
-                        if not ss["is_mobile"]
-                        else "Display Mode (only Grid View in mobile)"
-                    ),
-                    defaults.display_modes,
-                    index=(
-                        defaults.display_modes.index(
-                            ss["configs"]["display"]["displayMode"]
-                        )
-                        if ss["configs"]["display"]["displayMode"]
-                        in defaults.display_modes
-                        else 0
-                    ),
-                    disabled=ss["is_mobile"],
-                    help="Select the dashboard display mode",
-                    key="configs_select_display_mode",
-                )
+        with st.expander("Display"):
+            st.selectbox(
+                (
+                    "Display Mode"
+                    if not ss["is_mobile"]
+                    else "Display Mode (only Grid View in mobile)"
+                ),
+                defaults.display_modes,
+                index=(
+                    defaults.display_modes.index(
+                        ss["configs"]["display"]["displayMode"]
+                    )
+                    if ss["configs"]["display"]["displayMode"]
+                    in defaults.display_modes
+                    else 0
+                ),
+                disabled=ss["is_mobile"],
+                help="Select the dashboard display mode",
+                key="configs_select_display_mode",
+            )
 
-                if ss["is_mobile"]:
-                    columns_settings_label = "Columns (not available in mobile):"
-                elif ss["configs"]["display"]["displayMode"] == "Grid View":
-                    columns_settings_label = "Columns:"
-                else:
-                    columns_settings_label = "Columns (available in Grid View only):"
+            # Follows the display mode picked above, not the saved one
+            if ss["is_mobile"]:
+                columns_settings_label = "Columns (not available in mobile):"
+            elif ss["configs_select_display_mode"] == "Grid View":
+                columns_settings_label = "Columns:"
+            else:
+                columns_settings_label = "Columns (available in Grid View only):"
 
-                st.slider(
-                    columns_settings_label,
-                    min_value=defaults.columns_min_value,
-                    max_value=defaults.columns_max_value,
-                    value=ss["configs"]["display"]["columns"],
-                    disabled=(ss["configs"]["display"]["displayMode"] == "List View")
-                    or ss["is_mobile"],
-                    key="configs_select_columns_number",
-                )
+            st.slider(
+                columns_settings_label,
+                min_value=defaults.columns_min_value,
+                max_value=defaults.columns_max_value,
+                value=ss["configs"]["display"]["columns"],
+                disabled=(ss["configs_select_display_mode"] == "List View")
+                or ss["is_mobile"],
+                key="configs_select_columns_number",
+            )
 
-                st.slider(
-                    "Search Results Limit:",
-                    min_value=defaults.search_results_limit_min_value,
-                    max_value=defaults.search_results_limit_max_value,
-                    value=ss["configs"]["display"]["searchResultsLimit"],
-                    help="The maximum number of search results to show when searching for a manga to add to the dashboard. It doesn't work very well with MangaUpdates.",
-                    key="configs_select_search_results_limit",
-                )
+            st.slider(
+                "Search Results Limit:",
+                min_value=defaults.search_results_limit_min_value,
+                max_value=defaults.search_results_limit_max_value,
+                value=ss["configs"]["display"]["searchResultsLimit"],
+                help="The maximum number of search results to show when searching for a manga to add to the dashboard. It doesn't work very well with MangaUpdates.",
+                key="configs_select_search_results_limit",
+            )
 
-                st.checkbox(
-                    "Show background error warning",
-                    value=ss["configs"]["display"]["showBackgroundErrorWarning"],
-                    key="configs_select_show_background_error_warning",
-                    help="Show a warning in the sidebar if there is a background error",
-                )
+            st.checkbox(
+                "Show background error warning",
+                value=ss["configs"]["display"]["showBackgroundErrorWarning"],
+                key="configs_select_show_background_error_warning",
+                help="Show a warning in the sidebar if there is a background error",
+            )
 
-            with st.expander("Integrations"):
-                st.checkbox(
-                    "Add multimanga mangas to download integrations",
-                    value=ss["configs"]["integrations"][
-                        "addAllMultiMangaMangasToDownloadIntegrations"
-                    ],
-                    help="By default, add only the multimangas' first manga to download integrations. If checked, when adding additional mangas to a multimanga, add them to download integrations too.",
-                    key="configs_add_all_multimanga_mangas_to_download_integrations",
-                )
-                st.checkbox(
-                    "Enqueue chapters to download when adding manga to Suwayomi",
-                    value=ss["configs"]["integrations"][
-                        "enqueueAllSuwayomiChaptersToDownload"
-                    ],
-                    help="By default, enqueue to download all chapters from the mangas that are added to the Suwayomi integration.",
-                    key="configs_enqueue_all_suwayomi_chapters_to_download",
-                )
+        with st.expander("Integrations"):
+            st.checkbox(
+                "Add multimanga mangas to download integrations",
+                value=ss["configs"]["integrations"][
+                    "addAllMultiMangaMangasToDownloadIntegrations"
+                ],
+                help="By default, add only the multimangas' first manga to download integrations. If checked, when adding additional mangas to a multimanga, add them to download integrations too.",
+                key="configs_add_all_multimanga_mangas_to_download_integrations",
+            )
+            st.checkbox(
+                "Enqueue chapters to download when adding manga to Suwayomi",
+                value=ss["configs"]["integrations"][
+                    "enqueueAllSuwayomiChaptersToDownload"
+                ],
+                help="By default, enqueue to download all chapters from the mangas that are added to the Suwayomi integration.",
+                key="configs_enqueue_all_suwayomi_chapters_to_download",
+            )
 
-            with st.expander("Info"):
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.write("Version: ")
-                with col2:
-                    st.badge(ss["configs"]["Mantium"]["version"])
-                st.divider()
-                st.markdown(
-                    "If you have any questions or suggestions, feel free to open an issue on the [GitHub repository](https://github.com/diogovalentte/mantium)."
-                )
+        with st.expander("Info"):
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write("Version: ")
+            with col2:
+                st.badge(ss["configs"]["Mantium"]["version"])
+            st.divider()
+            st.markdown(
+                "If you have any questions or suggestions, feel free to open an issue on the [GitHub repository](https://github.com/diogovalentte/mantium)."
+            )
 
-            if st.form_submit_button(
-                "Save",
-                type="primary",
-                width="stretch",
-            ):
-                try:
-                    new_configs = {
-                        "display": {
-                            "columns": ss.configs_select_columns_number,
-                            "showBackgroundErrorWarning": ss.configs_select_show_background_error_warning,
-                            "searchResultsLimit": ss.configs_select_search_results_limit,
-                            "displayMode": ss.configs_select_display_mode,
-                        },
-                        "integrations": {
-                            "addAllMultiMangaMangasToDownloadIntegrations": ss.configs_add_all_multimanga_mangas_to_download_integrations,
-                            "enqueueAllSuwayomiChaptersToDownload": ss.configs_enqueue_all_suwayomi_chapters_to_download,
-                        },
-                    }
-                    self.api_client.update_dashboard_configs(new_configs)
+        if st.button(
+            "Save",
+            type="primary",
+            width="stretch",
+        ):
+            try:
+                new_configs = {
+                    "display": {
+                        "columns": ss.configs_select_columns_number,
+                        "showBackgroundErrorWarning": ss.configs_select_show_background_error_warning,
+                        "searchResultsLimit": ss.configs_select_search_results_limit,
+                        "displayMode": ss.configs_select_display_mode,
+                    },
+                    "integrations": {
+                        "addAllMultiMangaMangasToDownloadIntegrations": ss.configs_add_all_multimanga_mangas_to_download_integrations,
+                        "enqueueAllSuwayomiChaptersToDownload": ss.configs_enqueue_all_suwayomi_chapters_to_download,
+                    },
+                }
+                self.api_client.update_dashboard_configs(new_configs)
 
-                    ss["configs"]["display"][
-                        "columns"
-                    ] = ss.configs_select_columns_number
-                    ss["configs"]["display"][
-                        "showBackgroundErrorWarning"
-                    ] = ss.configs_select_show_background_error_warning
-                    ss["configs"]["display"][
-                        "displayMode"
-                    ] = ss.configs_select_display_mode
-                    ss["configs"]["display"][
-                        "searchResultsLimit"
-                    ] = ss.configs_select_search_results_limit
-                    ss["configs"]["integrations"][
-                        "addAllMultiMangaMangasToDownloadIntegrations"
-                    ] = ss.configs_add_all_multimanga_mangas_to_download_integrations
-                    ss["configs"]["integrations"][
-                        "enqueueAllSuwayomiChaptersToDownload"
-                    ] = ss.configs_enqueue_all_suwayomi_chapters_to_download
+                ss["configs"]["display"][
+                    "columns"
+                ] = ss.configs_select_columns_number
+                ss["configs"]["display"][
+                    "showBackgroundErrorWarning"
+                ] = ss.configs_select_show_background_error_warning
+                ss["configs"]["display"][
+                    "displayMode"
+                ] = ss.configs_select_display_mode
+                ss["configs"]["display"][
+                    "searchResultsLimit"
+                ] = ss.configs_select_search_results_limit
+                ss["configs"]["integrations"][
+                    "addAllMultiMangaMangasToDownloadIntegrations"
+                ] = ss.configs_add_all_multimanga_mangas_to_download_integrations
+                ss["configs"]["integrations"][
+                    "enqueueAllSuwayomiChaptersToDownload"
+                ] = ss.configs_enqueue_all_suwayomi_chapters_to_download
 
-                    ss["configs_update_success_message"] = "Settings saved successfully"
-                    st.rerun()
-                except Exception as e:
-                    logger.exception(e)
-                    ss["configs_update_error_message"] = "Error while saving settings"
-                    st.rerun()
+                ss["configs_update_success_message"] = "Settings saved successfully"
+                st.rerun()
+            except Exception as e:
+                # Stays in the dialog, so the changes aren't lost
+                logger.exception(e)
+                st.error(f"Error while saving settings: {get_api_error_detail(e)}")
 
     @st.fragment(run_every=5)
     def update_dashboard_job(self):

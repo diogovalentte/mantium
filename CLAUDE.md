@@ -199,6 +199,9 @@ in valentium, both written up in its `CLAUDE.md`:
   container after a rerun aren't cleared: when a conditional button disappears,
   the previous message stays below the new one. Fixed slots (`st.empty()`) for
   conditional elements avoid it.
+- **An `st.toast` called after an `st.dialog` opens in the same run comes back**
+  on the next rerun triggered from inside that dialog (seen with Remove in
+  Manage Mangas, then Back). Emit toasts before opening any dialog.
 
 The custom manga forms now have this: `dashboard/src/tests/src/util/` has a
 runner per form and a fake API client (`fake_api.py`) that the runner swaps in
