@@ -11,6 +11,7 @@ P = "add_custom_manga_form_"
 MM = "add_custom_manga_to_multimanga_form_"
 FEED_URL = "https://feeds.example.org/series/1/rss"
 SITE_URL = "https://example.com/manga/one"
+SAVE_POPOVER = "Save selectors as preset"
 
 
 @pytest.fixture
@@ -42,6 +43,21 @@ def labels_in_order(at: AppTest) -> list[str]:
 
 def texts(at: AppTest, kind: str) -> list[str]:
     return [str(e.value) for e in getattr(at, kind)]
+
+
+def popover_texts(at: AppTest, label: str, kind: str) -> list[str]:
+    def find(node):
+        # AppTest has no Popover class, a popover is a plain Block
+        if getattr(node, "type", None) == "popover" and node.proto.popover.label == label:
+            return node
+        for child in getattr(node, "children", {}).values():
+            if (found := find(child)) is not None:
+                return found
+        return None
+
+    popover = find(at.main)
+    assert popover is not None, f'popover "{label}" not found'
+    return [str(e.value) for e in getattr(popover, kind)]
 
 
 def expanded(at: AppTest, prefix: str = P) -> bool:
@@ -180,7 +196,7 @@ def test_save_preset(api):
     assert preset["domains"] == ["example.com"]
     assert preset["name_selector"]["selector"] == "css:li a"
     assert "url_selector" not in preset
-    assert any('Preset "Example" saved' in t for t in texts(at, "success"))
+    assert any('Preset "Example" saved' in t for t in popover_texts(at, SAVE_POPOVER, "success"))
     assert at.selectbox(key=P + "preset").value == 3
 
 
@@ -190,7 +206,7 @@ def test_save_preset_error(api):
     at.text_input(key=P + "new_preset_name").input("RSS feed").run()
     at.button(key=P + "save_preset").click().run()
     assert_no_exception(at)
-    assert any("already exists" in t for t in texts(at, "warning"))
+    assert any("already exists" in t for t in popover_texts(at, SAVE_POPOVER, "warning"))
 
 
 def test_delete_user_preset(api):
@@ -201,6 +217,7 @@ def test_delete_user_preset(api):
     assert api.called("delete_custom_manga_preset") == [((SITE_PRESET["id"],), {})]
     assert at.selectbox(key=P + "preset").value is None
     assert SITE_PRESET["id"] not in at.selectbox(key=P + "preset").options
+    assert "Preset deleted" in popover_texts(at, SAVE_POPOVER, "success")
     # Builtin presets have no delete button
     at.selectbox(key=P + "preset").set_value(RSS_PRESET["id"]).run()
     assert not [b for b in at.button if b.key == P + "delete_preset"]

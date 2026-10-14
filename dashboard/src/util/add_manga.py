@@ -833,12 +833,15 @@ def show_custom_manga_presets(key_prefix: str):
     selected = presets.get(ss[key_prefix + "preset"])
 
     detections = ss.get(key_prefix + "preset_detections")
+    # One container whatever the detection shows, so the popover below keeps its
+    # position and stays open across the rerun of its buttons
+    detections_container = st.container()
     if detections is not None:
         if "error" in detections:
-            st.warning(f"Couldn't test the presets: {detections['error']}")
+            detections_container.warning(f"Couldn't test the presets: {detections['error']}")
         else:
             if ss.pop(key_prefix + "preset_auto_selected", False) and selected is not None:
-                st.success(f'Preset "{selected["name"]}" selected for this site')
+                detections_container.success(f'Preset "{selected["name"]}" selected for this site')
             if detections["working"]:
                 lines = []
                 for detection in detections["working"]:
@@ -847,9 +850,9 @@ def show_custom_manga_presets(key_prefix: str):
                     if chapter["URL"]:
                         found += f" ({chapter['URL']})"
                     lines.append(f"- **{detection['preset']['name']}**: {found}")
-                st.markdown("Presets that work for this page:\n" + "\n".join(lines))
+                detections_container.markdown("Presets that work for this page:\n" + "\n".join(lines))
             elif not detections["domain_presets"]:
-                st.info("No preset works for this page")
+                detections_container.info("No preset works for this page")
 
     with st.popover("Save selectors as preset", width="stretch"):
         st.text_input("Preset name", key=key_prefix + "new_preset_name")
@@ -866,17 +869,19 @@ def show_custom_manga_presets(key_prefix: str):
             on_click=save_custom_manga_preset,
             args=(key_prefix,),
         )
+        # Fixed slots: the dialog rerun doesn't clear elements left over at the end
+        # when the delete button disappears, so the previous message would stay
+        delete_slot, message_slot = st.empty(), st.empty()
         if selected is not None and not selected["builtin"]:
-            st.button(
+            delete_slot.button(
                 f'Delete preset "{selected["name"]}"',
                 key=key_prefix + "delete_preset",
                 width="stretch",
                 on_click=delete_custom_manga_preset,
                 args=(key_prefix,),
             )
-
-    if (message := ss.pop(key_prefix + "preset_message", None)) is not None:
-        getattr(st, message[0])(message[1])
+        if (message := ss.pop(key_prefix + "preset_message", None)) is not None:
+            getattr(message_slot, message[0])(message[1])
 
 
 def get_custom_manga_selector_values(key_prefix: str) -> dict[str, Any]:
