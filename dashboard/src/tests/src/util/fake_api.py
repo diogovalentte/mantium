@@ -119,6 +119,10 @@ class FakeAPI:
         self._record("update_custom_manga", *args, **kwargs)
         return {"message": "ok"}
 
+    def get_multimanga(self, multimanga_id: int):
+        self._record("get_multimanga", multimanga_id)
+        return {"ID": multimanga_id, "Mangas": [], "CurrentManga": {"ID": 1}}
+
 
     # Main page
 

@@ -382,6 +382,7 @@ class MainDashboard:
             def on_dismiss():
                 set_is_dialog_open()
                 ss["highlighted_custom_manga"] = None
+                ss.pop("update_custom_manga_back_to_multimanga_id", None)
 
             @st.dialog("Update Custom Manga", on_dismiss=on_dismiss)
             def show():

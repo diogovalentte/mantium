@@ -96,6 +96,16 @@ def show_update_multimanga_mangas_form(multimanga: dict[str, Any]):
     show()
 
 
+def show_back_to_multimanga_button(multimanga: dict[str, Any], key: str):
+    """Goes back from a multimanga mangas form to the multimanga form."""
+    if st.button("Back", key=key, width="stretch"):
+        # st.rerun() skips the lines that reset these after the form is shown
+        for form in ("add_manga_search", "add_manga_url", "add_custom_manga", "manage_mangas"):
+            ss["show_update_multimanga_" + form] = False
+        ss["highlighted_manga"] = multimanga["CurrentManga"]
+        st.rerun()
+
+
 def show_update_multimanga(multimanga_id):
     try:
         api_client = get_api_client()
@@ -560,6 +570,8 @@ def show_update_multimanga_add_manga_search(multimanga):
                         sources[source], button_name, key_to_save_manga
                     )
 
+    show_back_to_multimanga_button(multimanga, "update_multimanga_mangas_add_manga_search_back_button")
+
 def show_update_multimanga_add_manga_url(multimanga):
     api_client = get_api_client()
     manga_url = st.text_input(
@@ -609,8 +621,11 @@ def show_update_multimanga_add_manga_url(multimanga):
             ss["update_manga_success_message"] = "Manga added successfully"
             st.rerun()
 
+    show_back_to_multimanga_button(multimanga, "update_multimanga_mangas_add_manga_url_back_button")
+
 def show_update_multimanga_add_custom_manga(multimanga):
     show_add_custom_manga_form(multimanga["ID"])
+    show_back_to_multimanga_button(multimanga, "update_multimanga_mangas_add_custom_manga_back_button")
 
 def show_update_multimanga_manage_mangas(multimanga):
     message_container = st.empty()
@@ -622,13 +637,7 @@ def show_update_multimanga_manage_mangas(multimanga):
         cols_list, mangas, multimanga["CurrentManga"]["ID"], multimanga["ID"]
     )
 
-    if st.button(
-        "Back",
-        key="update_multimanga_mangas_manage_mangas_back_button",
-        width="stretch",
-    ):
-        ss["highlighted_manga"] = multimanga["CurrentManga"]
-        st.rerun()
+    show_back_to_multimanga_button(multimanga, "update_multimanga_mangas_manage_mangas_back_button")
 
     with message_container.container():
         if ss.get("update_manga_error_message", "") != "":
@@ -772,6 +781,7 @@ def show_multimanga_manga(
     if manga["Source"] == defaults.CUSTOM_MANGA_SOURCE:
         def on_click():
             ss["highlighted_custom_manga"] = manga
+            ss["update_custom_manga_back_to_multimanga_id"] = multimanga_id
 
         if st.button(
             "Edit",
@@ -957,6 +967,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
                             "Manga updated successfully"
                         )
                         ss["highlighted_custom_manga"] = None
+                        ss.pop("update_custom_manga_back_to_multimanga_id", None)
                         st.rerun()
             except Exception as ex:
                 logger.exception(ex)
@@ -964,6 +975,20 @@ def show_update_custom_manga(manga: dict[str, Any]):
                     ss["update_manga_warning_message"] = user_message
                 else:
                     ss["update_manga_error_message"] = f"Error while updating manga: {get_api_error_detail(ex)}"
+
+        if (multimanga_id := ss.get("update_custom_manga_back_to_multimanga_id")) is not None:
+            if st.button("Back", key=key_prefix + "back", width="stretch"):
+                try:
+                    # Fetched again, so the Manage Mangas form shows the updated mangas
+                    multimanga = api_client.get_multimanga(multimanga_id)
+                except Exception as ex:
+                    logger.exception(ex)
+                    ss["update_manga_error_message"] = f"Error while getting multimanga: {get_api_error_detail(ex)}"
+                else:
+                    ss["highlighted_custom_manga"] = None
+                    ss.pop("update_custom_manga_back_to_multimanga_id", None)
+                    ss["highlighted_multimanga"] = multimanga
+                    st.rerun()
 
     if ss.get("update_manga_error_message", "") != "":
         st.error(ss["update_manga_error_message"])
