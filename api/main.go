@@ -209,8 +209,14 @@ type Migration struct {
 
 // Change it in every new version
 var (
-	version        = "6.7.0"
-	updatedMessage = ``
+	version        = "6.8.0"
+	updatedMessage = `# Ignore a wrong chapter
+
+When a source of a multimanga releases a wrong chapter (like a chapter from another manga), you can now ignore it:
+
+- **Ignore Last Chapter**: in the multimanga form, open **Multimanga Mangas > Manage Mangas** and click **Ignore Last Chapter** on the source that released the wrong chapter. The multimanga follows its other sources, so the chapter doesn't show as unread anymore, and you're notified when the other sources release the right one.
+- The source's card shows a **Ch. X ignored** tag. The chapter stops being ignored by itself when that source releases another chapter, or when you click **Stop Ignoring Chapter**.
+- A chapter can only be ignored when another source of the multimanga has a last released chapter to follow.`
 )
 
 // If the current version in the database is lower than the Version field, the Up function will be executed.
