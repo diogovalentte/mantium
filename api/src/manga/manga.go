@@ -85,6 +85,10 @@ type Manga struct {
 	// LastReleasedChapter is the last chapter released by the source
 	// If the custom manga has no more released chapter, it'll be equal to the LastReadChapter.
 	LastReleasedChapter *Chapter
+	// IgnoredChapter is a last released chapter the user marked as wrong, like a chapter
+	// from another manga. While the manga's last released chapter is this one, the manga is
+	// not a candidate to be its multimanga's current manga. Only Chapter and URL are set.
+	IgnoredChapter *Chapter
 	// LastReleasedChapterNameSelector is the selector used to find the last released chapter name in the source website
 	LastReleasedChapterNameSelector *HTMLSelector
 	// LastReleasedChapterURLSelector is the selector used to find the last released chapter URL in the source website

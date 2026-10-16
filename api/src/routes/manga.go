@@ -68,6 +68,8 @@ func MangaRoutes(group *gin.RouterGroup) {
 		group.PATCH("/multimanga/cover_img", UpdateMultiMangaCoverImg)
 		group.POST("/multimanga/manga", AddMangaToMultiManga)
 		group.DELETE("/multimanga/manga", RemoveMangaFromMultiManga)
+		group.POST("/multimanga/manga/ignored_chapter", IgnoreMultiMangaMangaChapter)
+		group.DELETE("/multimanga/manga/ignored_chapter", StopIgnoringMultiMangaMangaChapter)
 
 		// Methods for manga library
 		group.POST("/mangas/search", SearchManga)
@@ -1603,6 +1605,92 @@ func RemoveMangaFromMultiManga(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Manga removed from multimanga successfully"})
 }
 
+// @Summary Ignore multimanga manga last released chapter
+// @Description Ignores the last released chapter of a multimanga's manga, like a wrong chapter released by the source. While the manga's last released chapter is the ignored one, the manga can't be the multimanga current manga. The chapter stops being ignored when the source releases another chapter. Another manga of the multimanga must have a last released chapter that isn't ignored.
+// @Produce json
+// @Param id query int true "Multimanga ID" Example(1)
+// @Param manga_id query int true "Manga ID" Example(1)
+// @Success 200 {object} responseMessage
+// @Router /multimanga/manga/ignored_chapter [post]
+func IgnoreMultiMangaMangaChapter(c *gin.Context) {
+	multimanga, m, ok := getMultiMangaAndMangaFromQuery(c)
+	if !ok {
+		return
+	}
+
+	err := multimanga.IgnoreMangaLastReleasedChapter(m)
+	if err != nil {
+		status := http.StatusInternalServerError
+		var userErr *errordefs.UserError
+		if errors.As(err, &userErr) {
+			status = http.StatusBadRequest
+		}
+		c.JSON(status, errorResponse(err))
+		return
+	}
+
+	dashboard.UpdateDashboard()
+
+	c.JSON(http.StatusOK, gin.H{"message": "Chapter ignored successfully"})
+}
+
+// @Summary Stop ignoring multimanga manga chapter
+// @Description Stops ignoring the ignored chapter of a multimanga's manga and updates the multimanga current manga.
+// @Produce json
+// @Param id query int true "Multimanga ID" Example(1)
+// @Param manga_id query int true "Manga ID" Example(1)
+// @Success 200 {object} responseMessage
+// @Router /multimanga/manga/ignored_chapter [delete]
+func StopIgnoringMultiMangaMangaChapter(c *gin.Context) {
+	multimanga, m, ok := getMultiMangaAndMangaFromQuery(c)
+	if !ok {
+		return
+	}
+
+	err := multimanga.StopIgnoringMangaChapter(m)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	dashboard.UpdateDashboard()
+
+	c.JSON(http.StatusOK, gin.H{"message": "Chapter is no longer ignored"})
+}
+
+// getMultiMangaAndMangaFromQuery gets the multimanga from the "id" query param and its manga from the "manga_id" query param.
+// If it returns false, the error response was already written.
+func getMultiMangaAndMangaFromQuery(c *gin.Context) (*manga.MultiManga, *manga.Manga, bool) {
+	multimangaID, err := strconv.Atoi(c.Query("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "id must be provided and be a number"})
+		return nil, nil, false
+	}
+	mangaID, err := strconv.Atoi(c.Query("manga_id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "manga_id must be provided and be a number"})
+		return nil, nil, false
+	}
+
+	multimanga, err := manga.GetMultiMangaFromDB(manga.ID(multimangaID))
+	if err != nil {
+		if strings.Contains(err.Error(), errordefs.ErrMultiMangaNotFoundDB.Error()) {
+			c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+			return nil, nil, false
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+		return nil, nil, false
+	}
+
+	for _, m := range multimanga.Mangas {
+		if m.ID == manga.ID(mangaID) {
+			return multimanga, m, true
+		}
+	}
+	c.JSON(http.StatusNotFound, gin.H{"message": errordefs.ErrMangaNotFoundInMultiManga.Error()})
+	return nil, nil, false
+}
+
 // @Summary Search manga
 // @Description Searches a manga in the source. You must provide the source name like "mangadex" and the search query.
 // @Accept json
@@ -2665,22 +2753,6 @@ func NotifyMangaLastReleasedChapterUpdate(m *manga.Manga) error {
 	return nil
 }
 
-func isNewChapterDifferentFromOld(oldChapter, newChapter *manga.Chapter, source string) bool {
-	if oldChapter == nil && newChapter != nil {
-		return true
-	}
-	if oldChapter != nil && newChapter != nil && oldChapter.Chapter != newChapter.Chapter {
-		return true
-	}
-	if source == manga.CustomMangaSource {
-		if oldChapter != nil && newChapter != nil && oldChapter.URL != newChapter.URL {
-			return true
-		}
-	}
-
-	return false
-}
-
 func KaizokuTriggerChaptersDownload(logger *zerolog.Logger) error {
 	kaizoku := kaizoku.Kaizoku{}
 	kaizoku.Init()
@@ -2846,7 +2918,7 @@ func updateMultiMangaMetadata(multimanga *manga.MultiManga, browserLimiter chan 
 		updatedManga.Status = multimanga.Status
 		updatedManga.ID = mangaToUpdate.ID
 
-		mangaHasNewReleasedChapter := isNewChapterDifferentFromOld(mangaToUpdate.LastReleasedChapter, updatedManga.LastReleasedChapter, mangaToUpdate.Source)
+		mangaHasNewReleasedChapter := manga.IsNewChapterDifferentFromOld(mangaToUpdate.LastReleasedChapter, updatedManga.LastReleasedChapter, mangaToUpdate.Source)
 		if mangaHasNewReleasedChapter || (!mangaToUpdate.CoverImgFixed && (mangaToUpdate.CoverImgURL != updatedManga.CoverImgURL || !bytes.Equal(mangaToUpdate.CoverImg, updatedManga.CoverImg))) || mangaToUpdate.Name != updatedManga.Name {
 			if mangaHasNewReleasedChapter {
 				mangasHaveNewChapter = true
@@ -2884,7 +2956,7 @@ func updateMultiMangaMetadata(multimanga *manga.MultiManga, browserLimiter chan 
 		if updatedMultimanga.CurrentManga.LastReleasedChapter != nil {
 			if oldCurrentMangaChapter == nil {
 				return updatedMultimanga.CurrentManga, newMetadata, sourceNewMetadata, errors
-			} else if isNewChapterDifferentFromOld(oldCurrentMangaChapter, updatedMultimanga.CurrentManga.LastReleasedChapter, updatedMultimanga.CurrentManga.Source) {
+			} else if manga.IsNewChapterDifferentFromOld(oldCurrentMangaChapter, updatedMultimanga.CurrentManga.LastReleasedChapter, updatedMultimanga.CurrentManga.Source) {
 				return updatedMultimanga.CurrentManga, newMetadata, sourceNewMetadata, errors
 			}
 		}
@@ -2942,7 +3014,7 @@ func updateCustomMangaLastReleasedChapter(m *manga.Manga, browserLimiter chan st
 		return false, err
 	}
 
-	if !isNewChapterDifferentFromOld(m.LastReleasedChapter, chapter, m.Source) {
+	if !manga.IsNewChapterDifferentFromOld(m.LastReleasedChapter, chapter, m.Source) {
 		return false, nil
 	}
 
