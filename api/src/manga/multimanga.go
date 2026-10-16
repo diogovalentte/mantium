@@ -1015,6 +1015,8 @@ func queryMultiMangaMangas(db *sql.DB, multiMangaID *ID) (map[ID][]*Manga, error
 			mangas.last_released_chapter_url_attribute,
 			mangas.last_released_chapter_url_get_first,
 			mangas.last_released_chapter_selector_use_browser,
+			mangas.ignored_chapter,
+			mangas.ignored_chapter_url,
             
             last_released_chapter.url AS last_released_chapter_url,
             last_released_chapter.chapter AS last_released_chapter,
@@ -1056,6 +1058,8 @@ func queryMultiMangaMangas(db *sql.DB, multiMangaID *ID) (map[ID][]*Manga, error
 			lastReleasedChapterURL, lastReleasedChapterChapter, lastReleasedChapterName, lastReleasedChapterInternalID sql.NullString
 			lastReleasedChapterUpdatedAt                                                                               sql.NullTime
 			lastReleasedChapterType                                                                                    sql.NullInt32
+
+			ignoredChapter, ignoredChapterURL sql.NullString
 		)
 
 		err := rows.Scan(
@@ -1066,6 +1070,7 @@ func queryMultiMangaMangas(db *sql.DB, multiMangaID *ID) (map[ID][]*Manga, error
 			&lastReleasedChapterNameSelector, &lastReleasedChapterNameAttribute, &lastReleasedChapterNameRegex, &lastReleasedChapterNameGetFirst,
 			&lastReleasedChapterURLSelector, &lastReleasedChapterURLAttribute, &lastReleasedChapterURLGetFirst,
 			&currentManga.LastReleasedChapterSelectorUseBrowser,
+			&ignoredChapter, &ignoredChapterURL,
 
 			&lastReleasedChapterURL, &lastReleasedChapterChapter, &lastReleasedChapterName,
 			&lastReleasedChapterInternalID, &lastReleasedChapterUpdatedAt, &lastReleasedChapterType,
@@ -1100,6 +1105,10 @@ func queryMultiMangaMangas(db *sql.DB, multiMangaID *ID) (map[ID][]*Manga, error
 			lastReleasedChapter.UpdatedAt = lastReleasedChapterUpdatedAt.Time
 			lastReleasedChapter.Type = Type(lastReleasedChapterType.Int32)
 			currentManga.LastReleasedChapter = &lastReleasedChapter
+		}
+
+		if ignoredChapter.Valid {
+			currentManga.IgnoredChapter = &Chapter{Chapter: ignoredChapter.String, URL: ignoredChapterURL.String}
 		}
 
 		err = validateManga(&currentManga)
@@ -1208,9 +1217,19 @@ func validateMultiManga(mm *MultiManga) error {
 }
 
 // GetLatestManga tries to return the manga with the latest chapter.
+// Mangas whose last released chapter is ignored are skipped, unless all of them are.
 func GetLatestManga(mangas []*Manga) (*Manga, error) {
 	if len(mangas) == 0 {
 		return nil, errordefs.ErrMultiMangaMangaListIsEmpty
+	}
+	candidates := make([]*Manga, 0, len(mangas))
+	for _, manga := range mangas {
+		if !manga.IsLastReleasedChapterIgnored() {
+			candidates = append(candidates, manga)
+		}
+	}
+	if len(candidates) > 0 {
+		mangas = candidates
 	}
 	if len(mangas) == 1 {
 		return mangas[0], nil
@@ -1252,4 +1271,115 @@ func GetLatestManga(mangas []*Manga) (*Manga, error) {
 	}
 
 	return currentManga, nil
+}
+
+// IsLastReleasedChapterIgnored returns true if the manga's last released chapter is its ignored chapter.
+func (m *Manga) IsLastReleasedChapterIgnored() bool {
+	return m.IgnoredChapter != nil && m.LastReleasedChapter != nil && !IsNewChapterDifferentFromOld(m.IgnoredChapter, m.LastReleasedChapter, m.Source)
+}
+
+// IgnoreMangaLastReleasedChapter ignores the last released chapter of one of the multimanga's mangas
+// and updates the multimanga current manga, which will be another manga.
+// At least one other manga must have a last released chapter that isn't ignored.
+func (mm *MultiManga) IgnoreMangaLastReleasedChapter(m *Manga) error {
+	contextError := "error ignoring manga '%s' last released chapter in multimanga '%s'"
+
+	if m.LastReleasedChapter == nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), errordefs.ErrNoChapterToIgnore)
+	}
+	hasOtherManga := false
+	for _, other := range mm.Mangas {
+		if other != m && other.LastReleasedChapter != nil && !other.IsLastReleasedChapterIgnored() {
+			hasOtherManga = true
+			break
+		}
+	}
+	if !hasOtherManga {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), errordefs.ErrNoMangaLeftToFollow)
+	}
+
+	ignoredChapter := &Chapter{Chapter: m.LastReleasedChapter.Chapter, URL: m.LastReleasedChapter.URL}
+	err := mm.setMangaIgnoredChapter(m, ignoredChapter)
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), err)
+	}
+
+	return nil
+}
+
+// StopIgnoringMangaChapter removes the ignored chapter of one of the multimanga's mangas
+// and updates the multimanga current manga.
+func (mm *MultiManga) StopIgnoringMangaChapter(m *Manga) error {
+	err := mm.setMangaIgnoredChapter(m, nil)
+	if err != nil {
+		return util.AddErrorContext(fmt.Sprintf("error removing manga '%s' ignored chapter in multimanga '%s'", m, mm), err)
+	}
+
+	return nil
+}
+
+func (mm *MultiManga) setMangaIgnoredChapter(m *Manga, chapter *Chapter) error {
+	db, err := db.OpenConn()
+	if err != nil {
+		return err
+	}
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	previousIgnoredChapter := m.IgnoredChapter
+	m.IgnoredChapter = chapter
+	err = updateMangaIgnoredChapter(m, tx)
+	if err != nil {
+		tx.Rollback()
+		m.IgnoredChapter = previousIgnoredChapter
+		return err
+	}
+
+	currentManga, err := GetLatestManga(mm.Mangas)
+	if err != nil {
+		tx.Rollback()
+		m.IgnoredChapter = previousIgnoredChapter
+		return err
+	}
+	previousCurrentManga := mm.CurrentManga
+	mm.CurrentManga = currentManga
+	err = updateMultiMangaCurrentManga(mm, tx)
+	if err != nil {
+		tx.Rollback()
+		m.IgnoredChapter = previousIgnoredChapter
+		mm.CurrentManga = previousCurrentManga
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func updateMangaIgnoredChapter(m *Manga, tx *sql.Tx) error {
+	var chapter, url sql.NullString
+	if m.IgnoredChapter != nil {
+		chapter = sql.NullString{String: m.IgnoredChapter.Chapter, Valid: true}
+		url = sql.NullString{String: m.IgnoredChapter.URL, Valid: true}
+	}
+
+	result, err := tx.Exec(`
+        UPDATE mangas
+        SET ignored_chapter = $1, ignored_chapter_url = $2
+        WHERE id = $3;
+    `, chapter, url, m.ID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return errordefs.ErrMangaNotFoundDB
+	}
+
+	return nil
 }

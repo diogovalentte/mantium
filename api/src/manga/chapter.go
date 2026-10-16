@@ -91,23 +91,24 @@ func upsertMangaChapter(mangaID ID, chapter *Chapter, tx *sql.Tx) error {
 		return util.AddErrorContext(contextError, err)
 	}
 
-	var query string
+	var result sql.Result
 	if chapter.Type == 1 {
-		query = `
+		// The ignored chapter is kept only while it's still the last released chapter,
+		// using the same comparison as IsNewChapterDifferentFromOld.
+		result, err = tx.Exec(`
             UPDATE mangas
-            SET last_released_chapter = $1
+            SET last_released_chapter = $1,
+                ignored_chapter = CASE WHEN ignored_chapter = $3 AND (source <> $5 OR ignored_chapter_url = $4) THEN ignored_chapter END,
+                ignored_chapter_url = CASE WHEN ignored_chapter = $3 AND (source <> $5 OR ignored_chapter_url = $4) THEN ignored_chapter_url END
             WHERE id = $2;
-        `
+        `, chapterID, mangaID, chapter.Chapter, chapter.URL, CustomMangaSource)
 	} else {
-		query = `
+		result, err = tx.Exec(`
             UPDATE mangas
             SET last_read_chapter = $1
             WHERE id = $2;
-        `
+        `, chapterID, mangaID)
 	}
-
-	var result sql.Result
-	result, err = tx.Exec(query, chapterID, mangaID)
 	if err != nil {
 		return util.AddErrorContext(contextError, err)
 	}
@@ -242,4 +243,22 @@ func validateChapter(c *Chapter) error {
 	}
 
 	return nil
+}
+
+// IsNewChapterDifferentFromOld returns true if newChapter is a different chapter than oldChapter.
+// Chapters are compared by their number, and custom mangas also by their URL.
+func IsNewChapterDifferentFromOld(oldChapter, newChapter *Chapter, source string) bool {
+	if oldChapter == nil && newChapter != nil {
+		return true
+	}
+	if oldChapter != nil && newChapter != nil && oldChapter.Chapter != newChapter.Chapter {
+		return true
+	}
+	if source == CustomMangaSource {
+		if oldChapter != nil && newChapter != nil && oldChapter.URL != newChapter.URL {
+			return true
+		}
+	}
+
+	return false
 }

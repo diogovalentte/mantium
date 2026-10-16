@@ -620,13 +620,13 @@ def show_multimanga_mangas(
             with st.container(border=True):
                 with centered_container("show_multimanga_mangas_center_container" + str(manga["ID"])):
                     show_multimanga_manga(
-                        manga, multimanga_id, manga["ID"] == current_manga_id
+                        manga, multimanga_id, manga["ID"] == current_manga_id, len(mangas) > 1
                     )
         col_index += 1
 
 
 def show_multimanga_manga(
-    manga: dict[str, Any], multimanga_id: int, current_manga: bool = False
+    manga: dict[str, Any], multimanga_id: int, current_manga: bool = False, can_ignore_chapter: bool = False
 ):
     api_client = get_api_client()
     # Try to make the title fit in the container the best way
@@ -730,6 +730,18 @@ def show_multimanga_manga(
             border-radius: 1rem;
             float: right;">Current Manga</span>
         """
+    ignored_chapter = manga.get("IgnoredChapter")
+    if ignored_chapter:
+        tags += f"""<span style="display:inline-block;
+            background-color: {defaults.ignored_chapter_tag_background_color};
+            padding: 0.1rem 0.5rem;
+            font-size: 14px;
+            font-weight: 400;
+            color: {defaults.ignored_chapter_tag_text_color};
+            border-radius: 1rem;
+            float: right;
+            margin-right: 0.3rem;">Ch. {escape_html(ignored_chapter["Chapter"] or "N/A")} ignored</span>
+        """
 
     st.write(tags, unsafe_allow_html=True)
 
@@ -746,6 +758,11 @@ def show_multimanga_manga(
             on_click=on_click,
         ):
             st.rerun()
+
+    if ignored_chapter:
+        show_stop_ignoring_chapter_popover(manga, multimanga_id)
+    elif can_ignore_chapter and (manga.get("LastReleasedChapter") or {}).get("URL"):
+        show_ignore_chapter_popover(manga, multimanga_id)
 
     with stylable_container(
         key="update_manga_delete_button" + str(manga["ID"]),
@@ -786,6 +803,62 @@ def show_multimanga_manga(
                     ss["update_manga_success_message"] = "Manga removed successfully"
                     ss["highlighted_multimanga"] = multimanga
                     st.rerun()
+
+
+def show_ignore_chapter_popover(manga: dict[str, Any], multimanga_id: int):
+    chapter = manga["LastReleasedChapter"]["Chapter"] or "N/A"
+    source_name, _, _ = get_source_name_and_colors(manga["Source"])
+    with st.popover("Ignore Last Chapter", width="stretch"):
+        st.warning(
+            f"Ignore chapter {chapter} from {source_name}? Use it when the source released a wrong chapter. "
+            "The multimanga will follow its other mangas until this source releases another chapter."
+        )
+        clicked = st.button(
+            "Yes, ignore",
+            key="update_multimanga_mangas_ignore_chapter_" + str(manga["ID"]),
+            width="stretch",
+        )
+        # Fixed slot, so an error doesn't stay below the button on the dialog's next rerun
+        message = st.empty()
+        if clicked:
+            update_multimanga_manga_ignored_chapter(manga, multimanga_id, True, message)
+
+
+def show_stop_ignoring_chapter_popover(manga: dict[str, Any], multimanga_id: int):
+    with st.popover("Stop Ignoring Chapter", width="stretch"):
+        st.warning(
+            f"Stop ignoring chapter {manga['IgnoredChapter']['Chapter'] or 'N/A'}? "
+            "It'll count again for the multimanga's last released chapter."
+        )
+        clicked = st.button(
+            "Yes, stop ignoring",
+            key="update_multimanga_mangas_stop_ignoring_chapter_" + str(manga["ID"]),
+            width="stretch",
+        )
+        message = st.empty()
+        if clicked:
+            update_multimanga_manga_ignored_chapter(manga, multimanga_id, False, message)
+
+
+def update_multimanga_manga_ignored_chapter(manga: dict[str, Any], multimanga_id: int, ignore: bool, message):
+    api_client = get_api_client()
+    try:
+        if ignore:
+            api_client.ignore_multimanga_manga_chapter(multimanga_id, manga["ID"])
+        else:
+            api_client.stop_ignoring_multimanga_manga_chapter(multimanga_id, manga["ID"])
+        # Fetched again, so the Manage Mangas form reopens with the new current manga
+        multimanga = api_client.get_multimanga(multimanga_id)
+    except Exception as e:
+        if user_message := get_api_user_message(e):
+            message.warning(user_message)
+        else:
+            logger.exception(e)
+            message.error(f"Error while updating the ignored chapter: {get_api_error_detail(e)}")
+    else:
+        ss["update_manga_success_message"] = "Chapter ignored successfully" if ignore else "Chapter is no longer ignored"
+        ss["highlighted_multimanga"] = multimanga
+        st.rerun()
 
 
 def show_update_custom_manga(manga: dict[str, Any]):

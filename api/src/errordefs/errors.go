@@ -19,6 +19,8 @@ var (
 	ErrMultiMangaMangaListIsEmpty           = &CustomError{Message: "multimanga manga list is empty"}
 
 	ErrNoLastReleasedChapter = &UserError{Message: "The manga has no last released chapter to mark as read"}
+	ErrNoChapterToIgnore     = &UserError{Message: "The manga has no last released chapter to ignore"}
+	ErrNoMangaLeftToFollow   = &UserError{Message: "Can't ignore this chapter: no other manga in the multimanga has a last released chapter that isn't ignored"}
 )
 
 // CustomError is a custom error

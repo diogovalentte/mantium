@@ -4,7 +4,7 @@ from urllib.parse import urlencode, urljoin
 
 import base64
 import requests
-from src.api.timeouts import SOURCE_REQUEST_TIMEOUT
+from src.api.timeouts import REQUEST_TIMEOUT, SOURCE_REQUEST_TIMEOUT
 from src.exceptions import APIException
 from src.util.util import get_updated_at_datetime
 
@@ -305,6 +305,40 @@ class MultiMangaAPIClient:
         if res.status_code not in self.acceptable_status_codes:
             raise APIException(
                 "error while removing manga from multimanga",
+                url,
+                "DELETE",
+                {},
+                res.status_code,
+                res.text,
+            )
+
+        return res.json()
+
+    def ignore_multimanga_manga_chapter(self, id: int, manga_id: int) -> dict[str, str]:
+        url = f"{self.base_multimanga_url}/manga/ignored_chapter?id={id}&manga_id={manga_id}"
+
+        res = requests.post(url, timeout=REQUEST_TIMEOUT)
+
+        if res.status_code not in self.acceptable_status_codes:
+            raise APIException(
+                "error while ignoring the manga last released chapter",
+                url,
+                "POST",
+                {},
+                res.status_code,
+                res.text,
+            )
+
+        return res.json()
+
+    def stop_ignoring_multimanga_manga_chapter(self, id: int, manga_id: int) -> dict[str, str]:
+        url = f"{self.base_multimanga_url}/manga/ignored_chapter?id={id}&manga_id={manga_id}"
+
+        res = requests.delete(url, timeout=REQUEST_TIMEOUT)
+
+        if res.status_code not in self.acceptable_status_codes:
+            raise APIException(
+                "error while stopping ignoring the manga chapter",
                 url,
                 "DELETE",
                 {},

@@ -171,6 +171,14 @@ class FakeAPI:
         self._record("delete_multimanga", *args)
         return {"message": "ok"}
 
+    def ignore_multimanga_manga_chapter(self, *args):
+        self._record("ignore_multimanga_manga_chapter", *args)
+        return {"message": "ok"}
+
+    def stop_ignoring_multimanga_manga_chapter(self, *args):
+        self._record("stop_ignoring_multimanga_manga_chapter", *args)
+        return {"message": "ok"}
+
 
     # Main page
 

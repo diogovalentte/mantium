@@ -3,6 +3,7 @@
 package manga
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -246,4 +247,88 @@ func getMultiMangaCopy(source *MultiManga) *MultiManga {
 	multiManga.CurrentManga = mangas[0]
 
 	return &multiManga
+}
+
+func TestMultiMangaIgnoredChapterDB(t *testing.T) {
+	testutil.Database(t)
+	newManga := func(source, url, chapter string) *Manga {
+		return &Manga{
+			Source: source, URL: url, Name: "Manga A", Status: 1, CoverImg: []byte{},
+			LastReleasedChapter: &Chapter{URL: url + "/" + chapter, Name: "Chapter " + chapter, Chapter: chapter, UpdatedAt: time.Now().Truncate(time.Second), Type: 1},
+		}
+	}
+	right, wrong := newManga("mangadex", "https://mangadex.org/title/a", "71"), newManga("rawkuma", "https://rawkuma.net/manga/a", "72")
+	mm := &MultiManga{Status: 1, CurrentManga: right, Mangas: []*Manga{right}}
+	if err := mm.InsertIntoDB(); err != nil {
+		t.Fatal(err)
+	}
+	if err := mm.AddManga(wrong); err != nil {
+		t.Fatal(err)
+	}
+	get := func() (*MultiManga, *Manga, *Manga) {
+		t.Helper()
+		got, err := GetMultiMangaFromDB(mm.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var r, w *Manga
+		for _, m := range got.Mangas {
+			switch m.URL {
+			case right.URL:
+				r = m
+			case wrong.URL:
+				w = m
+			}
+		}
+		return got, r, w
+	}
+
+	got, _, w := get()
+	if got.CurrentManga.URL != wrong.URL {
+		t.Fatalf("current manga is %s, want the one with the latest chapter", got.CurrentManga.URL)
+	}
+
+	if err := got.IgnoreMangaLastReleasedChapter(w); err != nil {
+		t.Fatal(err)
+	}
+	got, r, w := get()
+	if got.CurrentManga.URL != right.URL {
+		t.Fatalf("current manga is %s after ignoring its chapter", got.CurrentManga.URL)
+	}
+	if w.IgnoredChapter == nil || w.IgnoredChapter.Chapter != "72" || w.IgnoredChapter.URL != wrong.LastReleasedChapter.URL {
+		t.Fatalf("ignored chapter not saved: %v", w.IgnoredChapter)
+	}
+
+	if err := got.IgnoreMangaLastReleasedChapter(r); !errors.Is(err, errordefs.ErrNoMangaLeftToFollow) {
+		t.Fatalf("ignoring the last followed manga returned %v", err)
+	}
+
+	if err := got.StopIgnoringMangaChapter(w); err != nil {
+		t.Fatal(err)
+	}
+	got, _, w = get()
+	if got.CurrentManga.URL != wrong.URL || w.IgnoredChapter != nil {
+		t.Fatalf("after stop ignoring: current %s, ignored %v", got.CurrentManga.URL, w.IgnoredChapter)
+	}
+
+	if err := got.IgnoreMangaLastReleasedChapter(w); err != nil {
+		t.Fatal(err)
+	}
+	_, _, w = get()
+	sameChapter := *w.LastReleasedChapter
+	sameChapter.Name = "Chapter 72 renamed"
+	if err := w.UpsertChapterIntoDB(&sameChapter); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, w = get(); w.IgnoredChapter == nil {
+		t.Fatal("ignored chapter cleared when the same chapter was saved again")
+	}
+	newChapter := sameChapter
+	newChapter.Chapter, newChapter.URL = "73", wrong.URL+"/73"
+	if err := w.UpsertChapterIntoDB(&newChapter); err != nil {
+		t.Fatal(err)
+	}
+	if got, _, w = get(); w.IgnoredChapter != nil {
+		t.Fatalf("ignored chapter not cleared after a new chapter: %v", w.IgnoredChapter)
+	}
 }
