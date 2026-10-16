@@ -212,7 +212,7 @@ By default, the API refuses to get custom manga pages and cover images from priv
 If you track a site hosted in your own network, set the API environment variable `ALLOW_PRIVATE_URLS=true`.
 
 > [!WARNING]
-> This is new in this version: custom mangas whose URL points to your network stop updating until you set `ALLOW_PRIVATE_URLS=true`.
+> Custom mangas whose URL points to your network don't update until you set `ALLOW_PRIVATE_URLS=true`.
 
 ---
 
