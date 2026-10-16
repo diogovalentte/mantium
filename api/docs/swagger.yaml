@@ -113,6 +113,13 @@ definitions:
         type: string
       id:
         type: integer
+      ignoredChapter:
+        allOf:
+        - $ref: '#/definitions/manga.Chapter'
+        description: |-
+          IgnoredChapter is a last released chapter the user marked as wrong, like a chapter
+          from another manga. While the manga's last released chapter is this one, the manga is
+          not a candidate to be its multimanga's current manga. Only Chapter and URL are set.
       internalID:
         description: InteralID is a unique identifier for the manga in the source
         type: string
@@ -210,6 +217,45 @@ definitions:
         description: All mangas in the multimanga should have the same status
         type: integer
     type: object
+  manga.Preset:
+    properties:
+      builtin:
+        description: Builtin presets come with Mantium and are recreated every time
+          the API starts.
+        type: boolean
+      description:
+        type: string
+      domains:
+        description: |-
+          Domains are the sites the preset is selected for automatically, like "example.com".
+          Subdomains also match.
+        items:
+          type: string
+        type: array
+      id:
+        type: integer
+      name:
+        type: string
+      name_selector:
+        $ref: '#/definitions/manga.HTMLSelector'
+      url_selector:
+        $ref: '#/definitions/manga.HTMLSelector'
+      use_browser:
+        type: boolean
+    type: object
+  manga.PresetDetection:
+    properties:
+      chapter:
+        allOf:
+        - $ref: '#/definitions/manga.Chapter'
+        description: Chapter is the last released chapter found by the preset, nil
+          if the preset doesn't work for the page.
+      preset:
+        $ref: '#/definitions/manga.Preset'
+      user_message:
+        description: UserMessage tells why the preset doesn't work for the page.
+        type: string
+    type: object
   models.MangaSearchResult:
     properties:
       coverURL:
@@ -232,6 +278,25 @@ definitions:
         type: string
       year:
         type: integer
+    type: object
+  routes.AddCustomMangaPresetRequest:
+    properties:
+      description:
+        type: string
+      domains:
+        items:
+          type: string
+        type: array
+      name:
+        type: string
+      name_selector:
+        $ref: '#/definitions/routes.HTMLSelectorRequest'
+      url_selector:
+        $ref: '#/definitions/routes.HTMLSelectorRequest'
+      use_browser:
+        type: boolean
+    required:
+    - name
     type: object
   routes.AddMangaToMultiMangaRequest:
     properties:
@@ -289,6 +354,13 @@ definitions:
         type: string
     required:
     - status
+    type: object
+  routes.DetectCustomMangaPresetsRequest:
+    properties:
+      url:
+        type: string
+    required:
+    - url
     type: object
   routes.HTMLSelectorRequest:
     properties:
@@ -481,6 +553,79 @@ paths:
           schema:
             $ref: '#/definitions/routes.responseMessage'
       summary: Update custom manga name
+  /custom_manga/presets:
+    delete:
+      description: Deletes a preset created by the user. Presets that come with Mantium
+        can't be deleted.
+      parameters:
+      - description: Preset ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Delete custom manga preset
+    get:
+      description: Gets all custom manga presets, the ones that come with Mantium
+        first.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"presets": [presetObj]}'
+          schema:
+            items:
+              $ref: '#/definitions/manga.Preset'
+            type: array
+      summary: Get custom manga presets
+    post:
+      consumes:
+      - application/json
+      description: Saves custom manga selectors as a preset. If the error is caused
+        by the request, the response has a "user_message" field explaining it.
+      parameters:
+      - description: Preset
+        in: body
+        name: preset
+        required: true
+        schema:
+          $ref: '#/definitions/routes.AddCustomMangaPresetRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"preset": presetObj}'
+          schema:
+            $ref: '#/definitions/manga.Preset'
+      summary: Add custom manga preset
+  /custom_manga/presets/detect:
+    post:
+      consumes:
+      - application/json
+      description: Tells which presets work for the manga page. "domain_presets" are
+        the presets whose domains match the URL, which don't need the page to be fetched.
+        "detections" has the result of applying every preset to the page.
+      parameters:
+      - description: Manga page URL
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/routes.DetectCustomMangaPresetsRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: '{"domain_presets": [presetObj], "detections": [presetDetectionObj]}'
+          schema:
+            $ref: '#/definitions/manga.PresetDetection'
+      summary: Detect custom manga presets
   /custom_manga/test_selectors:
     post:
       consumes:
@@ -1091,6 +1236,58 @@ paths:
           schema:
             $ref: '#/definitions/routes.responseMessage'
       summary: Add manga to multimanga list
+  /multimanga/manga/ignored_chapter:
+    delete:
+      description: Stops ignoring the ignored chapter of a multimanga's manga and
+        updates the multimanga current manga.
+      parameters:
+      - description: Multimanga ID
+        example: 1
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: Manga ID
+        example: 1
+        in: query
+        name: manga_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Stop ignoring multimanga manga chapter
+    post:
+      description: Ignores the last released chapter of a multimanga's manga, like
+        a wrong chapter released by the source. While the manga's last released chapter
+        is the ignored one, the manga can't be the multimanga current manga. The chapter
+        stops being ignored when the source releases another chapter. Another manga
+        of the multimanga must have a last released chapter that isn't ignored.
+      parameters:
+      - description: Multimanga ID
+        example: 1
+        in: query
+        name: id
+        required: true
+        type: integer
+      - description: Manga ID
+        example: 1
+        in: query
+        name: manga_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.responseMessage'
+      summary: Ignore multimanga manga last released chapter
   /multimanga/status:
     patch:
       description: Updates a multimanga status in the database.

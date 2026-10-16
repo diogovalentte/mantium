@@ -129,6 +129,110 @@
                 }
             }
         },
+        "/custom_manga/presets": {
+            "get": {
+                "description": "Gets all custom manga presets, the ones that come with Mantium first.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get custom manga presets",
+                "responses": {
+                    "200": {
+                        "description": "{\"presets\": [presetObj]}",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/manga.Preset"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Saves custom manga selectors as a preset. If the error is caused by the request, the response has a \"user_message\" field explaining it.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Add custom manga preset",
+                "parameters": [
+                    {
+                        "description": "Preset",
+                        "name": "preset",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.AddCustomMangaPresetRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"preset\": presetObj}",
+                        "schema": {
+                            "$ref": "#/definitions/manga.Preset"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes a preset created by the user. Presets that come with Mantium can't be deleted.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Delete custom manga preset",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Preset ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
+        "/custom_manga/presets/detect": {
+            "post": {
+                "description": "Tells which presets work for the manga page. \"domain_presets\" are the presets whose domains match the URL, which don't need the page to be fetched. \"detections\" has the result of applying every preset to the page.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Detect custom manga presets",
+                "parameters": [
+                    {
+                        "description": "Manga page URL",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/routes.DetectCustomMangaPresetsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "{\"domain_presets\": [presetObj], \"detections\": [presetDetectionObj]}",
+                        "schema": {
+                            "$ref": "#/definitions/manga.PresetDetection"
+                        }
+                    }
+                }
+            }
+        },
         "/custom_manga/test_selectors": {
             "post": {
                 "description": "Gets the last released chapter from the page using the selectors, without saving anything. If the error is caused by the URL or selectors, the response has a \"user_message\" field explaining it.",
@@ -991,6 +1095,74 @@
                 }
             }
         },
+        "/multimanga/manga/ignored_chapter": {
+            "post": {
+                "description": "Ignores the last released chapter of a multimanga's manga, like a wrong chapter released by the source. While the manga's last released chapter is the ignored one, the manga can't be the multimanga current manga. The chapter stops being ignored when the source releases another chapter. Another manga of the multimanga must have a last released chapter that isn't ignored.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Ignore multimanga manga last released chapter",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Multimanga ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Manga ID",
+                        "name": "manga_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Stops ignoring the ignored chapter of a multimanga's manga and updates the multimanga current manga.",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Stop ignoring multimanga manga chapter",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Multimanga ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "example": 1,
+                        "description": "Manga ID",
+                        "name": "manga_id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/routes.responseMessage"
+                        }
+                    }
+                }
+            }
+        },
         "/multimanga/status": {
             "patch": {
                 "description": "Updates a multimanga status in the database.",
@@ -1202,6 +1374,14 @@
                 "id": {
                     "type": "integer"
                 },
+                "ignoredChapter": {
+                    "description": "IgnoredChapter is a last released chapter the user marked as wrong, like a chapter\nfrom another manga. While the manga's last released chapter is this one, the manga is\nnot a candidate to be its multimanga's current manga. Only Chapter and URL are set.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/manga.Chapter"
+                        }
+                    ]
+                },
                 "internalID": {
                     "description": "InteralID is a unique identifier for the manga in the source",
                     "type": "string"
@@ -1318,6 +1498,60 @@
                 }
             }
         },
+        "manga.Preset": {
+            "type": "object",
+            "properties": {
+                "builtin": {
+                    "description": "Builtin presets come with Mantium and are recreated every time the API starts.",
+                    "type": "boolean"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "domains": {
+                    "description": "Domains are the sites the preset is selected for automatically, like \"example.com\".\nSubdomains also match.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "name_selector": {
+                    "$ref": "#/definitions/manga.HTMLSelector"
+                },
+                "url_selector": {
+                    "$ref": "#/definitions/manga.HTMLSelector"
+                },
+                "use_browser": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "manga.PresetDetection": {
+            "type": "object",
+            "properties": {
+                "chapter": {
+                    "description": "Chapter is the last released chapter found by the preset, nil if the preset doesn't work for the page.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/manga.Chapter"
+                        }
+                    ]
+                },
+                "preset": {
+                    "$ref": "#/definitions/manga.Preset"
+                },
+                "user_message": {
+                    "description": "UserMessage tells why the preset doesn't work for the page.",
+                    "type": "string"
+                }
+            }
+        },
         "models.MangaSearchResult": {
             "type": "object",
             "properties": {
@@ -1350,6 +1584,35 @@
                 },
                 "year": {
                     "type": "integer"
+                }
+            }
+        },
+        "routes.AddCustomMangaPresetRequest": {
+            "type": "object",
+            "required": [
+                "name"
+            ],
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "domains": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "name_selector": {
+                    "$ref": "#/definitions/routes.HTMLSelectorRequest"
+                },
+                "url_selector": {
+                    "$ref": "#/definitions/routes.HTMLSelectorRequest"
+                },
+                "use_browser": {
+                    "type": "boolean"
                 }
             }
         },
@@ -1434,6 +1697,17 @@
                     "maximum": 5,
                     "minimum": 0
                 },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "routes.DetectCustomMangaPresetsRequest": {
+            "type": "object",
+            "required": [
+                "url"
+            ],
+            "properties": {
                 "url": {
                     "type": "string"
                 }
