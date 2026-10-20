@@ -255,7 +255,7 @@ before calling it done.
   callback.
 - **`st.expander` only takes a `key` since 1.55.** With `key=` and
   `on_change="rerun"`, its open state is `session_state[key]`, and code opens it
-  by writing `True` there before it renders (the Last Released Chapter expander
+  by writing `True` there before it renders (the Chapter Selectors expander
   after a preset is detected). In 1.54 it couldn't be opened from code.
 - **`AppTest` selectbox `.select()`/`.set_value()` take the option value** (a
   preset ID), not the label `format_func` shows. Passing the label fails inside

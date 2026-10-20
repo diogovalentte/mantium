@@ -246,14 +246,14 @@ const docTemplate = `{
         },
         "/custom_manga/test_selectors": {
             "post": {
-                "description": "Gets the last released chapter from the page using the selectors, without saving anything. If the error is caused by the URL or selectors, the response has a \"user_message\" field explaining it.",
+                "description": "Gets the last released chapter and the number of chapters in the chapters list from the page using the selectors, without saving anything. If the error is caused by the URL or selectors, the response has a \"user_message\" field explaining it. If only the chapters list can't be got, \"chapters_error\" explains why.",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Test custom manga last released chapter selectors",
+                "summary": "Test custom manga chapter selectors",
                 "parameters": [
                     {
                         "description": "Page URL and selectors",
@@ -267,7 +267,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "{\"chapter\": chapterObj}",
+                        "description": "{\"chapter\": chapterObj, \"chapters_count\": 12, \"chapters_error\": \"...\"}",
                         "schema": {
                             "$ref": "#/definitions/manga.Chapter"
                         }

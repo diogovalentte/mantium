@@ -36,6 +36,15 @@ const customMangaFeed = `<?xml version="1.0"?>
   <item><title>Chapter 20</title><link>https://example.com/manga/20</link></item>
 </channel></rss>`
 
+const customMangaPageWithNotice = `<html><body>
+<ul>
+  <li><a href="/notice">Hiatus announcement</a></li>
+  <li><a href="/c/3">Chapter 3</a></li>
+  <li><a href="/c/2">Chapter 2</a></li>
+  <li><a href="/c/1">Chapter 1</a></li>
+</ul>
+</body></html>`
+
 func newCustomMangaTestServer() *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -46,6 +55,9 @@ func newCustomMangaTestServer() *httptest.Server {
 		case "/with-base":
 			w.Header().Set("Content-Type", "text/html")
 			w.Write([]byte(customMangaPageWithBase))
+		case "/with-notice":
+			w.Header().Set("Content-Type", "text/html")
+			w.Write([]byte(customMangaPageWithNotice))
 		case "/feed.xml":
 			w.Header().Set("Content-Type", "application/rss+xml")
 			w.Write([]byte(customMangaFeed))
@@ -112,6 +124,165 @@ func TestGetCustomMangaLastReleasedChapter(t *testing.T) {
 			}
 			if chapter.URL != test.wantURL {
 				t.Errorf("got URL %q, want %q", chapter.URL, test.wantURL)
+			}
+		})
+	}
+}
+
+func TestGetCustomMangaChapters(t *testing.T) {
+	allowPrivateURLs(t)
+	server := newCustomMangaTestServer()
+	defer server.Close()
+
+	tests := []struct {
+		name         string
+		path         string
+		nameSelector *HTMLSelector
+		urlSelector  *HTMLSelector
+		wantChapters []string
+		wantURLs     []string
+		// lastReleasedFails is true when the newest entry isn't a chapter
+		lastReleasedFails bool
+	}{
+		{
+			name:         "newest first in the page",
+			nameSelector: &HTMLSelector{Selector: "css:a.chapter", Regex: `Chapter (\d+)`, GetFirst: true},
+			urlSelector:  &HTMLSelector{Selector: "css:a.chapter", Attribute: "href", GetFirst: true},
+			wantChapters: []string{"12", "11"},
+			wantURLs:     []string{server.URL + "/manga/chapter-12", server.URL + "/chapter-11"},
+		},
+		{
+			name:         "oldest first in the page",
+			nameSelector: &HTMLSelector{Selector: "css:a.chapter", Regex: `Chapter (\d+)`},
+			urlSelector:  &HTMLSelector{Selector: "css:a.chapter", Attribute: "href"},
+			wantChapters: []string{"11", "12"},
+			wantURLs:     []string{server.URL + "/chapter-11", server.URL + "/manga/chapter-12"},
+		},
+		{
+			name:         "xpath on an XML feed",
+			path:         "/feed.xml",
+			nameSelector: &HTMLSelector{Selector: "xpath://item/title", Regex: `Chapter (\d+)`, GetFirst: true},
+			urlSelector:  &HTMLSelector{Selector: "xpath://item/link", GetFirst: true},
+			wantChapters: []string{"21", "20"},
+			wantURLs:     []string{"https://example.com/manga/21", "https://example.com/manga/20"},
+		},
+		{
+			name:              "entries that don't pass the regex are skipped",
+			path:              "/with-notice",
+			nameSelector:      &HTMLSelector{Selector: "css:li > a", Regex: `Chapter (\d+)`, GetFirst: true},
+			urlSelector:       &HTMLSelector{Selector: "css:li > a", Attribute: "href", GetFirst: true},
+			wantChapters:      []string{"3", "2", "1"},
+			wantURLs:          []string{server.URL + "/c/3", server.URL + "/c/2", server.URL + "/c/1"},
+			lastReleasedFails: true,
+		},
+		{
+			name:         "selector that matches only the newest chapter",
+			nameSelector: &HTMLSelector{Selector: "css:a.chapter:first-child", Regex: `Chapter (\d+)`},
+			urlSelector:  &HTMLSelector{Selector: "css:a.chapter:first-child", Attribute: "href"},
+			wantChapters: []string{"12"},
+			wantURLs:     []string{server.URL + "/manga/chapter-12"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			chapters, err := GetCustomMangaChapters(server.URL+tt.path, tt.nameSelector, tt.urlSelector, false)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if len(chapters) != len(tt.wantChapters) {
+				t.Fatalf("got %d chapters, want %d", len(chapters), len(tt.wantChapters))
+			}
+			for i, chapter := range chapters {
+				if chapter.Chapter != tt.wantChapters[i] || chapter.URL != tt.wantURLs[i] {
+					t.Errorf("chapter %d: got (%q, %q), want (%q, %q)", i, chapter.Chapter, chapter.URL, tt.wantChapters[i], tt.wantURLs[i])
+				}
+			}
+
+			// The newest chapter in the list is the one tracked as the last released chapter.
+			// The last released chapter doesn't skip entries, so it fails when the newest one isn't a chapter.
+			lastReleased, err := GetCustomMangaLastReleasedChapter(server.URL+tt.path, tt.nameSelector, tt.urlSelector, false)
+			if tt.lastReleasedFails {
+				if err == nil {
+					t.Fatalf("expected the last released chapter to fail, got %q", lastReleased.Chapter)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error getting the last released chapter: %v", err)
+			}
+			if chapters[0].Chapter != lastReleased.Chapter || chapters[0].URL != lastReleased.URL {
+				t.Errorf("newest chapter (%q, %q) isn't the last released chapter (%q, %q)", chapters[0].Chapter, chapters[0].URL, lastReleased.Chapter, lastReleased.URL)
+			}
+		})
+	}
+
+	t.Run("name only uses the same placeholder URLs as the last released chapter", func(t *testing.T) {
+		nameSelector := &HTMLSelector{Selector: "css:a.chapter", Regex: `Chapter (\d+)`, GetFirst: true}
+		chapters, err := GetCustomMangaChapters(server.URL, nameSelector, nil, false)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		lastReleased, err := GetCustomMangaLastReleasedChapter(server.URL, nameSelector, nil, false)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(chapters) != 2 || chapters[0].URL != lastReleased.URL || chapters[1].URL == chapters[0].URL {
+			t.Errorf("got URLs %q and %q, want the first to be %q and the second a different one", chapters[0].URL, chapters[1].URL, lastReleased.URL)
+		}
+	})
+}
+
+func TestGetCustomMangaChaptersUserErrors(t *testing.T) {
+	allowPrivateURLs(t)
+	server := newCustomMangaTestServer()
+	defer server.Close()
+
+	tests := []struct {
+		name         string
+		path         string
+		nameSelector *HTMLSelector
+		urlSelector  *HTMLSelector
+		wantMessage  string
+	}{
+		{
+			name:        "no name selector",
+			urlSelector: &HTMLSelector{Selector: "css:a.chapter", Attribute: "href"},
+			wantMessage: "The chapters list needs a chapter name selector",
+		},
+		{
+			name:         "selectors match different numbers of elements",
+			nameSelector: &HTMLSelector{Selector: "css:a.chapter"},
+			urlSelector:  &HTMLSelector{Selector: "css:a.chapter:first-child", Attribute: "href"},
+			wantMessage:  "Chapter name selector matched 2 elements and Chapter URL selector matched 1, so the chapters list can't tell which URL is of which chapter",
+		},
+		{
+			name:         "selectors with different list orders",
+			nameSelector: &HTMLSelector{Selector: "css:a.chapter", GetFirst: true},
+			urlSelector:  &HTMLSelector{Selector: "css:a.chapter", Attribute: "href"},
+			wantMessage:  "Chapter name and Chapter URL selectors match the chapters list, so Newest Chapter Is First must be the same in both",
+		},
+		{
+			name:         "no element passes the regex",
+			nameSelector: &HTMLSelector{Selector: "css:a.chapter", Regex: `Episode (\d+)`},
+			wantMessage:  `Chapter name regex didn't match the text "Chapter 12"`,
+		},
+		{
+			name:         "selector doesn't match",
+			nameSelector: &HTMLSelector{Selector: "css:div.nothing"},
+			wantMessage:  "Chapter name selector didn't match any element on the page",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := GetCustomMangaChapters(server.URL+tt.path, tt.nameSelector, tt.urlSelector, false)
+			var userErr *errordefs.UserError
+			if !errors.As(err, &userErr) {
+				t.Fatalf("expected a UserError, got %v", err)
+			}
+			if userErr.Message != tt.wantMessage {
+				t.Errorf("got message %q, want %q", userErr.Message, tt.wantMessage)
 			}
 		})
 	}

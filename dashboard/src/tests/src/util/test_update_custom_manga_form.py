@@ -55,7 +55,7 @@ def test_prefilled_from_tracked_manga(api):
     at = run_app(manga())
     assert_no_exception(at)
     labels = labels_in_order(at)
-    assert labels.index("Cover Image") < labels.index("Last Released Chapter") < labels.index("Update")
+    assert labels.index("Cover Image") < labels.index("Chapter Selectors") < labels.index("Update")
     # The selectors of a manga that already tracks new chapters start open
     assert expanded(at, P)
     assert at.text_input(key=P + "name").value == "Tracked"

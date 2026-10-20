@@ -170,15 +170,15 @@ You must manually provide:
 - Name
 - URL
 - Cover image (or use default). PNG, JPEG or WebP, up to 10 MB and 40 megapixels
-- Last released chapter selectors
+- Chapter selectors
 
-## Last Released Chapter Selectors
+## Chapter Selectors
 
-Custom manga can automatically detect new chapters by getting the web page defined in the custom manga's URL field and applying selectors to get the chapter number and URL:
+Custom manga can automatically detect new chapters by getting the web page defined in the custom manga's URL field and applying selectors to its chapter list to get the chapter number and URL:
 
 - **Selector**:
-  CSS or XPath selector used to locate the element.
-  Add the prefix `css:` for CSS selectors, and `xpath:` for XPATH selectors (ex: `css:div.chapter-box > h4:first-child > a span`). XPATH selectors also work with XML pages.
+  CSS or XPath selector for the chapters in the page's chapter list. If it matches more than one element, the last one is taken as the newest chapter, or the first one if **Newest Chapter Is First** is enabled. A selector that matches only the newest chapter also works.
+  Add the prefix `css:` for CSS selectors, and `xpath:` for XPATH selectors (ex: `css:div.chapter-list > a span`). XPATH selectors also work with XML pages.
 - **Attribute (optional)**:
   Attribute containing the chapter name or URL (e.g., href).
   If empty, the element text is used.
@@ -190,15 +190,21 @@ Custom manga can automatically detect new chapters by getting the web page defin
   - `CHAPTER(\p{Nd}+).*?(\p{Nd}+)` gets `４ ８` from `CHAPTER４［ BLIND JUSTICE ］８（後編）`, a chapter in parts.
 
   Regexes use [Go's syntax](https://github.com/google/re2/wiki/Syntax), where `\d` only matches `0-9`. Use `\p{Nd}` to also match digits like the full-width `４`. A chapter with more than one part, like `4 8`, isn't a number: Mantium shows it as unread when it's different from the last read chapter, and in a multimanga, compares it with the other sources by the date it was found.
-- **Get First (optional)**:
-  If enabled, selects the first matching element; otherwise, selects the last. Enable it when the site lists the newest chapter first.
+- **Newest Chapter Is First (optional)**:
+  Enable it when the site lists chapters from newest to oldest.
 - **Use Browser (optional)**:
   Uses a headless browser if the page requires JavaScript rendering. Mantium waits up to 15 seconds for each selector's element to appear in the page.
   Otherwise, a simple HTTP GET request is used.
 
 The page is fetched once, and both selectors are applied to it.
 
-Use the **Test selectors** button in the add and edit forms to see which chapter the selectors get, without saving anything. If a selector, attribute or regex doesn't work, the message tells which one and why.
+When a custom manga is the current manga of a multimanga, its selectors also get the chapters list shown in the multimanga's **Last Read Chapter** field, so the last read chapter can be picked from it:
+
+- It needs a chapter name selector. If there's also a chapter URL selector, both must match the same number of elements, so the nth URL is the nth chapter's, and **Newest Chapter Is First** must be the same in both.
+- Elements the chapter name regex doesn't match, like announcements in a feed, are left out of the list.
+- If the list can't be fetched, the multimanga's mangas that aren't custom mangas are tried until one has chapters, and a warning tells what happened.
+
+Use the **Test selectors** button in the add and edit forms to see which chapter the selectors get and how many chapters the chapters list has, without saving anything. If a selector, attribute or regex doesn't work, the message tells which one and why.
 
 > [!NOTE]
 > If the URL selector returns a relative URL, Mantium resolves it the same way a browser does: against the page's `<base>` element if it has one, else against the manga URL (after redirects). For example, if the manga URL is `https://example.com/title/one-piece/`, the URL selector returning `/chapter1000` becomes `https://example.com/chapter1000`, and returning `chapter1000` becomes `https://example.com/title/one-piece/chapter1000`.

@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -1760,6 +1761,71 @@ func GetCustomMangaLastReleasedChapter(mangaURL string, nameSelector, URLSelecto
 	if nameSelector == nil && URLSelector == nil {
 		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), fmt.Errorf("both manga last released chapter selectors are nil"))
 	}
+	page, err := getCustomMangaPage(mangaURL, nameSelector, URLSelector, useBrowser)
+	if err != nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), err)
+	}
+
+	chapter, err := lastReleasedChapterFromPage(page, mangaURL, nameSelector, URLSelector)
+	if err != nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), err)
+	}
+
+	return chapter, nil
+}
+
+// GetCustomMangaChapters gets the chapters of a custom manga by applying its selectors to every element
+// of the page's chapter list, newest first. The name selector's GetFirst tells the list order: if it's true,
+// the page lists the newest chapter first. Elements whose name doesn't pass the selector's regex are skipped,
+// so a list with other entries, like announcements, still works.
+func GetCustomMangaChapters(mangaURL string, nameSelector, URLSelector *HTMLSelector, useBrowser bool) ([]*Chapter, error) {
+	contextError := "error getting custom manga '%s' chapters with name selector '%s' and URL selector '%s' from source (browser: %t)"
+
+	if nameSelector == nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), errChaptersListNeedsNameSelector)
+	}
+	page, err := getCustomMangaPage(mangaURL, nameSelector, URLSelector, useBrowser)
+	if err != nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), err)
+	}
+
+	chapters, err := chaptersFromPage(page, mangaURL, nameSelector, URLSelector)
+	if err != nil {
+		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), err)
+	}
+
+	return chapters, nil
+}
+
+// TestCustomMangaSelectors gets the last released chapter and the chapters list of a custom manga, fetching the page once.
+// The last released chapter can be found even when the chapters list can't, so the list error is returned in chaptersErr.
+func TestCustomMangaSelectors(mangaURL string, nameSelector, URLSelector *HTMLSelector, useBrowser bool) (chapter *Chapter, chapters []*Chapter, chaptersErr error, err error) {
+	contextError := "error testing custom manga '%s' selectors with name selector '%s' and URL selector '%s' (browser: %t)"
+
+	if nameSelector == nil && URLSelector == nil {
+		return nil, nil, nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), fmt.Errorf("both manga last released chapter selectors are nil"))
+	}
+	page, err := getCustomMangaPage(mangaURL, nameSelector, URLSelector, useBrowser)
+	if err != nil {
+		return nil, nil, nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), err)
+	}
+
+	chapter, err = lastReleasedChapterFromPage(page, mangaURL, nameSelector, URLSelector)
+	if err != nil {
+		return nil, nil, nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), err)
+	}
+	if nameSelector == nil {
+		return chapter, nil, errChaptersListNeedsNameSelector, nil
+	}
+	chapters, chaptersErr = chaptersFromPage(page, mangaURL, nameSelector, URLSelector)
+
+	return chapter, chapters, chaptersErr, nil
+}
+
+var errChaptersListNeedsNameSelector = &errordefs.UserError{Message: "The chapters list needs a chapter name selector"}
+
+// getCustomMangaPage checks the selectors and gets the custom manga page, with a browser if useBrowser is true.
+func getCustomMangaPage(mangaURL string, nameSelector, URLSelector *HTMLSelector, useBrowser bool) (*scrapedPage, error) {
 	for _, s := range []struct {
 		selector *HTMLSelector
 		field    string
@@ -1768,30 +1834,91 @@ func GetCustomMangaLastReleasedChapter(mangaURL string, nameSelector, URLSelecto
 			continue
 		}
 		if err := selectorPrefixError(s.selector, s.field); err != nil {
-			return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), err)
+			return nil, err
 		}
 	}
 
-	var page *scrapedPage
-	var err error
 	if useBrowser {
-		page, err = getPageUsingBrowser(mangaURL, nameSelector, URLSelector)
-	} else {
-		page, err = getPageUsingHTTPRequest(mangaURL)
+		return getPageUsingBrowser(mangaURL, nameSelector, URLSelector)
 	}
-	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), err)
-	}
+	return getPageUsingHTTPRequest(mangaURL)
+}
 
+// lastReleasedChapterFromPage applies the selectors to the page to get the last released chapter.
+// A chapter found only by its name gets a placeholder URL.
+func lastReleasedChapterFromPage(page *scrapedPage, mangaURL string, nameSelector, URLSelector *HTMLSelector) (*Chapter, error) {
 	chapter, err := chapterFromPage(page, nameSelector, URLSelector)
 	if err != nil {
-		return nil, util.AddErrorContext(fmt.Sprintf(contextError, mangaURL, nameSelector, URLSelector, useBrowser), err)
+		return nil, err
 	}
 	if chapter.URL == "" {
 		chapter.URL = customMangaChapterPlaceholderURL(mangaURL, chapter.Chapter)
 	}
 
 	return chapter, nil
+}
+
+// chaptersFromPage applies the selectors to every element of the page's chapter list.
+// The name and URL selectors must match the same number of elements, so the nth URL is the nth chapter's.
+func chaptersFromPage(page *scrapedPage, mangaURL string, nameSelector, URLSelector *HTMLSelector) ([]*Chapter, error) {
+	names, err := page.selectAll(nameSelector, chapterNameField)
+	if err != nil {
+		return nil, err
+	}
+	if len(names) == 0 {
+		return nil, &errordefs.UserError{Message: fmt.Sprintf("%s selector didn't match any element on the page", chapterNameField)}
+	}
+	var URLs []string
+	if URLSelector != nil {
+		URLs, err = page.selectAll(URLSelector, chapterURLField)
+		if err != nil {
+			return nil, err
+		}
+		if len(URLs) != len(names) {
+			return nil, &errordefs.UserError{Message: fmt.Sprintf("%s selector matched %d elements and %s selector matched %d, so the chapters list can't tell which URL is of which chapter", chapterNameField, len(names), chapterURLField, len(URLs))}
+		}
+		if len(names) > 1 && URLSelector.GetFirst != nameSelector.GetFirst {
+			return nil, &errordefs.UserError{Message: fmt.Sprintf("%s and %s selectors match the chapters list, so Newest Chapter Is First must be the same in both", chapterNameField, chapterURLField)}
+		}
+	}
+
+	chapters := []*Chapter{}
+	var firstErr error
+	for i := range names {
+		chapterName, err := processSelection(names[i], true, nameSelector, chapterNameField)
+		if err != nil {
+			if firstErr == nil {
+				firstErr = err
+			}
+			continue
+		}
+		chapter := &Chapter{
+			Chapter: chapterName,
+			Name:    "Chapter " + chapterName,
+			Type:    1,
+		}
+		if URLSelector != nil {
+			chapterURL, err := processSelection(URLs[i], true, URLSelector, chapterURLField)
+			if err != nil {
+				return nil, err
+			}
+			chapter.URL, err = page.resolveURL(chapterURL)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			chapter.URL = customMangaChapterPlaceholderURL(mangaURL, chapter.Chapter)
+		}
+		chapters = append(chapters, chapter)
+	}
+	if len(chapters) == 0 {
+		return nil, firstErr
+	}
+	if !nameSelector.GetFirst {
+		slices.Reverse(chapters)
+	}
+
+	return chapters, nil
 }
 
 // customMangaChapterPlaceholderURL returns the URL of a chapter found only by its name.
@@ -1875,77 +2002,81 @@ func (p *scrapedPage) isXML() bool {
 // selectValue applies a selector to the page and returns the selected value.
 // If more than one element matches the selector, the last is used, or the first if selector.GetFirst is true.
 func (p *scrapedPage) selectValue(selector *HTMLSelector, field string) (string, error) {
-	if err := selectorPrefixError(selector, field); err != nil {
+	selections, err := p.selectAll(selector, field)
+	if err != nil {
 		return "", err
 	}
 
 	var selection string
-	var matched bool
-	if after, ok := strings.CutPrefix(selector.Selector, "css:"); ok {
-		doc, err := goquery.NewDocumentFromReader(bytes.NewReader(p.body))
-		if err != nil {
-			return "", util.AddErrorContext("error parsing page HTML", err)
-		}
-		s := doc.Find(after)
+	if len(selections) > 0 {
+		selection = selections[len(selections)-1]
 		if selector.GetFirst {
-			s = s.First()
-		} else {
-			s = s.Last()
-		}
-		matched = s.Length() > 0
-		if selector.Attribute != "" {
-			selection = s.AttrOr(selector.Attribute, "")
-		} else {
-			selection = s.Text()
-		}
-	} else {
-		after := strings.TrimPrefix(selector.Selector, "xpath:")
-		if p.isXML() {
-			doc, err := xmlquery.Parse(bytes.NewReader(p.body))
-			if err != nil {
-				return "", util.AddErrorContext("error parsing page XML", err)
-			}
-			nodes, err := xmlquery.QueryAll(doc, after)
-			if err != nil {
-				return "", &errordefs.UserError{Message: fmt.Sprintf("%s selector is not a valid XPath: %s", field, err)}
-			}
-			matched = len(nodes) > 0
-			if matched {
-				node := nodes[len(nodes)-1]
-				if selector.GetFirst {
-					node = nodes[0]
-				}
-				if selector.Attribute != "" {
-					selection = node.SelectAttr(selector.Attribute)
-				} else {
-					selection = node.InnerText()
-				}
-			}
-		} else {
-			doc, err := htmlquery.Parse(bytes.NewReader(p.body))
-			if err != nil {
-				return "", util.AddErrorContext("error parsing page HTML", err)
-			}
-			nodes, err := htmlquery.QueryAll(doc, after)
-			if err != nil {
-				return "", &errordefs.UserError{Message: fmt.Sprintf("%s selector is not a valid XPath: %s", field, err)}
-			}
-			matched = len(nodes) > 0
-			if matched {
-				node := nodes[len(nodes)-1]
-				if selector.GetFirst {
-					node = nodes[0]
-				}
-				if selector.Attribute != "" {
-					selection = htmlquery.SelectAttr(node, selector.Attribute)
-				} else {
-					selection = htmlquery.InnerText(node)
-				}
-			}
+			selection = selections[0]
 		}
 	}
 
-	return processSelection(selection, matched, selector, field)
+	return processSelection(selection, len(selections) > 0, selector, field)
+}
+
+// selectAll applies a selector to the page and returns the attribute or text of every
+// element it matches, in the page order. The values are returned as found, without the regex.
+func (p *scrapedPage) selectAll(selector *HTMLSelector, field string) ([]string, error) {
+	if err := selectorPrefixError(selector, field); err != nil {
+		return nil, err
+	}
+
+	selections := []string{}
+	if after, ok := strings.CutPrefix(selector.Selector, "css:"); ok {
+		doc, err := goquery.NewDocumentFromReader(bytes.NewReader(p.body))
+		if err != nil {
+			return nil, util.AddErrorContext("error parsing page HTML", err)
+		}
+		doc.Find(after).Each(func(_ int, s *goquery.Selection) {
+			if selector.Attribute != "" {
+				selections = append(selections, s.AttrOr(selector.Attribute, ""))
+			} else {
+				selections = append(selections, s.Text())
+			}
+		})
+		return selections, nil
+	}
+
+	after := strings.TrimPrefix(selector.Selector, "xpath:")
+	if p.isXML() {
+		doc, err := xmlquery.Parse(bytes.NewReader(p.body))
+		if err != nil {
+			return nil, util.AddErrorContext("error parsing page XML", err)
+		}
+		nodes, err := xmlquery.QueryAll(doc, after)
+		if err != nil {
+			return nil, &errordefs.UserError{Message: fmt.Sprintf("%s selector is not a valid XPath: %s", field, err)}
+		}
+		for _, node := range nodes {
+			if selector.Attribute != "" {
+				selections = append(selections, node.SelectAttr(selector.Attribute))
+			} else {
+				selections = append(selections, node.InnerText())
+			}
+		}
+		return selections, nil
+	}
+
+	doc, err := htmlquery.Parse(bytes.NewReader(p.body))
+	if err != nil {
+		return nil, util.AddErrorContext("error parsing page HTML", err)
+	}
+	nodes, err := htmlquery.QueryAll(doc, after)
+	if err != nil {
+		return nil, &errordefs.UserError{Message: fmt.Sprintf("%s selector is not a valid XPath: %s", field, err)}
+	}
+	for _, node := range nodes {
+		if selector.Attribute != "" {
+			selections = append(selections, htmlquery.SelectAttr(node, selector.Attribute))
+		} else {
+			selections = append(selections, htmlquery.InnerText(node))
+		}
+	}
+	return selections, nil
 }
 
 // resolveURL resolves a chapter URL found in the page, which can be relative, into an absolute URL.

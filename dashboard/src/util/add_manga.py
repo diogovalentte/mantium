@@ -551,7 +551,7 @@ def test_custom_manga_selectors(
     url_get_first: bool,
     use_browser: bool,
 ):
-    """Shows the last released chapter the selectors get from the manga page, without saving anything."""
+    """Shows the last released chapter and the chapters list size the selectors get from the manga page, without saving anything."""
     if manga_url == "":
         st.warning("Provide the manga URL to test the selectors")
         return
@@ -564,7 +564,7 @@ def test_custom_manga_selectors(
 
     try:
         with st.spinner("Testing selectors..."):
-            chapter = get_api_client().test_custom_manga_selectors(
+            result = get_api_client().test_custom_manga_selectors(
                 manga_url,
                 name_selector,
                 name_attribute,
@@ -583,13 +583,18 @@ def test_custom_manga_selectors(
             st.error(f"Error while testing the selectors: {get_api_error_detail(ex)}")
         return
 
+    chapter = result["chapter"]
     st.success("The selectors work. Last released chapter found:")
     lines = []
     if name_selector != "":
         lines.append(f"Chapter: {chapter['Chapter']}")
     if url_selector != "":
         lines.append(f"URL: {chapter['URL']}")
+    if not result.get("chapters_error"):
+        lines.append(f"Chapters in the chapters list: {result.get('chapters_count', 0)}")
     st.text("\n".join(lines))
+    if chapters_error := result.get("chapters_error"):
+        st.warning(f"Chapters list: {chapters_error}")
 
 
 # Session state keys (after the form key prefix) of the custom manga form fields that a preset fills.
@@ -789,7 +794,7 @@ def run_pending_custom_manga_preset_detection(key_prefix: str):
 def show_custom_manga_presets(key_prefix: str):
     """Shows the preset picker of the custom manga form.
 
-    Picking a preset fills the last released chapter selectors. When the manga URL
+    Picking a preset fills the chapter selectors. When the manga URL
     changes, the presets are tested against the page, and the one that works is
     picked if the selector fields are still empty.
     """
@@ -810,7 +815,7 @@ def show_custom_manga_presets(key_prefix: str):
             "Preset",
             options=[None] + list(presets.keys()),
             format_func=lambda preset_id: "None" if preset_id is None else presets[preset_id]["name"],
-            help="Fills the last released chapter selectors with ones that work for many sites. You can still edit them.",
+            help="Fills the chapter selectors with ones that work for many sites. You can still edit them.",
             key=key_prefix + "preset",
             on_change=apply_custom_manga_preset,
             args=(key_prefix,),
@@ -829,7 +834,7 @@ def show_custom_manga_presets(key_prefix: str):
             "Clear",
             key=key_prefix + "clear_selectors_button",
             width="stretch",
-            help="Empty the selectors, so Mantium doesn't track new chapters.",
+            help="Empty the selectors, so Mantium doesn't track new chapters or list them.",
             on_click=clear_custom_manga_selectors,
             args=(key_prefix,),
         )
@@ -889,7 +894,7 @@ def show_custom_manga_presets(key_prefix: str):
 
 
 def get_custom_manga_selector_values(key_prefix: str) -> dict[str, Any]:
-    """Returns the last released chapter selector fields."""
+    """Returns the chapter selector fields."""
     values = {
         field: ss.get(key_prefix + field, default)
         for field, (_, _, default) in custom_manga_preset_fields.items()
@@ -917,18 +922,18 @@ def reset_custom_manga_form_state(key_prefix: str, initial_values: dict[str, Any
 
 
 def show_custom_manga_tracking_fields(key_prefix: str, test_selectors_help: str):
-    """Shows the presets and the last released chapter selectors.
+    """Shows the presets and the chapter selectors.
 
     The expander has a key so the preset detection can open it. Its content runs even
     when it's closed, so the selectors keep their state.
     """
     with st.expander(
-        "Last Released Chapter",
+        "Chapter Selectors",
         key=key_prefix + "last_released_chapter_expander",
         on_change="rerun",
     ):
         st.info(
-            "Optional. Only fill if you want Mantium to automatically track new chapters."
+            "Optional. Mantium uses them to track new chapters, and to list the chapters in the multimanga's Last Read Chapter field."
         )
         show_custom_manga_presets(key_prefix)
 
@@ -937,8 +942,8 @@ def show_custom_manga_tracking_fields(key_prefix: str, test_selectors_help: str)
         ):
             st.text_input(
                 "Selector",
-                placeholder="css:div.chapter-list > a:nth-child(1) > div.chapter-title",
-                help="CSS or XPath selector to get the chapter name. E.g. 'css:div.chapter-list > a:nth-child(1) > div.chapter-title' or 'xpath://div[@class=\"chapter-list\"]//a[1]//div[@class=\"chapter-title\"]'. Leave empty to skip.",
+                placeholder="css:div.chapter-list > a > div.chapter-title",
+                help="CSS or XPath selector for the chapter names in the chapter list. If it matches more than one element, the last one is used, or the first one if Newest Chapter Is First is on. A selector that matches only the newest chapter also works. E.g. 'css:div.chapter-list > a > div.chapter-title' or 'xpath://div[@class=\"chapter-list\"]//a//div[@class=\"chapter-title\"]'. Leave empty to skip.",
                 key=key_prefix + "last_released_chapter_name_selector",
             )
             st.text_input(
@@ -954,9 +959,9 @@ def show_custom_manga_tracking_fields(key_prefix: str, test_selectors_help: str)
                 key=key_prefix + "last_released_chapter_name_regex",
             )
             st.checkbox(
-                "Get First",
+                "Newest Chapter Is First",
                 value=False,
-                help="Get the first match instead of the last match. Use it when the site lists the newest chapter first.",
+                help="Turn it on when the site lists chapters from newest to oldest.",
                 key=key_prefix + "last_released_chapter_name_get_first",
             )
         with st.expander(
@@ -964,8 +969,8 @@ def show_custom_manga_tracking_fields(key_prefix: str, test_selectors_help: str)
         ):
             st.text_input(
                 "Selector",
-                placeholder="css:div.chapter-list > a:nth-child(1)",
-                help="CSS or XPath selector to get the chapter URL. E.g. 'css:div.chapter-list > a:nth-child(1)' or 'xpath://div[@class=\"chapter-list\"]//a[1]'. Leave empty to skip.",
+                placeholder="css:div.chapter-list > a",
+                help="CSS or XPath selector for the chapter URLs in the chapter list. If it matches more than one element, the last one is used, or the first one if Newest Chapter Is First is on. A selector that matches only the newest chapter also works. E.g. 'css:div.chapter-list > a' or 'xpath://div[@class=\"chapter-list\"]//a'. Leave empty to skip.",
                 key=key_prefix + "last_released_chapter_url_selector",
             )
             st.text_input(
@@ -975,9 +980,9 @@ def show_custom_manga_tracking_fields(key_prefix: str, test_selectors_help: str)
                 key=key_prefix + "last_released_chapter_url_attribute",
             )
             st.checkbox(
-                "Get First",
+                "Newest Chapter Is First",
                 value=False,
-                help="Get the first match instead of the last match. Use it when the site lists the newest chapter first.",
+                help="Turn it on when the site lists chapters from newest to oldest.",
                 key=key_prefix + "last_released_chapter_url_get_first",
             )
 

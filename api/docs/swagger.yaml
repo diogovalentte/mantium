@@ -630,9 +630,11 @@ paths:
     post:
       consumes:
       - application/json
-      description: Gets the last released chapter from the page using the selectors,
-        without saving anything. If the error is caused by the URL or selectors, the
-        response has a "user_message" field explaining it.
+      description: Gets the last released chapter and the number of chapters in the
+        chapters list from the page using the selectors, without saving anything.
+        If the error is caused by the URL or selectors, the response has a "user_message"
+        field explaining it. If only the chapters list can't be got, "chapters_error"
+        explains why.
       parameters:
       - description: Page URL and selectors
         in: body
@@ -644,10 +646,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: '{"chapter": chapterObj}'
+          description: '{"chapter": chapterObj, "chapters_count": 12, "chapters_error":
+            "..."}'
           schema:
             $ref: '#/definitions/manga.Chapter'
-      summary: Test custom manga last released chapter selectors
+      summary: Test custom manga chapter selectors
   /dashboard/configs:
     get:
       description: Returns the dashboard configs

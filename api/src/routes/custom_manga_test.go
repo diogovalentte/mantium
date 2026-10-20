@@ -31,6 +31,9 @@ func TestTestCustomMangaSelectors(t *testing.T) {
 		wantChapter string
 		wantURL     string
 		userMessage string
+		// wantCount and wantChaptersError are the chapters list fields of a successful test
+		wantCount         int
+		wantChaptersError string
 	}{
 		{
 			name: "valid selectors",
@@ -42,6 +45,18 @@ func TestTestCustomMangaSelectors(t *testing.T) {
 			wantStatus:  http.StatusOK,
 			wantChapter: "7",
 			wantURL:     page.URL + "/chapter-7",
+			wantCount:   1,
+		},
+		{
+			name: "URL selector only has no chapters list",
+			body: map[string]any{
+				"url":          page.URL,
+				"url_selector": map[string]any{"selector": "css:a.chapter", "attribute": "href"},
+			},
+			wantStatus:        http.StatusOK,
+			wantChapter:       "?",
+			wantURL:           page.URL + "/chapter-7",
+			wantChaptersError: "The chapters list needs a chapter name selector",
 		},
 		{
 			name:        "no selectors",
@@ -75,7 +90,9 @@ func TestTestCustomMangaSelectors(t *testing.T) {
 					Chapter string
 					URL     string
 				} `json:"chapter"`
-				UserMessage string `json:"user_message"`
+				UserMessage   string `json:"user_message"`
+				ChaptersCount int    `json:"chapters_count"`
+				ChaptersError string `json:"chapters_error"`
 			}
 			if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
 				t.Fatal(err)
@@ -85,6 +102,9 @@ func TestTestCustomMangaSelectors(t *testing.T) {
 			}
 			if resp.Chapter.Chapter != test.wantChapter || resp.Chapter.URL != test.wantURL {
 				t.Errorf("got chapter %q %q, want %q %q", resp.Chapter.Chapter, resp.Chapter.URL, test.wantChapter, test.wantURL)
+			}
+			if resp.ChaptersCount != test.wantCount || resp.ChaptersError != test.wantChaptersError {
+				t.Errorf("got chapters list %d %q, want %d %q", resp.ChaptersCount, resp.ChaptersError, test.wantCount, test.wantChaptersError)
 			}
 		})
 	}
