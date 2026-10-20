@@ -118,8 +118,12 @@ func GetMangaChapters(c *gin.Context) {
 		return
 	}
 
-	if mangaURL == "" {
-		mangaGet, err := manga.GetMangaDB(mangaID, mangaURL)
+	if mangaID > 0 || mangaURL == "" {
+		lookupURL := mangaURL
+		if mangaID > 0 {
+			lookupURL = ""
+		}
+		mangaGet, err := manga.GetMangaDB(mangaID, lookupURL)
 		if err != nil {
 			if strings.Contains(err.Error(), errordefs.ErrMangaNotFoundDB.Error()) {
 				c.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
@@ -128,7 +132,17 @@ func GetMangaChapters(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
 			return
 		}
+		if mangaGet.Source == manga.CustomMangaSource {
+			chapters, err := getCustomMangaChapters(mangaGet)
+			if err != nil {
+				c.JSON(customMangaChaptersErrorStatus(err), errorResponse(err))
+				return
+			}
+			c.JSON(http.StatusOK, map[string][]*manga.Chapter{"chapters": chapters})
+			return
+		}
 		mangaURL = mangaGet.URL
+		mangaInternalID = mangaGet.InternalID
 	}
 
 	chapters, err := sources.GetMangaChapters(mangaURL, mangaInternalID)
@@ -424,12 +438,12 @@ type TestCustomMangaSelectorsRequest struct {
 	LastReleasedChapterSelectorUseBrowser bool                 `json:"use_browser"`
 }
 
-// @Summary Test custom manga last released chapter selectors
-// @Description Gets the last released chapter from the page using the selectors, without saving anything. If the error is caused by the URL or selectors, the response has a "user_message" field explaining it.
+// @Summary Test custom manga chapter selectors
+// @Description Gets the last released chapter and the number of chapters in the chapters list from the page using the selectors, without saving anything. If the error is caused by the URL or selectors, the response has a "user_message" field explaining it. If only the chapters list can't be got, "chapters_error" explains why.
 // @Accept json
 // @Produce json
 // @Param selectors body TestCustomMangaSelectorsRequest true "Page URL and selectors"
-// @Success 200 {object} manga.Chapter "{"chapter": chapterObj}"
+// @Success 200 {object} manga.Chapter "{"chapter": chapterObj, "chapters_count": 12, "chapters_error": "..."}"
 // @Router /custom_manga/test_selectors [post]
 func TestCustomMangaSelectors(c *gin.Context) {
 	var requestData TestCustomMangaSelectorsRequest
@@ -446,7 +460,7 @@ func TestCustomMangaSelectors(c *gin.Context) {
 	if URLSelector != nil {
 		URLSelector.Regex = ""
 	}
-	chapter, err := manga.GetCustomMangaLastReleasedChapter(requestData.URL, (*manga.HTMLSelector)(requestData.LastReleasedChapterNameSelector), URLSelector, requestData.LastReleasedChapterSelectorUseBrowser)
+	chapter, chapters, chaptersErr, err := manga.TestCustomMangaSelectors(requestData.URL, (*manga.HTMLSelector)(requestData.LastReleasedChapterNameSelector), URLSelector, requestData.LastReleasedChapterSelectorUseBrowser)
 	if err != nil {
 		status := http.StatusInternalServerError
 		var userErr *errordefs.UserError
@@ -457,7 +471,16 @@ func TestCustomMangaSelectors(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"chapter": chapter})
+	resp := gin.H{"chapter": chapter, "chapters_count": len(chapters)}
+	if chaptersErr != nil {
+		var userErr *errordefs.UserError
+		if errors.As(chaptersErr, &userErr) {
+			resp["chapters_error"] = userErr.Message
+		} else {
+			resp["chapters_error"] = "Couldn't get the chapters list: " + chaptersErr.Error()
+		}
+	}
+	c.JSON(http.StatusOK, resp)
 }
 
 type HTMLSelectorRequest struct {
@@ -875,10 +898,19 @@ func GetMultiMangaChapters(c *gin.Context) {
 		return
 	}
 
-	chapters, err := sources.GetMangaChapters(multimanga.CurrentManga.URL, multimanga.CurrentManga.InternalID)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
-		return
+	var chapters []*manga.Chapter
+	if multimanga.CurrentManga.Source == manga.CustomMangaSource {
+		chapters, err = getCustomMangaChapters(multimanga.CurrentManga)
+		if err != nil {
+			c.JSON(customMangaChaptersErrorStatus(err), errorResponse(err))
+			return
+		}
+	} else {
+		chapters, err = sources.GetMangaChapters(multimanga.CurrentManga.URL, multimanga.CurrentManga.InternalID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err.Error()})
+			return
+		}
 	}
 
 	resMap := map[string][]*manga.Chapter{"chapters": chapters}
@@ -1030,6 +1062,12 @@ func UpdateMultiMangaLastReadChapter(c *gin.Context) {
 			chapter = mangaToGetChapterFrom.LastReleasedChapter
 			if chapter == nil {
 				c.JSON(http.StatusBadRequest, errorResponse(errordefs.ErrNoLastReleasedChapter))
+				return
+			}
+		} else if mangaToGetChapterFrom.Source == manga.CustomMangaSource {
+			chapter, err = getCustomMangaChapter(mangaToGetChapterFrom, requestData.Chapter, requestData.URL)
+			if err != nil {
+				c.JSON(customMangaChaptersErrorStatus(err), errorResponse(err))
 				return
 			}
 		} else {
@@ -3037,6 +3075,47 @@ func updateCustomMangaLastReleasedChapter(m *manga.Manga, browserLimiter chan st
 	}
 
 	return true, nil
+}
+
+// getCustomMangaChapters gets the chapters list of a custom manga using its selectors.
+func getCustomMangaChapters(m *manga.Manga) ([]*manga.Chapter, error) {
+	var nameSelector, URLSelector *manga.HTMLSelector
+	if m.LastReleasedChapterNameSelector != nil && m.LastReleasedChapterNameSelector.Selector != "" {
+		nameSelector = m.LastReleasedChapterNameSelector
+	}
+	if m.LastReleasedChapterURLSelector != nil && m.LastReleasedChapterURLSelector.Selector != "" {
+		URLSelector = m.LastReleasedChapterURLSelector
+	}
+	return manga.GetCustomMangaChapters(m.URL, nameSelector, URLSelector, m.LastReleasedChapterSelectorUseBrowser)
+}
+
+// getCustomMangaChapter gets a chapter from a custom manga chapters list, by its URL, or by its name if no chapter has the URL.
+func getCustomMangaChapter(m *manga.Manga, chapterName, chapterURL string) (*manga.Chapter, error) {
+	chapters, err := getCustomMangaChapters(m)
+	if err != nil {
+		return nil, err
+	}
+	for _, chapter := range chapters {
+		if chapterURL != "" && chapter.URL == chapterURL {
+			return chapter, nil
+		}
+	}
+	for _, chapter := range chapters {
+		if chapterName != "" && chapter.Chapter == chapterName {
+			return chapter, nil
+		}
+	}
+	return nil, &errordefs.UserError{Message: fmt.Sprintf("Chapter %s isn't in the custom manga chapters list anymore", chapterName)}
+}
+
+// customMangaChaptersErrorStatus returns the status of an error getting a custom manga chapters list:
+// a problem with the selectors or the page is the user's to fix.
+func customMangaChaptersErrorStatus(err error) int {
+	var userErr *errordefs.UserError
+	if errors.As(err, &userErr) {
+		return http.StatusBadRequest
+	}
+	return http.StatusInternalServerError
 }
 
 // errorResponse returns the response body for an error. If the error was caused by

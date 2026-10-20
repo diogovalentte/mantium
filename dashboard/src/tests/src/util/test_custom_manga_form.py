@@ -61,7 +61,7 @@ def popover_texts(at: AppTest, label: str, kind: str) -> list[str]:
 
 
 def expanded(at: AppTest, prefix: str = P) -> bool:
-    """Whether the Last Released Chapter expander is open."""
+    """Whether the Chapter Selectors expander is open."""
     return bool(at.session_state[prefix + "last_released_chapter_expander"])
 
 
@@ -81,7 +81,7 @@ def test_layout_order(api):
     at = run_app()
     assert_no_exception(at)
     labels = labels_in_order(at)
-    order = ["Manga Name (not optional)", "Manga URL", "Status", "Cover Image", "Last Read Chapter", "Last Released Chapter", "Add"]
+    order = ["Manga Name (not optional)", "Manga URL", "Status", "Cover Image", "Last Read Chapter", "Chapter Selectors", "Add"]
     seen = [l for l in labels if l in order]
     # "Last Read Chapter" is both the expander and the field inside it
     assert [l for i, l in enumerate(seen) if i == 0 or l != seen[i - 1]] == order
@@ -250,6 +250,23 @@ def test_test_selectors_uses_current_values(api):
     assert args[0] == FEED_URL
     assert args[1] == "xpath://item/title"
     assert any("The selectors work" in t for t in texts(at, "success"))
+    assert any("Chapters in the chapters list: 10" in t.value for t in at.text)
+
+
+def test_test_selectors_shows_why_the_chapters_list_fails(api):
+    feed_detected(api)
+    api.test_selectors_result = {
+        "chapter": {"Chapter": "10", "URL": "https://example.com/c/10"},
+        "chapters_count": 0,
+        "chapters_error": "Chapter name selector matched 4 elements and Chapter URL selector matched 3, so the chapters list can't tell which URL is of which chapter",
+    }
+    at = run_app()
+    at.text_input(key=P + "url").input(FEED_URL).run()
+    at.button(key=P + "test_selectors").click().run()
+    assert_no_exception(at)
+    assert any("The selectors work" in t for t in texts(at, "success"))
+    assert not any("Chapters in the chapters list" in t.value for t in at.text)
+    assert "Chapters list: Chapter name selector matched 4 elements" in " ".join(texts(at, "warning"))
 
 
 def add_args(api) -> tuple:

@@ -106,6 +106,127 @@ def show_back_to_multimanga_button(multimanga: dict[str, Any], key: str):
         st.rerun()
 
 
+def custom_manga_lists_chapters(manga: dict[str, Any]) -> bool:
+    """Tells if a manga is a custom manga whose selectors can get its chapters list, which needs a chapter name selector."""
+    if manga["Source"] != defaults.CUSTOM_MANGA_SOURCE:
+        return False
+    name_selector = manga.get("LastReleasedChapterNameSelector") or {}
+    return name_selector.get("Selector", "") != ""
+
+
+def get_multimanga_chapters_options(
+    api_client, multimanga: dict[str, Any], custom_manga_ids: list[int], current_manga_lists_chapters: bool
+) -> list[dict[str, Any]]:
+    """Gets the chapters list shown in the Last Read Chapter field into session_state.
+
+    Tries the current manga first, then the other non-custom mangas, until one returns
+    chapters. Returns what happened with each manga tried, for chapters_list_warning.
+    The options are None if every manga failed, and [] if the ones that answered had no chapters.
+    """
+    attempts = []
+
+    def got_chapters(manga: dict[str, Any], chapters: list[dict[str, Any]]) -> bool:
+        attempts.append(chapters_attempt(manga, "ok" if chapters else "empty"))
+        if ss.get("update_multimanga_chapter_options") is None or chapters:
+            ss["update_multimanga_chapter_options"] = chapters
+        if chapters:
+            ss["update_multimanga_chapter_options_from_manga_id"] = manga["ID"]
+        return bool(chapters)
+
+    if current_manga_lists_chapters:
+        current_manga = multimanga["CurrentManga"]
+        try:
+            # Not cached: the list changes with the custom manga selectors
+            chapters = api_client.get_manga_chapters(current_manga["ID"], current_manga["URL"], current_manga["InternalID"])
+        except APIException as e:
+            logger.exception(e)
+            attempts.append(chapters_attempt(current_manga, "error", get_api_user_message(e) or get_api_error_detail(e)))
+        else:
+            if got_chapters(current_manga, chapters):
+                return attempts
+
+    used_ids = custom_manga_ids.copy()
+    # One attempt per non-custom manga: each candidate the API hands us
+    # is excluded from the next attempt, so a source that fails or has no
+    # chapters is never picked twice and every source gets tried once.
+    for _ in range(len(multimanga["Mangas"]) - len(custom_manga_ids)):
+        manga_to_get_chapters = None
+        try:
+            manga_to_get_chapters = api_client.choose_current_manga(multimanga["ID"], exclude_manga_ids=used_ids)
+            chapters = api_client.get_cached_manga_chapters(
+                manga_to_get_chapters["ID"],
+                manga_to_get_chapters["URL"],
+                manga_to_get_chapters["InternalID"],
+            )
+        except APIException as e:
+            logger.exception(e)
+            if manga_to_get_chapters is not None:
+                attempts.append(chapters_attempt(manga_to_get_chapters, "error"))
+            else:
+                # Couldn't even choose which manga to try
+                attempts.append({"manga_id": None, "custom": False, "source_name": "", "result": "error", "error": None})
+        else:
+            if got_chapters(manga_to_get_chapters, chapters):
+                break
+        finally:
+            if manga_to_get_chapters is not None:
+                used_ids.append(manga_to_get_chapters["ID"])
+
+    return attempts
+
+
+def chapters_attempt(manga: dict[str, Any], result: str, error: str | None = None) -> dict[str, Any]:
+    """What happened when getting a manga chapters list: result is "ok", "empty" or "error"."""
+    return {
+        "manga_id": manga["ID"],
+        "custom": manga["Source"] == defaults.CUSTOM_MANGA_SOURCE,
+        "source_name": get_source_name_and_colors(manga["Source"])[0],
+        "result": result,
+        "error": error,
+    }
+
+
+def chapters_list_warning(current_manga_id: int, attempts: list[dict[str, Any]], from_manga_id: int | None) -> str | None:
+    """The warning about where the chapters list of the Last Read Chapter field came from, or why there's none."""
+    current = next((a for a in attempts if a["manga_id"] == current_manga_id), None)
+    others = [a for a in attempts if a["manga_id"] != current_manga_id]
+
+    current_problem = None
+    if current is not None:
+        if current["result"] == "empty":
+            current_problem = "The current manga has no released chapters."
+        elif current["result"] == "error" and current["custom"]:
+            current_problem = f"Could not get the chapters list from the current custom manga: {current['error'].rstrip('.')}."
+        elif current["result"] == "error":
+            current_problem = "Could not get the chapters list from the current manga. Maybe the source site is down or the manga URL changed in the source site."
+
+    if from_manga_id is not None:
+        if from_manga_id == current_manga_id or current_problem is None:
+            return None
+        source_name = next(a["source_name"] for a in attempts if a["manga_id"] == from_manga_id)
+        return f"{current_problem} Chapters list fetched from the manga of source {source_name}."
+
+    if not attempts:
+        return None
+    results = {a["result"] for a in others}
+    if current is None:
+        # The current manga can't list chapters, so only the other mangas were tried
+        if results == {"empty"}:
+            return "No released chapters found."
+        if results == {"error"}:
+            return "Could not get the chapters list from the multimanga mangas. Maybe the source sites are down or the manga URLs changed in the source sites."
+        return "Could not get the chapters list from the multimanga mangas: they failed or have no released chapters."
+    if not others:
+        return "No released chapters found." if current["result"] == "empty" else current_problem
+    if results == {"empty"}:
+        others_problem = "The other mangas have no released chapters either."
+    elif results == {"error"}:
+        others_problem = "Could not get the chapters list from the other mangas either. Maybe their source sites are down or the manga URLs changed in the source sites."
+    else:
+        others_problem = "The other mangas failed or have no released chapters either."
+    return f"{current_problem} {others_problem}"
+
+
 def show_update_multimanga(multimanga_id):
     try:
         api_client = get_api_client()
@@ -116,45 +237,25 @@ def show_update_multimanga(multimanga_id):
         st.stop()
 
     custom_manga_ids = []
-    other_manga_source_name = ""
     for manga in multimanga["Mangas"]:
         if manga["Source"] == defaults.CUSTOM_MANGA_SOURCE:
             custom_manga_ids.append(manga["ID"])
+    current_manga_lists_chapters = custom_manga_lists_chapters(multimanga["CurrentManga"])
+    gets_chapters = current_manga_lists_chapters or len(multimanga["Mangas"]) != len(custom_manga_ids)
 
     cached = ss.get("update_multimanga_chapters")
     if cached is not None and cached["multimanga_id"] == multimanga["ID"]:
-        other_manga_source_name = cached["other_manga_source_name"]
-    elif len(multimanga["Mangas"]) != len(custom_manga_ids):
+        chapters_attempts = cached["attempts"]
+    else:
+        chapters_attempts = []
         ss.pop("update_multimanga_chapter_options", None)
         ss.pop("update_multimanga_chapter_options_from_manga_id", None)
-        with st.spinner("Getting manga chapters..."):
-            used_ids = custom_manga_ids.copy()
-            # One attempt per non-custom manga: each candidate the API hands us
-            # is excluded from the next attempt, so a source that fails is never
-            # picked twice and every source gets tried once.
-            for _ in range(len(multimanga["Mangas"]) - len(custom_manga_ids)):
-                manga_to_get_chapters = None
-                try:
-                    manga_to_get_chapters = api_client.choose_current_manga(multimanga["ID"], exclude_manga_ids=used_ids)
-                    ss["update_multimanga_chapter_options"] = (
-                        api_client.get_cached_manga_chapters(
-                            manga_to_get_chapters["ID"],
-                            manga_to_get_chapters["URL"],
-                            manga_to_get_chapters["InternalID"],
-                        )
-                    )
-                    ss["update_multimanga_chapter_options_from_manga_id"] = manga_to_get_chapters["ID"]
-                    if multimanga["CurrentManga"]["ID"] != manga_to_get_chapters["ID"]:
-                        other_manga_source_name = get_source_name_and_colors(manga_to_get_chapters["Source"])[0]
-                    break
-                except APIException as e:
-                    logger.exception(e)
-                finally:
-                    if manga_to_get_chapters is not None:
-                        used_ids.append(manga_to_get_chapters["ID"])
+        if gets_chapters:
+            with st.spinner("Getting manga chapters..."):
+                chapters_attempts = get_multimanga_chapters_options(api_client, multimanga, custom_manga_ids, current_manga_lists_chapters)
         ss["update_multimanga_chapters"] = {
             "multimanga_id": multimanga["ID"],
-            "other_manga_source_name": other_manga_source_name,
+            "attempts": chapters_attempts,
         }
 
     st.selectbox(
@@ -170,27 +271,12 @@ def show_update_multimanga(multimanga_id):
     reset_last_read_chapter = ss.get("update_multimanga_form_delete_last_read_chapter_" + str(multimanga["ID"]), False)
 
     with st.expander("Last Read Chapter"):
-        if ss.get("update_multimanga_chapter_options", []) == [] and len(multimanga["Mangas"]) != len(custom_manga_ids):
-            # Could have fetched the chapters but failed or got an empty chapters list
-            if ss.get("update_multimanga_chapter_options") is None:
-                # Failed to get the chapters from any manga
-                st.warning(
-                    "Could not get the chapters list from the multimanga mangas. Maybe the source sites are down or the manga URLs changed in the source sites."
-                )
-            elif ss.get("update_multimanga_chapter_options") == []:
-                # Managed to get an empty chapters list
-                if other_manga_source_name == "":
-                    st.warning(
-                        "No released chapters found."
-                    )
-                else:
-                    st.warning(
-                        "Could not get the chapters list from the current manga. Maybe the source site is down or the manga URL changed in the source site. The other mangas returned an empty chapters list."
-                    )
-        elif ss.get("update_multimanga_chapter_options", []) != [] and other_manga_source_name != "" and multimanga["CurrentManga"]["Source"] != defaults.CUSTOM_MANGA_SOURCE:
-            st.warning(
-                f"Could not get the chapters list from the current manga. Maybe the source site is down or the manga URL changed in the source site. Chapters list fetched from the manga of source {other_manga_source_name}."
-            )
+        if warning := chapters_list_warning(
+            multimanga["CurrentManga"]["ID"],
+            chapters_attempts,
+            ss.get("update_multimanga_chapter_options_from_manga_id"),
+        ):
+            st.warning(warning)
 
         if (
             multimanga["LastReadChapter"]["Chapter"] != ""
@@ -895,7 +981,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
         st.text_input(
             "Manga URL",
             placeholder="https://randomsite.com/title/one-piece",
-            help="The URL of the manga in the source site. It's used by the Last Released Chapter selectors to check for new chapters if you provided the selectors. You can change the URL and the selectors at the same time.",
+            help="The URL of the manga in the source site. It's used by the chapter selectors to check for new chapters if you provided the selectors. You can change the URL and the selectors at the same time.",
             type="url",
             validate=URL_INPUT_VALIDATION,
             key=key_prefix + "url",

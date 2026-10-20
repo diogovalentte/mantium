@@ -162,7 +162,7 @@ class CustomMangaAPIClient:
                 res.text,
             )
 
-        return res.json()["chapter"]
+        return res.json()
 
     def update_custom_manga_last_released_chapter_selectors(
         self,
