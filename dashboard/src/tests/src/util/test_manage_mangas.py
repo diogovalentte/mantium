@@ -66,6 +66,26 @@ def test_only_manga_cant_ignore_its_last_chapter(api):
     assert IGNORE not in popover_labels(at)
 
 
+def test_chapter_without_url_can_be_ignored(api):
+    ms = mangas(api)
+    ms[1]["LastReleasedChapter"]["URL"] = ""
+    at = run_app(ms)
+    assert_no_exception(at)
+    assert popover_labels(at).count(IGNORE) == 2
+    at.button(key="update_multimanga_mangas_ignore_chapter_11").click().run()
+    assert_no_exception(at)
+    assert api.called("ignore_multimanga_manga_chapter") == [((1, 11), {})]
+
+
+def test_manga_without_last_chapter_cant_ignore_it(api):
+    ms = mangas(api)
+    for manga in ms:
+        manga["LastReleasedChapter"] = {**manga["LastReleasedChapter"], "Chapter": "", "URL": ""}
+    at = run_app(ms)
+    assert_no_exception(at)
+    assert IGNORE not in popover_labels(at)
+
+
 def test_ignored_chapter_is_tagged_and_can_stop_being_ignored(api):
     ms = mangas(api)
     ms[1]["IgnoredChapter"] = {"Chapter": "72", "URL": "https://s1/ch"}

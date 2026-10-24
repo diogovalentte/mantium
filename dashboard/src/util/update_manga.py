@@ -857,7 +857,7 @@ def show_multimanga_manga(
 
     if ignored_chapter:
         show_stop_ignoring_chapter_popover(manga, multimanga_id)
-    elif can_ignore_chapter and (manga.get("LastReleasedChapter") or {}).get("URL"):
+    elif can_ignore_chapter and any((manga.get("LastReleasedChapter") or {}).get(field) for field in ("Chapter", "URL")):
         show_ignore_chapter_popover(manga, multimanga_id)
 
     with stylable_container(
