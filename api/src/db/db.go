@@ -309,6 +309,7 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
 		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "last_released_chapter_url_attribute" varchar(30);
 		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "last_released_chapter_url_get_first" boolean NOT NULL DEFAULT FALSE;
 		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "last_released_chapter_selector_use_browser" boolean NOT NULL DEFAULT FALSE;
+		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "check_url" text NOT NULL DEFAULT '';
 		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "ignored_chapter" varchar(255);
 		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "ignored_chapter_url" text;
         ALTER TABLE "chapters" ADD COLUMN IF NOT EXISTS "internal_id" VARCHAR(100) NOT NULL DEFAULT '';

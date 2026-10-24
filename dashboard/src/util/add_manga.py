@@ -127,7 +127,7 @@ def add_manga():
                 ss["add_manga_manga_to_add"][
                     "last_released_chapter_use_browser"
                 ],
-
+                check_url=ss["add_manga_manga_to_add"].get("check_url", ""),
             )
         except Exception as e:
             ex = e
@@ -550,12 +550,18 @@ def test_custom_manga_selectors(
     url_attribute: str,
     url_get_first: bool,
     use_browser: bool,
+    check_url: str,
 ):
-    """Shows the last released chapter and the chapters list size the selectors get from the manga page, without saving anything."""
-    if manga_url == "":
-        st.warning("Provide the manga URL to test the selectors")
+    """Shows the last released chapter and the chapters list size the selectors get from the page, without saving anything.
+
+    The page is check_url, or else manga_url.
+    """
+    if manga_url == "" and check_url == "":
+        st.warning("Provide the manga URL or the check URL to test the selectors")
         return
-    if invalid_url_message := get_invalid_url_message("manga URL", manga_url):
+    if invalid_url_message := (
+        get_invalid_url_message("manga URL", manga_url) or get_invalid_url_message("check URL", check_url)
+    ):
         st.warning(invalid_url_message)
         return
     if name_selector == "" and url_selector == "":
@@ -574,6 +580,7 @@ def test_custom_manga_selectors(
                 url_attribute,
                 url_get_first,
                 use_browser,
+                check_url=check_url,
             )
     except Exception as ex:
         if user_message := get_api_user_message(ex):
@@ -653,26 +660,32 @@ def clear_custom_manga_selectors(key_prefix: str):
 CUSTOM_MANGA_URL_LIVE = "1s"
 
 
+def get_custom_manga_page_url(key_prefix: str) -> str:
+    """Returns the page the selectors are applied to: the check URL, or else the manga URL."""
+    return ss.get(key_prefix + "check_url", "") or ss.get(key_prefix + "url", "")
+
+
 def on_custom_manga_url_change(key_prefix: str):
-    ss[key_prefix + "new_preset_domains"] = get_url_hostname(ss.get(key_prefix + "url", ""))
+    ss[key_prefix + "new_preset_domains"] = get_url_hostname(get_custom_manga_page_url(key_prefix))
     ss[key_prefix + "detect_presets"] = "cached"
     ss[key_prefix + "preset_detections"] = None
 
 
 def on_custom_manga_detect_click(key_prefix: str):
-    ss[key_prefix + "new_preset_domains"] = get_url_hostname(ss.get(key_prefix + "url", ""))
+    ss[key_prefix + "new_preset_domains"] = get_url_hostname(get_custom_manga_page_url(key_prefix))
     ss[key_prefix + "detect_presets"] = "fresh"
     ss[key_prefix + "preset_detections"] = None
 
 
 def detect_custom_manga_presets(key_prefix: str, use_cache: bool = True):
-    """Tests the presets against the manga URL, and selects one if the selector fields are empty.
+    """Tests the presets against the page the selectors are applied to (the check URL, or else the
+    manga URL), and selects one if the selector fields are empty.
 
     Results are kept per URL, so committing a URL already tested (the URL input commits on
     typing pauses) doesn't request the site again, unless use_cache is False.
     """
-    manga_url = ss.get(key_prefix + "url", "")
-    if manga_url == "" or get_invalid_url_message("manga URL", manga_url):
+    manga_url = get_custom_manga_page_url(key_prefix)
+    if manga_url == "" or get_invalid_url_message("URL", manga_url):
         return
 
     cache = ss.setdefault(key_prefix + "detections_by_url", {})
@@ -935,6 +948,21 @@ def show_custom_manga_tracking_fields(key_prefix: str, test_selectors_help: str)
         st.info(
             "Optional. Mantium uses them to track new chapters, and to list the chapters in the multimanga's Last Read Chapter field."
         )
+        st.text_input(
+            "Check URL",
+            placeholder="https://randomsite.com/title/one-piece/rss",
+            help=(
+                "Optional. The page the selectors are applied to, if it's not the manga URL, like an RSS feed, "
+                "an API or the chapter list. The manga URL is still the link to the manga. "
+                "The presets also use this page."
+            ),
+            type="url",
+            validate=URL_INPUT_VALIDATION,
+            key=key_prefix + "check_url",
+            live=CUSTOM_MANGA_URL_LIVE,
+            on_change=on_custom_manga_url_change,
+            args=(key_prefix,),
+        )
         show_custom_manga_presets(key_prefix)
 
         with st.expander(
@@ -1013,6 +1041,7 @@ def show_custom_manga_tracking_fields(key_prefix: str, test_selectors_help: str)
                     ss[key_prefix + "last_released_chapter_url_attribute"],
                     ss[key_prefix + "last_released_chapter_url_get_first"],
                     ss[key_prefix + "last_released_chapter_use_browser"],
+                    ss[key_prefix + "check_url"],
                 )
 
 
@@ -1093,7 +1122,7 @@ def show_add_custom_manga_form(multimanga_id: int = 0, show_back_button: Callabl
 
         show_custom_manga_tracking_fields(
             key_prefix,
-            "Get the last released chapter from the manga URL using the selectors above, without adding the manga.",
+            "Get the last released chapter from the check URL, or else the manga URL, using the selectors above, without adding the manga.",
         )
 
         add_clicked = st.button(
@@ -1120,6 +1149,7 @@ def show_add_custom_manga_form(multimanga_id: int = 0, show_back_button: Callabl
                     get_invalid_url_message("manga URL", ss[key_prefix + "url"])
                     or get_invalid_url_message("last read chapter URL", ss.get(key_prefix + "last_read_chapter_url", ""))
                     or get_invalid_url_message("cover image URL", ss[key_prefix + "cover_img_url"])
+                    or get_invalid_url_message("check URL", ss[key_prefix + "check_url"])
                 ):
                     st.warning(invalid_url_message)
                 else:
@@ -1148,6 +1178,7 @@ def show_add_custom_manga_form(multimanga_id: int = 0, show_back_button: Callabl
                             "get_first": selectors["last_released_chapter_url_get_first"],
                         },
                         "last_released_chapter_use_browser": selectors["last_released_chapter_use_browser"],
+                        "check_url": ss[key_prefix + "check_url"],
                     }
 
                     if multimanga_id == 0:
@@ -1177,6 +1208,7 @@ def show_add_custom_manga_form(multimanga_id: int = 0, show_back_button: Callabl
                                     ss["update_multimanga_mangas_add_manga_selected_manga"]["last_released_chapter_url_selector"]["attribute"],
                                     ss["update_multimanga_mangas_add_manga_selected_manga"]["last_released_chapter_url_selector"]["get_first"],
                                     ss["update_multimanga_mangas_add_manga_selected_manga"]["last_released_chapter_use_browser"],
+                                    check_url=ss["update_multimanga_mangas_add_manga_selected_manga"]["check_url"],
                                 )
                         except APIException as e:
                             resp_text = str(e.response_text).lower()

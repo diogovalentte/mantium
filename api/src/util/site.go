@@ -59,7 +59,7 @@ func FollowSiteRedirects(baseURL string) (string, error) {
 	if err != nil {
 		return "", AddErrorContext(fmt.Sprintf(contextError, baseURL), err)
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0")
+	req.Header.Set("User-Agent", DefaultUserAgent)
 
 	resp, err := client.Do(req)
 	if err != nil {

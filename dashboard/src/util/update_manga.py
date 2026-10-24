@@ -21,6 +21,7 @@ from src.util.util import (
     escape_html,
     get_api_error_detail,
     get_api_user_message,
+    chapter_link,
     get_invalid_url_message,
     get_url_hostname,
     get_logger,
@@ -758,7 +759,7 @@ def show_multimanga_manga(
     st.markdown(
         f"""<h1
             class="manga_header" style='padding-top: 16px; text-align: center; margin-top: {margin}px; margin-bottom: {margin}px; font-size: {font_size}px;'>
-                <a class="manga_header" href="{safe_href(manga["URL"])}" target="_blank">{escape_html(manga["Name"])}</a>
+                {f'<a class="manga_header" href="{safe_href(manga["URL"])}" target="_blank">{escape_html(manga["Name"])}</a>' if manga["URL"] else escape_html(manga["Name"])}
             </h1>
         """,
         unsafe_allow_html=True,
@@ -766,11 +767,20 @@ def show_multimanga_manga(
 
     show_manga_cover(manga, (250, 355))
 
-    chapter_tag_content = f"""
-        <a href="{safe_href(manga["LastReleasedChapter"]["URL"])}" target="_blank" style="text-decoration: none; color: {defaults.chapter_link_tag_text_color}">
-            <span>{"Ch. " + escape_html(manga["LastReleasedChapter"]["Chapter"]) if manga["LastReleasedChapter"]["Chapter"] != "" else "N/A"}</span>
-        </a>
-    """
+    chapter_label = "Ch. " + escape_html(manga["LastReleasedChapter"]["Chapter"]) if manga["LastReleasedChapter"]["Chapter"] != "" else "N/A"
+    chapter_style = f"text-decoration: none; color: {defaults.chapter_link_tag_text_color}"
+    if link := chapter_link(manga["LastReleasedChapter"], manga):
+        chapter_tag_content = f"""
+            <a href="{safe_href(link)}" target="_blank" style="{chapter_style}">
+                <span>{chapter_label}</span>
+            </a>
+        """
+    else:
+        chapter_tag_content = f"""
+            <span style="{chapter_style}">
+                <span>{chapter_label}</span>
+            </span>
+        """
 
     release_date = (
         manga["LastReleasedChapter"]["UpdatedAt"]
@@ -966,8 +976,9 @@ def show_update_custom_manga(manga: dict[str, Any]):
             "last_released_chapter_url_attribute": url_selector["Attribute"],
             "last_released_chapter_url_get_first": url_selector["GetFirst"],
             "last_released_chapter_use_browser": manga["LastReleasedChapterSelectorUseBrowser"],
+            "check_url": manga.get("CheckURL", ""),
             "last_released_chapter_expander": bool(name_selector["Selector"] or url_selector["Selector"]),
-            "new_preset_domains": get_url_hostname(manga["URL"]),
+            "new_preset_domains": get_url_hostname(manga.get("CheckURL") or manga["URL"]),
         },
     )
 
@@ -981,7 +992,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
         st.text_input(
             "Manga URL",
             placeholder="https://randomsite.com/title/one-piece",
-            help="The URL of the manga in the source site. It's used by the chapter selectors to check for new chapters if you provided the selectors. You can change the URL and the selectors at the same time.",
+            help="The URL of the manga in the source site. The chapter selectors check it for new chapters, unless a check URL is set. You can change the URL and the selectors at the same time.",
             type="url",
             validate=URL_INPUT_VALIDATION,
             key=key_prefix + "url",
@@ -1014,7 +1025,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
 
         show_custom_manga_tracking_fields(
             key_prefix,
-            "Get the last released chapter from the manga URL using the selectors above, without saving anything.",
+            "Get the last released chapter from the check URL, or else the manga URL, using the selectors above, without saving anything.",
         )
 
         update_clicked = st.button(
@@ -1061,6 +1072,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
                     elif invalid_url_message := (
                         get_invalid_url_message("manga URL", url)
                         or get_invalid_url_message("cover image URL", cover_img_url)
+                        or get_invalid_url_message("check URL", ss[key_prefix + "check_url"])
                     ):
                         st.warning(invalid_url_message)
                     else:
@@ -1092,6 +1104,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
                                     cover_img_url,
                                     cover_img if cover_img else b"",
                                     use_mantium_default_cover_img,
+                                    check_url=ss[key_prefix + "check_url"],
                                 )
                             ss["update_manga_success_message"] = (
                                 "Manga updated successfully"

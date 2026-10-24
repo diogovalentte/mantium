@@ -126,7 +126,7 @@ func TestNameOnlyChapterURL(t *testing.T) {
 	nameSelector := &HTMLSelector{Selector: "xpath://item/title", Regex: chapterNumberRegex, GetFirst: true}
 	get := func(path string) *Chapter {
 		t.Helper()
-		chapter, err := GetCustomMangaLastReleasedChapter(server.URL+path, nameSelector, nil, false)
+		chapter, err := GetCustomMangaLastReleasedChapter(CustomMangaScraping{URL: server.URL + path, NameSelector: nameSelector})
 		if err != nil {
 			t.Fatal(err)
 		}

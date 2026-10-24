@@ -137,18 +137,18 @@ class FakeAPI:
         self.presets = [p for p in self.presets if p["id"] != preset_id]
         return {"message": "ok"}
 
-    def test_custom_manga_selectors(self, *args):
-        self._record("test_custom_manga_selectors", *args)
+    def test_custom_manga_selectors(self, *args, **kwargs):
+        self._record("test_custom_manga_selectors", *args, **kwargs)
         if isinstance(self.test_selectors_result, Exception):
             raise self.test_selectors_result
         return self.test_selectors_result
 
-    def add_multimanga(self, *args):
-        self._record("add_multimanga", *args)
+    def add_multimanga(self, *args, **kwargs):
+        self._record("add_multimanga", *args, **kwargs)
         return {"message": "ok"}
 
-    def add_manga_to_multimanga(self, *args):
-        self._record("add_manga_to_multimanga", *args)
+    def add_manga_to_multimanga(self, *args, **kwargs):
+        self._record("add_manga_to_multimanga", *args, **kwargs)
         return {"message": "ok"}
 
     def update_custom_manga(self, *args, **kwargs):

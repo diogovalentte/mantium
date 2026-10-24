@@ -94,6 +94,10 @@ definitions:
     type: object
   manga.Manga:
     properties:
+      checkURL:
+        description: CheckURL is the page the custom manga selectors are applied to,
+          if it's not URL, see CustomMangaScraping.
+        type: string
       coverImg:
         description: CoverImg is the cover image of the manga
         items:
@@ -300,6 +304,8 @@ definitions:
     type: object
   routes.AddMangaToMultiMangaRequest:
     properties:
+      check_url:
+        type: string
       cover_img:
         items:
           type: integer
@@ -321,6 +327,8 @@ definitions:
     type: object
   routes.AddMultiMangaRequest:
     properties:
+      check_url:
+        type: string
       cover_img:
         items:
           type: integer
@@ -389,6 +397,10 @@ definitions:
     type: object
   routes.TestCustomMangaSelectorsRequest:
     properties:
+      check_url:
+        description: CheckURL is the page the selectors are applied to, if it's not
+          URL.
+        type: string
       name_selector:
         $ref: '#/definitions/routes.HTMLSelectorRequest'
       url:
@@ -397,11 +409,13 @@ definitions:
         $ref: '#/definitions/routes.HTMLSelectorRequest'
       use_browser:
         type: boolean
-    required:
-    - url
     type: object
   routes.UpdateCustomMangaRequest:
     properties:
+      check_url:
+        description: CheckURL is the page the selectors are applied to, if it's not
+          the manga URL, like an RSS feed.
+        type: string
       cover_img:
         items:
           type: integer

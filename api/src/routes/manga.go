@@ -322,9 +322,11 @@ type UpdateCustomMangaRequest struct {
 	LastReleasedChapterNameSelector       *HTMLSelectorRequest `json:"name_selector"`
 	LastReleasedChapterURLSelector        *HTMLSelectorRequest `json:"url_selector"`
 	LastReleasedChapterSelectorUseBrowser bool                 `json:"use_browser"`
-	CoverImgURL                           string               `json:"cover_img_url" binding:"omitempty,http_url"`
-	CoverImg                              []byte               `json:"cover_img"`
-	UseMantiumDefaultCoverImg             bool                 `json:"use_mantium_default_cover_img"`
+	// CheckURL is the page the selectors are applied to, if it's not the manga URL, like an RSS feed.
+	CheckURL                  string `json:"check_url" binding:"omitempty,http_url"`
+	CoverImgURL               string `json:"cover_img_url" binding:"omitempty,http_url"`
+	CoverImg                  []byte `json:"cover_img"`
+	UseMantiumDefaultCoverImg bool   `json:"use_mantium_default_cover_img"`
 }
 
 // @Summary Update custom manga
@@ -383,6 +385,7 @@ func UpdateCustomManga(c *gin.Context) {
 		NameSelector: (*manga.HTMLSelector)(requestData.LastReleasedChapterNameSelector),
 		URLSelector:  (*manga.HTMLSelector)(requestData.LastReleasedChapterURLSelector),
 		UseBrowser:   requestData.LastReleasedChapterSelectorUseBrowser,
+		CheckURL:     requestData.CheckURL,
 	}
 	switch {
 	case len(requestData.CoverImg) > 0:
@@ -432,7 +435,9 @@ func UpdateCustomManga(c *gin.Context) {
 
 // TestCustomMangaSelectorsRequest is the request body for the TestCustomMangaSelectors route
 type TestCustomMangaSelectorsRequest struct {
-	URL                                   string               `json:"url" binding:"required,http_url"`
+	URL string `json:"url" binding:"omitempty,http_url"`
+	// CheckURL is the page the selectors are applied to, if it's not URL.
+	CheckURL                              string               `json:"check_url" binding:"omitempty,http_url"`
 	LastReleasedChapterNameSelector       *HTMLSelectorRequest `json:"name_selector"`
 	LastReleasedChapterURLSelector        *HTMLSelectorRequest `json:"url_selector"`
 	LastReleasedChapterSelectorUseBrowser bool                 `json:"use_browser"`
@@ -460,7 +465,13 @@ func TestCustomMangaSelectors(c *gin.Context) {
 	if URLSelector != nil {
 		URLSelector.Regex = ""
 	}
-	chapter, chapters, chaptersErr, err := manga.TestCustomMangaSelectors(requestData.URL, (*manga.HTMLSelector)(requestData.LastReleasedChapterNameSelector), URLSelector, requestData.LastReleasedChapterSelectorUseBrowser)
+	chapter, chapters, chaptersErr, err := manga.TestCustomMangaSelectors(manga.CustomMangaScraping{
+		URL:          requestData.URL,
+		CheckURL:     requestData.CheckURL,
+		NameSelector: (*manga.HTMLSelector)(requestData.LastReleasedChapterNameSelector),
+		URLSelector:  URLSelector,
+		UseBrowser:   requestData.LastReleasedChapterSelectorUseBrowser,
+	})
 	if err != nil {
 		status := http.StatusInternalServerError
 		var userErr *errordefs.UserError
@@ -493,6 +504,7 @@ type HTMLSelectorRequest struct {
 // AddMultiMangaRequest is the request body for the AddManga route
 type AddMultiMangaRequest struct {
 	LastReleasedChapterSelectorUseBrowser bool                 `json:"last_released_chapter_selector_use_browser"`
+	CheckURL                              string               `json:"check_url" binding:"omitempty,http_url"`
 	Name                                  string               `json:"name"`
 	URL                                   string               `json:"url" binding:"omitempty,http_url"`
 	MangaInternalID                       string               `json:"internal_id"`
@@ -580,6 +592,7 @@ func AddMultiManga(c *gin.Context) {
 		currentManga.Name = requestData.Name
 		currentManga.Source = manga.CustomMangaSource
 		currentManga.LastReleasedChapterSelectorUseBrowser = requestData.LastReleasedChapterSelectorUseBrowser
+		currentManga.CheckURL = requestData.CheckURL
 
 		if requestData.LastReleasedChapterNameSelector != nil {
 			currentManga.LastReleasedChapterNameSelector = (*manga.HTMLSelector)(requestData.LastReleasedChapterNameSelector)
@@ -604,17 +617,18 @@ func AddMultiManga(c *gin.Context) {
 			}
 		}
 
-		if currentManga.URL != "" && (currentManga.LastReleasedChapterNameSelector != nil || currentManga.LastReleasedChapterURLSelector != nil) {
-			chapter, err := manga.GetCustomMangaLastReleasedChapter(currentManga.URL, currentManga.LastReleasedChapterNameSelector, currentManga.LastReleasedChapterURLSelector, requestData.LastReleasedChapterSelectorUseBrowser)
+		// Before getting the chapter, whose placeholder URL is made from the manga URL
+		if currentManga.URL == "" {
+			currentManga.URL = manga.CustomMangaURLPrefix + "/" + uuid.New().String()
+		}
+
+		if scraping := currentManga.CustomMangaScraping(); scraping.PageURL() != "" && (scraping.NameSelector != nil || scraping.URLSelector != nil) {
+			chapter, err := manga.GetCustomMangaLastReleasedChapter(scraping)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, errorResponse(util.AddErrorContext("error getting custom manga last released chapter", err)))
 				return
 			}
 			currentManga.LastReleasedChapter = chapter
-		}
-
-		if currentManga.URL == "" {
-			currentManga.URL = manga.CustomMangaURLPrefix + "/" + uuid.New().String()
 		}
 
 		var err error
@@ -1461,6 +1475,7 @@ func AddMangaToMultiManga(c *gin.Context) {
 		mangaAdd.Name = requestData.Name
 		mangaAdd.Source = manga.CustomMangaSource
 		mangaAdd.LastReleasedChapterSelectorUseBrowser = requestData.LastReleasedChapterSelectorUseBrowser
+		mangaAdd.CheckURL = requestData.CheckURL
 
 		if requestData.LastReleasedChapterNameSelector != nil {
 			mangaAdd.LastReleasedChapterNameSelector = (*manga.HTMLSelector)(requestData.LastReleasedChapterNameSelector)
@@ -1470,17 +1485,18 @@ func AddMangaToMultiManga(c *gin.Context) {
 			mangaAdd.LastReleasedChapterURLSelector.Regex = ""
 		}
 
-		if mangaAdd.URL != "" && (mangaAdd.LastReleasedChapterNameSelector != nil || mangaAdd.LastReleasedChapterURLSelector != nil) {
-			chapter, err := manga.GetCustomMangaLastReleasedChapter(mangaAdd.URL, mangaAdd.LastReleasedChapterNameSelector, mangaAdd.LastReleasedChapterURLSelector, requestData.LastReleasedChapterSelectorUseBrowser)
+		// Before getting the chapter, whose placeholder URL is made from the manga URL
+		if mangaAdd.URL == "" {
+			mangaAdd.URL = manga.CustomMangaURLPrefix + "/" + uuid.New().String()
+		}
+
+		if scraping := mangaAdd.CustomMangaScraping(); scraping.PageURL() != "" && (scraping.NameSelector != nil || scraping.URLSelector != nil) {
+			chapter, err := manga.GetCustomMangaLastReleasedChapter(scraping)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, errorResponse(util.AddErrorContext("error getting custom manga last released chapter", err)))
 				return
 			}
 			mangaAdd.LastReleasedChapter = chapter
-		}
-
-		if mangaAdd.URL == "" {
-			mangaAdd.URL = manga.CustomMangaURLPrefix + "/" + uuid.New().String()
 		}
 
 		if len(requestData.CoverImg) > 0 {
@@ -1570,6 +1586,7 @@ func AddMangaToMultiManga(c *gin.Context) {
 // AddMangaToMultiMangaRequest is the request body for the AddManga route
 type AddMangaToMultiMangaRequest struct {
 	LastReleasedChapterSelectorUseBrowser bool                 `json:"last_released_chapter_selector_use_browser"`
+	CheckURL                              string               `json:"check_url" binding:"omitempty,http_url"`
 	Name                                  string               `json:"name"`
 	URL                                   string               `json:"url" binding:"omitempty,http_url"`
 	InternalID                            string               `json:"internal_id"`
@@ -1983,7 +2000,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
             font-weight: bold;
         }
 
-        .manga-name:hover {
+        a.manga-name:hover {
             text-decoration: underline;
         }
 
@@ -2220,20 +2237,28 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
         />
 
         <div class="text-wrap">
-			<a href="{{ .URL }}" target="_blank" class="manga-name">{{ .Name }}</a>
+			{{ if .URL }}
+				<a href="{{ .URL }}" target="_blank" class="manga-name">{{ .Name }}</a>
+			{{ else }}
+				<span class="manga-name">{{ .Name }}</span>
+			{{ end }}
         </div>
 
         <div class="new-chapter-container">
-			{{ if .LastReadChapter }}
-				<a href="{{ .LastReadChapter.URL }}" class="chapter-label last-read-chapter-label" target="_blank">{{ .LastReadChapter.Chapter }}</a>
+			{{ $readLink := .URL }}{{ $readLabel := "N/A" }}
+			{{ if .LastReadChapter }}{{ $readLink = chapterLink .LastReadChapter.URL .URL }}{{ $readLabel = .LastReadChapter.Chapter }}{{ end }}
+			{{ if $readLink }}
+				<a href="{{ $readLink }}" class="chapter-label last-read-chapter-label" target="_blank">{{ $readLabel }}</a>
 			{{ else }}
-				<a href="{{ .URL }}" class="chapter-label last-read-chapter-label" target="_blank">N/A</a>
+				<span class="chapter-label last-read-chapter-label">{{ $readLabel }}</span>
 			{{ end }}
 			<span class="chapter-label chapter-gt-label"> &lt; </span>
-			{{ if .LastReleasedChapter }}
-				<a href="{{ .LastReleasedChapter.URL }}" class="chapter-label last-released-chapter-label" target="_blank">{{ .LastReleasedChapter.Chapter }}</a>
+			{{ $releasedLink := .URL }}{{ $releasedLabel := "N/A" }}
+			{{ if .LastReleasedChapter }}{{ $releasedLink = chapterLink .LastReleasedChapter.URL .URL }}{{ $releasedLabel = .LastReleasedChapter.Chapter }}{{ end }}
+			{{ if $releasedLink }}
+				<a href="{{ $releasedLink }}" class="chapter-label last-released-chapter-label" target="_blank">{{ $releasedLabel }}</a>
 			{{ else }}
-				<a href="{{ .URL }}" class="chapter-label last-released-chapter-label" target="_blank">N/A</a>
+				<span class="chapter-label last-released-chapter-label">{{ $releasedLabel }}</span>
 			{{ end }}
 
 			<div>
@@ -2269,6 +2294,14 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
 	encodeImageF := template.FuncMap{
 		"encodeImage": func(bytes []byte) string {
 			return base64.StdEncoding.EncodeToString(bytes)
+		},
+		// A chapter without URL, like a custom manga's chapter found only by its name, links to the manga.
+		// An empty link would open the iFrame itself.
+		"chapterLink": func(chapterURL, mangaURL string) string {
+			if chapterURL != "" {
+				return chapterURL
+			}
+			return mangaURL
 		},
 	}
 
@@ -3021,7 +3054,8 @@ func limitBrowserScrape(browserLimiter chan struct{}, useBrowser bool, scrape fu
 // updateCustomMangaLastReleasedChapter gets the custom manga last released chapter using its selectors and updates it in the database.
 // Returns true if the manga has a new released chapter.
 func updateCustomMangaLastReleasedChapter(m *manga.Manga, browserLimiter chan struct{}, retries int, retryInterval time.Duration, logger *zerolog.Logger) (bool, error) {
-	if m.URL == "" || strings.HasPrefix(m.URL, manga.CustomMangaURLPrefix) || (m.LastReleasedChapterNameSelector == nil && m.LastReleasedChapterURLSelector == nil) {
+	scraping := m.CustomMangaScraping()
+	if scraping.PageURL() == "" || (scraping.NameSelector == nil && scraping.URLSelector == nil) {
 		return false, nil
 	}
 
@@ -3037,7 +3071,7 @@ func updateCustomMangaLastReleasedChapter(m *manga.Manga, browserLimiter chan st
 	var err error
 	for i := 0; i < retries; i++ {
 		chapter, err = limitBrowserScrape(browserLimiter, m.LastReleasedChapterSelectorUseBrowser, func() (*manga.Chapter, error) {
-			return manga.GetCustomMangaLastReleasedChapter(m.URL, m.LastReleasedChapterNameSelector, m.LastReleasedChapterURLSelector, m.LastReleasedChapterSelectorUseBrowser)
+			return manga.GetCustomMangaLastReleasedChapter(scraping)
 		})
 		if err == nil {
 			break
@@ -3079,14 +3113,7 @@ func updateCustomMangaLastReleasedChapter(m *manga.Manga, browserLimiter chan st
 
 // getCustomMangaChapters gets the chapters list of a custom manga using its selectors.
 func getCustomMangaChapters(m *manga.Manga) ([]*manga.Chapter, error) {
-	var nameSelector, URLSelector *manga.HTMLSelector
-	if m.LastReleasedChapterNameSelector != nil && m.LastReleasedChapterNameSelector.Selector != "" {
-		nameSelector = m.LastReleasedChapterNameSelector
-	}
-	if m.LastReleasedChapterURLSelector != nil && m.LastReleasedChapterURLSelector.Selector != "" {
-		URLSelector = m.LastReleasedChapterURLSelector
-	}
-	return manga.GetCustomMangaChapters(m.URL, nameSelector, URLSelector, m.LastReleasedChapterSelectorUseBrowser)
+	return manga.GetCustomMangaChapters(m.CustomMangaScraping())
 }
 
 // getCustomMangaChapter gets a chapter from a custom manga chapters list, by its URL, or by its name if no chapter has the URL.

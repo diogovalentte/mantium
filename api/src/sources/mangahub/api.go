@@ -35,7 +35,7 @@ func NewMangaHubClient() *Client {
 	header.Set("Content-Type", "application/json")
 	header.Set("Accept", "application/json")
 	header.Set("Origin", baseSiteURL)
-	header.Set("User-Agent", userAgent)
+	header.Set("User-Agent", util.DefaultUserAgent)
 
 	hub := &Client{
 		client: &client,
