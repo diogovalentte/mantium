@@ -90,6 +90,12 @@ def get_url_hostname(url: str) -> str:
         return ""
 
 
+def chapter_link(chapter: dict[str, Any], manga: dict[str, Any]) -> str:
+    """Returns the link of a chapter. A chapter without URL, like a custom manga's chapter found only
+    by its name, links to the manga. Empty if neither has a URL."""
+    return chapter.get("URL") or manga.get("URL") or ""
+
+
 def remove_nano_from_datetime(datetime_string: str):
     if len(datetime_string) > 19:
         return datetime_string[:19] + "Z"

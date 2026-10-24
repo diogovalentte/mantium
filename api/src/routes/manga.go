@@ -2000,7 +2000,7 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
             font-weight: bold;
         }
 
-        .manga-name:hover {
+        a.manga-name:hover {
             text-decoration: underline;
         }
 
@@ -2237,20 +2237,28 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
         />
 
         <div class="text-wrap">
-			<a href="{{ .URL }}" target="_blank" class="manga-name">{{ .Name }}</a>
+			{{ if .URL }}
+				<a href="{{ .URL }}" target="_blank" class="manga-name">{{ .Name }}</a>
+			{{ else }}
+				<span class="manga-name">{{ .Name }}</span>
+			{{ end }}
         </div>
 
         <div class="new-chapter-container">
-			{{ if .LastReadChapter }}
-				<a href="{{ .LastReadChapter.URL }}" class="chapter-label last-read-chapter-label" target="_blank">{{ .LastReadChapter.Chapter }}</a>
+			{{ $readLink := .URL }}{{ $readLabel := "N/A" }}
+			{{ if .LastReadChapter }}{{ $readLink = chapterLink .LastReadChapter.URL .URL }}{{ $readLabel = .LastReadChapter.Chapter }}{{ end }}
+			{{ if $readLink }}
+				<a href="{{ $readLink }}" class="chapter-label last-read-chapter-label" target="_blank">{{ $readLabel }}</a>
 			{{ else }}
-				<a href="{{ .URL }}" class="chapter-label last-read-chapter-label" target="_blank">N/A</a>
+				<span class="chapter-label last-read-chapter-label">{{ $readLabel }}</span>
 			{{ end }}
 			<span class="chapter-label chapter-gt-label"> &lt; </span>
-			{{ if .LastReleasedChapter }}
-				<a href="{{ .LastReleasedChapter.URL }}" class="chapter-label last-released-chapter-label" target="_blank">{{ .LastReleasedChapter.Chapter }}</a>
+			{{ $releasedLink := .URL }}{{ $releasedLabel := "N/A" }}
+			{{ if .LastReleasedChapter }}{{ $releasedLink = chapterLink .LastReleasedChapter.URL .URL }}{{ $releasedLabel = .LastReleasedChapter.Chapter }}{{ end }}
+			{{ if $releasedLink }}
+				<a href="{{ $releasedLink }}" class="chapter-label last-released-chapter-label" target="_blank">{{ $releasedLabel }}</a>
 			{{ else }}
-				<a href="{{ .URL }}" class="chapter-label last-released-chapter-label" target="_blank">N/A</a>
+				<span class="chapter-label last-released-chapter-label">{{ $releasedLabel }}</span>
 			{{ end }}
 
 			<div>
@@ -2286,6 +2294,14 @@ func getMangasiFrame(mangas []*manga.Manga, theme, apiURL string, showBackground
 	encodeImageF := template.FuncMap{
 		"encodeImage": func(bytes []byte) string {
 			return base64.StdEncoding.EncodeToString(bytes)
+		},
+		// A chapter without URL, like a custom manga's chapter found only by its name, links to the manga.
+		// An empty link would open the iFrame itself.
+		"chapterLink": func(chapterURL, mangaURL string) string {
+			if chapterURL != "" {
+				return chapterURL
+			}
+			return mangaURL
 		},
 	}
 

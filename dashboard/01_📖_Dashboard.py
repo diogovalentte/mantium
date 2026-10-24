@@ -535,9 +535,9 @@ class MainDashboard:
 
         no_released_chapter_custom_manga = not (manga["LastReleasedChapter"]["Chapter"] == "" and manga["Source"] == defaults.CUSTOM_MANGA_SOURCE)
         if no_released_chapter_custom_manga:
-            if manga["LastReleasedChapter"]["URL"] != "":
+            if util.chapter_link(manga["LastReleasedChapter"], manga) != "":
                 chapter = chapter_with_url_tag_content.format(
-                    util.safe_href(manga["LastReleasedChapter"]["URL"]),
+                    util.safe_href(util.chapter_link(manga["LastReleasedChapter"], manga)),
                     (
                         f'Ch. {util.escape_html(manga["LastReleasedChapter"]["Chapter"])}'
                         if manga["LastReleasedChapter"]["Chapter"] != ""
@@ -577,9 +577,9 @@ class MainDashboard:
         else:
             st.markdown("""<div style="height: 80px"></div>""", unsafe_allow_html=True)
 
-        if manga["LastReadChapter"]["URL"] != "":
+        if util.chapter_link(manga["LastReadChapter"], manga) != "":
             chapter = chapter_with_url_tag_content.format(
-                util.safe_href(manga["LastReadChapter"]["URL"]),
+                util.safe_href(util.chapter_link(manga["LastReadChapter"], manga)),
                 (
                     f'Ch. {util.escape_html(manga["LastReadChapter"]["Chapter"])}'
                     if manga["LastReadChapter"]["Chapter"] != ""
@@ -746,9 +746,9 @@ class MainDashboard:
             </span>
         """
 
-        if manga["LastReleasedChapter"]["URL"] != "":
+        if util.chapter_link(manga["LastReleasedChapter"], manga) != "":
             chapter = chapter_with_url_tag_content.format(
-                util.safe_href(manga["LastReleasedChapter"]["URL"]),
+                util.safe_href(util.chapter_link(manga["LastReleasedChapter"], manga)),
                 (
                     f'Ch. {util.escape_html(manga["LastReleasedChapter"]["Chapter"])}'
                     if manga["LastReleasedChapter"]["Chapter"] != ""
@@ -790,9 +790,9 @@ class MainDashboard:
                 unsafe_allow_html=True,
             )
 
-        if manga["LastReadChapter"]["URL"] != "":
+        if util.chapter_link(manga["LastReadChapter"], manga) != "":
             chapter = chapter_with_url_tag_content.format(
-                util.safe_href(manga["LastReadChapter"]["URL"]),
+                util.safe_href(util.chapter_link(manga["LastReadChapter"], manga)),
                 (
                     f'Ch. {util.escape_html(manga["LastReadChapter"]["Chapter"])}'
                     if manga["LastReadChapter"]["Chapter"] != ""

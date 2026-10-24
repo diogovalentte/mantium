@@ -21,6 +21,7 @@ from src.util.util import (
     escape_html,
     get_api_error_detail,
     get_api_user_message,
+    chapter_link,
     get_invalid_url_message,
     get_url_hostname,
     get_logger,
@@ -758,7 +759,7 @@ def show_multimanga_manga(
     st.markdown(
         f"""<h1
             class="manga_header" style='padding-top: 16px; text-align: center; margin-top: {margin}px; margin-bottom: {margin}px; font-size: {font_size}px;'>
-                <a class="manga_header" href="{safe_href(manga["URL"])}" target="_blank">{escape_html(manga["Name"])}</a>
+                {f'<a class="manga_header" href="{safe_href(manga["URL"])}" target="_blank">{escape_html(manga["Name"])}</a>' if manga["URL"] else escape_html(manga["Name"])}
             </h1>
         """,
         unsafe_allow_html=True,
@@ -766,11 +767,20 @@ def show_multimanga_manga(
 
     show_manga_cover(manga, (250, 355))
 
-    chapter_tag_content = f"""
-        <a href="{safe_href(manga["LastReleasedChapter"]["URL"])}" target="_blank" style="text-decoration: none; color: {defaults.chapter_link_tag_text_color}">
-            <span>{"Ch. " + escape_html(manga["LastReleasedChapter"]["Chapter"]) if manga["LastReleasedChapter"]["Chapter"] != "" else "N/A"}</span>
-        </a>
-    """
+    chapter_label = "Ch. " + escape_html(manga["LastReleasedChapter"]["Chapter"]) if manga["LastReleasedChapter"]["Chapter"] != "" else "N/A"
+    chapter_style = f"text-decoration: none; color: {defaults.chapter_link_tag_text_color}"
+    if link := chapter_link(manga["LastReleasedChapter"], manga):
+        chapter_tag_content = f"""
+            <a href="{safe_href(link)}" target="_blank" style="{chapter_style}">
+                <span>{chapter_label}</span>
+            </a>
+        """
+    else:
+        chapter_tag_content = f"""
+            <span style="{chapter_style}">
+                <span>{chapter_label}</span>
+            </span>
+        """
 
     release_date = (
         manga["LastReleasedChapter"]["UpdatedAt"]
