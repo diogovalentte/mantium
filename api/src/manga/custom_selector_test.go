@@ -116,7 +116,7 @@ func TestGetCustomMangaLastReleasedChapter(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			chapter, err := GetCustomMangaLastReleasedChapter(server.URL+test.path, test.nameSelector, test.urlSelector, false)
+			chapter, err := GetCustomMangaLastReleasedChapter(CustomMangaScraping{URL: server.URL + test.path, NameSelector: test.nameSelector, URLSelector: test.urlSelector})
 			if err != nil {
 				t.Fatalf("unexpected error: %s", err)
 			}
@@ -187,7 +187,7 @@ func TestGetCustomMangaChapters(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			chapters, err := GetCustomMangaChapters(server.URL+tt.path, tt.nameSelector, tt.urlSelector, false)
+			chapters, err := GetCustomMangaChapters(CustomMangaScraping{URL: server.URL + tt.path, NameSelector: tt.nameSelector, URLSelector: tt.urlSelector})
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -202,7 +202,7 @@ func TestGetCustomMangaChapters(t *testing.T) {
 
 			// The newest chapter in the list is the one tracked as the last released chapter.
 			// The last released chapter doesn't skip entries, so it fails when the newest one isn't a chapter.
-			lastReleased, err := GetCustomMangaLastReleasedChapter(server.URL+tt.path, tt.nameSelector, tt.urlSelector, false)
+			lastReleased, err := GetCustomMangaLastReleasedChapter(CustomMangaScraping{URL: server.URL + tt.path, NameSelector: tt.nameSelector, URLSelector: tt.urlSelector})
 			if tt.lastReleasedFails {
 				if err == nil {
 					t.Fatalf("expected the last released chapter to fail, got %q", lastReleased.Chapter)
@@ -220,11 +220,11 @@ func TestGetCustomMangaChapters(t *testing.T) {
 
 	t.Run("name only uses the same placeholder URLs as the last released chapter", func(t *testing.T) {
 		nameSelector := &HTMLSelector{Selector: "css:a.chapter", Regex: `Chapter (\d+)`, GetFirst: true}
-		chapters, err := GetCustomMangaChapters(server.URL, nameSelector, nil, false)
+		chapters, err := GetCustomMangaChapters(CustomMangaScraping{URL: server.URL, NameSelector: nameSelector})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		lastReleased, err := GetCustomMangaLastReleasedChapter(server.URL, nameSelector, nil, false)
+		lastReleased, err := GetCustomMangaLastReleasedChapter(CustomMangaScraping{URL: server.URL, NameSelector: nameSelector})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -277,7 +277,7 @@ func TestGetCustomMangaChaptersUserErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := GetCustomMangaChapters(server.URL+tt.path, tt.nameSelector, tt.urlSelector, false)
+			_, err := GetCustomMangaChapters(CustomMangaScraping{URL: server.URL + tt.path, NameSelector: tt.nameSelector, URLSelector: tt.urlSelector})
 			var userErr *errordefs.UserError
 			if !errors.As(err, &userErr) {
 				t.Fatalf("expected a UserError, got %v", err)
@@ -316,7 +316,7 @@ func TestGetCustomMangaLastReleasedChapterUserErrors(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := GetCustomMangaLastReleasedChapter(server.URL+test.path, test.nameSelector, test.urlSelector, false)
+			_, err := GetCustomMangaLastReleasedChapter(CustomMangaScraping{URL: server.URL + test.path, NameSelector: test.nameSelector, URLSelector: test.urlSelector})
 			var userErr *errordefs.UserError
 			if !errors.As(err, &userErr) {
 				t.Fatalf("expected a UserError, got: %v", err)
@@ -334,7 +334,7 @@ func TestGetCustomMangaLastReleasedChapterBlocksPrivateAddresses(t *testing.T) {
 	util.SetAllowPrivateURLs(false)
 
 	for _, useBrowser := range []bool{false, true} {
-		_, err := GetCustomMangaLastReleasedChapter(server.URL, &HTMLSelector{Selector: "css:a.chapter"}, nil, useBrowser)
+		_, err := GetCustomMangaLastReleasedChapter(CustomMangaScraping{URL: server.URL, NameSelector: &HTMLSelector{Selector: "css:a.chapter"}, UseBrowser: useBrowser})
 		var userErr *errordefs.UserError
 		if !errors.As(err, &userErr) {
 			t.Fatalf("browser %v: expected a UserError, got: %v", useBrowser, err)
@@ -373,7 +373,7 @@ func TestGetCustomMangaLastReleasedChapterUserAgent(t *testing.T) {
 	server, userAgent := newUserAgentTestServer()
 	defer server.Close()
 
-	_, err := GetCustomMangaLastReleasedChapter(server.URL+"/", &HTMLSelector{Selector: "css:a.chapter"}, nil, false)
+	_, err := GetCustomMangaLastReleasedChapter(CustomMangaScraping{URL: server.URL + "/", NameSelector: &HTMLSelector{Selector: "css:a.chapter"}})
 	if err != nil {
 		t.Fatal(err)
 	}

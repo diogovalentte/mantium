@@ -966,8 +966,9 @@ def show_update_custom_manga(manga: dict[str, Any]):
             "last_released_chapter_url_attribute": url_selector["Attribute"],
             "last_released_chapter_url_get_first": url_selector["GetFirst"],
             "last_released_chapter_use_browser": manga["LastReleasedChapterSelectorUseBrowser"],
+            "check_url": manga.get("CheckURL", ""),
             "last_released_chapter_expander": bool(name_selector["Selector"] or url_selector["Selector"]),
-            "new_preset_domains": get_url_hostname(manga["URL"]),
+            "new_preset_domains": get_url_hostname(manga.get("CheckURL") or manga["URL"]),
         },
     )
 
@@ -981,7 +982,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
         st.text_input(
             "Manga URL",
             placeholder="https://randomsite.com/title/one-piece",
-            help="The URL of the manga in the source site. It's used by the chapter selectors to check for new chapters if you provided the selectors. You can change the URL and the selectors at the same time.",
+            help="The URL of the manga in the source site. The chapter selectors check it for new chapters, unless a check URL is set. You can change the URL and the selectors at the same time.",
             type="url",
             validate=URL_INPUT_VALIDATION,
             key=key_prefix + "url",
@@ -1014,7 +1015,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
 
         show_custom_manga_tracking_fields(
             key_prefix,
-            "Get the last released chapter from the manga URL using the selectors above, without saving anything.",
+            "Get the last released chapter from the check URL, or else the manga URL, using the selectors above, without saving anything.",
         )
 
         update_clicked = st.button(
@@ -1061,6 +1062,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
                     elif invalid_url_message := (
                         get_invalid_url_message("manga URL", url)
                         or get_invalid_url_message("cover image URL", cover_img_url)
+                        or get_invalid_url_message("check URL", ss[key_prefix + "check_url"])
                     ):
                         st.warning(invalid_url_message)
                     else:
@@ -1092,6 +1094,7 @@ def show_update_custom_manga(manga: dict[str, Any]):
                                     cover_img_url,
                                     cover_img if cover_img else b"",
                                     use_mantium_default_cover_img,
+                                    check_url=ss[key_prefix + "check_url"],
                                 )
                             ss["update_manga_success_message"] = (
                                 "Manga updated successfully"

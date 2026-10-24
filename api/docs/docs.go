@@ -1362,6 +1362,10 @@ const docTemplate = `{
         "manga.Manga": {
             "type": "object",
             "properties": {
+                "checkURL": {
+                    "description": "CheckURL is the page the custom manga selectors are applied to, if it's not URL, see CustomMangaScraping.",
+                    "type": "string"
+                },
                 "coverImg": {
                     "description": "CoverImg is the cover image of the manga",
                     "type": "array",
@@ -1630,6 +1634,9 @@ const docTemplate = `{
         "routes.AddMangaToMultiMangaRequest": {
             "type": "object",
             "properties": {
+                "check_url": {
+                    "type": "string"
+                },
                 "cover_img": {
                     "type": "array",
                     "items": {
@@ -1665,6 +1672,9 @@ const docTemplate = `{
                 "status"
             ],
             "properties": {
+                "check_url": {
+                    "type": "string"
+                },
                 "cover_img": {
                     "type": "array",
                     "items": {
@@ -1764,10 +1774,11 @@ const docTemplate = `{
         },
         "routes.TestCustomMangaSelectorsRequest": {
             "type": "object",
-            "required": [
-                "url"
-            ],
             "properties": {
+                "check_url": {
+                    "description": "CheckURL is the page the selectors are applied to, if it's not URL.",
+                    "type": "string"
+                },
                 "name_selector": {
                     "$ref": "#/definitions/routes.HTMLSelectorRequest"
                 },
@@ -1788,6 +1799,10 @@ const docTemplate = `{
                 "name"
             ],
             "properties": {
+                "check_url": {
+                    "description": "CheckURL is the page the selectors are applied to, if it's not the manga URL, like an RSS feed.",
+                    "type": "string"
+                },
                 "cover_img": {
                     "type": "array",
                     "items": {

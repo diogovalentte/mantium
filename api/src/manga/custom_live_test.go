@@ -45,7 +45,7 @@ func TestCustomMangaLastReleasedChapter(t *testing.T) {
 	}
 
 	t.Run("Should get custom manga last released chapter without browser", func(t *testing.T) {
-		chapter, err := GetCustomMangaLastReleasedChapter(customMangaNoBrowserHTML.URL, customMangaNoBrowserHTML.LastReleasedChapterNameSelector, customMangaNoBrowserHTML.LastReleasedChapterURLSelector, customMangaNoBrowserHTML.LastReleasedChapterSelectorUseBrowser)
+		chapter, err := GetCustomMangaLastReleasedChapter(CustomMangaScraping{URL: customMangaNoBrowserHTML.URL, NameSelector: customMangaNoBrowserHTML.LastReleasedChapterNameSelector, URLSelector: customMangaNoBrowserHTML.LastReleasedChapterURLSelector, UseBrowser: customMangaNoBrowserHTML.LastReleasedChapterSelectorUseBrowser})
 		if err != nil {
 			t.Fatalf("Error getting custom manga last released chapter (without browser): %v", err)
 		}
@@ -57,7 +57,7 @@ func TestCustomMangaLastReleasedChapter(t *testing.T) {
 		}
 	})
 	t.Run("Should get custom manga last released chapter without browser using XML path", func(t *testing.T) {
-		chapter, err := GetCustomMangaLastReleasedChapter(customMangaNoBrowserXML.URL, customMangaNoBrowserXML.LastReleasedChapterNameSelector, customMangaNoBrowserXML.LastReleasedChapterURLSelector, customMangaNoBrowserXML.LastReleasedChapterSelectorUseBrowser)
+		chapter, err := GetCustomMangaLastReleasedChapter(CustomMangaScraping{URL: customMangaNoBrowserXML.URL, NameSelector: customMangaNoBrowserXML.LastReleasedChapterNameSelector, URLSelector: customMangaNoBrowserXML.LastReleasedChapterURLSelector, UseBrowser: customMangaNoBrowserXML.LastReleasedChapterSelectorUseBrowser})
 		if err != nil {
 			t.Fatalf("Error getting custom manga last released chapter (without browser): %v", err)
 		}
@@ -69,7 +69,7 @@ func TestCustomMangaLastReleasedChapter(t *testing.T) {
 		}
 	})
 	t.Run("Should get custom manga last released chapter with browser", func(t *testing.T) {
-		chapter, err := GetCustomMangaLastReleasedChapter(customMangaBrowser.URL, customMangaBrowser.LastReleasedChapterNameSelector, customMangaBrowser.LastReleasedChapterURLSelector, customMangaBrowser.LastReleasedChapterSelectorUseBrowser)
+		chapter, err := GetCustomMangaLastReleasedChapter(CustomMangaScraping{URL: customMangaBrowser.URL, NameSelector: customMangaBrowser.LastReleasedChapterNameSelector, URLSelector: customMangaBrowser.LastReleasedChapterURLSelector, UseBrowser: customMangaBrowser.LastReleasedChapterSelectorUseBrowser})
 		if err != nil {
 			t.Fatalf("Error getting custom manga last released chapter (with browser): %v", err)
 		}
@@ -84,7 +84,7 @@ func TestGetCustomMangaLastReleasedChapterBrowserUserAgent(t *testing.T) {
 	server, userAgent := newUserAgentTestServer()
 	defer server.Close()
 
-	_, err := GetCustomMangaLastReleasedChapter(server.URL+"/", &HTMLSelector{Selector: "css:a.chapter"}, nil, true)
+	_, err := GetCustomMangaLastReleasedChapter(CustomMangaScraping{URL: server.URL + "/", NameSelector: &HTMLSelector{Selector: "css:a.chapter"}, UseBrowser: true})
 	if err != nil {
 		t.Fatal(err)
 	}

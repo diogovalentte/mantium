@@ -24,7 +24,7 @@ func TestCustomChapterSelectors(t *testing.T) {
 	server := testutil.Fixtures(t, map[string]string{"/manga": "custom.html"})
 	for _, selector := range []string{"css:a.chapter", "xpath://a[@class='chapter']"} {
 		t.Run(selector, func(t *testing.T) {
-			c, err := GetCustomMangaLastReleasedChapter(server.URL+"/manga", &HTMLSelector{Selector: selector, Regex: `第(\d+(\.\d+)?)話`, GetFirst: true}, &HTMLSelector{Selector: selector, Attribute: "href", GetFirst: true}, false)
+			c, err := GetCustomMangaLastReleasedChapter(CustomMangaScraping{URL: server.URL + "/manga", NameSelector: &HTMLSelector{Selector: selector, Regex: `第(\d+(\.\d+)?)話`, GetFirst: true}, URLSelector: &HTMLSelector{Selector: selector, Attribute: "href", GetFirst: true}})
 			if err != nil {
 				t.Fatal(err)
 			}

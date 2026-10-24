@@ -76,6 +76,7 @@ class CustomMangaAPIClient:
         cover_img_url: str = "",
         cover_img: bytes = b"",
         use_mantium_default_cover_img: bool = False,
+        check_url: str = "",
     ) -> dict[str, str]:
         """Updates all the custom manga fields at once. Nothing is saved if any of them is invalid."""
         url = f"{self.base_custom_manga_url}?{urlencode({'id': manga_id})}"
@@ -84,6 +85,7 @@ class CustomMangaAPIClient:
             "name": name,
             "url": manga_url,
             "use_browser": last_released_chapter_selector_use_browser,
+            "check_url": check_url,
             "cover_img_url": cover_img_url,
             "cover_img": base64.b64encode(cover_img).decode("utf-8") if cover_img else "",
             "use_mantium_default_cover_img": use_mantium_default_cover_img,
@@ -128,6 +130,7 @@ class CustomMangaAPIClient:
         last_released_chapter_url_attribute: str,
         last_released_chapter_url_get_first: bool,
         last_released_chapter_selector_use_browser: bool,
+        check_url: str = "",
     ) -> dict[str, Any]:
         """Gets the last released chapter using the selectors, without saving anything."""
         url = f"{self.base_custom_manga_url}/test_selectors"
@@ -135,6 +138,7 @@ class CustomMangaAPIClient:
         request_body: dict[str, Any] = {
             "url": manga_url,
             "use_browser": last_released_chapter_selector_use_browser,
+            "check_url": check_url,
         }
         if last_released_chapter_name_selector != "":
             request_body["name_selector"] = {
