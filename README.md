@@ -168,14 +168,16 @@ Custom Manga allows you to track content not supported natively (manga, manhwa, 
 You must manually provide:
 
 - Name
-- URL
+- URL (optional): the manga page, used as the manga's link
 - Cover image (or use default). PNG, JPEG or WebP, up to 10 MB and 40 megapixels
-- Chapter selectors
+- Chapter selectors (optional)
 
 ## Chapter Selectors
 
-Custom manga can automatically detect new chapters by getting the web page defined in the custom manga's URL field and applying selectors to its chapter list to get the chapter number and URL:
+Custom manga can automatically detect new chapters by getting a web page and applying selectors to its chapter list to get the chapter number and URL. The page is the one in the **Check URL** field, or the manga URL if it's empty:
 
+- **Check URL (optional)**:
+  The page the selectors are applied to, when it's not the manga page, like an RSS feed, an API or a chapters list. The manga URL is still the manga's link. The presets are also tested against this page. A custom manga can track chapters with only the check URL, without a manga URL.
 - **Selector**:
   CSS or XPath selector for the chapters in the page's chapter list. If it matches more than one element, the last one is taken as the newest chapter, or the first one if **Newest Chapter Is First** is enabled. A selector that matches only the newest chapter also works.
   Add the prefix `css:` for CSS selectors, and `xpath:` for XPATH selectors (ex: `css:div.chapter-list > a span`). XPATH selectors also work with XML pages.
@@ -198,6 +200,8 @@ Custom manga can automatically detect new chapters by getting the web page defin
 
 The page is fetched once, and both selectors are applied to it.
 
+A chapter found only by its name, without a chapter URL selector, has no URL. In the dashboard and in the iFrame, it links to the manga URL, or shows only its name if the manga has no URL either.
+
 When a custom manga is the current manga of a multimanga, its selectors also get the chapters list shown in the multimanga's **Last Read Chapter** field, so the last read chapter can be picked from it:
 
 - It needs a chapter name selector. If there's also a chapter URL selector, both must match the same number of elements, so the nth URL is the nth chapter's, and **Newest Chapter Is First** must be the same in both.
@@ -207,7 +211,7 @@ When a custom manga is the current manga of a multimanga, its selectors also get
 Use the **Test selectors** button in the add and edit forms to see which chapter the selectors get and how many chapters the chapters list has, without saving anything. If a selector, attribute or regex doesn't work, the message tells which one and why.
 
 > [!NOTE]
-> If the URL selector returns a relative URL, Mantium resolves it the same way a browser does: against the page's `<base>` element if it has one, else against the manga URL (after redirects). For example, if the manga URL is `https://example.com/title/one-piece/`, the URL selector returning `/chapter1000` becomes `https://example.com/chapter1000`, and returning `chapter1000` becomes `https://example.com/title/one-piece/chapter1000`.
+> If the URL selector returns a relative URL, Mantium resolves it the same way a browser does: against the page's `<base>` element if it has one, else against the URL of the page the selectors are applied to (the check URL, or else the manga URL, after redirects). For example, if that page is `https://example.com/title/one-piece/`, the URL selector returning `/chapter1000` becomes `https://example.com/chapter1000`, and returning `chapter1000` becomes `https://example.com/title/one-piece/chapter1000`.
 
 <img width="855" height="1335" alt="image" src="https://github.com/user-attachments/assets/4e844149-964e-463f-821f-f59a45c9a644" />
 
@@ -218,7 +222,7 @@ By default, the API refuses to get custom manga pages and cover images from priv
 If you track a site hosted in your own network, set the API environment variable `ALLOW_PRIVATE_URLS=true`.
 
 > [!WARNING]
-> Custom mangas whose URL points to your network don't update until you set `ALLOW_PRIVATE_URLS=true`.
+> Custom mangas whose URL or check URL points to your network don't update until you set `ALLOW_PRIVATE_URLS=true`.
 
 ---
 
