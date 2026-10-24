@@ -27,6 +27,10 @@ import (
 // the periodic update goroutine permanently, with no error and no recovery.
 const ExternalRequestTimeout = 60 * time.Second
 
+// DefaultUserAgent is the User-Agent of the requests to the sources and custom manga pages.
+// Some sites block old browser versions, so it has to follow the current Firefox release.
+const DefaultUserAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:158.0) Gecko/20100101 Firefox/158.0"
+
 // SelfRequestTimeout is a backstop for the loopback call the periodic job makes
 // to Mantium's own update-all-metadata route. That route walks every manga, so
 // it is legitimately slow; what keeps it bounded is ExternalRequestTimeout on
@@ -150,7 +154,7 @@ func downloadImage(httpClient *http.Client, url string) ([]byte, error) {
 		return nil, AddErrorContext("error while creating request", err)
 	}
 
-	req.Header.Set("User-Agent", "Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0")
+	req.Header.Set("User-Agent", DefaultUserAgent)
 	req.Header.Set("Sec-Fetch-Dest", "document")
 	req.Header.Set("Sec-Fetch-Mode", "navigate")
 

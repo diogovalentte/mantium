@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"github.com/diogovalentte/mantium/api/src/errordefs"
@@ -342,6 +343,42 @@ func TestGetCustomMangaLastReleasedChapterBlocksPrivateAddresses(t *testing.T) {
 		if userErr.Message != want {
 			t.Fatalf("browser %v: got message %q, want %q", useBrowser, userErr.Message, want)
 		}
+	}
+}
+
+// newUserAgentTestServer returns a server that serves customMangaPage and records the
+// User-Agent of the page request, which the returned function reads.
+func newUserAgentTestServer() (*httptest.Server, func() string) {
+	var mutex sync.Mutex
+	var userAgent string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/" {
+			mutex.Lock()
+			userAgent = r.UserAgent()
+			mutex.Unlock()
+		}
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(customMangaPage))
+	}))
+
+	return server, func() string {
+		mutex.Lock()
+		defer mutex.Unlock()
+		return userAgent
+	}
+}
+
+func TestGetCustomMangaLastReleasedChapterUserAgent(t *testing.T) {
+	allowPrivateURLs(t)
+	server, userAgent := newUserAgentTestServer()
+	defer server.Close()
+
+	_, err := GetCustomMangaLastReleasedChapter(server.URL+"/", &HTMLSelector{Selector: "css:a.chapter"}, nil, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := userAgent(); got != util.DefaultUserAgent {
+		t.Fatalf("got User-Agent %q, want %q", got, util.DefaultUserAgent)
 	}
 }
 

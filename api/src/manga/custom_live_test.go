@@ -2,7 +2,10 @@
 
 package manga
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestCustomMangaLastReleasedChapter(t *testing.T) {
 	customMangaNoBrowserHTML := &Manga{
@@ -74,4 +77,18 @@ func TestCustomMangaLastReleasedChapter(t *testing.T) {
 			t.Fatal("Expected chapter name to be not empty")
 		}
 	})
+}
+
+func TestGetCustomMangaLastReleasedChapterBrowserUserAgent(t *testing.T) {
+	allowPrivateURLs(t)
+	server, userAgent := newUserAgentTestServer()
+	defer server.Close()
+
+	_, err := GetCustomMangaLastReleasedChapter(server.URL+"/", &HTMLSelector{Selector: "css:a.chapter"}, nil, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := userAgent(); !strings.Contains(got, "Chrome/") || strings.Contains(got, "Headless") {
+		t.Fatalf("got User-Agent %q, want Chromium's own without Headless", got)
+	}
 }

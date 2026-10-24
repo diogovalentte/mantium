@@ -26,11 +26,9 @@ func (Source) SiteURL() *util.SiteURL {
 	return siteURL
 }
 
-var userAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0"
-
 func newCollector() *colly.Collector {
 	c := colly.NewCollector(
-		colly.UserAgent(userAgent),
+		colly.UserAgent(util.DefaultUserAgent),
 	)
 	c.SetRequestTimeout(util.ExternalRequestTimeout)
 

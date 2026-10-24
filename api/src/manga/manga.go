@@ -1962,7 +1962,6 @@ func chapterFromPage(page *scrapedPage, nameSelector, URLSelector *HTMLSelector)
 }
 
 var (
-	userAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:30.0) Gecko/20100101 Firefox/30.0"
 	// timeout is the timeout to get the page using an HTTP request, and to wait for each selector's element using the browser.
 	timeout = time.Second * 15
 	// browserTimeout is the timeout of the whole page scraping using the browser.
@@ -2187,7 +2186,7 @@ func processSelection(selection string, matched bool, selector *HTMLSelector, fi
 func getPageUsingHTTPRequest(pageURL string) (*scrapedPage, error) {
 	contextError := "error getting page '%s'"
 
-	c := colly.NewCollector(colly.UserAgent(userAgent))
+	c := colly.NewCollector(colly.UserAgent(util.DefaultUserAgent))
 	c.WithTransport(util.SafeTransport)
 	c.SetRequestTimeout(timeout)
 
@@ -2222,6 +2221,17 @@ func getPageUsingHTTPRequest(pageURL string) (*scrapedPage, error) {
 	}
 
 	return page, nil
+}
+
+// browserUserAgent returns the browser's own User-Agent without the "Headless" mark that
+// sites block. It isn't DefaultUserAgent because a Chromium claiming to be Firefox is easy to detect.
+func browserUserAgent(browser *rod.Browser) string {
+	version, err := proto.BrowserGetVersion{}.Call(browser)
+	if err != nil || version.UserAgent == "" {
+		return util.DefaultUserAgent
+	}
+
+	return strings.ReplaceAll(version.UserAgent, "HeadlessChrome/", "Chrome/")
 }
 
 // getPageUsingBrowser gets the page using a headless browser, so content loaded by JavaScript is included.
@@ -2262,7 +2272,7 @@ func getPageUsingBrowser(pageURL string, nameSelector, URLSelector *HTMLSelector
 		return nil, util.AddErrorContext(fmt.Sprintf(contextError, pageURL), util.AddErrorContext("error creating browser page", err))
 	}
 	defer page.Close()
-	err = page.SetUserAgent(&proto.NetworkSetUserAgentOverride{UserAgent: userAgent})
+	err = page.SetUserAgent(&proto.NetworkSetUserAgentOverride{UserAgent: browserUserAgent(browser)})
 	if err != nil {
 		return nil, util.AddErrorContext(fmt.Sprintf(contextError, pageURL), util.AddErrorContext("error setting user agent", err))
 	}
