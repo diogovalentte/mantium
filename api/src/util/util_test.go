@@ -55,3 +55,20 @@ func TestChunkSliceKeepsEveryItemExactlyOnce(t *testing.T) {
 		}
 	}
 }
+
+func TestImageUserAgent(t *testing.T) {
+	cases := map[string]string{
+		"https://uploads.mangadex.org/covers/a/b.png": MangadexUserAgent,
+		"https://mangadex.org/covers/a/b.png":         MangadexUserAgent,
+		"https://UPLOADS.MangaDex.org/covers/a/b.png": MangadexUserAgent,
+		"https://notmangadex.org/covers/a/b.png":      DefaultUserAgent,
+		"https://mangadex.org.example.com/b.png":      DefaultUserAgent,
+		"https://cdn.mangahub.io/b.png":               DefaultUserAgent,
+		"::not a url":                                 DefaultUserAgent,
+	}
+	for rawURL, want := range cases {
+		if got := imageUserAgent(rawURL); got != want {
+			t.Errorf("imageUserAgent(%q) = %q, want %q", rawURL, got, want)
+		}
+	}
+}

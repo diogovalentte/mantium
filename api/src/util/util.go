@@ -31,6 +31,11 @@ const ExternalRequestTimeout = 60 * time.Second
 // Some sites block old browser versions, so it has to follow the current Firefox release.
 const DefaultUserAgent = "Mozilla/5.0 (X11; Linux x86_64; rv:158.0) Gecko/20100101 Firefox/158.0"
 
+// MangadexUserAgent is the User-Agent of the image requests to MangaDex. MangaDex
+// sends requests with a browser User-Agent to a JS challenge instead of the file,
+// and its API rules ask clients to identify themselves instead of faking a browser.
+const MangadexUserAgent = "mantium (+https://github.com/diogovalentte/mantium)"
+
 // SelfRequestTimeout is a backstop for the loopback call the periodic job makes
 // to Mantium's own update-all-metadata route. That route walks every manga, so
 // it is legitimately slow; what keeps it bounded is ExternalRequestTimeout on
@@ -148,15 +153,31 @@ func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgB
 
 // downloadImage performs a single image download attempt and always closes the
 // response body before returning.
+func imageUserAgent(rawURL string) string {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return DefaultUserAgent
+	}
+	host := strings.ToLower(parsedURL.Hostname())
+	if host == "mangadex.org" || strings.HasSuffix(host, ".mangadex.org") {
+		return MangadexUserAgent
+	}
+
+	return DefaultUserAgent
+}
+
 func downloadImage(httpClient *http.Client, url string) ([]byte, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, AddErrorContext("error while creating request", err)
 	}
 
-	req.Header.Set("User-Agent", DefaultUserAgent)
-	req.Header.Set("Sec-Fetch-Dest", "document")
-	req.Header.Set("Sec-Fetch-Mode", "navigate")
+	userAgent := imageUserAgent(url)
+	req.Header.Set("User-Agent", userAgent)
+	if userAgent == DefaultUserAgent {
+		req.Header.Set("Sec-Fetch-Dest", "document")
+		req.Header.Set("Sec-Fetch-Mode", "navigate")
+	}
 
 	resp, err := httpClient.Do(req)
 	if err != nil {
