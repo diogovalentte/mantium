@@ -12,6 +12,7 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 
+	"github.com/diogovalentte/mantium/api/src/flaresolverr"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
@@ -46,6 +47,8 @@ type APIConfigs struct {
 	RodBrowserPath string
 	// AllowPrivateURLs allows URLs chosen by the user (custom manga pages, cover images) to point to non-public addresses.
 	AllowPrivateURLs bool
+	// FlareSolverrAddress is FlareSolverr's base URL, used by custom mangas with Use FlareSolverr. Empty disables it.
+	FlareSolverrAddress string
 }
 
 // NtfyConfigs is a struct that holds the ntfy configurations.
@@ -156,6 +159,8 @@ func SetConfigs(filePath string) error {
 		}
 	}
 	util.SetAllowPrivateURLs(GlobalConfigs.API.AllowPrivateURLs)
+	GlobalConfigs.API.FlareSolverrAddress = os.Getenv("FLARESOLVERR_ADDRESS")
+	flaresolverr.SetAddress(GlobalConfigs.API.FlareSolverrAddress)
 
 	GlobalConfigs.Ntfy.Address = os.Getenv("NTFY_ADDRESS")
 	GlobalConfigs.Ntfy.Topic = os.Getenv("NTFY_TOPIC")

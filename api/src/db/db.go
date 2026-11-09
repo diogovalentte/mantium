@@ -137,7 +137,8 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
 		  "last_released_chapter_url_selector" text,
 		  "last_released_chapter_url_attribute" varchar(30),
 		  "last_released_chapter_url_get_first" boolean NOT NULL DEFAULT FALSE,
-		  "last_released_chapter_selector_use_browser" boolean NOT NULL DEFAULT FALSE
+		  "last_released_chapter_selector_use_browser" boolean NOT NULL DEFAULT FALSE,
+		  "last_released_chapter_selector_use_flaresolverr" boolean NOT NULL DEFAULT FALSE
         );
 
         CREATE INDEX IF NOT EXISTS "mangas_id_idx" ON "mangas" ("id");
@@ -187,6 +188,7 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
 			"domains" text[] NOT NULL DEFAULT '{}',
 			"builtin" boolean NOT NULL DEFAULT FALSE,
 			"use_browser" boolean NOT NULL DEFAULT FALSE,
+			"use_flaresolverr" boolean NOT NULL DEFAULT FALSE,
 			"name_selector" text NOT NULL DEFAULT '',
 			"name_attribute" varchar(30) NOT NULL DEFAULT '',
 			"name_regex" varchar(255) NOT NULL DEFAULT '',
@@ -309,6 +311,8 @@ func CreateTables(db *sql.DB, log *zerolog.Logger) error {
 		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "last_released_chapter_url_attribute" varchar(30);
 		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "last_released_chapter_url_get_first" boolean NOT NULL DEFAULT FALSE;
 		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "last_released_chapter_selector_use_browser" boolean NOT NULL DEFAULT FALSE;
+		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "last_released_chapter_selector_use_flaresolverr" boolean NOT NULL DEFAULT FALSE;
+		ALTER TABLE "custom_manga_presets" ADD COLUMN IF NOT EXISTS "use_flaresolverr" boolean NOT NULL DEFAULT FALSE;
 		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "check_url" text NOT NULL DEFAULT '';
 		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "ignored_chapter" varchar(255);
 		ALTER TABLE "mangas" ADD COLUMN IF NOT EXISTS "ignored_chapter_url" text;

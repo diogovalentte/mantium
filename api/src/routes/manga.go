@@ -298,7 +298,7 @@ func UpdateCustomMangaLastReleasedChapterSelectors(c *gin.Context) {
 		URLSelector.Regex = ""
 	}
 
-	err = mangaToUpdate.UpdateLastReleasedChapterSelectorsInDB((*manga.HTMLSelector)(requestData.LastReleasedChapterNameSelector), URLSelector, requestData.LastReleasedChapterSelectorUseBrowser)
+	err = mangaToUpdate.UpdateLastReleasedChapterSelectorsInDB((*manga.HTMLSelector)(requestData.LastReleasedChapterNameSelector), URLSelector, requestData.LastReleasedChapterSelectorUseBrowser, requestData.LastReleasedChapterSelectorUseFlareSolverr)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
@@ -310,18 +310,20 @@ func UpdateCustomMangaLastReleasedChapterSelectors(c *gin.Context) {
 }
 
 type UpdateLastReleasedChapterSelectorsRequest struct {
-	LastReleasedChapterNameSelector       *HTMLSelectorRequest `json:"name_selector"`
-	LastReleasedChapterURLSelector        *HTMLSelectorRequest `json:"url_selector"`
-	LastReleasedChapterSelectorUseBrowser bool                 `json:"use_browser"`
+	LastReleasedChapterNameSelector            *HTMLSelectorRequest `json:"name_selector"`
+	LastReleasedChapterURLSelector             *HTMLSelectorRequest `json:"url_selector"`
+	LastReleasedChapterSelectorUseBrowser      bool                 `json:"use_browser"`
+	LastReleasedChapterSelectorUseFlareSolverr bool                 `json:"use_flaresolverr"`
 }
 
 // UpdateCustomMangaRequest is the request body for the UpdateCustomManga route
 type UpdateCustomMangaRequest struct {
-	Name                                  string               `json:"name" binding:"required"`
-	URL                                   string               `json:"url" binding:"omitempty,http_url"`
-	LastReleasedChapterNameSelector       *HTMLSelectorRequest `json:"name_selector"`
-	LastReleasedChapterURLSelector        *HTMLSelectorRequest `json:"url_selector"`
-	LastReleasedChapterSelectorUseBrowser bool                 `json:"use_browser"`
+	Name                                       string               `json:"name" binding:"required"`
+	URL                                        string               `json:"url" binding:"omitempty,http_url"`
+	LastReleasedChapterNameSelector            *HTMLSelectorRequest `json:"name_selector"`
+	LastReleasedChapterURLSelector             *HTMLSelectorRequest `json:"url_selector"`
+	LastReleasedChapterSelectorUseBrowser      bool                 `json:"use_browser"`
+	LastReleasedChapterSelectorUseFlareSolverr bool                 `json:"use_flaresolverr"`
 	// CheckURL is the page the selectors are applied to, if it's not the manga URL, like an RSS feed.
 	CheckURL                  string `json:"check_url" binding:"omitempty,http_url"`
 	CoverImgURL               string `json:"cover_img_url" binding:"omitempty,http_url"`
@@ -380,12 +382,13 @@ func UpdateCustomManga(c *gin.Context) {
 	}
 
 	update := manga.CustomMangaUpdate{
-		Name:         requestData.Name,
-		URL:          requestData.URL,
-		NameSelector: (*manga.HTMLSelector)(requestData.LastReleasedChapterNameSelector),
-		URLSelector:  (*manga.HTMLSelector)(requestData.LastReleasedChapterURLSelector),
-		UseBrowser:   requestData.LastReleasedChapterSelectorUseBrowser,
-		CheckURL:     requestData.CheckURL,
+		Name:            requestData.Name,
+		URL:             requestData.URL,
+		NameSelector:    (*manga.HTMLSelector)(requestData.LastReleasedChapterNameSelector),
+		URLSelector:     (*manga.HTMLSelector)(requestData.LastReleasedChapterURLSelector),
+		UseBrowser:      requestData.LastReleasedChapterSelectorUseBrowser,
+		UseFlareSolverr: requestData.LastReleasedChapterSelectorUseFlareSolverr,
+		CheckURL:        requestData.CheckURL,
 	}
 	switch {
 	case len(requestData.CoverImg) > 0:
@@ -437,10 +440,11 @@ func UpdateCustomManga(c *gin.Context) {
 type TestCustomMangaSelectorsRequest struct {
 	URL string `json:"url" binding:"omitempty,http_url"`
 	// CheckURL is the page the selectors are applied to, if it's not URL.
-	CheckURL                              string               `json:"check_url" binding:"omitempty,http_url"`
-	LastReleasedChapterNameSelector       *HTMLSelectorRequest `json:"name_selector"`
-	LastReleasedChapterURLSelector        *HTMLSelectorRequest `json:"url_selector"`
-	LastReleasedChapterSelectorUseBrowser bool                 `json:"use_browser"`
+	CheckURL                                   string               `json:"check_url" binding:"omitempty,http_url"`
+	LastReleasedChapterNameSelector            *HTMLSelectorRequest `json:"name_selector"`
+	LastReleasedChapterURLSelector             *HTMLSelectorRequest `json:"url_selector"`
+	LastReleasedChapterSelectorUseBrowser      bool                 `json:"use_browser"`
+	LastReleasedChapterSelectorUseFlareSolverr bool                 `json:"use_flaresolverr"`
 }
 
 // @Summary Test custom manga chapter selectors
@@ -466,11 +470,12 @@ func TestCustomMangaSelectors(c *gin.Context) {
 		URLSelector.Regex = ""
 	}
 	chapter, chapters, chaptersErr, err := manga.TestCustomMangaSelectors(manga.CustomMangaScraping{
-		URL:          requestData.URL,
-		CheckURL:     requestData.CheckURL,
-		NameSelector: (*manga.HTMLSelector)(requestData.LastReleasedChapterNameSelector),
-		URLSelector:  URLSelector,
-		UseBrowser:   requestData.LastReleasedChapterSelectorUseBrowser,
+		URL:             requestData.URL,
+		CheckURL:        requestData.CheckURL,
+		NameSelector:    (*manga.HTMLSelector)(requestData.LastReleasedChapterNameSelector),
+		URLSelector:     URLSelector,
+		UseBrowser:      requestData.LastReleasedChapterSelectorUseBrowser,
+		UseFlareSolverr: requestData.LastReleasedChapterSelectorUseFlareSolverr,
 	})
 	if err != nil {
 		status := http.StatusInternalServerError
@@ -503,17 +508,18 @@ type HTMLSelectorRequest struct {
 
 // AddMultiMangaRequest is the request body for the AddManga route
 type AddMultiMangaRequest struct {
-	LastReleasedChapterSelectorUseBrowser bool                 `json:"last_released_chapter_selector_use_browser"`
-	CheckURL                              string               `json:"check_url" binding:"omitempty,http_url"`
-	Name                                  string               `json:"name"`
-	URL                                   string               `json:"url" binding:"omitempty,http_url"`
-	MangaInternalID                       string               `json:"internal_id"`
-	CoverImgURL                           string               `json:"cover_img_url" binding:"omitempty,http_url"`
-	Status                                int                  `json:"status" binding:"required,gte=0,lte=5"`
-	CoverImg                              []byte               `json:"cover_img"`
-	LastReleasedChapterNameSelector       *HTMLSelectorRequest `json:"last_released_chapter_name_selector"`
-	LastReleasedChapterURLSelector        *HTMLSelectorRequest `json:"last_released_chapter_url_selector"`
-	LastReadChapter                       *struct {
+	LastReleasedChapterSelectorUseBrowser      bool                 `json:"last_released_chapter_selector_use_browser"`
+	LastReleasedChapterSelectorUseFlareSolverr bool                 `json:"last_released_chapter_selector_use_flaresolverr"`
+	CheckURL                                   string               `json:"check_url" binding:"omitempty,http_url"`
+	Name                                       string               `json:"name"`
+	URL                                        string               `json:"url" binding:"omitempty,http_url"`
+	MangaInternalID                            string               `json:"internal_id"`
+	CoverImgURL                                string               `json:"cover_img_url" binding:"omitempty,http_url"`
+	Status                                     int                  `json:"status" binding:"required,gte=0,lte=5"`
+	CoverImg                                   []byte               `json:"cover_img"`
+	LastReleasedChapterNameSelector            *HTMLSelectorRequest `json:"last_released_chapter_name_selector"`
+	LastReleasedChapterURLSelector             *HTMLSelectorRequest `json:"last_released_chapter_url_selector"`
+	LastReadChapter                            *struct {
 		Chapter    string `json:"chapter"`
 		URL        string `json:"url" binding:"omitempty,http_url"`
 		InternalID string `json:"internal_id"`
@@ -592,6 +598,7 @@ func AddMultiManga(c *gin.Context) {
 		currentManga.Name = requestData.Name
 		currentManga.Source = manga.CustomMangaSource
 		currentManga.LastReleasedChapterSelectorUseBrowser = requestData.LastReleasedChapterSelectorUseBrowser
+		currentManga.LastReleasedChapterSelectorUseFlareSolverr = requestData.LastReleasedChapterSelectorUseFlareSolverr
 		currentManga.CheckURL = requestData.CheckURL
 
 		if requestData.LastReleasedChapterNameSelector != nil {
@@ -1475,6 +1482,7 @@ func AddMangaToMultiManga(c *gin.Context) {
 		mangaAdd.Name = requestData.Name
 		mangaAdd.Source = manga.CustomMangaSource
 		mangaAdd.LastReleasedChapterSelectorUseBrowser = requestData.LastReleasedChapterSelectorUseBrowser
+		mangaAdd.LastReleasedChapterSelectorUseFlareSolverr = requestData.LastReleasedChapterSelectorUseFlareSolverr
 		mangaAdd.CheckURL = requestData.CheckURL
 
 		if requestData.LastReleasedChapterNameSelector != nil {
@@ -1585,15 +1593,16 @@ func AddMangaToMultiManga(c *gin.Context) {
 
 // AddMangaToMultiMangaRequest is the request body for the AddManga route
 type AddMangaToMultiMangaRequest struct {
-	LastReleasedChapterSelectorUseBrowser bool                 `json:"last_released_chapter_selector_use_browser"`
-	CheckURL                              string               `json:"check_url" binding:"omitempty,http_url"`
-	Name                                  string               `json:"name"`
-	URL                                   string               `json:"url" binding:"omitempty,http_url"`
-	InternalID                            string               `json:"internal_id"`
-	CoverImgURL                           string               `json:"cover_img_url" binding:"omitempty,http_url"`
-	CoverImg                              []byte               `json:"cover_img"`
-	LastReleasedChapterNameSelector       *HTMLSelectorRequest `json:"last_released_chapter_name_selector"`
-	LastReleasedChapterURLSelector        *HTMLSelectorRequest `json:"last_released_chapter_url_selector"`
+	LastReleasedChapterSelectorUseBrowser      bool                 `json:"last_released_chapter_selector_use_browser"`
+	LastReleasedChapterSelectorUseFlareSolverr bool                 `json:"last_released_chapter_selector_use_flaresolverr"`
+	CheckURL                                   string               `json:"check_url" binding:"omitempty,http_url"`
+	Name                                       string               `json:"name"`
+	URL                                        string               `json:"url" binding:"omitempty,http_url"`
+	InternalID                                 string               `json:"internal_id"`
+	CoverImgURL                                string               `json:"cover_img_url" binding:"omitempty,http_url"`
+	CoverImg                                   []byte               `json:"cover_img"`
+	LastReleasedChapterNameSelector            *HTMLSelectorRequest `json:"last_released_chapter_name_selector"`
+	LastReleasedChapterURLSelector             *HTMLSelectorRequest `json:"last_released_chapter_url_selector"`
 }
 
 // @Summary Remove manga from multimanga list
@@ -3037,7 +3046,7 @@ func updateMultiMangaMetadata(multimanga *manga.MultiManga, browserLimiter chan 
 }
 
 // newBrowserLimiter returns a semaphore that limits how many custom manga scrapes use the
-// browser at the same time to half of the parallel jobs, as each one starts a Chromium.
+// browser or FlareSolverr at the same time to half of the parallel jobs, as each one starts a Chromium.
 func newBrowserLimiter(parallelJobs int) chan struct{} {
 	return make(chan struct{}, max(1, parallelJobs/2))
 }
@@ -3070,7 +3079,7 @@ func updateCustomMangaLastReleasedChapter(m *manga.Manga, browserLimiter chan st
 	var chapter *manga.Chapter
 	var err error
 	for i := 0; i < retries; i++ {
-		chapter, err = limitBrowserScrape(browserLimiter, m.LastReleasedChapterSelectorUseBrowser, func() (*manga.Chapter, error) {
+		chapter, err = limitBrowserScrape(browserLimiter, m.LastReleasedChapterSelectorUseBrowser || m.LastReleasedChapterSelectorUseFlareSolverr, func() (*manga.Chapter, error) {
 			return manga.GetCustomMangaLastReleasedChapter(scraping)
 		})
 		if err == nil {

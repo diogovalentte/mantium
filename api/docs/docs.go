@@ -1429,6 +1429,10 @@ const docTemplate = `{
                     "description": "LastReleasedChapterSelectorUseBrowser is true if the LastReleasedChapterNameSelector and LastReleasedChapterURLSelector should be used with a browser (Rod).",
                     "type": "boolean"
                 },
+                "lastReleasedChapterSelectorUseFlareSolverr": {
+                    "description": "LastReleasedChapterSelectorUseFlareSolverr is true if the page the selectors are applied to should be got through FlareSolverr.",
+                    "type": "boolean"
+                },
                 "lastReleasedChapterURLSelector": {
                     "description": "LastReleasedChapterURLSelector is the selector used to find the last released chapter URL in the source website",
                     "allOf": [
@@ -1544,6 +1548,10 @@ const docTemplate = `{
                 },
                 "use_browser": {
                     "type": "boolean"
+                },
+                "use_flaresolverr": {
+                    "description": "UseFlareSolverr gets the page through FlareSolverr. It can't be used with UseBrowser.",
+                    "type": "boolean"
                 }
             }
         },
@@ -1628,6 +1636,9 @@ const docTemplate = `{
                 },
                 "use_browser": {
                     "type": "boolean"
+                },
+                "use_flaresolverr": {
+                    "type": "boolean"
                 }
             }
         },
@@ -1653,6 +1664,9 @@ const docTemplate = `{
                     "$ref": "#/definitions/routes.HTMLSelectorRequest"
                 },
                 "last_released_chapter_selector_use_browser": {
+                    "type": "boolean"
+                },
+                "last_released_chapter_selector_use_flaresolverr": {
                     "type": "boolean"
                 },
                 "last_released_chapter_url_selector": {
@@ -1705,6 +1719,9 @@ const docTemplate = `{
                     "$ref": "#/definitions/routes.HTMLSelectorRequest"
                 },
                 "last_released_chapter_selector_use_browser": {
+                    "type": "boolean"
+                },
+                "last_released_chapter_selector_use_flaresolverr": {
                     "type": "boolean"
                 },
                 "last_released_chapter_url_selector": {
@@ -1790,6 +1807,9 @@ const docTemplate = `{
                 },
                 "use_browser": {
                     "type": "boolean"
+                },
+                "use_flaresolverr": {
+                    "type": "boolean"
                 }
             }
         },
@@ -1827,6 +1847,9 @@ const docTemplate = `{
                 "use_browser": {
                     "type": "boolean"
                 },
+                "use_flaresolverr": {
+                    "type": "boolean"
+                },
                 "use_mantium_default_cover_img": {
                     "type": "boolean"
                 }
@@ -1862,6 +1885,9 @@ const docTemplate = `{
                     "$ref": "#/definitions/routes.HTMLSelectorRequest"
                 },
                 "use_browser": {
+                    "type": "boolean"
+                },
+                "use_flaresolverr": {
                     "type": "boolean"
                 }
             }

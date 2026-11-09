@@ -62,6 +62,13 @@ Perl-style. Checked against a real database, including `www.` hosts and ports.
   and every request rod's browser makes) and cover image URLs go through
   `util.SafeTransport`, which refuses non-public addresses unless
   `ALLOW_PRIVATE_URLS=true`. Item 4's future proxy route must use it too.
+  **FlareSolverr is the exception:** with Use FlareSolverr, FlareSolverr's own
+  browser makes the requests, so `api/src/flaresolverr` can only check the page
+  URL before sending it and the final URL after. A redirect through a private
+  address in between isn't blocked (only its result is discarded), and neither
+  are the page's own subresource requests (scripts, iframes), which never show
+  up in the final URL. The only real fix is network isolation of FlareSolverr,
+  or pointing its `proxy` parameter at an enforcing proxy.
 - **Dependencies.** Per OSV: `pillow==10.4.0` has 17 advisories, `urllib3==2.5.0`
   has 4, `requests==2.32.4` has 1. `streamlit`, `certifi` and `Jinja2` are clean.
 - **`urlToSource` matches with `strings.Contains`**, so `mangadex.attacker.com`

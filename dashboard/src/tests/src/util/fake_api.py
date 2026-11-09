@@ -26,8 +26,21 @@ RSS_PRESET = {
     "domains": [],
     "builtin": True,
     "use_browser": False,
+    "use_flaresolverr": False,
     "name_selector": {"Selector": "xpath://item/title", "Attribute": "", "Regex": r"(\d+)", "GetFirst": True},
     "url_selector": {"Selector": "xpath://item/link", "Attribute": "", "Regex": "", "GetFirst": True},
+}
+
+CLOUDFLARE_PRESET = {
+    "id": 9,
+    "name": "Cloudflare site",
+    "description": "",
+    "domains": [],
+    "builtin": False,
+    "use_browser": False,
+    "use_flaresolverr": True,
+    "name_selector": {"Selector": "css:a.chapter", "Attribute": "", "Regex": r"Chapter (\d+)", "GetFirst": True},
+    "url_selector": None,
 }
 
 SITE_PRESET = {
@@ -37,6 +50,7 @@ SITE_PRESET = {
     "domains": ["example.com"],
     "builtin": False,
     "use_browser": True,
+    "use_flaresolverr": False,
     "name_selector": {"Selector": "css:a.chapter", "Attribute": "", "Regex": r"Chapter (\d+)", "GetFirst": False},
     "url_selector": None,
 }
@@ -125,6 +139,7 @@ class FakeAPI:
             "builtin": False,
             "domains": preset.get("domains", []),
             "use_browser": preset.get("use_browser", False),
+            "use_flaresolverr": preset.get("use_flaresolverr", False),
             "name": preset["name"],
             "name_selector": _api_selector(preset.get("name_selector")),
             "url_selector": _api_selector(preset.get("url_selector")),

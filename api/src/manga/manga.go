@@ -34,6 +34,7 @@ import (
 	"github.com/diogovalentte/mantium/api/src/config"
 	"github.com/diogovalentte/mantium/api/src/db"
 	"github.com/diogovalentte/mantium/api/src/errordefs"
+	"github.com/diogovalentte/mantium/api/src/flaresolverr"
 	"github.com/diogovalentte/mantium/api/src/util"
 )
 
@@ -111,13 +112,15 @@ type Manga struct {
 	CoverImgFixed bool
 	// LastReleasedChapterSelectorUseBrowser is true if the LastReleasedChapterNameSelector and LastReleasedChapterURLSelector should be used with a browser (Rod).
 	LastReleasedChapterSelectorUseBrowser bool
+	// LastReleasedChapterSelectorUseFlareSolverr is true if the page the selectors are applied to should be got through FlareSolverr.
+	LastReleasedChapterSelectorUseFlareSolverr bool
 	// CheckURL is the page the custom manga selectors are applied to, if it's not URL, see CustomMangaScraping.
 	CheckURL string
 }
 
 func (m Manga) String() string {
-	return fmt.Sprintf("Manga{ID: %d, Source: %s, URL: %s, Name: %s, SearchNames: %v, InternalID: %s, Status: %d, CoverImg: []byte, CoverImgResized: %v, CoverImgURL: %s, CoverImgFixed: %v, PreferredGroup: %s, MultiMangaID: %d, LastReleasedChapter: %s, LastReadChapter: %s, LastReleasedChapterNameSelector: %s, LastReleasedChapterURLSelector: %s, LastReleasedChapterSelectorUseBrowser: %v}",
-		m.ID, m.Source, m.URL, m.Name, m.SearchNames, m.InternalID, m.Status, m.CoverImgResized, m.CoverImgURL, m.CoverImgFixed, m.PreferredGroup, m.MultiMangaID, m.LastReleasedChapter, m.LastReadChapter, m.LastReleasedChapterNameSelector, m.LastReleasedChapterURLSelector, m.LastReleasedChapterSelectorUseBrowser)
+	return fmt.Sprintf("Manga{ID: %d, Source: %s, URL: %s, Name: %s, SearchNames: %v, InternalID: %s, Status: %d, CoverImg: []byte, CoverImgResized: %v, CoverImgURL: %s, CoverImgFixed: %v, PreferredGroup: %s, MultiMangaID: %d, LastReleasedChapter: %s, LastReadChapter: %s, LastReleasedChapterNameSelector: %s, LastReleasedChapterURLSelector: %s, LastReleasedChapterSelectorUseBrowser: %v, LastReleasedChapterSelectorUseFlareSolverr: %v}",
+		m.ID, m.Source, m.URL, m.Name, m.SearchNames, m.InternalID, m.Status, m.CoverImgResized, m.CoverImgURL, m.CoverImgFixed, m.PreferredGroup, m.MultiMangaID, m.LastReleasedChapter, m.LastReadChapter, m.LastReleasedChapterNameSelector, m.LastReleasedChapterURLSelector, m.LastReleasedChapterSelectorUseBrowser, m.LastReleasedChapterSelectorUseFlareSolverr)
 }
 
 func insertMangaIntoDB(m *Manga, tx *sql.Tx) (ID, error) {
@@ -143,12 +146,12 @@ func insertMangaIntoDB(m *Manga, tx *sql.Tx) (ID, error) {
 	var mangaID ID
 	err = tx.QueryRow(`
         INSERT INTO mangas
-            (source, url, name, internal_id, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group, multimanga_id, last_released_chapter_name_selector, last_released_chapter_name_attribute, last_released_chapter_name_regex, last_released_chapter_name_get_first, last_released_chapter_url_selector, last_released_chapter_url_attribute, last_released_chapter_url_get_first, last_released_chapter_selector_use_browser, check_url)
+            (source, url, name, internal_id, status, cover_img, cover_img_resized, cover_img_url, cover_img_fixed, preferred_group, multimanga_id, last_released_chapter_name_selector, last_released_chapter_name_attribute, last_released_chapter_name_regex, last_released_chapter_name_get_first, last_released_chapter_url_selector, last_released_chapter_url_attribute, last_released_chapter_url_get_first, last_released_chapter_selector_use_browser, last_released_chapter_selector_use_flaresolverr, check_url)
         VALUES
-            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
         RETURNING
             id;
-    `, m.Source, m.URL, m.Name, m.InternalID, m.Status, m.CoverImg, m.CoverImgResized, m.CoverImgURL, m.CoverImgFixed, m.PreferredGroup, multiMangaID, m.LastReleasedChapterNameSelector.Selector, m.LastReleasedChapterNameSelector.Attribute, m.LastReleasedChapterNameSelector.Regex, m.LastReleasedChapterNameSelector.GetFirst, m.LastReleasedChapterURLSelector.Selector, m.LastReleasedChapterURLSelector.Attribute, m.LastReleasedChapterURLSelector.GetFirst, m.LastReleasedChapterSelectorUseBrowser, m.CheckURL).Scan(&mangaID)
+    `, m.Source, m.URL, m.Name, m.InternalID, m.Status, m.CoverImg, m.CoverImgResized, m.CoverImgURL, m.CoverImgFixed, m.PreferredGroup, multiMangaID, m.LastReleasedChapterNameSelector.Selector, m.LastReleasedChapterNameSelector.Attribute, m.LastReleasedChapterNameSelector.Regex, m.LastReleasedChapterNameSelector.GetFirst, m.LastReleasedChapterURLSelector.Selector, m.LastReleasedChapterURLSelector.Attribute, m.LastReleasedChapterURLSelector.GetFirst, m.LastReleasedChapterSelectorUseBrowser, m.LastReleasedChapterSelectorUseFlareSolverr, m.CheckURL).Scan(&mangaID)
 	if err != nil {
 		if err.Error() == `pq: duplicate key value violates unique constraint "mangas_pkey"` {
 			return -1, errordefs.ErrMangaAlreadyInDB
@@ -632,6 +635,7 @@ func getMangaFromDB(mangaID ID, mangaURL string, db *sql.DB) (*Manga, error) {
 				mangas.last_released_chapter_url_attribute,
 				mangas.last_released_chapter_url_get_first,
 				mangas.last_released_chapter_selector_use_browser,
+				mangas.last_released_chapter_selector_use_flaresolverr,
 				mangas.check_url,
                 
                 last_released_chapter.url AS last_released_chapter_url,
@@ -665,6 +669,7 @@ func getMangaFromDB(mangaID ID, mangaURL string, db *sql.DB) (*Manga, error) {
 			&lastReleasedChapterNameSelector, &lastReleasedChapterNameAttribute, &lastReleasedChapterNameRegex, &lastReleasedChapterNameGetFirst,
 			&lastReleasedChapterURLSelector, &lastReleasedChapterURLAttribute, &lastReleasedChapterURLGetFirst,
 			&currentManga.LastReleasedChapterSelectorUseBrowser,
+			&currentManga.LastReleasedChapterSelectorUseFlareSolverr,
 			&currentManga.CheckURL,
 
 			&lastReleasedChapterURL, &lastReleasedChapterChapter, &lastReleasedChapterName,
@@ -703,6 +708,7 @@ func getMangaFromDB(mangaID ID, mangaURL string, db *sql.DB) (*Manga, error) {
 				mangas.last_released_chapter_url_attribute,
 				mangas.last_released_chapter_url_get_first,
 				mangas.last_released_chapter_selector_use_browser,
+				mangas.last_released_chapter_selector_use_flaresolverr,
 				mangas.check_url,
                 
                 last_released_chapter.url AS last_released_chapter_url,
@@ -736,6 +742,7 @@ func getMangaFromDB(mangaID ID, mangaURL string, db *sql.DB) (*Manga, error) {
 			&lastReleasedChapterNameSelector, &lastReleasedChapterNameAttribute, &lastReleasedChapterNameRegex, &lastReleasedChapterNameGetFirst,
 			&lastReleasedChapterURLSelector, &lastReleasedChapterURLAttribute, &lastReleasedChapterURLGetFirst,
 			&currentManga.LastReleasedChapterSelectorUseBrowser,
+			&currentManga.LastReleasedChapterSelectorUseFlareSolverr,
 			&currentManga.CheckURL,
 
 			&lastReleasedChapterURL, &lastReleasedChapterChapter, &lastReleasedChapterName,
@@ -872,6 +879,7 @@ func getMangasWithoutMultiMangasFromDB(db *sql.DB, customManga bool) ([]*Manga, 
 			mangas.last_released_chapter_url_attribute,
 			mangas.last_released_chapter_url_get_first,
 			mangas.last_released_chapter_selector_use_browser,
+			mangas.last_released_chapter_selector_use_flaresolverr,
 			mangas.check_url,
 
             last_released_chapter.url AS last_released_chapter_url,
@@ -936,6 +944,7 @@ func getMangasWithoutMultiMangasFromDB(db *sql.DB, customManga bool) ([]*Manga, 
 			&lastReleasedChapterNameSelector, &lastReleasedChapterNameAttribute, &lastReleasedChapterNameRegex, &lastReleasedChapterNameGetFirst,
 			&lastReleasedChapterURLSelector, &lastReleasedChapterURLAttribute, &lastReleasedChapterURLGetFirst,
 			&currentManga.LastReleasedChapterSelectorUseBrowser,
+			&currentManga.LastReleasedChapterSelectorUseFlareSolverr,
 			&currentManga.CheckURL,
 
 			&lastReleasedChapterURL, &lastReleasedChapterChapter, &lastReleasedChapterName,
@@ -1039,6 +1048,7 @@ func getCustomMangasFromDB(db *sql.DB) ([]*Manga, error) {
 			mangas.last_released_chapter_url_attribute,
 			mangas.last_released_chapter_url_get_first,
 			mangas.last_released_chapter_selector_use_browser,
+			mangas.last_released_chapter_selector_use_flaresolverr,
 			mangas.check_url,
             
             last_released_chapter.url AS last_released_chapter_url,
@@ -1099,6 +1109,7 @@ func getCustomMangasFromDB(db *sql.DB) ([]*Manga, error) {
 			&lastReleasedChapterNameSelector, &lastReleasedChapterNameAttribute, &lastReleasedChapterNameRegex, &lastReleasedChapterNameGetFirst,
 			&lastReleasedChapterURLSelector, &lastReleasedChapterURLAttribute, &lastReleasedChapterURLGetFirst,
 			&currentManga.LastReleasedChapterSelectorUseBrowser,
+			&currentManga.LastReleasedChapterSelectorUseFlareSolverr,
 			&currentManga.CheckURL,
 
 			&lastReleasedChapterURL, &lastReleasedChapterChapter, &lastReleasedChapterName,
@@ -1334,7 +1345,7 @@ func updateMangaSourceDB(m *Manga, source string, tx *sql.Tx) error {
 	return nil
 }
 
-func (m *Manga) UpdateLastReleasedChapterSelectorsInDB(nameSelector, URLSelector *HTMLSelector, useBrowser bool) error {
+func (m *Manga) UpdateLastReleasedChapterSelectorsInDB(nameSelector, URLSelector *HTMLSelector, useBrowser, useFlareSolverr bool) error {
 	var chapter *Chapter
 	var err error
 
@@ -1343,7 +1354,7 @@ func (m *Manga) UpdateLastReleasedChapterSelectorsInDB(nameSelector, URLSelector
 		(URLSelector == nil || URLSelector.Selector == "")
 	if !emptySelectors {
 		scraping := m.CustomMangaScraping()
-		scraping.NameSelector, scraping.URLSelector, scraping.UseBrowser = nameSelector, URLSelector, useBrowser
+		scraping.NameSelector, scraping.URLSelector, scraping.UseBrowser, scraping.UseFlareSolverr = nameSelector, URLSelector, useBrowser, useFlareSolverr
 		chapter, err = GetCustomMangaLastReleasedChapter(scraping)
 		if err != nil {
 			return util.AddErrorContext(fmt.Sprintf(contextError, m, nameSelector, URLSelector), err)
@@ -1360,7 +1371,7 @@ func (m *Manga) UpdateLastReleasedChapterSelectorsInDB(nameSelector, URLSelector
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, nameSelector, URLSelector), err)
 	}
 
-	err = updateMangaLastReleasedChapterSelectorDB(m, nameSelector, URLSelector, useBrowser, m.CheckURL, tx)
+	err = updateMangaLastReleasedChapterSelectorDB(m, nameSelector, URLSelector, useBrowser, useFlareSolverr, m.CheckURL, tx)
 	if err != nil {
 		tx.Rollback()
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, nameSelector, URLSelector), err)
@@ -1401,6 +1412,7 @@ type CustomMangaUpdate struct {
 	URL                       string
 	NameSelector, URLSelector *HTMLSelector
 	UseBrowser                bool
+	UseFlareSolverr           bool
 	// CheckURL is the page the selectors are applied to, if it's not URL. Optional.
 	CheckURL        string
 	CoverImg        []byte
@@ -1446,17 +1458,19 @@ func (m *Manga) UpdateCustomMangaInDB(update CustomMangaUpdate) error {
 		!sameSelector(update.NameSelector, m.LastReleasedChapterNameSelector) ||
 		!sameSelector(update.URLSelector, m.LastReleasedChapterURLSelector) ||
 		update.UseBrowser != m.LastReleasedChapterSelectorUseBrowser ||
+		update.UseFlareSolverr != m.LastReleasedChapterSelectorUseFlareSolverr ||
 		update.CheckURL != m.CheckURL
 
 	var chapter *Chapter
 	var err error
 	if trackingChanged && hasSelectors {
 		chapter, err = GetCustomMangaLastReleasedChapter(CustomMangaScraping{
-			URL:          newURL,
-			CheckURL:     update.CheckURL,
-			NameSelector: update.NameSelector,
-			URLSelector:  update.URLSelector,
-			UseBrowser:   update.UseBrowser,
+			URL:             newURL,
+			CheckURL:        update.CheckURL,
+			NameSelector:    update.NameSelector,
+			URLSelector:     update.URLSelector,
+			UseBrowser:      update.UseBrowser,
+			UseFlareSolverr: update.UseFlareSolverr,
 		})
 		if err != nil {
 			return util.AddErrorContext(fmt.Sprintf(contextError, m), err)
@@ -1485,7 +1499,7 @@ func (m *Manga) UpdateCustomMangaInDB(update CustomMangaUpdate) error {
 			}
 		}
 		if trackingChanged {
-			if err := updateMangaLastReleasedChapterSelectorDB(m, update.NameSelector, update.URLSelector, update.UseBrowser, update.CheckURL, tx); err != nil {
+			if err := updateMangaLastReleasedChapterSelectorDB(m, update.NameSelector, update.URLSelector, update.UseBrowser, update.UseFlareSolverr, update.CheckURL, tx); err != nil {
 				return err
 			}
 			if chapter != nil {
@@ -1522,6 +1536,7 @@ func (m *Manga) UpdateCustomMangaInDB(update CustomMangaUpdate) error {
 		m.LastReleasedChapterNameSelector = update.NameSelector
 		m.LastReleasedChapterURLSelector = update.URLSelector
 		m.LastReleasedChapterSelectorUseBrowser = update.UseBrowser
+		m.LastReleasedChapterSelectorUseFlareSolverr = update.UseFlareSolverr
 		m.CheckURL = update.CheckURL
 		if chapter != nil || !hasSelectors {
 			m.LastReleasedChapter = chapter
@@ -1538,12 +1553,13 @@ func (m *Manga) UpdateCustomMangaInDB(update CustomMangaUpdate) error {
 }
 
 // SameLastReleasedChapterTracking tells if two custom mangas get the last released chapter
-// the same way: same URLs, selectors and use of the browser.
+// the same way: same URLs, selectors and use of the browser and FlareSolverr.
 func (m *Manga) SameLastReleasedChapterTracking(other *Manga) bool {
 	return m.URL == other.URL &&
 		sameSelector(m.LastReleasedChapterNameSelector, other.LastReleasedChapterNameSelector) &&
 		sameSelector(m.LastReleasedChapterURLSelector, other.LastReleasedChapterURLSelector) &&
 		m.LastReleasedChapterSelectorUseBrowser == other.LastReleasedChapterSelectorUseBrowser &&
+		m.LastReleasedChapterSelectorUseFlareSolverr == other.LastReleasedChapterSelectorUseFlareSolverr &&
 		m.CheckURL == other.CheckURL
 }
 
@@ -1558,10 +1574,13 @@ func sameSelector(a, b *HTMLSelector) bool {
 	return *a == *b
 }
 
-func updateMangaLastReleasedChapterSelectorDB(m *Manga, nameSelector, URLSelector *HTMLSelector, useBrowser bool, checkURL string, tx *sql.Tx) error {
+func updateMangaLastReleasedChapterSelectorDB(m *Manga, nameSelector, URLSelector *HTMLSelector, useBrowser, useFlareSolverr bool, checkURL string, tx *sql.Tx) error {
 	err := validateManga(m)
 	if err != nil {
 		return err
+	}
+	if useBrowser && useFlareSolverr {
+		return errBrowserAndFlareSolverr
 	}
 
 	if nameSelector == nil {
@@ -1584,10 +1603,11 @@ func updateMangaLastReleasedChapterSelectorDB(m *Manga, nameSelector, URLSelecto
 				last_released_chapter_url_attribute = $6,
 				last_released_chapter_url_get_first = $7,
 				last_released_chapter_selector_use_browser = $8,
-				check_url = $9
-            WHERE id = $10;
+				last_released_chapter_selector_use_flaresolverr = $9,
+				check_url = $10
+            WHERE id = $11;
         `, nameSelector.Selector, nameSelector.Attribute, nameSelector.Regex, nameSelector.GetFirst,
-			URLSelector.Selector, URLSelector.Attribute, URLSelector.GetFirst, useBrowser, checkURL, m.ID)
+			URLSelector.Selector, URLSelector.Attribute, URLSelector.GetFirst, useBrowser, useFlareSolverr, checkURL, m.ID)
 		if err != nil {
 			return err
 		}
@@ -1603,10 +1623,11 @@ func updateMangaLastReleasedChapterSelectorDB(m *Manga, nameSelector, URLSelecto
 				last_released_chapter_url_attribute = $6,
 				last_released_chapter_url_get_first = $7,
 				last_released_chapter_selector_use_browser = $8,
-				check_url = $9
-            WHERE url = $10;
+				last_released_chapter_selector_use_flaresolverr = $9,
+				check_url = $10
+            WHERE url = $11;
         `, nameSelector.Selector, nameSelector.Attribute, nameSelector.Regex, nameSelector.GetFirst,
-			URLSelector.Selector, URLSelector.Attribute, URLSelector.GetFirst, useBrowser, checkURL, m.URL)
+			URLSelector.Selector, URLSelector.Attribute, URLSelector.GetFirst, useBrowser, useFlareSolverr, checkURL, m.URL)
 		if err != nil {
 			return err
 		}
@@ -1641,6 +1662,9 @@ func validateManga(m *Manga) error {
 	}
 	if m.CoverImg == nil {
 		return util.AddErrorContext(contextError, fmt.Errorf("manga cover image is nil"))
+	}
+	if m.LastReleasedChapterSelectorUseBrowser && m.LastReleasedChapterSelectorUseFlareSolverr {
+		return util.AddErrorContext(contextError, errBrowserAndFlareSolverr)
 	}
 
 	if m.LastReleasedChapter != nil {
@@ -1791,10 +1815,12 @@ type CustomMangaScraping struct {
 	NameSelector *HTMLSelector
 	URLSelector  *HTMLSelector
 	UseBrowser   bool
+	// UseFlareSolverr gets the page through FlareSolverr, for sites behind Cloudflare. It can't be used with UseBrowser.
+	UseFlareSolverr bool
 }
 
 func (s CustomMangaScraping) String() string {
-	return fmt.Sprintf("CustomMangaScraping{URL: %s, CheckURL: %s, NameSelector: %s, URLSelector: %s, UseBrowser: %t}", s.URL, s.CheckURL, s.NameSelector, s.URLSelector, s.UseBrowser)
+	return fmt.Sprintf("CustomMangaScraping{URL: %s, CheckURL: %s, NameSelector: %s, URLSelector: %s, UseBrowser: %t, UseFlareSolverr: %t}", s.URL, s.CheckURL, s.NameSelector, s.URLSelector, s.UseBrowser, s.UseFlareSolverr)
 }
 
 // PageURL returns the page the selectors are applied to: CheckURL, or else URL. It's empty
@@ -1812,9 +1838,10 @@ func (s CustomMangaScraping) PageURL() string {
 // CustomMangaScraping returns how the manga's chapters are got. Empty selectors are nil.
 func (m *Manga) CustomMangaScraping() CustomMangaScraping {
 	s := CustomMangaScraping{
-		URL:        m.URL,
-		CheckURL:   m.CheckURL,
-		UseBrowser: m.LastReleasedChapterSelectorUseBrowser,
+		URL:             m.URL,
+		CheckURL:        m.CheckURL,
+		UseBrowser:      m.LastReleasedChapterSelectorUseBrowser,
+		UseFlareSolverr: m.LastReleasedChapterSelectorUseFlareSolverr,
 	}
 	if m.LastReleasedChapterNameSelector != nil && m.LastReleasedChapterNameSelector.Selector != "" {
 		s.NameSelector = m.LastReleasedChapterNameSelector
@@ -1895,7 +1922,8 @@ func TestCustomMangaSelectors(s CustomMangaScraping) (chapter *Chapter, chapters
 
 var errChaptersListNeedsNameSelector = &errordefs.UserError{Message: "The chapters list needs a chapter name selector"}
 
-// getCustomMangaPage checks the selectors and gets the page they're applied to, with a browser if UseBrowser is true.
+// getCustomMangaPage checks the selectors and gets the page they're applied to, with a browser if UseBrowser is true,
+// or through FlareSolverr if UseFlareSolverr is true.
 func getCustomMangaPage(s CustomMangaScraping) (*scrapedPage, error) {
 	for _, sel := range []struct {
 		selector *HTMLSelector
@@ -1913,11 +1941,19 @@ func getCustomMangaPage(s CustomMangaScraping) (*scrapedPage, error) {
 	if pageURL == "" {
 		return nil, errNoPageToScrape
 	}
+	if s.UseBrowser && s.UseFlareSolverr {
+		return nil, errBrowserAndFlareSolverr
+	}
 	if s.UseBrowser {
 		return getPageUsingBrowser(pageURL, s.NameSelector, s.URLSelector)
 	}
+	if s.UseFlareSolverr {
+		return getPageUsingFlareSolverr(pageURL)
+	}
 	return getPageUsingHTTPRequest(pageURL)
 }
+
+var errBrowserAndFlareSolverr = &errordefs.UserError{Message: "Use Browser and Use FlareSolverr can't be used together"}
 
 var errNoPageToScrape = &errordefs.UserError{Message: "Provide the manga URL or the check URL to use the chapter selectors"}
 
@@ -2261,10 +2297,24 @@ func processSelection(selection string, matched bool, selector *HTMLSelector, fi
 
 // getPageUsingHTTPRequest gets the page with a single HTTP GET request.
 func getPageUsingHTTPRequest(pageURL string) (*scrapedPage, error) {
+	return getPageUsingTransport(pageURL, util.SafeTransport, timeout)
+}
+
+// getPageUsingFlareSolverr gets the page through FlareSolverr, which solves Cloudflare's challenges.
+func getPageUsingFlareSolverr(pageURL string) (*scrapedPage, error) {
+	if !flaresolverr.Enabled() {
+		return nil, util.AddErrorContext(fmt.Sprintf("error getting page '%s' using FlareSolverr", pageURL), flaresolverr.ErrNotConfigured)
+	}
+	// The collector timeout covers the whole request to FlareSolverr, so it's longer than FlareSolverr's.
+	return getPageUsingTransport(pageURL, flaresolverr.Transport(flaresolverr.DefaultTimeout), flaresolverr.DefaultTimeout+timeout)
+}
+
+// getPageUsingTransport gets the page with a single HTTP GET request made by transport.
+func getPageUsingTransport(pageURL string, transport http.RoundTripper, timeout time.Duration) (*scrapedPage, error) {
 	contextError := "error getting page '%s'"
 
 	c := colly.NewCollector(colly.UserAgent(util.DefaultUserAgent))
-	c.WithTransport(util.SafeTransport)
+	c.WithTransport(transport)
 	c.SetRequestTimeout(timeout)
 
 	var page *scrapedPage
