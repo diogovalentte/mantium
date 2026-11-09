@@ -197,6 +197,9 @@ Custom manga can automatically detect new chapters by getting a web page and app
 - **Use Browser (optional)**:
   Uses a headless browser if the page requires JavaScript rendering. Mantium waits up to 15 seconds for each selector's element to appear in the page.
   Otherwise, a simple HTTP GET request is used.
+- **Use FlareSolverr (optional)**:
+  Gets the page through [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr), for sites protected by Cloudflare. FlareSolverr opens the page in its own browser, solves the challenge, and returns the HTML after JavaScript runs. It has up to 60 seconds per page. It can't be used together with **Use Browser**.
+  Requires the API environment variable `FLARESOLVERR_ADDRESS`, like `http://flaresolverr:8191`. Presets can also use it.
 
 The page is fetched once, and both selectors are applied to it.
 
@@ -218,6 +221,8 @@ Use the **Test selectors** button in the add and edit forms to see which chapter
 ## Private Addresses
 
 By default, the API refuses to get custom manga pages and cover images from private addresses, like `localhost`, `192.168.x.x`, `10.x.x.x` or `169.254.169.254`. This includes redirects and every request made by the browser when **Use Browser** is enabled. It prevents a URL from making the API reach services in your network that aren't meant to be reachable from outside.
+
+With **Use FlareSolverr**, the requests are made by FlareSolverr's browser, so Mantium can only check the page URL before sending it and the final URL FlareSolverr returns, and discards the page if either is private. Redirects in between and the requests the page itself makes (scripts, images, iframes) aren't checked. If that matters in your setup, run FlareSolverr in a network that can't reach your private services. FlareSolverr's own address can be private.
 
 If you track a site hosted in your own network, set the API environment variable `ALLOW_PRIVATE_URLS=true`.
 

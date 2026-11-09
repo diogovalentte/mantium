@@ -128,6 +128,9 @@ def add_manga():
                     "last_released_chapter_use_browser"
                 ],
                 check_url=ss["add_manga_manga_to_add"].get("check_url", ""),
+                last_released_chapter_selector_use_flaresolverr=ss["add_manga_manga_to_add"].get(
+                    "last_released_chapter_use_flaresolverr", False
+                ),
             )
         except Exception as e:
             ex = e
@@ -551,6 +554,7 @@ def test_custom_manga_selectors(
     url_get_first: bool,
     use_browser: bool,
     check_url: str,
+    use_flaresolverr: bool = False,
 ):
     """Shows the last released chapter and the chapters list size the selectors get from the page, without saving anything.
 
@@ -581,6 +585,7 @@ def test_custom_manga_selectors(
                 url_get_first,
                 use_browser,
                 check_url=check_url,
+                last_released_chapter_selector_use_flaresolverr=use_flaresolverr,
             )
     except Exception as ex:
         if user_message := get_api_user_message(ex):
@@ -645,6 +650,17 @@ def apply_custom_manga_preset(key_prefix: str, preset_id: int | None = None):
         selector = preset[selector_key] or {}
         ss[key_prefix + field] = selector.get(attribute, default)
     ss[key_prefix + "last_released_chapter_use_browser"] = preset["use_browser"]
+    ss[key_prefix + "last_released_chapter_use_flaresolverr"] = preset.get("use_flaresolverr", False)
+
+
+def uncheck_other_page_fetcher(key_prefix: str, checked_field: str):
+    """Unchecks Use Browser when Use FlareSolverr is checked, and the other way around, as
+    the API uses only one of them. Used as a widget callback."""
+    if not ss.get(key_prefix + checked_field, False):
+        return
+    for field in ("last_released_chapter_use_browser", "last_released_chapter_use_flaresolverr"):
+        if field != checked_field:
+            ss[key_prefix + field] = False
 
 
 def clear_custom_manga_selectors(key_prefix: str):
@@ -652,6 +668,7 @@ def clear_custom_manga_selectors(key_prefix: str):
     for field, (_, _, default) in custom_manga_preset_fields.items():
         ss[key_prefix + field] = default
     ss[key_prefix + "last_released_chapter_use_browser"] = False
+    ss[key_prefix + "last_released_chapter_use_flaresolverr"] = False
     ss[key_prefix + "preset"] = None
 
 
@@ -736,6 +753,7 @@ def save_custom_manga_preset(key_prefix: str):
         "name": ss.get(key_prefix + "new_preset_name", ""),
         "domains": [d for d in ss.get(key_prefix + "new_preset_domains", "").split(",") if d.strip()],
         "use_browser": ss.get(key_prefix + "last_released_chapter_use_browser", False),
+        "use_flaresolverr": ss.get(key_prefix + "last_released_chapter_use_flaresolverr", False),
     }
     if name_selector:
         preset["name_selector"] = {
@@ -913,6 +931,7 @@ def get_custom_manga_selector_values(key_prefix: str) -> dict[str, Any]:
         for field, (_, _, default) in custom_manga_preset_fields.items()
     }
     values["last_released_chapter_use_browser"] = ss.get(key_prefix + "last_released_chapter_use_browser", False)
+    values["last_released_chapter_use_flaresolverr"] = ss.get(key_prefix + "last_released_chapter_use_flaresolverr", False)
     return values
 
 
@@ -1019,6 +1038,16 @@ def show_custom_manga_tracking_fields(key_prefix: str, test_selectors_help: str)
             value=False,
             help="Use a browser to fetch the manga page. Use this if the chapter info is loaded dynamically with JavaScript. Requires more resources and can take longer.",
             key=key_prefix + "last_released_chapter_use_browser",
+            on_change=uncheck_other_page_fetcher,
+            args=(key_prefix, "last_released_chapter_use_browser"),
+        )
+        st.checkbox(
+            "Use FlareSolverr",
+            value=False,
+            help="Get the manga page through FlareSolverr, for sites protected by Cloudflare. FlareSolverr also renders JavaScript. Requires FLARESOLVERR_ADDRESS in the API and can take longer. Can't be used with Use Browser.",
+            key=key_prefix + "last_released_chapter_use_flaresolverr",
+            on_change=uncheck_other_page_fetcher,
+            args=(key_prefix, "last_released_chapter_use_flaresolverr"),
         )
 
         test_clicked = st.button(
@@ -1042,6 +1071,7 @@ def show_custom_manga_tracking_fields(key_prefix: str, test_selectors_help: str)
                     ss[key_prefix + "last_released_chapter_url_get_first"],
                     ss[key_prefix + "last_released_chapter_use_browser"],
                     ss[key_prefix + "check_url"],
+                    ss[key_prefix + "last_released_chapter_use_flaresolverr"],
                 )
 
 
@@ -1178,6 +1208,7 @@ def show_add_custom_manga_form(multimanga_id: int = 0, show_back_button: Callabl
                             "get_first": selectors["last_released_chapter_url_get_first"],
                         },
                         "last_released_chapter_use_browser": selectors["last_released_chapter_use_browser"],
+                        "last_released_chapter_use_flaresolverr": selectors["last_released_chapter_use_flaresolverr"],
                         "check_url": ss[key_prefix + "check_url"],
                     }
 
@@ -1209,6 +1240,9 @@ def show_add_custom_manga_form(multimanga_id: int = 0, show_back_button: Callabl
                                     ss["update_multimanga_mangas_add_manga_selected_manga"]["last_released_chapter_url_selector"]["get_first"],
                                     ss["update_multimanga_mangas_add_manga_selected_manga"]["last_released_chapter_use_browser"],
                                     check_url=ss["update_multimanga_mangas_add_manga_selected_manga"]["check_url"],
+                                    last_released_chapter_selector_use_flaresolverr=ss[
+                                        "update_multimanga_mangas_add_manga_selected_manga"
+                                    ]["last_released_chapter_use_flaresolverr"],
                                 )
                         except APIException as e:
                             resp_text = str(e.response_text).lower()

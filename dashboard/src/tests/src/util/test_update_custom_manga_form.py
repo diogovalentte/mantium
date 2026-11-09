@@ -211,3 +211,24 @@ def test_no_back_when_not_opened_from_manage_mangas(api):
     at = run_app(manga())
     assert_no_exception(at)
     assert not [b for b in at.button if b.key == P + "back"]
+
+
+def test_flaresolverr_prefilled_and_sent(api):
+    at = run_app(manga(LastReleasedChapterSelectorUseBrowser=False, LastReleasedChapterSelectorUseFlareSolverr=True))
+    assert_no_exception(at)
+    assert at.checkbox(key=P + "last_released_chapter_use_flaresolverr").value is True
+    assert not texts(at, "warning")
+    at.button(key=P + "update").click().run()
+    assert_no_exception(at)
+    (args, kwargs), = api.called("update_custom_manga")
+    assert args[10] is False
+    assert kwargs["last_released_chapter_selector_use_flaresolverr"] is True
+
+
+def test_manga_from_an_older_api_without_flaresolverr(api):
+    at = run_app(manga())
+    assert_no_exception(at)
+    assert at.checkbox(key=P + "last_released_chapter_use_flaresolverr").value is False
+    at.button(key=P + "update").click().run()
+    (_, kwargs), = api.called("update_custom_manga")
+    assert kwargs["last_released_chapter_selector_use_flaresolverr"] is False

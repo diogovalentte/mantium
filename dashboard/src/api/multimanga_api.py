@@ -34,6 +34,7 @@ class MultiMangaAPIClient:
         last_released_chapter_url_get_first: str,
         last_released_chapter_selector_use_browser: bool,
         check_url: str = "",
+        last_released_chapter_selector_use_flaresolverr: bool = False,
     ) -> dict[str, str]:
         url = self.base_multimanga_url
 
@@ -45,6 +46,7 @@ class MultiMangaAPIClient:
             "cover_img_url": cover_img_url,
             "cover_img": base64.b64encode(cover_img).decode("utf-8") if cover_img else "",
             "last_released_chapter_selector_use_browser": last_released_chapter_selector_use_browser,
+            "last_released_chapter_selector_use_flaresolverr": last_released_chapter_selector_use_flaresolverr,
             "check_url": check_url,
         }
 
@@ -259,6 +261,7 @@ class MultiMangaAPIClient:
         last_released_chapter_url_get_first: str,
         last_released_chapter_selector_use_browser: bool,
         check_url: str = "",
+        last_released_chapter_selector_use_flaresolverr: bool = False,
     ) -> dict[str, str]:
         url = self.base_multimanga_url + "/manga?id=" + str(multimanga_id)
 
@@ -269,6 +272,7 @@ class MultiMangaAPIClient:
             "cover_img_url": cover_img_url,
             "cover_img": base64.b64encode(cover_img).decode("utf-8") if cover_img else "",
             "last_released_chapter_selector_use_browser": last_released_chapter_selector_use_browser,
+            "last_released_chapter_selector_use_flaresolverr": last_released_chapter_selector_use_flaresolverr,
             "check_url": check_url,
         }
 

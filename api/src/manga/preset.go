@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/lib/pq"
@@ -26,6 +27,8 @@ type Preset struct {
 	Domains    []string `json:"domains"`
 	ID         int      `json:"id"`
 	UseBrowser bool     `json:"use_browser"`
+	// UseFlareSolverr gets the page through FlareSolverr. It can't be used with UseBrowser.
+	UseFlareSolverr bool `json:"use_flaresolverr"`
 	// Builtin presets come with Mantium and are recreated every time the API starts.
 	Builtin bool `json:"builtin"`
 }
@@ -67,19 +70,20 @@ func UpsertBuiltinPresetsDB() error {
 		names = append(names, p.Name)
 		_, err = tx.Exec(`
             INSERT INTO custom_manga_presets (
-                name, description, domains, builtin, use_browser,
+                name, description, domains, builtin, use_browser, use_flaresolverr,
                 name_selector, name_attribute, name_regex, name_get_first,
                 url_selector, url_attribute, url_get_first
             )
-            VALUES ($1, $2, $3, TRUE, $4, $5, $6, $7, $8, $9, $10, $11)
+            VALUES ($1, $2, $3, TRUE, $4, $5, $6, $7, $8, $9, $10, $11, $12)
             ON CONFLICT (name) DO UPDATE SET
                 description = EXCLUDED.description, domains = EXCLUDED.domains, use_browser = EXCLUDED.use_browser,
+                use_flaresolverr = EXCLUDED.use_flaresolverr,
                 name_selector = EXCLUDED.name_selector, name_attribute = EXCLUDED.name_attribute,
                 name_regex = EXCLUDED.name_regex, name_get_first = EXCLUDED.name_get_first,
                 url_selector = EXCLUDED.url_selector, url_attribute = EXCLUDED.url_attribute,
                 url_get_first = EXCLUDED.url_get_first
             WHERE custom_manga_presets.builtin;
-        `, append([]any{p.Name, p.Description, pq.Array(nonNilDomains(p.Domains)), p.UseBrowser}, presetSelectorValues(p)...)...)
+        `, append([]any{p.Name, p.Description, pq.Array(nonNilDomains(p.Domains)), p.UseBrowser, p.UseFlareSolverr}, presetSelectorValues(p)...)...)
 		if err != nil {
 			tx.Rollback()
 			return util.AddErrorContext(contextError, err)
@@ -111,7 +115,7 @@ func GetPresetsDB() ([]*Preset, error) {
 
 	rows, err := conn.Query(`
         SELECT
-            id, name, description, domains, builtin, use_browser,
+            id, name, description, domains, builtin, use_browser, use_flaresolverr,
             name_selector, name_attribute, name_regex, name_get_first,
             url_selector, url_attribute, url_get_first
         FROM custom_manga_presets
@@ -127,7 +131,7 @@ func GetPresetsDB() ([]*Preset, error) {
 		p := &Preset{}
 		var nameSelector, URLSelector HTMLSelector
 		err = rows.Scan(
-			&p.ID, &p.Name, &p.Description, pq.Array(&p.Domains), &p.Builtin, &p.UseBrowser,
+			&p.ID, &p.Name, &p.Description, pq.Array(&p.Domains), &p.Builtin, &p.UseBrowser, &p.UseFlareSolverr,
 			&nameSelector.Selector, &nameSelector.Attribute, &nameSelector.Regex, &nameSelector.GetFirst,
 			&URLSelector.Selector, &URLSelector.Attribute, &URLSelector.GetFirst,
 		)
@@ -161,6 +165,9 @@ func InsertPresetDB(p *Preset) error {
 	if p.NameSelector == nil && p.URLSelector == nil {
 		return &errordefs.UserError{Message: "Provide at least one selector for the preset"}
 	}
+	if p.UseBrowser && p.UseFlareSolverr {
+		return errBrowserAndFlareSolverr
+	}
 	for _, s := range []struct {
 		selector *HTMLSelector
 		field    string
@@ -187,13 +194,13 @@ func InsertPresetDB(p *Preset) error {
 	}
 	err = conn.QueryRow(`
         INSERT INTO custom_manga_presets (
-            name, description, domains, builtin, use_browser,
+            name, description, domains, builtin, use_browser, use_flaresolverr,
             name_selector, name_attribute, name_regex, name_get_first,
             url_selector, url_attribute, url_get_first
         )
-        VALUES ($1, $2, $3, FALSE, $4, $5, $6, $7, $8, $9, $10, $11)
+        VALUES ($1, $2, $3, FALSE, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING id;
-    `, append([]any{p.Name, p.Description, pq.Array(p.Domains), p.UseBrowser}, presetSelectorValues(p)...)...).Scan(&p.ID)
+    `, append([]any{p.Name, p.Description, pq.Array(p.Domains), p.UseBrowser, p.UseFlareSolverr}, presetSelectorValues(p)...)...).Scan(&p.ID)
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) && pqErr.Code == "23505" {
@@ -244,12 +251,12 @@ type PresetDetection struct {
 }
 
 // DetectPresets applies each preset to the manga page and tells which work.
-// The page is fetched only once, or twice if some presets use the browser.
+// The page is fetched once per way of getting it the presets use: HTTP request, browser and FlareSolverr.
 func DetectPresets(mangaURL string, presets []*Preset) ([]*PresetDetection, error) {
 	contextError := fmt.Sprintf("error detecting presets for page '%s'", mangaURL)
 
-	var page, browserPage *scrapedPage
-	var browserErr error
+	var page, browserPage, flareSolverrPage *scrapedPage
+	var pageErr, browserErr, flareSolverrErr error
 	detections := make([]*PresetDetection, 0, len(presets))
 	for _, p := range presets {
 		detection := &PresetDetection{Preset: p}
@@ -265,13 +272,24 @@ func DetectPresets(mangaURL string, presets []*Preset) ([]*PresetDetection, erro
 				continue
 			}
 			pageToUse = browserPage
+		} else if p.UseFlareSolverr {
+			if flareSolverrPage == nil && flareSolverrErr == nil {
+				flareSolverrPage, flareSolverrErr = getPageUsingFlareSolverr(mangaURL)
+			}
+			if flareSolverrErr != nil {
+				detection.UserMessage = userMessage(flareSolverrErr)
+				continue
+			}
+			pageToUse = flareSolverrPage
 		} else {
-			if page == nil {
-				var err error
-				page, err = getPageUsingHTTPRequest(mangaURL)
-				if err != nil {
-					return nil, util.AddErrorContext(contextError, err)
-				}
+			if page == nil && pageErr == nil {
+				page, pageErr = getPageUsingHTTPRequest(mangaURL)
+			}
+			// A site behind Cloudflare refuses the plain request, but presets
+			// that use FlareSolverr or the browser can still work on it.
+			if pageErr != nil {
+				detection.UserMessage = userMessage(pageErr)
+				continue
 			}
 			pageToUse = page
 		}
@@ -282,6 +300,12 @@ func DetectPresets(mangaURL string, presets []*Preset) ([]*PresetDetection, erro
 			continue
 		}
 		detection.Chapter = chapter
+	}
+
+	// When nothing works and the plain request failed, its error is what explains it,
+	// like a 404 or an invalid URL.
+	if pageErr != nil && !slices.ContainsFunc(detections, func(d *PresetDetection) bool { return d.Chapter != nil }) {
+		return nil, util.AddErrorContext(contextError, pageErr)
 	}
 
 	return detections, nil

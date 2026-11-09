@@ -28,12 +28,13 @@ func GetCustomMangaPresets(c *gin.Context) {
 
 // AddCustomMangaPresetRequest is the request body for the AddCustomMangaPreset route
 type AddCustomMangaPresetRequest struct {
-	NameSelector *HTMLSelectorRequest `json:"name_selector"`
-	URLSelector  *HTMLSelectorRequest `json:"url_selector"`
-	Name         string               `json:"name" binding:"required"`
-	Description  string               `json:"description"`
-	Domains      []string             `json:"domains"`
-	UseBrowser   bool                 `json:"use_browser"`
+	NameSelector    *HTMLSelectorRequest `json:"name_selector"`
+	URLSelector     *HTMLSelectorRequest `json:"url_selector"`
+	Name            string               `json:"name" binding:"required"`
+	Description     string               `json:"description"`
+	Domains         []string             `json:"domains"`
+	UseBrowser      bool                 `json:"use_browser"`
+	UseFlareSolverr bool                 `json:"use_flaresolverr"`
 }
 
 // @Summary Add custom manga preset
@@ -51,12 +52,13 @@ func AddCustomMangaPreset(c *gin.Context) {
 	}
 
 	preset := &manga.Preset{
-		Name:         requestData.Name,
-		Description:  requestData.Description,
-		Domains:      requestData.Domains,
-		UseBrowser:   requestData.UseBrowser,
-		NameSelector: (*manga.HTMLSelector)(requestData.NameSelector),
-		URLSelector:  (*manga.HTMLSelector)(requestData.URLSelector),
+		Name:            requestData.Name,
+		Description:     requestData.Description,
+		Domains:         requestData.Domains,
+		UseBrowser:      requestData.UseBrowser,
+		UseFlareSolverr: requestData.UseFlareSolverr,
+		NameSelector:    (*manga.HTMLSelector)(requestData.NameSelector),
+		URLSelector:     (*manga.HTMLSelector)(requestData.URLSelector),
 	}
 	if err := manga.InsertPresetDB(preset); err != nil {
 		c.JSON(userErrorStatus(err), errorResponse(err))

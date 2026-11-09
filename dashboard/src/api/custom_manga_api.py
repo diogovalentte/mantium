@@ -77,6 +77,7 @@ class CustomMangaAPIClient:
         cover_img: bytes = b"",
         use_mantium_default_cover_img: bool = False,
         check_url: str = "",
+        last_released_chapter_selector_use_flaresolverr: bool = False,
     ) -> dict[str, str]:
         """Updates all the custom manga fields at once. Nothing is saved if any of them is invalid."""
         url = f"{self.base_custom_manga_url}?{urlencode({'id': manga_id})}"
@@ -85,6 +86,7 @@ class CustomMangaAPIClient:
             "name": name,
             "url": manga_url,
             "use_browser": last_released_chapter_selector_use_browser,
+            "use_flaresolverr": last_released_chapter_selector_use_flaresolverr,
             "check_url": check_url,
             "cover_img_url": cover_img_url,
             "cover_img": base64.b64encode(cover_img).decode("utf-8") if cover_img else "",
@@ -131,6 +133,7 @@ class CustomMangaAPIClient:
         last_released_chapter_url_get_first: bool,
         last_released_chapter_selector_use_browser: bool,
         check_url: str = "",
+        last_released_chapter_selector_use_flaresolverr: bool = False,
     ) -> dict[str, Any]:
         """Gets the last released chapter using the selectors, without saving anything."""
         url = f"{self.base_custom_manga_url}/test_selectors"
@@ -138,6 +141,7 @@ class CustomMangaAPIClient:
         request_body: dict[str, Any] = {
             "url": manga_url,
             "use_browser": last_released_chapter_selector_use_browser,
+            "use_flaresolverr": last_released_chapter_selector_use_flaresolverr,
             "check_url": check_url,
         }
         if last_released_chapter_name_selector != "":
@@ -180,6 +184,7 @@ class CustomMangaAPIClient:
         last_released_chapter_selector_use_browser: bool,
         manga_id: int = 0,
         manga_url: str = "",
+        last_released_chapter_selector_use_flaresolverr: bool = False,
     ) -> dict[str, str]:
         path = "/last_released_chapter_selectors"
         url = f"{self.base_custom_manga_url}{path}"
@@ -187,6 +192,7 @@ class CustomMangaAPIClient:
 
         request_body: dict[str, Any] = {
             "use_browser": last_released_chapter_selector_use_browser,
+            "use_flaresolverr": last_released_chapter_selector_use_flaresolverr,
         }
         if last_released_chapter_name_selector != "":
             request_body["name_selector"] = {

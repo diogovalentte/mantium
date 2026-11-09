@@ -44,7 +44,7 @@ def test_add_sends_the_check_url(api):
     assert_no_exception(at)
     (args, kwargs), = api.called("add_multimanga")
     assert args[1] == MANGA_URL
-    assert kwargs == {"check_url": FEED_URL}
+    assert kwargs == {"check_url": FEED_URL, "last_released_chapter_selector_use_flaresolverr": False}
 
 
 def test_add_to_multimanga_sends_the_check_url(api):
@@ -54,7 +54,7 @@ def test_add_to_multimanga_sends_the_check_url(api):
     at.button(key=MM + "add").click().run()
     assert_no_exception(at)
     (_, kwargs), = api.called("add_manga_to_multimanga")
-    assert kwargs == {"check_url": FEED_URL}
+    assert kwargs == {"check_url": FEED_URL, "last_released_chapter_selector_use_flaresolverr": False}
 
 
 def test_invalid_check_url_is_reported_on_add(api):
@@ -85,7 +85,7 @@ def test_test_selectors_with_only_the_check_url(api):
     at.button(key=ADD + "test_selectors").click().run()
     assert_no_exception(at)
     (args, kwargs), = api.called("test_custom_manga_selectors")
-    assert args[0] == "" and kwargs == {"check_url": FEED_URL}
+    assert args[0] == "" and kwargs == {"check_url": FEED_URL, "last_released_chapter_selector_use_flaresolverr": False}
 
 
 def test_test_selectors_without_any_url(api):
@@ -106,7 +106,7 @@ def test_update_form_is_prefilled_and_sends_the_check_url(api):
     at.button(key=UPDATE + "update").click().run()
     assert_no_exception(at)
     (_, kwargs), = api.called("update_custom_manga")
-    assert kwargs == {"check_url": FEED_URL + "?page=2"}
+    assert kwargs == {"check_url": FEED_URL + "?page=2", "last_released_chapter_selector_use_flaresolverr": False}
 
 
 def test_update_of_a_manga_without_check_url(api):
@@ -114,4 +114,4 @@ def test_update_of_a_manga_without_check_url(api):
     at.button(key=UPDATE + "update").click().run()
     assert_no_exception(at)
     (_, kwargs), = api.called("update_custom_manga")
-    assert kwargs == {"check_url": ""}
+    assert kwargs == {"check_url": "", "last_released_chapter_selector_use_flaresolverr": False}

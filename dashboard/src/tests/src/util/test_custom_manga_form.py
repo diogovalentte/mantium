@@ -4,7 +4,7 @@ import pytest
 from streamlit.testing.v1 import AppTest
 
 import src.tests.src.util.fake_api as fake_api
-from src.tests.src.util.fake_api import RSS_PRESET, SITE_PRESET, detection, user_error
+from src.tests.src.util.fake_api import CLOUDFLARE_PRESET, RSS_PRESET, SITE_PRESET, detection, user_error
 
 RUNNER = os.path.join(os.path.dirname(__file__), "custom_manga_form_runner.py")
 P = "add_custom_manga_form_"
@@ -417,3 +417,80 @@ def test_failed_detection_is_tried_again(api):
     assert_no_exception(at)
     assert expanded(at)
     assert field(at, "name_selector") == "xpath://item/title"
+
+
+def test_browser_and_flaresolverr_uncheck_each_other(api):
+    at = run_app()
+    at.checkbox(key=P + "last_released_chapter_use_browser").check().run()
+    at.checkbox(key=P + "last_released_chapter_use_flaresolverr").check().run()
+    assert_no_exception(at)
+    assert at.checkbox(key=P + "last_released_chapter_use_browser").value is False
+    assert at.checkbox(key=P + "last_released_chapter_use_flaresolverr").value is True
+    at.checkbox(key=P + "last_released_chapter_use_browser").check().run()
+    assert at.checkbox(key=P + "last_released_chapter_use_flaresolverr").value is False
+    # Unchecking one doesn't check the other
+    at.checkbox(key=P + "last_released_chapter_use_browser").uncheck().run()
+    assert at.checkbox(key=P + "last_released_chapter_use_flaresolverr").value is False
+    assert not texts(at, "warning")
+
+
+def test_flaresolverr_is_sent_on_test_add_and_save_preset(api):
+    at = run_app()
+    at.text_input(key=P + "name").input("Manga").run()
+    at.text_input(key=P + "url").input(SITE_URL).run()
+    at.text_input(key=P + "last_released_chapter_name_selector").input("css:li a").run()
+    at.checkbox(key=P + "last_released_chapter_use_flaresolverr").check().run()
+
+    at.button(key=P + "test_selectors").click().run()
+    assert_no_exception(at)
+    (_, kwargs), = api.called("test_custom_manga_selectors")
+    assert kwargs["last_released_chapter_selector_use_flaresolverr"] is True
+
+    at.text_input(key=P + "new_preset_name").input("Example").run()
+    at.button(key=P + "save_preset").click().run()
+    assert_no_exception(at)
+    (preset,), _ = api.called("add_custom_manga_preset")[0]
+    assert preset["use_flaresolverr"] is True and preset["use_browser"] is False
+
+    at.button(key=P + "add").click().run()
+    assert_no_exception(at)
+    (args, kwargs), = api.called("add_multimanga")
+    assert args[16] is False
+    assert kwargs["last_released_chapter_selector_use_flaresolverr"] is True
+
+
+def test_add_without_flaresolverr_sends_false(api):
+    at = run_app()
+    at.text_input(key=P + "name").input("Manga").run()
+    at.text_input(key=P + "url").input(SITE_URL).run()
+    at.button(key=P + "add").click().run()
+    (_, kwargs), = api.called("add_multimanga")
+    assert kwargs["last_released_chapter_selector_use_flaresolverr"] is False
+
+
+def test_preset_with_flaresolverr_checks_it(api):
+    api.presets.append(dict(CLOUDFLARE_PRESET))
+    at = run_app()
+    at.checkbox(key=P + "last_released_chapter_use_browser").check().run()
+    at.selectbox(key=P + "preset").set_value(CLOUDFLARE_PRESET["id"]).run()
+    assert_no_exception(at)
+    assert at.checkbox(key=P + "last_released_chapter_use_flaresolverr").value is True
+    assert at.checkbox(key=P + "last_released_chapter_use_browser").value is False
+    # Another preset and the clear button uncheck it
+    at.selectbox(key=P + "preset").set_value(RSS_PRESET["id"]).run()
+    assert at.checkbox(key=P + "last_released_chapter_use_flaresolverr").value is False
+    at.selectbox(key=P + "preset").set_value(CLOUDFLARE_PRESET["id"]).run()
+    at.button(key=P + "clear_selectors_button").click().run()
+    assert_no_exception(at)
+    assert at.checkbox(key=P + "last_released_chapter_use_flaresolverr").value is False
+
+
+def test_add_to_multimanga_sends_flaresolverr(api):
+    at = run_app(multimanga_id=7)
+    at.text_input(key=MM + "name").input("Other source").run()
+    at.text_input(key=MM + "url").input(SITE_URL).run()
+    at.checkbox(key=MM + "last_released_chapter_use_flaresolverr").check().run()
+    at.button(key=MM + "add").click().run()
+    assert_no_exception(at)
+    (_, kwargs), = api.called("add_manga_to_multimanga")
+    assert kwargs["last_released_chapter_selector_use_flaresolverr"] is True

@@ -1015,6 +1015,7 @@ func queryMultiMangaMangas(db *sql.DB, multiMangaID *ID) (map[ID][]*Manga, error
 			mangas.last_released_chapter_url_attribute,
 			mangas.last_released_chapter_url_get_first,
 			mangas.last_released_chapter_selector_use_browser,
+			mangas.last_released_chapter_selector_use_flaresolverr,
 			mangas.check_url,
 			mangas.ignored_chapter,
 			mangas.ignored_chapter_url,
@@ -1071,6 +1072,7 @@ func queryMultiMangaMangas(db *sql.DB, multiMangaID *ID) (map[ID][]*Manga, error
 			&lastReleasedChapterNameSelector, &lastReleasedChapterNameAttribute, &lastReleasedChapterNameRegex, &lastReleasedChapterNameGetFirst,
 			&lastReleasedChapterURLSelector, &lastReleasedChapterURLAttribute, &lastReleasedChapterURLGetFirst,
 			&currentManga.LastReleasedChapterSelectorUseBrowser,
+			&currentManga.LastReleasedChapterSelectorUseFlareSolverr,
 			&currentManga.CheckURL,
 			&ignoredChapter, &ignoredChapterURL,
 
