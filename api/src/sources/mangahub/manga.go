@@ -2,12 +2,13 @@ package mangahub
 
 import (
 	"fmt"
+	"net/url"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/diogovalentte/mantium/api/src/errordefs"
+	"github.com/gocolly/colly/v2"
+
 	"github.com/diogovalentte/mantium/api/src/manga"
 	"github.com/diogovalentte/mantium/api/src/sources/models"
 	"github.com/diogovalentte/mantium/api/src/util"
@@ -15,166 +16,105 @@ import (
 
 // GetMangaMetadata scrapes the manga page and return the manga data
 func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
-
 	errorContext := "error while getting manga metadata"
 
-	mangaSlug, err := getMangaSlug(mangaURL)
+	formattedURL, err := GetFormattedMangaURL(mangaURL)
 	if err != nil {
 		return nil, util.AddErrorContext(errorContext, err)
 	}
 
-	mangaReturn := &manga.Manga{}
-	mangaReturn.Source = "mangahub"
-
-	query := `
-        {"query":"{manga(x:m01,slug:\"%s\"){title,image,latestChapter,chapters{number,title,slug,date}}}"}
-    `
-	query = fmt.Sprintf(query, mangaSlug)
-	payload := strings.NewReader(query)
-
-	var mangaAPIResp getMangaAPIResponse
-	_, err = mangahubClient.Request("POST", baseAPIURL, payload, &mangaAPIResp)
+	page, err := getMangaPage(formattedURL)
 	if err != nil {
-		if util.ErrorContains(err, "non-200 status code -> (404)") {
-			return nil, util.AddErrorContext(errorContext, errordefs.ErrMangaNotFound)
-		}
 		return nil, util.AddErrorContext(errorContext, err)
 	}
 
-	if len(mangaAPIResp.Errors) > 0 {
-		switch mangaAPIResp.Errors[0].Message {
-		case "Cannot read properties of undefined (reading 'mangaID')":
-			return nil, errordefs.ErrMangaAttributesNotFound
-		default:
-			return nil, fmt.Errorf("error while getting chapter from response: %s", mangaAPIResp.Errors[0].Message)
-		}
+	mangaReturn := &manga.Manga{
+		Source: "mangahub",
+		URL:    formattedURL,
+		Name:   page.name,
 	}
 
-	mangaReturn.Name = mangaAPIResp.Data.Manga.Title
-
-	// Cover Image
-	if mangaAPIResp.Data.Manga.Image != "" {
-		coverImgURL := baseUploadsURL + "/" + mangaAPIResp.Data.Manga.Image
-		coverImg, resized, err := util.GetImageFromURL(coverImgURL, 3, 1*time.Second)
+	if page.coverURL != "" {
+		coverImg, resized, err := util.GetImageFromURL(page.coverURL, 3, 1*time.Second)
 		if err == nil {
-			mangaReturn.CoverImgURL = coverImgURL
+			mangaReturn.CoverImgURL = page.coverURL
 			mangaReturn.CoverImgResized = resized
 			mangaReturn.CoverImg = coverImg
 		}
 	}
 
-	// Last Released Chapter
-	if mangaAPIResp.Data.Manga.LastestChapter != 0 {
-		lastReleasedChapter, err := findChapterInResponse(mangaAPIResp.Data.Manga.Chapters, strconv.FormatFloat(mangaAPIResp.Data.Manga.LastestChapter, 'f', -1, 64), mangaSlug)
-		if err != nil {
-			if !util.ErrorContains(err, errordefs.ErrChapterNotFound.Message) {
-				return nil, util.AddErrorContext(errorContext, err)
-			}
-			mangaReturn.LastReadChapter = nil
-		} else {
-			lastReleasedChapter.Type = 1
-			mangaReturn.LastReleasedChapter = lastReleasedChapter
-		}
-	}
-
-	mangaReturn.URL, err = GetFormattedMangaURL(mangaURL)
-	if err != nil {
-		return nil, util.AddErrorContext(errorContext, err)
+	if len(page.chapters) > 0 {
+		lastReleasedChapter := *page.chapters[0]
+		lastReleasedChapter.Type = 1
+		mangaReturn.LastReleasedChapter = &lastReleasedChapter
 	}
 
 	return mangaReturn, nil
 }
 
-type getMangaAPIResponse struct {
-	Errors []struct {
-		Message string `json:"message"`
-	} `json:"errors"`
-	Data struct {
-		Manga struct {
-			Title          string                `json:"title"`
-			Image          string                `json:"image"`
-			LastestChapter float64               `json:"latestChapter"`
-			Chapters       []*getMangaAPIChapter `json:"chapters"`
-			Slug           string                `json:"slug"`
-		} `json:"manga"`
-	} `json:"data"`
-}
-
+// Search searches the site for mangas, in the order the site returns them
 func (s *Source) Search(term string, limit int) ([]*models.MangaSearchResult, error) {
+	errorContext := "error while searching manga"
 
-	errorContext := "error while getting manga metadata"
+	c := newCollector()
+	results := []*models.MangaSearchResult{}
 
-	query := `
-        {"query":"{search(x:m01,q:\"%s\",mod:POPULAR,limit:%d,offset:0,count:true){rows{title,slug,image,latestChapter,status},count}}"}
-    `
-	query = fmt.Sprintf(query, term, limit)
-	payload := strings.NewReader(query)
-
-	var searchAPIResp searchAPIResponse
-	_, err := mangahubClient.Request("POST", baseAPIURL, payload, &searchAPIResp)
-	if err != nil {
-		return nil, util.AddErrorContext(errorContext, err)
-	}
-
-	if len(searchAPIResp.Errors) > 0 {
-		return nil, fmt.Errorf("error while getting manga from response: %s", searchAPIResp.Errors[0].Message)
-	}
-
-	mangaSearchResults := make([]*models.MangaSearchResult, 0, len(searchAPIResp.Data.Search.Rows))
-	for _, row := range searchAPIResp.Data.Search.Rows {
-		mangaSearchResult := &models.MangaSearchResult{
-			Source:         "mangahub",
-			URL:            baseSiteURL + "/manga/" + row.Slug,
-			Name:           row.Title,
-			Status:         row.Status,
-			LastChapter:    strconv.FormatFloat(row.LastestChapter, 'f', -1, 64),
-			LastChapterURL: fmt.Sprintf("%s/chapter/%s/chapter-%s", baseSiteURL, row.Slug, strconv.FormatFloat(row.LastestChapter, 'f', -1, 64)),
+	c.OnHTML("div.media-manga", func(e *colly.HTMLElement) {
+		if len(results) >= limit {
+			return
 		}
-		mangaSearchResult.CoverURL = baseUploadsURL + "/" + row.Image
-		if row.Image != "" {
-			mangaSearchResult.CoverURL = baseUploadsURL + "/" + row.Image
-		} else {
-			mangaSearchResult.CoverURL = models.DefaultCoverImgURL
+		link := e.DOM.Find("h4.media-heading > a").First()
+		href, _ := link.Attr("href")
+		name := strings.TrimSpace(link.Text())
+		if href == "" || name == "" {
+			return
 		}
 
-		mangaSearchResults = append(mangaSearchResults, mangaSearchResult)
+		result := &models.MangaSearchResult{
+			Source:   "mangahub",
+			URL:      e.Request.AbsoluteURL(href),
+			Name:     name,
+			CoverURL: models.DefaultCoverImgURL,
+		}
+		if formattedURL, err := GetFormattedMangaURL(result.URL); err == nil {
+			result.URL = formattedURL
+		}
+		if cover := e.ChildAttr("img.manga-thumb", "src"); cover != "" {
+			result.CoverURL = e.Request.AbsoluteURL(cover)
+		}
+
+		// Like "#112 chapters published (Completed)", with the last chapter in the link
+		info := e.DOM.Find("div.media-body > span").First()
+		lastChapter := info.Find("a").First()
+		result.LastChapter = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(lastChapter.Text()), "#"))
+		if chapterURL, ok := lastChapter.Attr("href"); ok {
+			result.LastChapterURL = e.Request.AbsoluteURL(chapterURL)
+		}
+		if status := searchStatusRe.FindStringSubmatch(info.Text()); status != nil {
+			result.Status = strings.ToLower(status[1])
+		}
+
+		results = append(results, result)
+	})
+
+	searchURL := fmt.Sprintf("%s/search?q=%s", baseSiteURL, url.QueryEscape(term))
+	if err := c.Visit(searchURL); err != nil {
+		return nil, util.AddErrorContext(errorContext, visitError(err))
 	}
 
-	return mangaSearchResults, nil
+	return results, nil
 }
 
-type searchAPIResponse struct {
-	Errors []struct {
-		Message string `json:"message"`
-	} `json:"errors"`
-	Data struct {
-		Search struct {
-			Rows []struct {
-				Title          string                `json:"title"`
-				Image          string                `json:"image"`
-				Slug           string                `json:"slug"`
-				Status         string                `json:"status"`
-				Chapters       []*getMangaAPIChapter `json:"chapters"`
-				LastestChapter float64               `json:"latestChapter"`
-			} `json:"rows"`
-		} `json:"search"`
-	} `json:"data"`
-}
+var searchStatusRe = regexp.MustCompile(`\(([^)]+)\)\s*$`)
+
+var mangaSlugRe = regexp.MustCompile(`/manga/([0-9a-zA-Z_-]+)(?:/.*)?$`)
 
 // getMangaSlug returns the slug of a manga given its URL.
 // URL should be like: https://mangahub.io/manga/super-no-ura-de-yani-suu-hanashi
 func getMangaSlug(mangaURL string) (string, error) {
-	errorContext := "error while getting manga slug from URL"
-
-	pattern := `/manga/([0-9a-zA-Z_-]+)(?:/.*)?$`
-	re, err := regexp.Compile(pattern)
-	if err != nil {
-		return "", util.AddErrorContext(errorContext, err)
-	}
-
-	matches := re.FindStringSubmatch(mangaURL)
+	matches := mangaSlugRe.FindStringSubmatch(mangaURL)
 	if len(matches) < 2 {
-		return "", util.AddErrorContext(errorContext, fmt.Errorf("manga Slug not found in URL"))
+		return "", util.AddErrorContext("error while getting manga slug from URL", fmt.Errorf("manga Slug not found in URL"))
 	}
 
 	return matches[1], nil
