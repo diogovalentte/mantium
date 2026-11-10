@@ -209,8 +209,18 @@ type Migration struct {
 
 // Change it in every new version
 var (
-	version        = "6.10.2"
-	updatedMessage = ``
+	version        = "6.11.0"
+	updatedMessage = `# MangaHub now requires FlareSolverr
+
+MangaHub's site is now behind Cloudflare, and its API refuses requests that don't come from the site itself, so the MangaHub source stopped working. It now gets MangaHub's pages through [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr), a proxy that opens them in a real browser and solves Cloudflare's challenge.
+
+- **To keep tracking MangaHub mangas**, run FlareSolverr and set the API environment variable **FLARESOLVERR_ADDRESS** to its address, like **http://flaresolverr:8191**. See the [MangaHub notes](https://github.com/diogovalentte/mantium#source-specific-notes).
+- Without it, MangaHub mangas fail to update with a message asking for **FLARESOLVERR_ADDRESS**.
+- With it, each MangaHub request takes around 10 seconds, as FlareSolverr opens the page in a browser every time.
+
+# Use FlareSolverr in custom mangas
+
+Custom mangas and presets have a new **Use FlareSolverr** option, next to **Use Browser**, for sites protected by Cloudflare. It also needs **FLARESOLVERR_ADDRESS**, and FlareSolverr is only used by the custom mangas and presets that have it on. See [Chapter Selectors](https://github.com/diogovalentte/mantium#chapter-selectors).`
 )
 
 // If the current version in the database is lower than the Version field, the Up function will be executed.
