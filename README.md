@@ -19,7 +19,7 @@ Mantium natively supports:
 
 - [Manga Plus](https://mangaplus.shueisha.co.jp)
 - [MangaDex](https://mangadex.org)
-- [MangaHub](https://mangahub.io)
+- [MangaHub](https://mangahub.io): requires [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr), see the [MangaHub notes](#source-specific-notes).
 - [MangaUpdates](https://www.mangaupdates.com/)
 - [RawKuma](https://rawkuma.com/)
 - [KLManga](https://klmanga.zone/)
@@ -351,6 +351,15 @@ I recommend reading the manga in the other source sites, and when you get to the
 **KLManga and JManga**
 
 These sources do not provide chapter release timestamps. Mantium sets the release time to the current time when you add the manga and when it detects a newly released chapter.
+
+**MangaHub**
+
+MangaHub's site is behind Cloudflare, and its API refuses requests that don't come from the site itself, so Mantium can only get its pages through [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr), a proxy that opens them in a real browser and solves Cloudflare's challenge:
+
+1. Run FlareSolverr, like with Docker: `docker run -d --name flaresolverr -p 8191:8191 ghcr.io/flaresolverr/flaresolverr:latest`.
+2. Set the API environment variable `FLARESOLVERR_ADDRESS` to its address, like `http://flaresolverr:8191`.
+
+Without it, every MangaHub operation fails with a message asking for `FLARESOLVERR_ADDRESS`. With it, each one takes around 10 seconds, as FlareSolverr opens the page in a browser every time. Cover images are still downloaded directly.
 
 **MangaUpdates**
 
