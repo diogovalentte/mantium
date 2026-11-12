@@ -209,18 +209,15 @@ type Migration struct {
 
 // Change it in every new version
 var (
-	version        = "6.11.0"
-	updatedMessage = `# MangaHub now requires FlareSolverr
+	version        = "6.12.0"
+	updatedMessage = `# Proxy for sites that block your country
 
-MangaHub's site is now behind Cloudflare, and its API refuses requests that don't come from the site itself, so the MangaHub source stopped working. It now gets MangaHub's pages through [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr), a proxy that opens them in a real browser and solves Cloudflare's challenge.
+Some manga sites only answer requests from their own country, like Japanese sites that started blocking foreign IPs. Mantium can now reach them through an HTTP proxy that exits in that country, set with two API environment variables:
 
-- **To keep tracking MangaHub mangas**, run FlareSolverr and set the API environment variable **FLARESOLVERR_ADDRESS** to its address, like **http://flaresolverr:8191**. See the [MangaHub notes](https://github.com/diogovalentte/mantium#source-specific-notes).
-- Without it, MangaHub mangas fail to update with a message asking for **FLARESOLVERR_ADDRESS**.
-- With it, each MangaHub request takes around 10 seconds, as FlareSolverr opens the page in a browser every time.
+- **PROXY_ADDRESS**: the proxy's address, like **http://gluetun:8888** (a [gluetun](https://github.com/qdm12/gluetun) container with its HTTP proxy on).
+- **PROXY_DOMAINS**: the sites that go through it, comma separated, like **bigcomics.jp,cmoa.jp**. Subdomains are included.
 
-# Use FlareSolverr in custom mangas
-
-Custom mangas and presets have a new **Use FlareSolverr** option, next to **Use Browser**, for sites protected by Cloudflare. It also needs **FLARESOLVERR_ADDRESS**, and FlareSolverr is only used by the custom mangas and presets that have it on. See [Chapter Selectors](https://github.com/diogovalentte/mantium#chapter-selectors).`
+Only custom manga pages and cover images of these domains use the proxy, including **Use Browser** and **Use FlareSolverr** (FlareSolverr is told to use the proxy, so it must be able to reach it). Every other site and the built-in sources are reached directly. There's nothing to set in the dashboard. See [Proxy](https://github.com/diogovalentte/mantium#proxy).`
 )
 
 // If the current version in the database is lower than the Version field, the Up function will be executed.
