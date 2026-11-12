@@ -163,3 +163,31 @@ func TestTransportOnlySupportsGET(t *testing.T) {
 		t.Errorf("FlareSolverr was called %d times", calls.Load())
 	}
 }
+
+func TestGetSendsTheProxyOnlyForItsDomains(t *testing.T) {
+	util.SetAllowPrivateURLs(true)
+	defer util.SetAllowPrivateURLs(false)
+	if err := util.SetProxy("http://gluetun:8888", []string{"example.com"}); err != nil {
+		t.Fatal(err)
+	}
+	defer util.SetProxy("", nil)
+
+	var proxies []string
+	fakeFlareSolverr(t, func(req request) (int, response) {
+		if req.Proxy == nil {
+			proxies = append(proxies, "")
+		} else {
+			proxies = append(proxies, req.Proxy.URL)
+		}
+		return http.StatusOK, response{Status: "ok", Solution: solution{URL: req.URL, Status: http.StatusOK, Response: "<html></html>"}}
+	})
+
+	for _, pageURL := range []string{"http://www.example.com/manga", "http://example.org/manga"} {
+		if _, err := Get(t.Context(), pageURL, time.Second); err != nil {
+			t.Fatalf("%s: %s", pageURL, err)
+		}
+	}
+	if len(proxies) != 2 || proxies[0] != "http://gluetun:8888" || proxies[1] != "" {
+		t.Fatalf("proxies sent to FlareSolverr = %q, want the proxy only for example.com", proxies)
+	}
+}

@@ -229,6 +229,15 @@ If you track a site hosted in your own network, set the API environment variable
 > [!WARNING]
 > Custom mangas whose URL or check URL points to your network don't update until you set `ALLOW_PRIVATE_URLS=true`.
 
+## Proxy
+
+Some sites only answer requests from their own country. To track them, set the API environment variables:
+
+- `PROXY_ADDRESS`: an HTTP proxy that exits in that country, like `http://gluetun:8888` (a [gluetun](https://github.com/qdm12/gluetun) container with its HTTP proxy on).
+- `PROXY_DOMAINS`: the sites that go through it, comma separated, like `bigcomics.jp,cmoa.jp`. Subdomains are included, so `cmoa.jp` also covers `www.cmoa.jp`.
+
+Only custom manga pages and cover images of these domains use the proxy, including **Use Browser** (every request the browser makes) and **Use FlareSolverr** (FlareSolverr's browser is told to use the proxy, so FlareSolverr must be able to reach it). Every other site, and the built-in sources, are reached directly. The proxy address can be private; the sites behind it are still checked as described in [Private Addresses](#private-addresses).
+
 ---
 
 # Background Updates and Notifications

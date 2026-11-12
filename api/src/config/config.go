@@ -49,6 +49,11 @@ type APIConfigs struct {
 	AllowPrivateURLs bool
 	// FlareSolverrAddress is FlareSolverr's base URL, used by custom mangas with Use FlareSolverr. Empty disables it.
 	FlareSolverrAddress string
+	// ProxyAddress is the HTTP proxy for custom manga pages and cover images in ProxyDomains, like
+	// sites that block the API's country. Empty disables it.
+	ProxyAddress string
+	// ProxyDomains are the domains (and their subdomains) reached through ProxyAddress.
+	ProxyDomains []string
 }
 
 // NtfyConfigs is a struct that holds the ntfy configurations.
@@ -161,6 +166,14 @@ func SetConfigs(filePath string) error {
 	util.SetAllowPrivateURLs(GlobalConfigs.API.AllowPrivateURLs)
 	GlobalConfigs.API.FlareSolverrAddress = os.Getenv("FLARESOLVERR_ADDRESS")
 	flaresolverr.SetAddress(GlobalConfigs.API.FlareSolverrAddress)
+	GlobalConfigs.API.ProxyAddress = strings.TrimSpace(os.Getenv("PROXY_ADDRESS"))
+	GlobalConfigs.API.ProxyDomains = nil
+	if envProxyDomains := os.Getenv("PROXY_DOMAINS"); envProxyDomains != "" {
+		GlobalConfigs.API.ProxyDomains = strings.Split(envProxyDomains, ",")
+	}
+	if err := util.SetProxy(GlobalConfigs.API.ProxyAddress, GlobalConfigs.API.ProxyDomains); err != nil {
+		return fmt.Errorf("error parsing PROXY_ADDRESS and PROXY_DOMAINS: %s", err)
+	}
 
 	GlobalConfigs.Ntfy.Address = os.Getenv("NTFY_ADDRESS")
 	GlobalConfigs.Ntfy.Topic = os.Getenv("NTFY_TOPIC")
