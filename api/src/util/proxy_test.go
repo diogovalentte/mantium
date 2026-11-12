@@ -144,3 +144,30 @@ func TestSafeTransportUsesProxyOnlyForItsDomains(t *testing.T) {
 		t.Fatalf("the private destination reached the proxy: %v", proxied)
 	}
 }
+
+func TestSafeTransportRefusesTheProxyAsADestination(t *testing.T) {
+	isPublicAddrBackup := isPublicAddr
+	isPublicAddr = func(addr netip.Addr) bool { return addr.Unmap() == netip.MustParseAddr("127.0.0.1") }
+	defer func() { isPublicAddr = isPublicAddrBackup }()
+	defer SetProxy("", nil)
+
+	listener, err := net.Listen("tcp", "127.0.0.2:0")
+	if err != nil {
+		t.Skipf("can't listen on 127.0.0.2: %s", err)
+	}
+	proxyServer := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("proxy itself"))
+	}))
+	proxyServer.Listener = listener
+	proxyServer.Start()
+	defer proxyServer.Close()
+
+	if err := SetProxy(proxyServer.URL, []string{"cmoa.jp"}); err != nil {
+		t.Fatal(err)
+	}
+	_, err = SafeHTTPClient(0).Get(proxyServer.URL)
+	var userErr *errordefs.UserError
+	if !errors.As(err, &userErr) {
+		t.Fatalf("a manga URL pointing at the private proxy should be blocked, got: %v", err)
+	}
+}

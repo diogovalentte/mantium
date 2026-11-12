@@ -236,7 +236,7 @@ Some sites only answer requests from their own country. To track them, set the A
 - `PROXY_ADDRESS`: an HTTP proxy that exits in that country, like `http://gluetun:8888` (a [gluetun](https://github.com/qdm12/gluetun) container with its HTTP proxy on).
 - `PROXY_DOMAINS`: the sites that go through it, comma separated, like `bigcomics.jp,cmoa.jp`. Subdomains are included, so `cmoa.jp` also covers `www.cmoa.jp`.
 
-Only custom manga pages and cover images of these domains use the proxy, including **Use Browser** (every request the browser makes) and **Use FlareSolverr** (FlareSolverr's browser is told to use the proxy, so FlareSolverr must be able to reach it). Every other site, and the built-in sources, are reached directly. The proxy address can be private; the sites behind it are still checked as described in [Private Addresses](#private-addresses).
+Only custom manga pages and cover images of these domains use the proxy, including **Use Browser** (every request the browser makes) and **Use FlareSolverr** (FlareSolverr's browser is told to use the proxy, so FlareSolverr must be able to reach it). Every other site, and the built-in sources, are reached directly. The proxy address can be private, but a manga URL pointing to the proxy itself is still refused. The sites behind it are checked as described in [Private Addresses](#private-addresses) before each request, but the proxy resolves them again on its side, so only list domains you trust.
 
 ---
 

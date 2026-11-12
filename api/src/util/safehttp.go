@@ -60,9 +60,8 @@ var safeDialer = &net.Dialer{
 
 // safeDialContext resolves the host and refuses to connect if any of its addresses isn't public, unless private URLs are allowed.
 // It checks the address that is actually used to connect, so it also covers redirects and DNS rebinding.
-// The proxy's own address is let through: the destination behind it is checked in safeProxy.
 func safeDialContext(ctx context.Context, network, address string) (net.Conn, error) {
-	if AllowPrivateURLs() || isProxyDialAddress(address) {
+	if AllowPrivateURLs() {
 		return safeDialer.DialContext(ctx, network, address)
 	}
 
@@ -91,13 +90,22 @@ func safeDialContext(ctx context.Context, network, address string) (net.Conn, er
 	return nil, lastErr
 }
 
-// safeProxy sends the requests to the domains in PROXY_DOMAINS through PROXY_ADDRESS.
-// The proxy resolves and connects to the destination itself, so the destination is checked here,
-// before each request, including redirects. HTTP_PROXY and similar variables are ignored.
+// proxyDialContext only connects to the proxy, which can be a private address. The destination
+// behind it is checked in safeProxy, since the proxy is the one that resolves and connects to it.
+func proxyDialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	if !isProxyDialAddress(address) {
+		return nil, fmt.Errorf("proxied request tried to connect to '%s', which isn't the proxy", address)
+	}
+	return safeDialer.DialContext(ctx, network, address)
+}
+
+// safeProxy returns the proxy for the domains in PROXY_DOMAINS, after checking that the destination is public.
+// The check runs before each request, including redirects, but the proxy resolves the host again,
+// so only list domains you trust to resolve to public addresses.
 func safeProxy(req *http.Request) (*url.URL, error) {
 	proxyURL := ProxyFor(req.URL.Hostname())
 	if proxyURL == nil {
-		return nil, nil
+		return nil, fmt.Errorf("'%s' isn't in the proxy domains", req.URL.Hostname())
 	}
 	if err := CheckPublicURL(req.Context(), req.URL.String()); err != nil {
 		return nil, err
@@ -105,15 +113,35 @@ func safeProxy(req *http.Request) (*url.URL, error) {
 	return proxyURL, nil
 }
 
-// SafeTransport is the transport for requests to URLs chosen by the user, like custom manga pages
-// and cover images. It refuses to connect to non-public addresses unless ALLOW_PRIVATE_URLS is true,
-// and goes through the proxy for the domains in PROXY_DOMAINS.
-var SafeTransport = func() *http.Transport {
+var directTransport = func() *http.Transport {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
-	transport.Proxy = safeProxy
+	transport.Proxy = nil
 	transport.DialContext = safeDialContext
 	return transport
 }()
+
+var proxiedTransport = func() *http.Transport {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.Proxy = safeProxy
+	transport.DialContext = proxyDialContext
+	return transport
+}()
+
+// safeRoundTripper sends each request through the proxy if its host is in PROXY_DOMAINS, else directly.
+// The two transports are separate so a direct request to the proxy's own address is still refused as private.
+type safeRoundTripper struct{}
+
+func (safeRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if ProxyFor(req.URL.Hostname()) != nil {
+		return proxiedTransport.RoundTrip(req)
+	}
+	return directTransport.RoundTrip(req)
+}
+
+// SafeTransport is the transport for requests to URLs chosen by the user, like custom manga pages
+// and cover images. It refuses to connect to non-public addresses unless ALLOW_PRIVATE_URLS is true,
+// and goes through the proxy for the domains in PROXY_DOMAINS. HTTP_PROXY and similar variables are ignored.
+var SafeTransport http.RoundTripper = safeRoundTripper{}
 
 // SafeHTTPClient returns a client for requests to URLs chosen by the user, see SafeTransport.
 func SafeHTTPClient(timeout time.Duration) *http.Client {
