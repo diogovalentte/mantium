@@ -90,14 +90,58 @@ func safeDialContext(ctx context.Context, network, address string) (net.Conn, er
 	return nil, lastErr
 }
 
-// SafeTransport is the transport for requests to URLs chosen by the user, like custom manga pages
-// and cover images. It refuses to connect to non-public addresses unless ALLOW_PRIVATE_URLS is true.
-var SafeTransport = func() *http.Transport {
+// proxyDialContext only connects to the proxy, which can be a private address. The destination
+// behind it is checked in safeProxy, since the proxy is the one that resolves and connects to it.
+func proxyDialContext(ctx context.Context, network, address string) (net.Conn, error) {
+	if !isProxyDialAddress(address) {
+		return nil, fmt.Errorf("proxied request tried to connect to '%s', which isn't the proxy", address)
+	}
+	return safeDialer.DialContext(ctx, network, address)
+}
+
+// safeProxy returns the proxy for the domains in PROXY_DOMAINS, after checking that the destination is public.
+// The check runs before each request, including redirects, but the proxy resolves the host again,
+// so only list domains you trust to resolve to public addresses.
+func safeProxy(req *http.Request) (*url.URL, error) {
+	proxyURL := ProxyFor(req.URL.Hostname())
+	if proxyURL == nil {
+		return nil, fmt.Errorf("'%s' isn't in the proxy domains", req.URL.Hostname())
+	}
+	if err := CheckPublicURL(req.Context(), req.URL.String()); err != nil {
+		return nil, err
+	}
+	return proxyURL, nil
+}
+
+var directTransport = func() *http.Transport {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.Proxy = nil
 	transport.DialContext = safeDialContext
 	return transport
 }()
+
+var proxiedTransport = func() *http.Transport {
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.Proxy = safeProxy
+	transport.DialContext = proxyDialContext
+	return transport
+}()
+
+// safeRoundTripper sends each request through the proxy if its host is in PROXY_DOMAINS, else directly.
+// The two transports are separate so a direct request to the proxy's own address is still refused as private.
+type safeRoundTripper struct{}
+
+func (safeRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	if ProxyFor(req.URL.Hostname()) != nil {
+		return proxiedTransport.RoundTrip(req)
+	}
+	return directTransport.RoundTrip(req)
+}
+
+// SafeTransport is the transport for requests to URLs chosen by the user, like custom manga pages
+// and cover images. It refuses to connect to non-public addresses unless ALLOW_PRIVATE_URLS is true,
+// and goes through the proxy for the domains in PROXY_DOMAINS. HTTP_PROXY and similar variables are ignored.
+var SafeTransport http.RoundTripper = safeRoundTripper{}
 
 // SafeHTTPClient returns a client for requests to URLs chosen by the user, see SafeTransport.
 func SafeHTTPClient(timeout time.Duration) *http.Client {

@@ -30,6 +30,9 @@ services:
       # - ALLOW_PRIVATE_URLS=true
       # FlareSolverr address, for custom mangas with "Use FlareSolverr" (sites protected by Cloudflare) and required by the MangaHub source
       - FLARESOLVERR_ADDRESS=${FLARESOLVERR_ADDRESS}
+      # HTTP proxy for custom mangas of the domains in PROXY_DOMAINS (comma separated), like sites that block your country
+      - PROXY_ADDRESS=${PROXY_ADDRESS:-}
+      - PROXY_DOMAINS=${PROXY_DOMAINS:-}
 
       - NTFY_ADDRESS=${NTFY_ADDRESS}
       - NTFY_TOPIC=${NTFY_TOPIC}

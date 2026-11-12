@@ -2406,6 +2406,7 @@ func getPageUsingBrowser(pageURL string, nameSelector, URLSelector *HTMLSelector
 
 	// Every request the browser makes goes through the API's safe HTTP client, so the
 	// page (or a redirect, or a script in it) can't make the browser reach a private address.
+	// It's also how the browser's requests to the domains in PROXY_DOMAINS go through the proxy.
 	var blockedMutex sync.Mutex
 	var blockedDocumentErr error
 	blockedError := func() error {
@@ -2413,7 +2414,7 @@ func getPageUsingBrowser(pageURL string, nameSelector, URLSelector *HTMLSelector
 		defer blockedMutex.Unlock()
 		return blockedDocumentErr
 	}
-	if !util.AllowPrivateURLs() {
+	if !util.AllowPrivateURLs() || util.ProxyEnabled() {
 		client := &http.Client{
 			Transport: util.SafeTransport,
 			Timeout:   timeout,

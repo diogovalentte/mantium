@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -58,9 +59,14 @@ const clientExtraTime = 15 * time.Second
 const maxResponseBytes = 50 << 20
 
 type request struct {
-	Cmd        string `json:"cmd"`
-	URL        string `json:"url"`
-	MaxTimeout int64  `json:"maxTimeout"`
+	Cmd        string        `json:"cmd"`
+	URL        string        `json:"url"`
+	MaxTimeout int64         `json:"maxTimeout"`
+	Proxy      *requestProxy `json:"proxy,omitempty"`
+}
+
+type requestProxy struct {
+	URL string `json:"url"`
 }
 
 type response struct {
@@ -101,7 +107,14 @@ func Get(ctx context.Context, pageURL string, timeout time.Duration) (*Page, err
 		return nil, util.AddErrorContext(contextError, err)
 	}
 
-	body, err := json.Marshal(request{Cmd: "request.get", URL: pageURL, MaxTimeout: timeout.Milliseconds()})
+	fsReq := request{Cmd: "request.get", URL: pageURL, MaxTimeout: timeout.Milliseconds()}
+	// FlareSolverr's browser goes through the proxy for the whole page, so it must reach the proxy too.
+	if parsed, err := url.Parse(pageURL); err == nil {
+		if proxyURL := util.ProxyFor(parsed.Hostname()); proxyURL != nil {
+			fsReq.Proxy = &requestProxy{URL: proxyURL.String()}
+		}
+	}
+	body, err := json.Marshal(fsReq)
 	if err != nil {
 		return nil, util.AddErrorContext(contextError, err)
 	}
