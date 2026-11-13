@@ -1,6 +1,6 @@
 --------------------------------------
 -- @name    KLManga
--- @url     https://klmanga.zone
+-- @url     https://klmanga.tips
 -- @author  diogovalentte
 -- @license MIT
 --------------------------------------
@@ -15,7 +15,7 @@ HttpUtil = require("http_util")
 ----- VARIABLES -----
 Debug = false
 Client = Http.client({ timeout = 20, insecure_ssl = true, debug = Debug })
-Base = "https://klmanga.zone"
+Base = "https://klmanga.tips"
 DiscoverDomain = true
 CurrentDomain = nil
 --- END VARIABLES ---

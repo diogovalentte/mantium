@@ -191,3 +191,25 @@ func TestGetSendsTheProxyOnlyForItsDomains(t *testing.T) {
 		t.Fatalf("proxies sent to FlareSolverr = %q, want the proxy only for example.com", proxies)
 	}
 }
+
+func TestGetSendsTheProxyCredentialsApart(t *testing.T) {
+	util.SetAllowPrivateURLs(true)
+	defer util.SetAllowPrivateURLs(false)
+	if err := util.SetProxy("http://mantium:s3cr%40t@gluetun:8888", []string{"example.com"}); err != nil {
+		t.Fatal(err)
+	}
+	defer util.SetProxy("", nil)
+
+	var got *requestProxy
+	fakeFlareSolverr(t, func(req request) (int, response) {
+		got = req.Proxy
+		return http.StatusOK, response{Status: "ok", Solution: solution{URL: req.URL, Status: http.StatusOK, Response: "<html></html>"}}
+	})
+
+	if _, err := Get(t.Context(), "http://example.com/manga", time.Second); err != nil {
+		t.Fatal(err)
+	}
+	if got == nil || got.URL != "http://gluetun:8888" || got.Username != "mantium" || got.Password != "s3cr@t" {
+		t.Fatalf("proxy sent to FlareSolverr = %+v, want the URL without credentials and them apart", got)
+	}
+}

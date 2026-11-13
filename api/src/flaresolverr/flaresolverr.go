@@ -66,7 +66,22 @@ type request struct {
 }
 
 type requestProxy struct {
-	URL string `json:"url"`
+	URL      string `json:"url"`
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
+}
+
+// newRequestProxy returns the proxy FlareSolverr's browser should use. Chrome doesn't take
+// the credentials in the proxy URL, so FlareSolverr gets them in separate fields.
+func newRequestProxy(proxyURL *url.URL) *requestProxy {
+	withoutUser := *proxyURL
+	withoutUser.User = nil
+	p := &requestProxy{URL: withoutUser.String()}
+	if proxyURL.User != nil {
+		p.Username = proxyURL.User.Username()
+		p.Password, _ = proxyURL.User.Password()
+	}
+	return p
 }
 
 type response struct {
@@ -111,7 +126,7 @@ func Get(ctx context.Context, pageURL string, timeout time.Duration) (*Page, err
 	// FlareSolverr's browser goes through the proxy for the whole page, so it must reach the proxy too.
 	if parsed, err := url.Parse(pageURL); err == nil {
 		if proxyURL := util.ProxyFor(parsed.Hostname()); proxyURL != nil {
-			fsReq.Proxy = &requestProxy{URL: proxyURL.String()}
+			fsReq.Proxy = newRequestProxy(proxyURL)
 		}
 	}
 	body, err := json.Marshal(fsReq)
