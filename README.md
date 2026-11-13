@@ -238,6 +238,9 @@ Some sites only answer requests from their own country. To track them, set the A
 
 Only custom manga pages and cover images of these domains use the proxy, including **Use Browser** (every request the browser makes) and **Use FlareSolverr** (FlareSolverr's browser is told to use the proxy, so FlareSolverr must be able to reach it). Every other site, and the built-in sources, are reached directly. The proxy address can be private, but a manga URL pointing to the proxy itself is still refused. The sites behind it are checked as described in [Private Addresses](#private-addresses) before each request, but the proxy resolves them again on its side, so only list domains you trust.
 
+> [!WARNING]
+> With **Use FlareSolverr** and a proxy login, FlareSolverr writes the proxy username and password to its own log: at the default `LOG_LEVEL=info`, it logs the body of every request it gets, which includes them. Set `LOG_LEVEL=warning` in FlareSolverr to keep them out of its log, or use a password you don't use anywhere else.
+
 ---
 
 # Background Updates and Notifications
