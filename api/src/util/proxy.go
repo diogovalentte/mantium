@@ -20,6 +20,7 @@ type outboundProxy struct {
 var proxy atomic.Pointer[outboundProxy]
 
 // SetProxy sets the HTTP proxy used to reach domains and their subdomains.
+// The address can have a username and password, like http://user:pass@gluetun:8888.
 // An empty address disables it.
 func SetProxy(address string, domains []string) error {
 	if address == "" {
@@ -29,13 +30,14 @@ func SetProxy(address string, domains []string) error {
 
 	parsed, err := url.Parse(address)
 	if err != nil {
-		return fmt.Errorf("invalid proxy address '%s': %s", address, err)
+		// The address isn't echoed, as it can carry the proxy's password.
+		return fmt.Errorf("invalid proxy address: %s", strings.ReplaceAll(err.Error(), address, "<PROXY_ADDRESS>"))
 	}
 	if parsed.Scheme != "http" && parsed.Scheme != "https" {
-		return fmt.Errorf("invalid proxy address '%s': the scheme must be http or https", address)
+		return fmt.Errorf("invalid proxy address '%s': the scheme must be http or https", parsed.Redacted())
 	}
 	if parsed.Hostname() == "" {
-		return fmt.Errorf("invalid proxy address '%s': missing host", address)
+		return fmt.Errorf("invalid proxy address '%s': missing host", parsed.Redacted())
 	}
 
 	var cleanDomains []string

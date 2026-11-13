@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
+	"strings"
 	"testing"
 
 	"github.com/diogovalentte/mantium/api/src/errordefs"
@@ -169,5 +170,46 @@ func TestSafeTransportRefusesTheProxyAsADestination(t *testing.T) {
 	var userErr *errordefs.UserError
 	if !errors.As(err, &userErr) {
 		t.Fatalf("a manga URL pointing at the private proxy should be blocked, got: %v", err)
+	}
+}
+
+func TestSetProxyErrorsDontShowThePassword(t *testing.T) {
+	defer SetProxy("", nil)
+	for _, address := range []string{"socks5://user:hunter2@gluetun:1080", "http://user:hunter2@:8888", "http://user:hunter2@gluetun:port"} {
+		err := SetProxy(address, []string{"cmoa.jp"})
+		if err == nil {
+			t.Fatalf("SetProxy(%q) should fail", address)
+		}
+		if strings.Contains(err.Error(), "hunter2") {
+			t.Errorf("error shows the password: %s", err)
+		}
+	}
+}
+
+func TestSafeTransportSendsTheProxyCredentials(t *testing.T) {
+	isPublicAddrBackup := isPublicAddr
+	isPublicAddr = func(addr netip.Addr) bool { return addr.Unmap() == netip.MustParseAddr("127.0.0.1") }
+	defer func() { isPublicAddr = isPublicAddrBackup }()
+	defer SetProxy("", nil)
+
+	var auth string
+	proxyServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth = r.Header.Get("Proxy-Authorization")
+		w.Write([]byte("proxied"))
+	}))
+	defer proxyServer.Close()
+
+	proxyURL := strings.Replace(proxyServer.URL, "http://", "http://mantium:s3cret@", 1)
+	if err := SetProxy(proxyURL, []string{"127.0.0.1"}); err != nil {
+		t.Fatal(err)
+	}
+	resp, err := SafeHTTPClient(0).Get("http://127.0.0.1:1/page")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	// base64("mantium:s3cret")
+	if auth != "Basic bWFudGl1bTpzM2NyZXQ=" {
+		t.Fatalf("Proxy-Authorization = %q", auth)
 	}
 }
