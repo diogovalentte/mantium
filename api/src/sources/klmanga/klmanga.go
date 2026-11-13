@@ -12,7 +12,7 @@ import (
 
 // siteURL starts at the last known domain. The source moves every few weeks,
 // so the sources package follows its redirects to find the current one.
-var siteURL = util.NewSiteURL("https://klmanga.zone")
+var siteURL = util.NewSiteURL("https://klmanga.tips")
 
 // Source is the struct for the KLManga source
 type Source struct{}
