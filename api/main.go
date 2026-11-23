@@ -209,15 +209,8 @@ type Migration struct {
 
 // Change it in every new version
 var (
-	version        = "6.12.1"
-	updatedMessage = `# Proxy for sites that block your country
-
-Some manga sites only answer requests from their own country, like Japanese sites that started blocking foreign IPs. Mantium can now reach them through an HTTP proxy that exits in that country, set with two API environment variables:
-
-- **PROXY_ADDRESS**: the proxy's address, like **http://gluetun:8888** (a [gluetun](https://github.com/qdm12/gluetun) container with its HTTP proxy on).
-- **PROXY_DOMAINS**: the sites that go through it, comma separated, like **bigcomics.jp,cmoa.jp**. Subdomains are included.
-
-Only custom manga pages and cover images of these domains use the proxy, including **Use Browser** and **Use FlareSolverr** (FlareSolverr is told to use the proxy, so it must be able to reach it). Every other site and the built-in sources are reached directly. There's nothing to set in the dashboard. See [Proxy](https://github.com/diogovalentte/mantium#proxy).`
+	version        = "6.12.2"
+	updatedMessage = ""
 )
 
 // If the current version in the database is lower than the Version field, the Up function will be executed.
