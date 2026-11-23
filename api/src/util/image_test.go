@@ -2,6 +2,7 @@ package util
 
 import (
 	"bytes"
+	"encoding/base64"
 	"errors"
 	"image"
 	"image/png"
@@ -63,5 +64,41 @@ func TestGetImageFromURLTooLarge(t *testing.T) {
 	_, _, err := GetImageFromURL(server.URL, 1, time.Millisecond)
 	if err == nil || !strings.Contains(err.Error(), "The cover image is larger than 10 MB") {
 		t.Fatalf("expected too large error, got %v", err)
+	}
+}
+
+// A 20x30 lossless WebP
+const tinyWebPBase64 = "UklGRh4AAABXRUJQVlA4TBEAAAAvE0AHAAdQmSJXpv+BiOh/AAA="
+
+// MangaPlus serves WebP covers from signed URLs like "/cover.webp?hash=...&expires=...",
+// and other sites serve WebP from URLs without the extension, so the format must come
+// from the bytes and not from the URL.
+func TestGetImageFromURLWebP(t *testing.T) {
+	SetAllowPrivateURLs(true)
+	defer SetAllowPrivateURLs(false)
+
+	webpBytes, err := base64.StdEncoding.DecodeString(tinyWebPBase64)
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/webp")
+		w.Write(webpBytes)
+	}))
+	defer server.Close()
+
+	for _, path := range []string{"/cover.webp", "/cover.webp?hash=abc&expires=123", "/cover", "/cover.jpg"} {
+		t.Run(path, func(t *testing.T) {
+			img, resized, err := GetImageFromURL(server.URL+path, 1, time.Millisecond)
+			if err != nil {
+				t.Fatalf("unexpected error: %s", err)
+			}
+			if !resized {
+				t.Fatal("expected the image to be resized")
+			}
+			if _, format, err := image.DecodeConfig(bytes.NewReader(img)); err != nil || format != "jpeg" {
+				t.Fatalf("expected a JPEG, got format %q and error %v", format, err)
+			}
+		})
 	}
 }

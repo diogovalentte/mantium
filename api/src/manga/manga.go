@@ -1691,6 +1691,19 @@ func ValidateStatus(status Status) error {
 	return nil
 }
 
+// isSameNameDifferentChapter tells if the last read and last released chapters,
+// which have the same name, are different chapters, so the last released wasn't read.
+// Every chapter of a custom manga tracked only by the chapter URL has the same name,
+// and a source can release a chapter with the same name as the previous one, so the
+// URLs decide. Only to show the manga as unread: new chapter detection and
+// notifications don't use it.
+func isSameNameDifferentChapter(name, lastReadURL, lastReleasedURL string) bool {
+	if name == UnknownChapter {
+		return lastReadURL != lastReleasedURL
+	}
+	return lastReadURL != "" && lastReleasedURL != "" && lastReadURL != lastReleasedURL
+}
+
 // IsUnreadChapter tells if the last released chapter wasn't read yet.
 // It's the same rule used by the dashboard (is_unread_chapter), keep them in sync.
 func IsUnreadChapter(lastRead, lastReadURL, lastReleased, lastReleasedURL string) bool {
@@ -1698,8 +1711,7 @@ func IsUnreadChapter(lastRead, lastReadURL, lastReleased, lastReleasedURL string
 		return false
 	}
 	if lastRead == lastReleased {
-		// Every chapter of a custom manga tracked only by the chapter URL has the same name
-		return lastReleased == UnknownChapter && lastReadURL != lastReleasedURL
+		return isSameNameDifferentChapter(lastReleased, lastReadURL, lastReleasedURL)
 	}
 	lastReadNumber, err := strconv.ParseFloat(lastRead, 64)
 	if err != nil {
@@ -1722,8 +1734,7 @@ func FilterUnreadChapterMangas(mangas []*Manga) []*Manga {
 	for _, manga := range mangas {
 		if manga.LastReleasedChapter != nil && manga.LastReadChapter != nil {
 			if manga.LastReleasedChapter.Chapter != manga.LastReadChapter.Chapter ||
-				// Every chapter of a custom manga tracked only by the chapter URL has the same name
-				(manga.LastReleasedChapter.Chapter == UnknownChapter && manga.LastReleasedChapter.URL != manga.LastReadChapter.URL) {
+				isSameNameDifferentChapter(manga.LastReleasedChapter.Chapter, manga.LastReadChapter.URL, manga.LastReleasedChapter.URL) {
 				unreadChapterMangas = append(unreadChapterMangas, manga)
 			}
 		} else if manga.LastReleasedChapter != nil && manga.LastReadChapter == nil {
