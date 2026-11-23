@@ -485,6 +485,23 @@ func (mm *MultiManga) RemoveManga(m *Manga) error {
 
 	mangas := append(mm.Mangas[:mangaIdx], mm.Mangas[mangaIdx+1:]...)
 
+	// Ignoring a chapter requires another manga to follow. If the removed manga was
+	// the last one followed, the ignored chapters of the others no longer have one.
+	if !hasFollowedManga(mangas) {
+		for _, manga := range mangas {
+			if manga.IgnoredChapter == nil {
+				continue
+			}
+			ignoredChapter := manga.IgnoredChapter
+			manga.IgnoredChapter = nil
+			if err := updateMangaIgnoredChapter(manga, tx); err != nil {
+				manga.IgnoredChapter = ignoredChapter
+				tx.Rollback()
+				return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), err)
+			}
+		}
+	}
+
 	currentManga, err := GetLatestManga(mangas)
 	if err != nil {
 		tx.Rollback()
@@ -1282,6 +1299,16 @@ func (m *Manga) IsLastReleasedChapterIgnored() bool {
 	return m.IgnoredChapter != nil && m.LastReleasedChapter != nil && !IsNewChapterDifferentFromOld(m.IgnoredChapter, m.LastReleasedChapter, m.Source)
 }
 
+// hasFollowedManga returns true if any of the mangas has a last released chapter that isn't ignored.
+func hasFollowedManga(mangas []*Manga) bool {
+	for _, manga := range mangas {
+		if manga.LastReleasedChapter != nil && !manga.IsLastReleasedChapterIgnored() {
+			return true
+		}
+	}
+	return false
+}
+
 // IgnoreMangaLastReleasedChapter ignores the last released chapter of one of the multimanga's mangas
 // and updates the multimanga current manga, which will be another manga.
 // At least one other manga must have a last released chapter that isn't ignored.
@@ -1291,14 +1318,13 @@ func (mm *MultiManga) IgnoreMangaLastReleasedChapter(m *Manga) error {
 	if m.LastReleasedChapter == nil {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), errordefs.ErrNoChapterToIgnore)
 	}
-	hasOtherManga := false
+	others := make([]*Manga, 0, len(mm.Mangas))
 	for _, other := range mm.Mangas {
-		if other != m && other.LastReleasedChapter != nil && !other.IsLastReleasedChapterIgnored() {
-			hasOtherManga = true
-			break
+		if other != m {
+			others = append(others, other)
 		}
 	}
-	if !hasOtherManga {
+	if !hasFollowedManga(others) {
 		return util.AddErrorContext(fmt.Sprintf(contextError, m, mm), errordefs.ErrNoMangaLeftToFollow)
 	}
 
