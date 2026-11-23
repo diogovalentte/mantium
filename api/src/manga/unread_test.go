@@ -22,6 +22,8 @@ func TestIsUnreadChapter(t *testing.T) {
 		// Without both URLs there is nothing to compare
 		{"10", "", "10", "https://a/10", false},
 		{"10", "https://a/10", "10", "", false},
+		// A multimanga read on one source and released on another: the URLs differ but it's the same chapter
+		{"10", "https://mangadex.org/chapter/x", "10", "https://mangaplus.shueisha.co.jp/viewer/y", false},
 	}
 	for _, test := range tests {
 		got := IsUnreadChapter(test.lastRead, test.lastReadURL, test.lastReleased, test.lastReleasedURL)

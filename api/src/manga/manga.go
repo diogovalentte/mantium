@@ -1695,13 +1695,26 @@ func ValidateStatus(status Status) error {
 // which have the same name, are different chapters, so the last released wasn't read.
 // Every chapter of a custom manga tracked only by the chapter URL has the same name,
 // and a source can release a chapter with the same name as the previous one, so the
-// URLs decide. Only to show the manga as unread: new chapter detection and
-// notifications don't use it.
+// URLs decide. The URLs are only compared when they're from the same site: a
+// multimanga's last read chapter can come from another of its sources, with
+// another URL for the same chapter. Only to show the manga as unread: new chapter
+// detection and notifications don't use it.
 func isSameNameDifferentChapter(name, lastReadURL, lastReleasedURL string) bool {
 	if name == UnknownChapter {
 		return lastReadURL != lastReleasedURL
 	}
-	return lastReadURL != "" && lastReleasedURL != "" && lastReadURL != lastReleasedURL
+	if lastReadURL == "" || lastReleasedURL == "" || lastReadURL == lastReleasedURL {
+		return false
+	}
+	return urlHostname(lastReadURL) != "" && urlHostname(lastReadURL) == urlHostname(lastReleasedURL)
+}
+
+func urlHostname(rawURL string) string {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return ""
+	}
+	return strings.ToLower(parsedURL.Hostname())
 }
 
 // IsUnreadChapter tells if the last released chapter wasn't read yet.

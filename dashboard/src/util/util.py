@@ -253,14 +253,17 @@ def is_unread_chapter(last_read_chapter: dict[str, Any], last_released_chapter: 
         return False
     elif last_read_chapter == last_released_chapter:
         # Every chapter of a custom manga tracked only by the chapter URL has the same name,
-        # and a source can release a chapter with the same name as the previous one, so the URLs decide
+        # and a source can release a chapter with the same name as the previous one, so the URLs decide.
+        # They're only compared when from the same site: a multimanga's last read chapter can come
+        # from another of its sources, with another URL for the same chapter.
         if last_released_chapter == defaults.UNKNOWN_CHAPTER:
             return last_read_chapter_url != last_released_chapter_url
-        return (
-            last_read_chapter_url != ""
-            and last_released_chapter_url != ""
-            and last_read_chapter_url != last_released_chapter_url
-        )
+        if last_read_chapter_url == "" or last_released_chapter_url == "":
+            return False
+        if last_read_chapter_url == last_released_chapter_url:
+            return False
+        last_read_hostname = get_url_hostname(last_read_chapter_url).lower()
+        return last_read_hostname != "" and last_read_hostname == get_url_hostname(last_released_chapter_url).lower()
 
     try:
         last_read_chapter_number = float(last_read_chapter)
