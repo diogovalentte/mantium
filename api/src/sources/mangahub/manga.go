@@ -40,6 +40,8 @@ func (s *Source) GetMangaMetadata(mangaURL, _ string) (*manga.Manga, error) {
 			mangaReturn.CoverImgURL = page.coverURL
 			mangaReturn.CoverImgResized = resized
 			mangaReturn.CoverImg = coverImg
+		} else {
+			util.LogCoverImageError(mangaURL, page.coverURL, err)
 		}
 	}
 

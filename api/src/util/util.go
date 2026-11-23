@@ -54,6 +54,15 @@ func GetLogger(logLevel zerolog.Level) *zerolog.Logger {
 	return logger
 }
 
+// LogCoverImageError logs a cover image a source couldn't download. The sources
+// still return the manga without a cover, so without this the failure is silent.
+func LogCoverImageError(mangaURL, coverImgURL string, err error) {
+	if logger == nil {
+		return
+	}
+	logger.Warn().Err(err).Str("manga_url", mangaURL).Str("cover_img_url", coverImgURL).Msg("could not get the manga cover image")
+}
+
 // AddErrorContext adds context to an error, like:
 // "Error downloading image: Get "https://example.com/image.jpg": dial tcp: lookup example.com: no such host".
 // Should be used in functions that can return multiple errors without a spefic origin/context.
@@ -123,7 +132,9 @@ func GetImageFromURL(url string, retries int, retryInterval time.Duration) (imgB
 		return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), err)
 	}
 
-	if strings.HasSuffix(url, ".webp") {
+	// The format comes from the bytes because the URL may have a query string
+	// (MangaPlus signed URLs) or no extension at all
+	if _, format, configErr := image.DecodeConfig(bytes.NewReader(imageBytes)); configErr == nil && format == "webp" {
 		imageBytes, err = webpToJPEG(imageBytes)
 		if err != nil {
 			return nil, resized, AddErrorContext(fmt.Sprintf(contextError, url), AddErrorContext("could not convert webp image to jpeg", err))
