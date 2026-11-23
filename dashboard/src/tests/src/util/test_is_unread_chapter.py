@@ -26,6 +26,8 @@ def chapter(name: str, url: str = "") -> dict:
         # Without both URLs there is nothing to compare
         (chapter("10"), chapter("10", "https://a/10"), False),
         (chapter("10", "https://a/10"), chapter("10"), False),
+        # A multimanga read on one source and released on another: the URLs differ but it's the same chapter
+        (chapter("10", "https://mangadex.org/chapter/x"), chapter("10", "https://mangaplus.shueisha.co.jp/viewer/y"), False),
     ],
 )
 def test_is_unread_chapter(last_read, last_released, want):

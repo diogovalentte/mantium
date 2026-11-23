@@ -331,4 +331,16 @@ func TestMultiMangaIgnoredChapterDB(t *testing.T) {
 	if got, _, w = get(); w.IgnoredChapter != nil {
 		t.Fatalf("ignored chapter not cleared after a new chapter: %v", w.IgnoredChapter)
 	}
+
+	// Removing the only followed manga leaves no manga to follow, so the ignored chapter is cleared
+	if err := got.IgnoreMangaLastReleasedChapter(w); err != nil {
+		t.Fatal(err)
+	}
+	got, r, _ = get()
+	if err := got.RemoveManga(r); err != nil {
+		t.Fatal(err)
+	}
+	if got, _, w = get(); len(got.Mangas) != 1 || got.CurrentManga.URL != wrong.URL || w.IgnoredChapter != nil {
+		t.Fatalf("after removing the followed manga: %d mangas, current %s, ignored %v", len(got.Mangas), got.CurrentManga.URL, w.IgnoredChapter)
+	}
 }
