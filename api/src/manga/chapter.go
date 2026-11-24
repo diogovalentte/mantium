@@ -262,3 +262,11 @@ func IsNewChapterDifferentFromOld(oldChapter, newChapter *Chapter, source string
 
 	return false
 }
+
+// keepReleaseDateOfSameChapter keeps the release date of a custom manga's last released chapter
+// when the page is scraped again and returns the same chapter, since scraping sets it to now.
+func keepReleaseDateOfSameChapter(oldChapter, newChapter *Chapter) {
+	if oldChapter != nil && newChapter != nil && !IsNewChapterDifferentFromOld(oldChapter, newChapter, CustomMangaSource) {
+		newChapter.UpdatedAt = oldChapter.UpdatedAt
+	}
+}
