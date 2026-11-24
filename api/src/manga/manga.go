@@ -381,6 +381,7 @@ func (m *Manga) UpdateCustomMangaURLInDB(URL string) error {
 	}
 
 	if chapter != nil {
+		keepReleaseDateOfSameChapter(m.LastReleasedChapter, chapter)
 		err = upsertMangaChapter(m.ID, chapter, tx)
 		if err != nil {
 			tx.Rollback()
@@ -1378,6 +1379,7 @@ func (m *Manga) UpdateLastReleasedChapterSelectorsInDB(nameSelector, URLSelector
 	}
 
 	if !emptySelectors {
+		keepReleaseDateOfSameChapter(m.LastReleasedChapter, chapter)
 		err = upsertMangaChapter(m.ID, chapter, tx)
 		if err != nil {
 			tx.Rollback()
@@ -1503,6 +1505,7 @@ func (m *Manga) UpdateCustomMangaInDB(update CustomMangaUpdate) error {
 				return err
 			}
 			if chapter != nil {
+				keepReleaseDateOfSameChapter(m.LastReleasedChapter, chapter)
 				if err := upsertMangaChapter(m.ID, chapter, tx); err != nil {
 					return err
 				}
